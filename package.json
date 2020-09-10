@@ -1,0 +1,17 @@
+{
+  "name": "figma-table-creator",
+  "version": "1.0.0",
+  "description": "A simple Figma plugin for creating flexible and editable tables.",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "author": "",
+  "license": "",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.16.1"
+  },
+  "dependencies": {
+    "figma-plugin-ds": "^0.1.8"
+  }
+}
