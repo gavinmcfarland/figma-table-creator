@@ -17,6 +17,10 @@
     <div class="p-s" style="display: flex">
       <button class='button button--primary' id="create" style="margin-right: 1.5em">Create</button> 
       <button class="button button--secondary" id="cancel" style="margin-right: 1.5em">Cancel</button>
+    </div>
+    <br />
+    <div class="p-s" style="display: flex">
+      <button class="button button--secondary" id="selectColumns" style="margin-right: 1.5em">Select column</button>
     <div>
   <section>
 
@@ -30,6 +34,10 @@ document.getElementById('create').onclick = () => {
   const columnCount = parseInt(textbox1.value, 10);
   const rowCount = parseInt(textbox2.value, 10);
   parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount } }, '*')
+}
+
+document.getElementById('selectColumns').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'select-columns' } }, '*')
 }
 
 document.getElementById('cancel').onclick = () => {

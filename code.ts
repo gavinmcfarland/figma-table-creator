@@ -41,6 +41,10 @@ function createCell(topBorder, leftBorder) {
   var line2 = leftBorder
   var text = figma.createText()
 
+  frame2.name = "Content"
+
+  text.layoutAlign = "STRETCH"
+
   changeText(text)
 
   cell.name = "Cell"
@@ -63,6 +67,7 @@ function createCell(topBorder, leftBorder) {
   frame1.resizeWithoutConstraints(100, 0.01)
   frame1.clipsContent = false
   frame1.layoutAlign = "STRETCH"
+  frame2.layoutAlign = "STRETCH"
 
   frame2.horizontalPadding = 8
   frame2.verticalPadding = 8
@@ -90,6 +95,8 @@ function createTable(numberColumns, numberRows) {
   container.name = "Table"
 
   row.name = "Row"
+  row.fills = []
+  container.fills = []
 
 
   container.layoutMode = "VERTICAL"
@@ -134,10 +141,35 @@ function createTable(numberColumns, numberRows) {
   return container
 }
 
+function addNewNodeToSelection(page, node) {
+  page.selection = node
+}
+
+function selectColumn() {
+  var selection = figma.currentPage.selection
+
+  if (selection.length === 1) {
+
+    var newSelection = []
+    var parent = selection[0].parent?.parent
+    var children = parent?.children
+
+    var rowIndex = children.findIndex(x => x.id === selection[0].parent.id)
+
+    var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[0].id)
+
+    for (var i = 0; i < children.length - 1; i++) {
+      newSelection.push(clone(children[i].children[columnIndex]))
+    }
+
+    addNewNodeToSelection(figma.currentPage, newSelection)
+  }
+}
+
 
 figma.showUI(__html__);
 
-figma.ui.resize(300, 250)
+figma.ui.resize(300, 280)
 
 figma.ui.onmessage = msg => {
 
@@ -148,6 +180,9 @@ figma.ui.onmessage = msg => {
 
     figma.currentPage.selection = nodes;
     figma.viewport.scrollAndZoomIntoView(nodes);
+  } else if (msg.type === 'select-columns') {
+
+    selectColumn()
   }
 
   figma.closePlugin();

@@ -41,6 +41,8 @@ function createCell(topBorder, leftBorder) {
     var line1 = topBorder;
     var line2 = leftBorder;
     var text = figma.createText();
+    frame2.name = "Content";
+    text.layoutAlign = "STRETCH";
     changeText(text);
     cell.name = "Cell";
     frame2.layoutMode = "VERTICAL";
@@ -58,6 +60,7 @@ function createCell(topBorder, leftBorder) {
     frame1.resizeWithoutConstraints(100, 0.01);
     frame1.clipsContent = false;
     frame1.layoutAlign = "STRETCH";
+    frame2.layoutAlign = "STRETCH";
     frame2.horizontalPadding = 8;
     frame2.verticalPadding = 8;
     cell.layoutMode = "VERTICAL";
@@ -76,6 +79,8 @@ function createTable(numberColumns, numberRows) {
     var rightBorder = tableBorder.createInstance();
     container.name = "Table";
     row.name = "Row";
+    row.fills = [];
+    container.fills = [];
     container.layoutMode = "VERTICAL";
     container.counterAxisSizingMode = "AUTO";
     row.counterAxisSizingMode = "AUTO";
@@ -103,8 +108,26 @@ function createTable(numberColumns, numberRows) {
     cell.remove();
     return container;
 }
+function addNewNodeToSelection(page, node) {
+    page.selection = node;
+}
+function selectColumn() {
+    var _a;
+    var selection = figma.currentPage.selection;
+    if (selection.length === 1) {
+        var newSelection = [];
+        var parent = (_a = selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent;
+        var children = parent === null || parent === void 0 ? void 0 : parent.children;
+        var rowIndex = children.findIndex(x => x.id === selection[0].parent.id);
+        var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[0].id);
+        for (var i = 0; i < children.length - 1; i++) {
+            newSelection.push(clone(children[i].children[columnIndex]));
+        }
+        addNewNodeToSelection(figma.currentPage, newSelection);
+    }
+}
 figma.showUI(__html__);
-figma.ui.resize(300, 250);
+figma.ui.resize(300, 280);
 figma.ui.onmessage = msg => {
     if (msg.type === 'create-table') {
         var table = createTable(msg.columnCount, msg.rowCount);
@@ -112,6 +135,9 @@ figma.ui.onmessage = msg => {
         nodes.push(table);
         figma.currentPage.selection = nodes;
         figma.viewport.scrollAndZoomIntoView(nodes);
+    }
+    else if (msg.type === 'select-columns') {
+        selectColumn();
     }
     figma.closePlugin();
 };
