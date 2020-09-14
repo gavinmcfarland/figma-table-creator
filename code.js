@@ -112,32 +112,39 @@ function addNewNodeToSelection(page, node) {
     page.selection = node;
 }
 function selectColumn() {
+    // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
     var _a;
     var selection = figma.currentPage.selection;
-    if (selection.length === 1) {
-        var newSelection = [];
-        var parent = (_a = selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent;
+    var newSelection = [];
+    for (let i = 0; i < selection.length; i++) {
+        var parent = (_a = selection[i].parent) === null || _a === void 0 ? void 0 : _a.parent;
         var children = parent === null || parent === void 0 ? void 0 : parent.children;
-        var rowIndex = children.findIndex(x => x.id === selection[0].parent.id);
-        var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[0].id);
-        for (var i = 0; i < children.length - 1; i++) {
+        var rowIndex = children.findIndex(x => x.id === selection[i].parent.id);
+        var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[i].id);
+        for (let i = 0; i < children.length; i++) {
             newSelection.push(clone(children[i].children[columnIndex]));
         }
-        addNewNodeToSelection(figma.currentPage, newSelection);
     }
+    addNewNodeToSelection(figma.currentPage, newSelection);
 }
-figma.showUI(__html__);
-figma.ui.resize(300, 280);
-figma.ui.onmessage = msg => {
-    if (msg.type === 'create-table') {
-        var table = createTable(msg.columnCount, msg.rowCount);
-        const nodes = [];
-        nodes.push(table);
-        figma.currentPage.selection = nodes;
-        figma.viewport.scrollAndZoomIntoView(nodes);
-    }
-    else if (msg.type === 'select-columns') {
-        selectColumn();
-    }
+if (figma.command === "createTable") {
+    figma.showUI(__html__);
+    figma.ui.resize(300, 280);
+    figma.ui.onmessage = msg => {
+        if (msg.type === 'create-table') {
+            var table = createTable(msg.columnCount, msg.rowCount);
+            const nodes = [];
+            nodes.push(table);
+            figma.currentPage.selection = nodes;
+            figma.viewport.scrollAndZoomIntoView(nodes);
+        }
+        else if (msg.type === 'select-columns') {
+            selectColumn();
+        }
+        figma.closePlugin();
+    };
+}
+if (figma.command === "selectColumn") {
+    selectColumn();
     figma.closePlugin();
-};
+}

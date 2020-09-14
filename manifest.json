@@ -3,5 +3,15 @@
   "id": "885838970710285271",
   "api": "1.0.0",
   "main": "code.js",
-  "ui": "ui.html"
+  "ui": "ui.html",
+  "menu": [
+    {
+      "name": "Create Table",
+      "command": "createTable"
+    },
+    {
+      "name": "Select Columns/Rows",
+      "command": "selectColumn"
+    }
+  ]
 }
