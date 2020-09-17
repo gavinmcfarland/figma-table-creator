@@ -122,7 +122,11 @@ function selectColumn() {
         var rowIndex = children.findIndex(x => x.id === selection[i].parent.id);
         var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[i].id);
         for (let i = 0; i < children.length; i++) {
-            newSelection.push(clone(children[i].children[columnIndex]));
+            if (children[i].children) {
+                if (children[i].children[columnIndex] && children[i].children[columnIndex].parent.name !== "ignore") {
+                    newSelection.push(clone(children[i].children[columnIndex]));
+                }
+            }
         }
     }
     addNewNodeToSelection(figma.currentPage, newSelection);
