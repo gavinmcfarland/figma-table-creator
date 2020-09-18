@@ -88,6 +88,7 @@ function createTable(numberColumns, numberRows) {
   var cell = createCell(tableBorder.createInstance(), tableBorder.createInstance())
   var row = figma.createFrame()
   var frame1 = figma.createFrame()
+  frame1.name = "ignore"
 
   var bottomBorder = tableBorder.createInstance()
   var rightBorder = tableBorder.createInstance()
