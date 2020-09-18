@@ -88,7 +88,7 @@ function createTable(numberColumns, numberRows) {
   var cell = createCell(tableBorder.createInstance(), tableBorder.createInstance())
   var row = figma.createFrame()
   var frame1 = figma.createFrame()
-  frame1.name = "ignore"
+  frame1.name = "[ignore]"
 
   var bottomBorder = tableBorder.createInstance()
   var rightBorder = tableBorder.createInstance()
@@ -148,7 +148,7 @@ function addNewNodeToSelection(page, node) {
 
 function selectColumn() {
   // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
-
+  var regex = RegExp(/\[ignore\]/, 'g');
   var selection = figma.currentPage.selection
 
   var newSelection = []
@@ -163,7 +163,7 @@ function selectColumn() {
 
     for (let i = 0; i < children.length; i++) {
       if (children[i].children) {
-        if (children[i].children[columnIndex] && children[i].children[columnIndex].parent.name !== "ignore") {
+        if (children[i].children[columnIndex] && !regex.test(children[i].children[columnIndex].parent.name)) {
           newSelection.push(clone(children[i].children[columnIndex]))
         }
       }
