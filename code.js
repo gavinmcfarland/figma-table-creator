@@ -10,17 +10,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
 }
-function changeText(node) {
+function changeText(node, text) {
     return __awaiter(this, void 0, void 0, function* () {
         yield figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-        node.characters = "text";
+        node.characters = text;
+        node.textAutoResize = "HEIGHT";
+        node.layoutAlign = "STRETCH";
     });
 }
 function createBorder() {
     var frame1 = figma.createComponent();
     var line1 = figma.createLine();
     frame1.resizeWithoutConstraints(0.01, 0.01);
-    console.log(line1.resize(1000, 0));
     frame1.name = "Table Border";
     line1.constraints = {
         horizontal: "STRETCH",
@@ -31,6 +32,7 @@ function createBorder() {
         vertical: "STRETCH"
     };
     frame1.clipsContent = false;
+    line1.resizeWithoutConstraints(10000, 0);
     frame1.appendChild(line1);
     return frame1;
 }
@@ -43,7 +45,7 @@ function createCell(topBorder, leftBorder) {
     var text = figma.createText();
     frame2.name = "Content";
     text.layoutAlign = "STRETCH";
-    changeText(text);
+    changeText(text, "text");
     cell.name = "Cell";
     frame2.layoutMode = "VERTICAL";
     frame1.appendChild(line1);
@@ -61,8 +63,8 @@ function createCell(topBorder, leftBorder) {
     frame1.clipsContent = false;
     frame1.layoutAlign = "STRETCH";
     frame2.layoutAlign = "STRETCH";
-    frame2.horizontalPadding = 8;
-    frame2.verticalPadding = 8;
+    frame2.horizontalPadding = 16;
+    frame2.verticalPadding = 16;
     cell.layoutMode = "VERTICAL";
     cell.appendChild(frame1);
     cell.appendChild(frame2);
@@ -86,16 +88,22 @@ function createTable(numberColumns, numberRows) {
     container.counterAxisSizingMode = "AUTO";
     row.counterAxisSizingMode = "AUTO";
     row.layoutMode = "HORIZONTAL";
-    row.appendChild(cell.createInstance());
-    container.appendChild(row);
-    for (var i = 0; i < numberColumns - 1; i++) {
+    // var duplicatedCell = cell.createInstance()
+    // changeText(duplicatedCell.children[1].children[0], "")
+    // row.appendChild(duplicatedCell)
+    // container.appendChild(row)
+    for (var i = 0; i < numberColumns; i++) {
         var duplicatedCell = cell.createInstance();
         row.appendChild(duplicatedCell);
     }
-    for (var i = 0; i < numberRows - 1; i++) {
+    for (let i = 0; i < numberRows; i++) {
         var duplicatedRow = row.clone();
+        for (let b = 0; b < numberColumns; b++) {
+            changeText(duplicatedRow.children[b].children[1].children[0], "");
+        }
         container.appendChild(duplicatedRow);
     }
+    row.remove();
     frame1.clipsContent = false;
     frame1.appendChild(bottomBorder);
     frame1.appendChild(rightBorder);
@@ -133,12 +141,34 @@ function selectColumn() {
     }
     addNewNodeToSelection(figma.currentPage, newSelection);
 }
+var message = {
+    columnCount: parseInt(figma.currentPage.getPluginData("columnCount"), 10) || 2,
+    rowCount: parseInt(figma.currentPage.getPluginData("rowCount"), 10) || 2,
+    remember: true
+};
+if (figma.currentPage.getPluginData("remember") == "true")
+    message.remember = true;
+if (figma.currentPage.getPluginData("remember") == "false")
+    message.remember = false;
 if (figma.command === "createTable") {
     figma.showUI(__html__);
-    figma.ui.resize(300, 280);
+    figma.ui.resize(282, 425);
+    figma.ui.postMessage(message);
     figma.ui.onmessage = msg => {
         if (msg.type === 'create-table') {
             var table = createTable(msg.columnCount, msg.rowCount);
+            figma.currentPage.setPluginData("columnCount", msg.columnCount.toString());
+            figma.currentPage.setPluginData("rowCount", msg.rowCount.toString());
+            figma.currentPage.setPluginData("remember", msg.remember.toString());
+            if (figma.currentPage.getPluginData("remember")) {
+                message.remember = (figma.currentPage.getPluginData("remember") == "true");
+            }
+            if (figma.currentPage.getPluginData("columnCount")) {
+                message.columnCount = parseInt(figma.currentPage.getPluginData("columnCount"), 10);
+            }
+            if (figma.currentPage.getPluginData("rowCount")) {
+                message.rowCount = parseInt(figma.currentPage.getPluginData("rowCount"), 10);
+            }
             const nodes = [];
             nodes.push(table);
             figma.currentPage.selection = nodes;
