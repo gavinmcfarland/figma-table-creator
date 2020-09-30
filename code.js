@@ -15,13 +15,15 @@ function changeText(node, text) {
         yield figma.loadFontAsync({ family: "Roboto", style: "Regular" });
         node.characters = text;
         node.textAutoResize = "HEIGHT";
+        // Fixes issue where spaces are ignored and node has zero width
+        node.resize(10, node.height);
         node.layoutAlign = "STRETCH";
     });
 }
 function createBorder() {
     var frame1 = figma.createComponent();
     var line1 = figma.createLine();
-    frame1.resizeWithoutConstraints(0.01, 0.01);
+    // frame1.resizeWithoutConstraints(0.01, 0.01)
     frame1.name = "Table Border";
     line1.constraints = {
         horizontal: "STRETCH",
@@ -49,12 +51,17 @@ function createCell(topBorder, leftBorder) {
     var line2 = leftBorder;
     var text = figma.createText();
     frame2.name = "Content";
-    text.layoutAlign = "STRETCH";
-    changeText(text, "text");
+    // text.layoutAlign = "STRETCH"
+    changeText(text, "");
     cell.name = "Cell";
+    const fills = clone(cell.fills);
+    fills[0].opacity = 0.0001;
+    fills[0].visible = true;
+    cell.fills = fills;
     frame2.layoutMode = "VERTICAL";
     frame1.appendChild(line1);
     frame1.appendChild(line2);
+    frame1.locked = true;
     frame1.fills = [];
     frame2.fills = [];
     line1.rotation = -90;
@@ -98,9 +105,6 @@ function createTable(numberColumns, numberRows) {
     }
     for (let i = 0; i < numberRows; i++) {
         var duplicatedRow = row.clone();
-        for (let b = 0; b < numberColumns; b++) {
-            changeText(duplicatedRow.children[b].children[1].children[0], "");
-        }
         container.appendChild(duplicatedRow);
     }
     row.remove();
