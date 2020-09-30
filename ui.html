@@ -2064,11 +2064,11 @@
 
 	.selected {
 		border: 2px solid #18A0FB !important;
-		background: rgba(24, 145, 251, .3);
+		background: rgba(24, 160, 251, .3);
 	}
 
 	.hover.selected {
-		background: rgba(24, 145, 251, .4)
+		background: rgba(24, 160, 251, .45)
 	}
 
 	.more {
@@ -2126,15 +2126,14 @@
 			<div class="input flex" style="flex-basis: 50%">
 				<!-- <label for="columnCount" class="label">Columns</label> -->
 
-				<input type="number" class="input__field" id="columnCount" value="4" size="4" step="1" min="1"
-					max="100">
+				<input type="number" class="input__field" id="columnCount" value="4" size="4" step="1" min="1" max="50">
 				<label for="columnCount" class="label">Columns</label>
 			</div>
 
 			<div class="input flex" style="flex-basis: 50%">
 				<!-- <label for="rowCount" class="label">Rows</label> -->
 
-				<input type="number" class="input__field" id="rowCount" value="4" size="4" step="1" min="1" max="100">
+				<input type="number" class="input__field" id="rowCount" value="4" size="4" step="1" min="1" max="50">
 				<label for="rowCount" class="label">Rows</label>
 
 			</div>
@@ -2465,7 +2464,13 @@
 					if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
 						cells[b].getElementsByTagName('label')[0].classList.add("selected");
 					}
+
+					if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
+						cells[b].getElementsByTagName('label')[0].classList.add("more");
+					}
 				}
+
+
 
 				columnInput.addEventListener('input', function (evt) {
 					for (let b = 0; b < cells.length; b++) {
@@ -2522,6 +2527,7 @@
 						rowInput.value = this.parentNode.rowIndex + 1
 						for (let b = 0; b < cells.length; b++) {
 							cells[b].getElementsByTagName('label')[0].classList.remove("selected");
+							cells[b].getElementsByTagName('label')[0].classList.remove("more");
 							if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
 								cells[b].getElementsByTagName('label')[0].classList.add("selected");
 							}

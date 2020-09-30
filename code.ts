@@ -29,6 +29,14 @@ function createBorder() {
 
 	line1.resizeWithoutConstraints(10000, 0)
 
+	const strokes = clone(line1.strokes)
+
+	strokes[0].color.r = 0.725490196078431
+	strokes[0].color.g = 0.725490196078431
+	strokes[0].color.b = 0.725490196078431
+
+	line1.strokes = strokes
+
 	frame1.appendChild(line1)
 
 	return frame1
@@ -73,8 +81,8 @@ function createCell(topBorder, leftBorder) {
 	frame1.layoutAlign = "STRETCH"
 	frame2.layoutAlign = "STRETCH"
 
-	frame2.horizontalPadding = 16
-	frame2.verticalPadding = 16
+	frame2.horizontalPadding = 8
+	frame2.verticalPadding = 8
 	cell.layoutMode = "VERTICAL"
 
 	cell.appendChild(frame1)
@@ -101,20 +109,12 @@ function createTable(numberColumns, numberRows) {
 
 	row.name = "Row"
 	row.fills = []
-	container.fills = []
 
 
 	container.layoutMode = "VERTICAL"
 	container.counterAxisSizingMode = "AUTO"
 	row.counterAxisSizingMode = "AUTO"
 	row.layoutMode = "HORIZONTAL"
-
-	// var duplicatedCell = cell.createInstance()
-	// changeText(duplicatedCell.children[1].children[0], "")
-	// row.appendChild(duplicatedCell)
-
-
-	// container.appendChild(row)
 
 	for (var i = 0; i < numberColumns; i++) {
 		var duplicatedCell = cell.createInstance()
@@ -195,8 +195,8 @@ function selectColumn() {
 
 
 var message = {
-	columnCount: parseInt(figma.currentPage.getPluginData("columnCount"), 10) || 2,
-	rowCount: parseInt(figma.currentPage.getPluginData("rowCount"), 10) || 2,
+	columnCount: parseInt(figma.currentPage.getPluginData("columnCount"), 10) || 4,
+	rowCount: parseInt(figma.currentPage.getPluginData("rowCount"), 10) || 4,
 	remember: true
 }
 
@@ -214,36 +214,38 @@ if (figma.command === "createTable") {
 
 
 		if (msg.type === 'create-table') {
-			var table = createTable(msg.columnCount, msg.rowCount);
-			figma.currentPage.setPluginData("columnCount", msg.columnCount.toString())
-			figma.currentPage.setPluginData("rowCount", msg.rowCount.toString())
-			figma.currentPage.setPluginData("remember", msg.remember.toString())
+			if (msg.columnCount < 51 && msg.rowCount < 51) {
+				var table = createTable(msg.columnCount, msg.rowCount);
+				figma.currentPage.setPluginData("columnCount", msg.columnCount.toString())
+				figma.currentPage.setPluginData("rowCount", msg.rowCount.toString())
+				figma.currentPage.setPluginData("remember", msg.remember.toString())
+
+				if (figma.currentPage.getPluginData("remember")) {
+					message.remember = (figma.currentPage.getPluginData("remember") == "true")
+				}
+				if (figma.currentPage.getPluginData("columnCount")) {
+					message.columnCount = parseInt(figma.currentPage.getPluginData("columnCount"), 10)
+				}
+
+				if (figma.currentPage.getPluginData("rowCount")) {
+					message.rowCount = parseInt(figma.currentPage.getPluginData("rowCount"), 10)
+				}
 
 
+				const nodes: SceneNode[] = [];
+				nodes.push(table)
 
-			if (figma.currentPage.getPluginData("remember")) {
-				message.remember = (figma.currentPage.getPluginData("remember") == "true")
+				figma.currentPage.selection = nodes;
+				figma.viewport.scrollAndZoomIntoView(nodes);
+
+				figma.closePlugin();
+
 			}
-			if (figma.currentPage.getPluginData("columnCount")) {
-				message.columnCount = parseInt(figma.currentPage.getPluginData("columnCount"), 10)
+			else {
+				figma.notify("Plugin limited to max of 50 columns and rows")
 			}
-
-			if (figma.currentPage.getPluginData("rowCount")) {
-				message.rowCount = parseInt(figma.currentPage.getPluginData("rowCount"), 10)
-			}
-
-
-			const nodes: SceneNode[] = [];
-			nodes.push(table)
-
-			figma.currentPage.selection = nodes;
-			figma.viewport.scrollAndZoomIntoView(nodes);
-		} else if (msg.type === 'select-columns') {
-
-			selectColumn()
 		}
 
-		figma.closePlugin();
 	};
 }
 
