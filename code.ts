@@ -105,12 +105,30 @@ function createCell(topBorder, leftBorder) {
 	return cell
 }
 
+var cellID
+
+function findTable() {
+	return figma.currentPage.findOne(node => node.name === "Cell" && node.type === "COMPONENT") || false
+}
+
 function createTable(numberColumns, numberRows) {
 
+	console.log(figma.currentPage.findOne(n => n.removed === true))
 
 	var tableBorder = createBorder()
 	var container = figma.createFrame()
-	var cell = createCell(tableBorder.createInstance(), tableBorder.createInstance())
+
+	var cell
+	var cellCreatedUsingPlugin = false
+	if (findTable()) {
+		cell = findTable()
+		cellCreatedUsingPlugin = false
+	}
+	else {
+		cell = createCell(tableBorder.createInstance(), tableBorder.createInstance())
+		cellCreatedUsingPlugin = true
+	}
+
 	var row = figma.createFrame()
 	var frame1 = figma.createFrame()
 	frame1.name = "[ignore]"
@@ -163,7 +181,12 @@ function createTable(numberColumns, numberRows) {
 
 
 	tableBorder.remove()
-	cell.remove()
+	// cell.visible = false
+
+	if (cellCreatedUsingPlugin) {
+		cell.remove()
+	}
+
 
 	return container
 }
