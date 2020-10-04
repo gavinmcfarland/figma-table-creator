@@ -10,8 +10,16 @@
       "command": "createTable"
     },
     {
-      "name": "Select Columns/Rows",
+      "name": "Select Columns",
       "command": "selectColumn"
+    },
+    {
+      "name": "Select Rows",
+      "command": "selectRow"
     }
-  ]
+  ],
+  "relaunchButtons": [
+      {"command": "selectColumn", "name": "Select Column(s)", "multipleSelection": true},
+      {"command": "selectRow", "name": "Select Row(s)", "multipleSelection": true}
+    ]
 }

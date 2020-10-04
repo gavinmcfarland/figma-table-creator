@@ -195,6 +195,9 @@ function createComponents() {
 	components.cellHeader.name = "Table/Cell/Header"
 	components.cellHeader.layoutMode = "VERTICAL"
 
+	components.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
+	components.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
+
 
 	const fills = clone(components.cellHeader.fills)
 
@@ -300,6 +303,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader) {
 
 	var cell = findComponentById(figma.root.getPluginData("cellComponentID"))
 	var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"))
+
 	var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")))
 
 	// Remove children (we only need the container)
@@ -355,7 +359,7 @@ function addNewNodeToSelection(page, node) {
 	page.selection = node
 }
 
-function selectColumn() {
+function selectParallelCells() {
 	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
 	var regex = RegExp(/\[ignore\]/, 'g');
 	var selection = figma.currentPage.selection
@@ -385,6 +389,62 @@ function selectColumn() {
 
 }
 
+function selectAdjacentCells() {
+
+	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
+	var regex = RegExp(/\[ignore\]/, 'g');
+	var selection = figma.currentPage.selection
+
+	var newSelection = []
+
+	for (let i = 0; i < selection.length; i++) {
+		// Table container
+		var parent = selection[i].parent?.parent
+
+		// rows or columns
+		var children = parent?.children
+
+		var rowIndex = children.findIndex(x => x.id === selection[i].parent.id)
+
+		// var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[i].id)
+
+		for (let i = 0; i < children.length; i++) {
+			var cell = children[rowIndex]
+
+			for (let b = 0; b < cell.children.length; b++) {
+				if (cell.children) {
+					if (cell].children[b] && !regex.test(cell.children[b].parent.name)) {
+						newSelection.push(clone(cell.children[b]))
+					}
+				}
+			}
+
+
+		}
+
+	}
+
+	addNewNodeToSelection(figma.currentPage, newSelection)
+
+}
+
+function selectColumn() {
+	if (figma.currentPage.selection[0].parent?.parent.layoutMode === "VERTICAL") {
+		selectParallelCells()
+	}
+	if (figma.currentPage.selection[0].parent?.parent.layoutMode === "HORIZONTAL") {
+		selectAdjacentCells()
+	}
+}
+
+function selectRow() {
+	if (figma.currentPage.selection[0].parent?.parent.layoutMode === "HORIZONTAL") {
+		selectParallelCells()
+	}
+	if (figma.currentPage.selection[0].parent?.parent.layoutMode === "VERTICAL") {
+		selectAdjacentCells()
+	}
+}
 
 var message = {
 	componentsExist: false,
@@ -485,5 +545,10 @@ if (figma.command === "createTable") {
 
 if (figma.command === "selectColumn") {
 	selectColumn()
+	figma.closePlugin();
+}
+
+if (figma.command === "selectRow") {
+	selectRow()
 	figma.closePlugin();
 }
