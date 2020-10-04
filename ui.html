@@ -2118,29 +2118,57 @@
 	input[type=number] {
 		-moz-appearance: textfield;
 	}
+
+	.createTablePage {
+		display: none;
+	}
+
+	.hide {
+		display: none;
+	}
+
+	.show {
+		display: block;
+	}
 </style>
 
-<div>
-	<section class="m-xsmall">
+<div class="page welcomePage" id="welcomePage">
+	<p>To get started this plugin needs to create some components. These components will be used as templates to create
+		new
+		tables. This will allow you to customise them to suit your preferences. They will be added to a new page called
+		<b>Table
+			Creator</b>.</p>
+	<button class='button button--primary' id="createComponents">Create Components</button>
+</div>
+
+<div class="page createTablePage" id="createTablePage">
+	<section class="ml-xsmall mr-xsmall mt-xsmall mb-xxsmall">
 		<div class="flex">
-			<div class="input flex" style="flex-basis: 50%">
-				<!-- <label for="columnCount" class="label">Columns</label> -->
-
-				<input type="number" class="input__field" id="columnCount" value="4" size="4" step="1" min="1" max="50">
+			<div class="input" style="flex-basis: 50%">
 				<label for="columnCount" class="label">Columns</label>
+				<input style="width: 100%" type="number" class="input__field" id="columnCount" value="4" size="4"
+					step="1" min="1" max="50">
 			</div>
 
-			<div class="input flex" style="flex-basis: 50%">
-				<!-- <label for="rowCount" class="label">Rows</label> -->
-
-				<input type="number" class="input__field" id="rowCount" value="4" size="4" step="1" min="1" max="50">
+			<div class="input" style="flex-basis: 50%">
 				<label for="rowCount" class="label">Rows</label>
-
+				<input style="width: 100%" type="number" class="input__field" id="rowCount" value="4" size="4" step="1"
+					min="1" max="50">
 			</div>
+
+			<div class="input" style="flex-basis: 50%">
+				<label for="cellWidth" class="label">Cell Width</label>
+				<input style="width: 100%" type="number" class="input__field" id="cellWidth" value="100" size="4"
+					step="1" min="1" max="400">
+			</div>
+		</div>
+		<div class="checkbox">
+			<input type="checkbox" class="checkbox__box" id="includeHeader">
+			<label for="includeHeader" class="checkbox__label">Include table header</label>
 		</div>
 	</section>
 
-	<section class="mt-xsmall mb-xsmall ml-small mr-small" style="margin-bottom: 8px;">
+	<section class="mt-xxsmall mb-xsmall ml-small mr-small" style="margin-bottom: 8px;">
 		<table class="Table flex" id="table">
 			<tr>
 				<td class="input__radio">
@@ -2433,16 +2461,31 @@
 
 			const table = document.getElementById('table')
 			const remember = document.getElementById('remember')
+			const includeHeader = document.getElementById('includeHeader')
+			const welcomePage = document.getElementById('welcomePage')
+			const createTablePage = document.getElementById('createTablePage')
 
 			const cells = table.querySelectorAll('td')
 
 			const columnInput = document.getElementById('columnCount')
 			const rowInput = document.getElementById('rowCount')
+			const cellWidthInput = document.getElementById('cellWidth')
 
 			window.onmessage = async (event) => {
 				const message = event.data.pluginMessage
 
 				remember.checked = message.remember
+
+				includeHeader.checked = message.includeHeader
+
+				if (message.componentsExist) {
+					welcomePage.classList.add("hide")
+					createTablePage.classList.add("show")
+				}
+				else {
+					welcomePage.classList.add("show")
+					createTablePage.classList.add("hide")
+				}
 
 
 				if (message.remember) {
@@ -2452,6 +2495,10 @@
 
 					if (message.rowCount) {
 						rowInput.value = message.rowCount
+					}
+
+					if (message.cellWidth) {
+						cellWidthInput.value = message.cellWidth
 					}
 				}
 
@@ -2539,10 +2586,21 @@
 			document.getElementById('create').onclick = () => {
 				const textbox1 = document.getElementById('columnCount');
 				const textbox2 = document.getElementById('rowCount');
+				const textbox3 = document.getElementById('cellWidth');
+
 				const columnCount = parseInt(textbox1.value, 10);
 				const rowCount = parseInt(textbox2.value, 10);
+				const cellWidth = parseInt(textbox3.value, 10);
 				const remember = document.getElementById('remember').checked;
-				parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember } }, '*')
+				const includeHeader = document.getElementById('includeHeader').checked;
+				parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember, cellWidth, includeHeader } }, '*')
+			}
+
+			document.getElementById('createComponents').onclick = () => {
+				welcomePage.classList.add("hide")
+				welcomePage.classList.remove("show")
+				createTablePage.classList.add("show")
+				parent.postMessage({ pluginMessage: { type: 'create-components' } }, '*')
 			}
 
 		</script>
