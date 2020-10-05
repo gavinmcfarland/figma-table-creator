@@ -37,6 +37,8 @@ function cloneComponentAsFrame(component) {
     frame.bottomRightRadius = component.bottomRightRadius;
     frame.layoutMode = component.layoutMode;
     frame.counterAxisSizingMode = component.counterAxisSizingMode;
+    var effects = clone(component.effects);
+    frame.effects = effects;
     for (let i = 0; i < component.children.length; i++) {
         frame.appendChild(component.children[i].clone());
     }
@@ -176,49 +178,6 @@ function createComponents() {
     page.appendChild(components.table);
 }
 var cellID;
-function findTableCell() {
-    var pages = figma.root.children;
-    var regex = /\b(cell|td|cell\/default|td\/default)$/gmi;
-    var cell;
-    for (let i = 0; i < pages.length; i++) {
-        cell = pages[i].findOne(node => regex.test(node.name) && node.type === "COMPONENT");
-    }
-    return cell || false;
-}
-function findTable() {
-    var pages = figma.root.children;
-    var regex = /\b(table)$/gmi;
-    var table;
-    for (let i = 0; i < pages.length; i++) {
-        table = pages[i].findOne(node => regex.test(node.name) && node.type === "COMPONENT");
-    }
-    var newTable;
-    if (table) {
-        newTable = figma.createFrame();
-        newTable.fills = table.fills;
-        newTable.strokes = table.strokes;
-        newTable.strokeWeight = table.strokeWeight;
-        newTable.strokeStyleId = table.strokeStyleId;
-        newTable.strokeAlign = table.strokeAlign;
-        newTable.strokeCap = table.strokeCap;
-        newTable.strokeJoin = table.strokeJoin;
-        newTable.strokeMiterLimit = table.strokeMiterLimit;
-        newTable.topLeftRadius = table.topLeftRadius;
-        newTable.topRightRadius = table.topRightRadius;
-        newTable.bottomLeftRadius = table.bottomLeftRadius;
-        newTable.bottomRightRadius = table.bottomRightRadius;
-        newTable.name = "Table";
-    }
-    // if (table) {
-    // 	if (table.children) {
-    // 		for (let i = 0; i < table.children.length; i++) {
-    // 			table.children[i].remove()
-    // 		}
-    // 	}
-    // }
-    // console.log(table)
-    return newTable || false;
-}
 function findComponentById(id) {
     var pages = figma.root.children;
     var component;
@@ -229,9 +188,11 @@ function findComponentById(id) {
     // Return component if found, otherwise return false
     return component || false;
 }
-function createNewTable(numberColumns, numberRows, cellWidth, includeHeader) {
+function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent) {
     var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
+    cell.layoutAlign = "CENTER";
     var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"));
+    cellHeader.layoutAlign = "CENTER";
     var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")));
     // Remove children (we only need the container)
     for (let i = 0; i < row.children.length; i++) {
@@ -240,13 +201,29 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader) {
     row.children[0].remove();
     var table = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("tableComponentID")));
     // Remove children (we only need the container)
-    console.log(table.children.length);
     for (let i = 0; i < table.children.length; i++) {
         table.children[0].remove();
     }
     table.children[0].remove();
+    var firstRow;
+    if (usingLocalComponent) {
+        firstRow = findComponentById(figma.root.getPluginData("rowComponentID")).clone();
+        // Remove children (we only need the container)
+        for (let i = 0; i < firstRow.children.length; i++) {
+            firstRow.children[0].remove();
+        }
+        firstRow.children[0].remove();
+        firstRow.name = row.name;
+        firstRow.layoutMode = "HORIZONTAL";
+        firstRow.counterAxisSizingMode = "AUTO";
+        row.remove();
+    }
+    else {
+        firstRow = row;
+    }
+    var rowHeader;
     if (includeHeader) {
-        var rowHeader = row.clone();
+        rowHeader = firstRow.clone();
         for (var i = 0; i < numberColumns; i++) {
             // Duplicate cell for each column and append to row
             var duplicatedCellHeader = cellHeader.createInstance();
@@ -254,20 +231,40 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader) {
             rowHeader.appendChild(duplicatedCellHeader);
         }
         table.appendChild(rowHeader);
-        numberRows = numberRows - 1;
     }
-    // Duplicate cell for each column and append to row
     for (var i = 0; i < numberColumns; i++) {
         var duplicatedCell = cell.createInstance();
         duplicatedCell.resizeWithoutConstraints(cellWidth, duplicatedCell.height);
-        row.appendChild(duplicatedCell);
+        firstRow.appendChild(duplicatedCell);
     }
     // Duplicate row for each row and append to table
     // Easier to append cloned row and then duplicate, than remove later, hence numberRows - 1
-    table.appendChild(row);
+    table.appendChild(firstRow);
     for (let i = 0; i < numberRows - 1; i++) {
-        var duplicatedRow = row.clone();
+        var duplicatedRow;
+        if (usingLocalComponent) {
+            if (includeHeader) {
+                duplicatedRow = rowHeader.createInstance();
+                for (let b = 0; b < duplicatedRow.children.length; b++) {
+                    duplicatedRow.children[b].mainComponent = cell;
+                }
+                firstRow.remove();
+            }
+            else {
+                duplicatedRow = firstRow.createInstance();
+                // Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
+                for (let b = 0; b < duplicatedRow.children.length; b++) {
+                    duplicatedRow.children[b].mainComponent = cell;
+                }
+            }
+        }
+        else {
+            duplicatedRow = firstRow.clone();
+        }
         table.appendChild(duplicatedRow);
+    }
+    if (includeHeader) {
+        row.remove();
     }
     return table;
 }
@@ -363,7 +360,7 @@ if (figma.command === "createTable") {
         message.componentsExist = true;
     }
     figma.showUI(__html__);
-    figma.ui.resize(282, 425);
+    figma.ui.resize(270, 451);
     figma.ui.postMessage(message);
     figma.ui.onmessage = msg => {
         if (msg.type === 'create-components') {
@@ -376,7 +373,7 @@ if (figma.command === "createTable") {
         }
         if (msg.type === 'create-table') {
             if (msg.columnCount < 51 && msg.rowCount < 51) {
-                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader);
+                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, false);
                 figma.currentPage.setPluginData("columnCount", msg.columnCount.toString());
                 figma.currentPage.setPluginData("rowCount", msg.rowCount.toString());
                 figma.currentPage.setPluginData("cellWidth", msg.cellWidth.toString());
@@ -403,7 +400,7 @@ if (figma.command === "createTable") {
                 table.x = figma.viewport.center.x - (table.width / 2);
                 table.y = figma.viewport.center.y - (table.height / 2);
                 figma.currentPage.selection = nodes;
-                figma.viewport.scrollAndZoomIntoView(nodes);
+                // figma.viewport.scrollAndZoomIntoView(nodes);
                 figma.closePlugin();
             }
             else {

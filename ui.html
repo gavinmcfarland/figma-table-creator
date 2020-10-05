@@ -2119,7 +2119,7 @@
 		-moz-appearance: textfield;
 	}
 
-	.createTablePage {
+	.welcomePage {
 		display: none;
 	}
 
@@ -2142,24 +2142,24 @@
 </div>
 
 <div class="page createTablePage" id="createTablePage">
-	<section class="ml-xsmall mr-xsmall mt-xsmall mb-xxsmall">
-		<div class="flex">
+	<section class="ml-xxsmall mr-xxsmall mt-xsmall mb-xxsmall">
+		<div class="flex" style="width: 90%">
 			<div class="input" style="flex-basis: 50%">
 				<label for="columnCount" class="label">Columns</label>
-				<input style="width: 100%" type="number" class="input__field" id="columnCount" value="4" size="4"
-					step="1" min="1" max="50">
+				<input style="width: 100%" type="number" class="input__field" id="columnCount" size="4" step="1" min="1"
+					max="50">
 			</div>
 
 			<div class="input" style="flex-basis: 50%">
 				<label for="rowCount" class="label">Rows</label>
-				<input style="width: 100%" type="number" class="input__field" id="rowCount" value="4" size="4" step="1"
-					min="1" max="50">
+				<input style="width: 100%" type="number" class="input__field" id="rowCount" size="4" step="1" min="1"
+					max="50">
 			</div>
 
 			<div class="input" style="flex-basis: 50%">
 				<label for="cellWidth" class="label">Cell Width</label>
-				<input style="width: 100%" type="number" class="input__field" id="cellWidth" value="100" size="4"
-					step="1" min="1" max="400">
+				<input style="width: 100%" type="number" class="input__field" id="cellWidth" size="4" step="1" min="1"
+					max="400">
 			</div>
 		</div>
 		<div class="checkbox">
@@ -2168,7 +2168,7 @@
 		</div>
 	</section>
 
-	<section class="mt-xxsmall mb-xsmall ml-small mr-small" style="margin-bottom: 8px;">
+	<section class="mt-xxsmall mb-xsmall" style="margin-bottom: 2px; margin-left: 18px; margin-right: 18px;">
 		<table class="Table flex" id="table">
 			<tr>
 				<td class="input__radio">
@@ -2445,14 +2445,15 @@
 			</tr>
 		</table>
 	</section>
-	<section class="m-xsmall" style="margin-top: 0">
+	<section class="m-xxsmall" style="margin-top: 0">
 		<div class="checkbox">
 			<input type="checkbox" class="checkbox__box" id="remember">
 			<label for="remember" class="checkbox__label">Remember settings</label>
 		</div>
 	</section>
-	<section class="p-xsmall" style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end;">
-		<button class='button button--primary' id="create">Create</button>
+	<section class="p-xxsmall"
+		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end;">
+		<button class='button button--primary' id="create">Create Table</button>
 	</section>
 
 	<div>
