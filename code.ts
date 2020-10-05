@@ -347,9 +347,9 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 				duplicatedRow = firstRow.createInstance()
 
 				// Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
-				// for (let b = 0; b < duplicatedRow.children.length; b++) {
-				// 	duplicatedRow.children[b].mainComponent = cell
-				// }
+				for (let b = 0; b < duplicatedRow.children.length; b++) {
+					duplicatedRow.children[b].mainComponent = cell
+				}
 			}
 
 		}
@@ -359,7 +359,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		table.appendChild(duplicatedRow)
 	}
 
-	if (includeHeader) {
+	if (includeHeader && !usingLocalComponent) {
 		row.remove()
 	}
 
@@ -505,7 +505,7 @@ if (figma.command === "createTable") {
 		if (msg.type === 'create-table') {
 			if (msg.columnCount < 51 && msg.rowCount < 51) {
 
-				var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, true);
+				var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, false);
 
 				figma.currentPage.setPluginData("columnCount", msg.columnCount.toString())
 				figma.currentPage.setPluginData("rowCount", msg.rowCount.toString())

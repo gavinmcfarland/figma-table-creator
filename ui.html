@@ -2123,22 +2123,41 @@
 		display: none;
 	}
 
-	.hide {
+	.createTablePage {
 		display: none;
 	}
 
+	.hide {
+		display: none !important;
+	}
+
 	.show {
+		display: block !important;
+	}
+
+	.table-creator-icon {
+		background-image: url("data:image/svg+xml,%3Csvg width='72' height='72' viewBox='0 0 72 72' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='17.25' y='17.25' width='37.5' height='37.5' rx='3.75' stroke='%23F05F5F' stroke-width='2.8125'/%3E%3Cpath d='M36 17.25L36 54.75' stroke='%23F05F5F' stroke-width='2.8125'/%3E%3Cpath d='M54.75 36L17.25 36' stroke='%23F05F5F' stroke-width='2.8125'/%3E%3Cline x1='23.3438' y1='22.875' x2='23.3438' y2='30.375' stroke='%23F05F5F' stroke-width='0.9375'/%3E%3Ccircle cx='36' cy='36' r='36' fill='%23FFF2F2'/%3E%3Cg style='mix-blend-mode:hard-light'%3E%3Cpath d='M23.3438 22.875L23.3438 26.625M30.375 19.125L30.375 52.875M41.625 19.125L41.625 52.875M19.125 30.375L52.875 30.375M19.125 41.625L52.875 41.625M22.875 52.875H49.125C51.1961 52.875 52.875 51.1961 52.875 49.125V22.875C52.875 20.8039 51.1961 19.125 49.125 19.125H22.875C20.8039 19.125 19.125 20.8039 19.125 22.875V49.125C19.125 51.1961 20.8039 52.875 22.875 52.875Z' stroke='url(%23paint0_linear)' stroke-width='2.25'/%3E%3C/g%3E%3Cdefs%3E%3ClinearGradient id='paint0_linear' x1='27.4215' y1='26.7561' x2='51.8119' y2='52.9896' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23F72828'/%3E%3Cstop offset='1' stop-color='%23FF678C'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E%0A");
+		width: 72px;
+		height: 72px;
+		margin: 0 auto;
 		display: block;
 	}
 </style>
 
-<div class="page welcomePage" id="welcomePage">
-	<p>To get started this plugin needs to create some components. These components will be used as templates to create
-		new
-		tables. This will allow you to customise them to suit your preferences. They will be added to a new page called
-		<b>Table
-			Creator</b>.</p>
-	<button class='button button--primary' id="createComponents">Create Components</button>
+<div class="page welcomePage type m-xsmall" id="welcomePage">
+	<div style="text-align: center; display: grid; place-items: center; height: calc(100% - 32px);">
+		<div>
+			<span class="table-creator-icon" src="./table-creator-plugin-icon.png"></span>
+			<h2 class="type--small type--bold">Welcome</h2>
+			<p>To get started this plugin needs to create some components. These components will be used as templates to
+				create new tables from. This allows you to customise them to suit your preferences. They will be
+				added to a new page called <b>Table Creator</b>.</p>
+			<button class='button button--secondary' id="createComponents"
+				style="margin: 0 auto; margin-top: 16px;">Create
+				Components</button>
+		</div>
+	</div>
+
 </div>
 
 <div class="page createTablePage" id="createTablePage">
