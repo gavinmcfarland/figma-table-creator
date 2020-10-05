@@ -347,9 +347,9 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 				duplicatedRow = firstRow.createInstance()
 
 				// Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
-				for (let b = 0; b < duplicatedRow.children.length; b++) {
-					duplicatedRow.children[b].mainComponent = cell
-				}
+				// for (let b = 0; b < duplicatedRow.children.length; b++) {
+				// 	duplicatedRow.children[b].mainComponent = cell
+				// }
 			}
 
 		}
@@ -505,7 +505,7 @@ if (figma.command === "createTable") {
 		if (msg.type === 'create-table') {
 			if (msg.columnCount < 51 && msg.rowCount < 51) {
 
-				var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, false);
+				var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, true);
 
 				figma.currentPage.setPluginData("columnCount", msg.columnCount.toString())
 				figma.currentPage.setPluginData("rowCount", msg.rowCount.toString())
@@ -543,6 +543,7 @@ if (figma.command === "createTable") {
 
 				figma.currentPage.selection = nodes;
 				// figma.viewport.scrollAndZoomIntoView(nodes);
+				console.log(table.height)
 
 				figma.closePlugin();
 
