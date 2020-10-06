@@ -304,13 +304,21 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 	if (includeHeader) {
 		rowHeader = firstRow.clone()
+
 		for (var i = 0; i < numberColumns; i++) {
+
 			// Duplicate cell for each column and append to row
 			var duplicatedCellHeader = cellHeader.createInstance()
 			duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height)
+
 			rowHeader.appendChild(duplicatedCellHeader)
+
+
 		}
+
 		table.appendChild(rowHeader)
+
+
 	}
 
 
@@ -329,6 +337,19 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	// Duplicate row for each row and append to table
 	// Easier to append cloned row and then duplicate, than remove later, hence numberRows - 1
 	table.appendChild(firstRow)
+
+	var tableBody
+
+	if (includeHeader) {
+		if (numberRows > 1) {
+			tableBody = figma.createFrame()
+			tableBody.layoutMode = "VERTICAL"
+			tableBody.layoutAlign = "STRETCH"
+			tableBody.name = "Table/Body"
+		}
+	}
+
+
 
 	for (let i = 0; i < numberRows - 1; i++) {
 		var duplicatedRow
@@ -356,7 +377,18 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		else {
 			duplicatedRow = firstRow.clone()
 		}
-		table.appendChild(duplicatedRow)
+
+		if (numberColumns > 1 && includeHeader) {
+			tableBody.appendChild(duplicatedRow)
+		}
+		else {
+			table.appendChild(duplicatedRow)
+		}
+
+	}
+
+	if (numberRows > 1 && includeHeader) {
+		table.appendChild(tableBody)
 	}
 
 	if (includeHeader && !usingLocalComponent) {

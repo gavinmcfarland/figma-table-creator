@@ -2127,6 +2127,10 @@
 		display: none;
 	}
 
+	.manageComponents {
+		display: none;
+	}
+
 	.hide {
 		display: none !important;
 	}
@@ -2142,6 +2146,63 @@
 		margin: 0 auto;
 		display: block;
 	}
+
+	.settings-button {
+		position: absolute;
+		top: 0;
+		right: 8px;
+		display: block;
+	}
+
+	.settings-button>.icon {
+		height: 32px;
+		width: 32px;
+		display: block;
+	}
+
+	.menu {
+		display: none;
+		color: #FFF;
+		padding: 8px 0;
+		position: absolute;
+		right: -2px;
+		z-index: 100;
+		background: #222222;
+		border: 0.5px solid rgba(0, 0, 0, 0.1);
+		box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.15), 0px 5px 17px rgba(0, 0, 0, 0.2);
+		border-radius: 2px;
+	}
+
+	.menu>* {
+		line-height: 24px;
+		padding-left: 32px;
+		padding-right: 16px;
+	}
+
+	.open {
+		display: block;
+	}
+
+	.list .icon-button {
+		margin-right: -8px;
+	}
+
+	a {
+		color: #18A0FB;
+	}
+
+	.section-title {
+		position: relative;
+		z-index: -100;
+	}
+
+	.section-title .done {
+		color: #18A0FB;
+		font-weight: normal;
+		position: absolute;
+		right: 0;
+		margin-right: 8px;
+	}
 </style>
 
 <div class="page welcomePage type m-xsmall" id="welcomePage">
@@ -2151,17 +2212,34 @@
 			<h2 class="type--small type--bold">Welcome</h2>
 			<p>To get started this plugin needs to create some components. These components will be used as templates to
 				create new tables from. This allows you to customise them to suit your preferences. They will be
-				added to a new page called <b>Table Creator</b>.</p>
-			<button class='button button--secondary' id="createComponents"
+				created in a new page called <b>Table Creator</b>.</p>
+			<button class='button button--primary' id="createComponents"
 				style="margin: 0 auto; margin-top: 16px;">Create
+				Components</button>
+			<button class='button button--tertiary' style="margin: 0 auto; margin-top: 8px;">Use Existing
 				Components</button>
 		</div>
 	</div>
 
 </div>
 
-<div class="page createTablePage" id="createTablePage">
-	<section class="ml-xxsmall mr-xxsmall mt-xsmall mb-xxsmall">
+<div class="page createTablePage" id="createTablePage" style="position: relative;">
+	<div class="icon-button settings-button">
+		<div class="icon icon--ellipses" id="optionsButton"></div>
+		<div class="menu type type--small" style="width: 200px" id="menu">
+			<div id="manageComponentsItem">Manage components</div>
+			<div class="checkbox">
+				<input type="checkbox" class="checkbox__box" id="remember">
+				<label for="remember" class="checkbox__label">Remember settings</label>
+			</div>
+			<div>Use top row component</div>
+		</div>
+	</div>
+
+	<section class="ml-xxsmall mr-xxsmall mt-xxsmall mb-xxsmall">
+
+		<div class="section-title">Table</div>
+
 		<div class="flex" style="width: 90%">
 			<div class="input" style="flex-basis: 50%">
 				<label for="columnCount" class="label">Columns</label>
@@ -2464,163 +2542,228 @@
 			</tr>
 		</table>
 	</section>
-	<section class="m-xxsmall" style="margin-top: 0">
-		<div class="checkbox">
-			<input type="checkbox" class="checkbox__box" id="remember">
-			<label for="remember" class="checkbox__label">Remember settings</label>
-		</div>
-	</section>
 	<section class="p-xxsmall"
-		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end;">
+		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end; position: fixed; bottom: 0; width: 100%;">
 		<button class='button button--primary' id="create">Create Table</button>
 	</section>
 
-	<div>
+</div>
 
-		<script>
+<div class="page manageComponents" id="manageComponentsPage">
+	<section class="m-xxsmall">
+		<div class="section-title">Manage Components</div>
 
-			const table = document.getElementById('table')
-			const remember = document.getElementById('remember')
-			const includeHeader = document.getElementById('includeHeader')
-			const welcomePage = document.getElementById('welcomePage')
-			const createTablePage = document.getElementById('createTablePage')
+		<p class="type m-xxsmall">Click and select the component that new tables should be created
+			from.</p>
 
-			const cells = table.querySelectorAll('td')
+		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
+			<div style="display: flex; place-items: center;"><span style="flex-grow: 1;">Table</span>
+				<div class="icon-button">
+					<div class="icon icon--link-connected"></div>
+				</div>
+			</div>
+			<div style="display: flex; place-items: center;"><span style="flex-grow: 1;">Table/Row</span>
+				<div class="icon-button">
+					<div class="icon icon--link-connected"></div>
+				</div>
+			</div>
+			<div style="display: flex; place-items: center;"><span style="flex-grow: 1;">Table/Cell/Defualt</span>
+				<div class="icon-button">
+					<div class="icon icon--link-connected"></div>
+				</div>
+			</div>
+			<div style="display: flex; place-items: center;"><span style="flex-grow: 1;">Table/Cell/Header</span>
+				<div class="icon-button">
+					<div class="icon icon--link-connected"></div>
+				</div>
+			</div>
+		</div>
 
-			const columnInput = document.getElementById('columnCount')
-			const rowInput = document.getElementById('rowCount')
-			const cellWidthInput = document.getElementById('cellWidth')
+		<p class="type m-xxsmall">Only styles will be copied from <b>Table</b> and <b>Row</b>
+			components. Instances will be created
+			from
+			<b>Cell</b> and <b>Header Cell</b> components.</p>
 
-			window.onmessage = async (event) => {
-				const message = event.data.pluginMessage
+		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Use default components</a></p>
 
-				remember.checked = message.remember
+	</section>
+	<section class="p-xxsmall mt-small"
+		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end; position: fixed; bottom: 0; width: 100%;">
+		<button class='button button--primary' id="doneButton">Done</button>
+	</section>
+</div>
 
-				includeHeader.checked = message.includeHeader
+<script>
 
-				if (message.componentsExist) {
-					welcomePage.classList.add("hide")
-					createTablePage.classList.add("show")
+	const table = document.getElementById('table')
+	const remember = document.getElementById('remember')
+	const includeHeader = document.getElementById('includeHeader')
+	const welcomePage = document.getElementById('welcomePage')
+	const createTablePage = document.getElementById('createTablePage')
+
+	const cells = table.querySelectorAll('td')
+
+	const columnInput = document.getElementById('columnCount')
+	const rowInput = document.getElementById('rowCount')
+	const cellWidthInput = document.getElementById('cellWidth')
+
+	window.onmessage = async (event) => {
+		const message = event.data.pluginMessage
+
+		remember.checked = message.remember
+
+		includeHeader.checked = message.includeHeader
+
+		if (message.componentsExist) {
+			welcomePage.classList.add("hide")
+			createTablePage.classList.add("show")
+		}
+		else {
+			welcomePage.classList.add("show")
+			createTablePage.classList.add("hide")
+		}
+
+
+		if (message.remember) {
+			if (message.columnCount) {
+				columnInput.value = message.columnCount
+			}
+
+			if (message.rowCount) {
+				rowInput.value = message.rowCount
+			}
+
+			if (message.cellWidth) {
+				cellWidthInput.value = message.cellWidth
+			}
+		}
+
+
+
+
+
+		for (let b = 0; b < cells.length; b++) {
+			cells[b].getElementsByTagName('label')[0].classList.remove("selected");
+			if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
+				cells[b].getElementsByTagName('label')[0].classList.add("selected");
+			}
+
+			if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
+				cells[b].getElementsByTagName('label')[0].classList.add("more");
+			}
+		}
+
+
+
+		columnInput.addEventListener('input', function (evt) {
+			for (let b = 0; b < cells.length; b++) {
+				cells[b].getElementsByTagName('label')[0].classList.remove("selected");
+				if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
+					cells[b].getElementsByTagName('label')[0].classList.add("selected");
+				}
+
+				if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
+					cells[b].getElementsByTagName('label')[0].classList.add("more");
 				}
 				else {
-					welcomePage.classList.add("show")
-					createTablePage.classList.add("hide")
+					cells[b].getElementsByTagName('label')[0].classList.remove("more");
+				}
+			}
+		});
+
+		rowInput.addEventListener('input', function (evt) {
+			for (let b = 0; b < cells.length; b++) {
+				cells[b].getElementsByTagName('label')[0].classList.remove("selected");
+				if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
+					cells[b].getElementsByTagName('label')[0].classList.add("selected");
 				}
 
+				if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
+					cells[b].getElementsByTagName('label')[0].classList.add("more");
+				}
+				else {
+					cells[b].getElementsByTagName('label')[0].classList.remove("more");
+				}
+			}
+		});
 
-				if (message.remember) {
-					if (message.columnCount) {
-						columnInput.value = message.columnCount
-					}
-
-					if (message.rowCount) {
-						rowInput.value = message.rowCount
-					}
-
-					if (message.cellWidth) {
-						cellWidthInput.value = message.cellWidth
+		for (let i = 0; i < cells.length; i++) {
+			cells[i].addEventListener("mouseover", function (event) {
+				for (let b = 0; b < cells.length; b++) {
+					if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
+						cells[b].getElementsByTagName('label')[0].classList.add("hover");
 					}
 				}
 
+			})
 
+			cells[i].addEventListener("mouseout", function (event) {
+				for (let b = 0; b < cells.length; b++) {
+					if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
+						cells[b].getElementsByTagName('label')[0].classList.remove("hover");
+					}
+				}
+			})
 
-
-
+			cells[i].addEventListener("click", function () {
+				columnInput.value = this.cellIndex + 1
+				rowInput.value = this.parentNode.rowIndex + 1
 				for (let b = 0; b < cells.length; b++) {
 					cells[b].getElementsByTagName('label')[0].classList.remove("selected");
-					if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
+					cells[b].getElementsByTagName('label')[0].classList.remove("more");
+					if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
 						cells[b].getElementsByTagName('label')[0].classList.add("selected");
 					}
-
-					if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
-						cells[b].getElementsByTagName('label')[0].classList.add("more");
-					}
 				}
+			})
+		}
+	}
 
+	document.getElementById('create').onclick = () => {
+		const textbox1 = document.getElementById('columnCount');
+		const textbox2 = document.getElementById('rowCount');
+		const textbox3 = document.getElementById('cellWidth');
 
+		const columnCount = parseInt(textbox1.value, 10);
+		const rowCount = parseInt(textbox2.value, 10);
+		const cellWidth = parseInt(textbox3.value, 10);
+		const remember = document.getElementById('remember').checked;
+		const includeHeader = document.getElementById('includeHeader').checked;
+		parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember, cellWidth, includeHeader } }, '*')
+	}
 
-				columnInput.addEventListener('input', function (evt) {
-					for (let b = 0; b < cells.length; b++) {
-						cells[b].getElementsByTagName('label')[0].classList.remove("selected");
-						if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
-							cells[b].getElementsByTagName('label')[0].classList.add("selected");
-						}
+	document.getElementById('createComponents').onclick = () => {
+		welcomePage.classList.add("hide")
+		welcomePage.classList.remove("show")
+		createTablePage.classList.add("show")
+		parent.postMessage({ pluginMessage: { type: 'create-components' } }, '*')
+	}
 
-						if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
-							cells[b].getElementsByTagName('label')[0].classList.add("more");
-						}
-						else {
-							cells[b].getElementsByTagName('label')[0].classList.remove("more");
-						}
-					}
-				});
+	document.getElementById('optionsButton').onclick = () => {
+		menu.classList.toggle("open")
+	}
 
-				rowInput.addEventListener('input', function (evt) {
-					for (let b = 0; b < cells.length; b++) {
-						cells[b].getElementsByTagName('label')[0].classList.remove("selected");
-						if (cells[b].cellIndex < columnInput.value && cells[b].parentNode.rowIndex < rowInput.value) {
-							cells[b].getElementsByTagName('label')[0].classList.add("selected");
-						}
+	const manageComponentsItem = document.getElementById('manageComponentsItem')
+	const manageComponentsPage = document.getElementById('manageComponentsPage')
+	const doneButton = document.getElementById('doneButton')
+	const menu = document.getElementById('menu')
 
-						if (rowInput.value > 8 && cells[b].parentNode.rowIndex === 7 && cells[b].cellIndex < columnInput.value || columnInput.value > 8 && cells[b].cellIndex === 7 && cells[b].parentNode.rowIndex < rowInput.value) {
-							cells[b].getElementsByTagName('label')[0].classList.add("more");
-						}
-						else {
-							cells[b].getElementsByTagName('label')[0].classList.remove("more");
-						}
-					}
-				});
+	manageComponentsItem.onclick = () => {
+		createTablePage.classList.add("hide")
+		createTablePage.classList.remove("show")
+		manageComponentsPage.classList.add("show")
+	}
 
-				for (let i = 0; i < cells.length; i++) {
-					cells[i].addEventListener("mouseover", function (event) {
-						for (let b = 0; b < cells.length; b++) {
-							if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
-								cells[b].getElementsByTagName('label')[0].classList.add("hover");
-							}
-						}
+	doneButton.onclick = () => {
+		manageComponentsPage.classList.add("hide")
+		manageComponentsPage.classList.remove("show")
+		createTablePage.classList.add("show")
+	}
 
-					})
+	createTablePage.onclick = (event) => {
+		if (!document.getElementById('menu').contains(event.target) && !document.getElementById('optionsButton').contains(event.target)) {
+			menu.classList.remove("open")
+		}
+	}
 
-					cells[i].addEventListener("mouseout", function (event) {
-						for (let b = 0; b < cells.length; b++) {
-							if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
-								cells[b].getElementsByTagName('label')[0].classList.remove("hover");
-							}
-						}
-					})
-
-					cells[i].addEventListener("click", function () {
-						columnInput.value = this.cellIndex + 1
-						rowInput.value = this.parentNode.rowIndex + 1
-						for (let b = 0; b < cells.length; b++) {
-							cells[b].getElementsByTagName('label')[0].classList.remove("selected");
-							cells[b].getElementsByTagName('label')[0].classList.remove("more");
-							if (cells[b].cellIndex <= this.cellIndex && cells[b].parentNode.rowIndex <= this.parentNode.rowIndex) {
-								cells[b].getElementsByTagName('label')[0].classList.add("selected");
-							}
-						}
-					})
-				}
-			}
-
-			document.getElementById('create').onclick = () => {
-				const textbox1 = document.getElementById('columnCount');
-				const textbox2 = document.getElementById('rowCount');
-				const textbox3 = document.getElementById('cellWidth');
-
-				const columnCount = parseInt(textbox1.value, 10);
-				const rowCount = parseInt(textbox2.value, 10);
-				const cellWidth = parseInt(textbox3.value, 10);
-				const remember = document.getElementById('remember').checked;
-				const includeHeader = document.getElementById('includeHeader').checked;
-				parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember, cellWidth, includeHeader } }, '*')
-			}
-
-			document.getElementById('createComponents').onclick = () => {
-				welcomePage.classList.add("hide")
-				welcomePage.classList.remove("show")
-				createTablePage.classList.add("show")
-				parent.postMessage({ pluginMessage: { type: 'create-components' } }, '*')
-			}
-
-		</script>
+</script>
