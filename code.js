@@ -240,15 +240,15 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     // Duplicate row for each row and append to table
     // Easier to append cloned row and then duplicate, than remove later, hence numberRows - 1
     table.appendChild(firstRow);
-    var tableBody;
-    if (includeHeader) {
-        if (numberRows > 1) {
-            tableBody = figma.createFrame();
-            tableBody.layoutMode = "VERTICAL";
-            tableBody.layoutAlign = "STRETCH";
-            tableBody.name = "Table/Body";
-        }
-    }
+    // var tableBody
+    // if (includeHeader) {
+    // 	if (numberRows > 1) {
+    // 		tableBody = figma.createFrame()
+    // 		tableBody.layoutMode = "VERTICAL"
+    // 		tableBody.layoutAlign = "STRETCH"
+    // 		tableBody.name = "Table/Body"
+    // 	}
+    // }
     for (let i = 0; i < numberRows - 1; i++) {
         var duplicatedRow;
         if (usingLocalComponent) {
@@ -270,16 +270,16 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         else {
             duplicatedRow = firstRow.clone();
         }
-        if (numberColumns > 1 && includeHeader) {
-            tableBody.appendChild(duplicatedRow);
-        }
-        else {
-            table.appendChild(duplicatedRow);
-        }
+        // if (numberColumns > 1 && includeHeader) {
+        // 	tableBody.appendChild(duplicatedRow)
+        // }
+        // else {
+        table.appendChild(duplicatedRow);
+        // }
     }
-    if (numberRows > 1 && includeHeader) {
-        table.appendChild(tableBody);
-    }
+    // if (numberRows > 1 && includeHeader) {
+    // 	table.appendChild(tableBody)
+    // }
     if (includeHeader && !usingLocalComponent) {
         row.remove();
     }
@@ -377,7 +377,7 @@ if (figma.command === "createTable") {
         message.componentsExist = true;
     }
     figma.showUI(__html__);
-    figma.ui.resize(270, 451);
+    figma.ui.resize(268, 485);
     figma.ui.postMessage(message);
     figma.ui.onmessage = msg => {
         if (msg.type === 'create-components') {
@@ -390,7 +390,7 @@ if (figma.command === "createTable") {
         }
         if (msg.type === 'create-table') {
             if (msg.columnCount < 51 && msg.rowCount < 51) {
-                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, false);
+                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, true);
                 figma.currentPage.setPluginData("columnCount", msg.columnCount.toString());
                 figma.currentPage.setPluginData("rowCount", msg.rowCount.toString());
                 figma.currentPage.setPluginData("cellWidth", msg.cellWidth.toString());
@@ -418,7 +418,6 @@ if (figma.command === "createTable") {
                 table.y = figma.viewport.center.y - (table.height / 2);
                 figma.currentPage.selection = nodes;
                 // figma.viewport.scrollAndZoomIntoView(nodes);
-                console.log(table.height);
                 figma.closePlugin();
             }
             else {

@@ -338,16 +338,16 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	// Easier to append cloned row and then duplicate, than remove later, hence numberRows - 1
 	table.appendChild(firstRow)
 
-	var tableBody
+	// var tableBody
 
-	if (includeHeader) {
-		if (numberRows > 1) {
-			tableBody = figma.createFrame()
-			tableBody.layoutMode = "VERTICAL"
-			tableBody.layoutAlign = "STRETCH"
-			tableBody.name = "Table/Body"
-		}
-	}
+	// if (includeHeader) {
+	// 	if (numberRows > 1) {
+	// 		tableBody = figma.createFrame()
+	// 		tableBody.layoutMode = "VERTICAL"
+	// 		tableBody.layoutAlign = "STRETCH"
+	// 		tableBody.name = "Table/Body"
+	// 	}
+	// }
 
 
 
@@ -378,18 +378,18 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 			duplicatedRow = firstRow.clone()
 		}
 
-		if (numberColumns > 1 && includeHeader) {
-			tableBody.appendChild(duplicatedRow)
-		}
-		else {
-			table.appendChild(duplicatedRow)
-		}
+		// if (numberColumns > 1 && includeHeader) {
+		// 	tableBody.appendChild(duplicatedRow)
+		// }
+		// else {
+		table.appendChild(duplicatedRow)
+		// }
 
 	}
 
-	if (numberRows > 1 && includeHeader) {
-		table.appendChild(tableBody)
-	}
+	// if (numberRows > 1 && includeHeader) {
+	// 	table.appendChild(tableBody)
+	// }
 
 	if (includeHeader && !usingLocalComponent) {
 		row.remove()
@@ -513,7 +513,7 @@ if (figma.command === "createTable") {
 
 	figma.showUI(__html__);
 
-	figma.ui.resize(270, 451)
+	figma.ui.resize(268, 485)
 
 	figma.ui.postMessage(message);
 
@@ -537,7 +537,7 @@ if (figma.command === "createTable") {
 		if (msg.type === 'create-table') {
 			if (msg.columnCount < 51 && msg.rowCount < 51) {
 
-				var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, false);
+				var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, true);
 
 				figma.currentPage.setPluginData("columnCount", msg.columnCount.toString())
 				figma.currentPage.setPluginData("rowCount", msg.rowCount.toString())
@@ -575,7 +575,7 @@ if (figma.command === "createTable") {
 
 				figma.currentPage.selection = nodes;
 				// figma.viewport.scrollAndZoomIntoView(nodes);
-				console.log(table.height)
+
 
 				figma.closePlugin();
 

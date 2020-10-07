@@ -1325,7 +1325,7 @@
 		border: 2px solid transparent
 	}
 
-	.icon-button * {
+	.icon-button>.icon {
 		-webkit-filter: invert(0) sepia(0) saturate(7500%) hue-rotate(117deg) brightness(109%) contrast(105%);
 		filter: invert(0) sepia(0) saturate(7500%) hue-rotate(117deg) brightness(109%) contrast(105%)
 	}
@@ -2016,6 +2016,25 @@
 		display: inline-block
 	}
 
+
+
+
+	/* Custom */
+
+	.icon--text-align-top {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M15 1H1V2H15V1ZM8.35355 3.64645L8 3.29289L7.64645 3.64645L4.64645 6.64645L5.35355 7.35355L7.5 5.20711V13H8.5V5.20711L10.6464 7.35355L11.3536 6.64645L8.35355 3.64645Z' fill='black'/%3E%3C/svg%3E%0A");
+
+	}
+
+	.icon--text-align-middle {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M8 6.20711L8.35355 5.85355L10.3536 3.85355L9.64645 3.14645L8.5 4.29289V0H7.5V4.29289L6.35355 3.14645L5.64645 3.85355L7.64645 5.85355L8 6.20711ZM8 9.79289L8.35355 10.1464L10.3536 12.1464L9.64645 12.8536L8.5 11.7071V16H7.5V11.7071L6.35355 12.8536L5.64645 12.1464L7.64645 10.1464L8 9.79289ZM1 8.5H15V7.5H1V8.5Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	.icon--text-align-bottom {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M8.35355 12.3536L8 12.7071L7.64645 12.3536L4.64645 9.35355L5.35355 8.64645L7.5 10.7929V3H8.5V10.7929L10.6464 8.64645L11.3536 9.35355L8.35355 12.3536ZM15 14V15H1V14H15Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+
+	}
+
 	.input__field {
 		width: unset;
 		/* padding: unset; */
@@ -2042,7 +2061,7 @@
 		position: relative;
 	}
 
-	input[type=radio]~label {
+	table input[type=radio]~label {
 		width: 24px;
 		height: 24px;
 		border-radius: 2px;
@@ -2050,9 +2069,84 @@
 		position: absolute;
 	}
 
-	input[type=radio]:checked~label {
+	table input[type=radio]:checked~label {
 		/* border: 2px solid red; */
 	}
+
+	.radio-buttons {
+		display: flex;
+		padding: 1px;
+		margin: 2px;
+		flex-grow: 0;
+		flex-basis: auto;
+		margin-left: 11px;
+		position: relative;
+		border: 2px solid transparent;
+	}
+
+	.radio-buttons:hover::before {
+		content: "";
+		width: calc(100% - 4px);
+		height: calc(100% - 4px);
+		position: absolute;
+		border: 1px solid rgba(0, 0, 0, .1);
+		border-radius: 2px;
+	}
+
+	.radio-buttons:hover .icon-button {
+		border-radius: 0;
+	}
+
+	.radio-button .icon-button {
+		border: 1px solid transparent;
+		background-clip: padding-box;
+	}
+
+	.radio-button input[type=radio]:checked+.icon-button {
+		border-color: rgba(0, 0, 0, .1);
+	}
+
+	.radio-buttons:hover input[type=radio]+.icon-button {
+		border-top-color: transparent;
+		border-bottom-color: transparent;
+	}
+
+	.radio-buttons:hover :first-child input[type=radio]+.icon-button {
+		border-left-color: transparent;
+	}
+
+	.radio-buttons:hover :last-child input[type=radio]+.icon-button {
+		border-right-color: transparent;
+	}
+
+	.radio-button input[type=radio]~label {
+		width: 24px;
+		height: 24px;
+		border-radius: 2px;
+		display: block;
+	}
+
+	.radio-button input {
+		position: absolute;
+		opacity: 0;
+		cursor: pointer;
+		height: 0;
+		width: 0;
+	}
+
+	.radio-button .icon-button:hover {
+		background-color: transparent;
+	}
+
+	.radio-button input[type=radio]:checked~label {
+		background-color: var(--black1);
+	}
+
+	.radio-button .icon {
+		background-repeat: no-repeat;
+		background-position: 3px 3px;
+	}
+
 
 	.flex {
 		display: flex;
@@ -2168,15 +2262,49 @@
 		right: -2px;
 		z-index: 100;
 		background: #222222;
-		border: 0.5px solid rgba(0, 0, 0, 0.1);
 		box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.15), 0px 5px 17px rgba(0, 0, 0, 0.2);
 		border-radius: 2px;
 	}
 
-	.menu>* {
+	.menu input[type="checkbox"] {
+		position: absolute;
+		opacity: 0;
+		cursor: pointer;
+		height: 0;
+		width: 0;
+	}
+
+	.menu label {
 		line-height: 24px;
 		padding-left: 32px;
 		padding-right: 16px;
+		position: relative;
+		display: block;
+	}
+
+	.menu label:hover {
+		background-color: var(--blue);
+	}
+
+	.menu input[type="checkbox"]:checked+label::before {
+		display: block;
+		content: "";
+		top: 4px;
+		position: absolute;
+		left: 8px;
+		width: 16px;
+		height: 16px;
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M13.2072 5.20718L7.70718 10.7072L7.00008 11.4143L6.29297 10.7072L3.29297 7.70718L4.70718 6.29297L7.00008 8.58586L11.793 3.79297L13.2072 5.20718Z' fill='white'/%3E%3C/svg%3E%0A");
+	}
+
+	.menu .triangle {
+		width: 12px;
+		height: 12px;
+		background-color: #222222;
+		transform: rotate(45deg);
+		position: absolute;
+		top: -3px;
+		right: 10px;
 	}
 
 	.open {
@@ -2210,14 +2338,14 @@
 		<div>
 			<span class="table-creator-icon" src="./table-creator-plugin-icon.png"></span>
 			<h2 class="type--small type--bold">Welcome</h2>
-			<p>To get started this plugin needs to create some components. These components will be used as templates to
-				create new tables from. This allows you to customise them to suit your preferences. They will be
-				created in a new page called <b>Table Creator</b>.</p>
+			<p>This plugin needs to create some components which will be used as templates to
+				create new tables from. This allows you to customise their appearance and organise them how you like.
+				They will be created in a new page called <b>Table Creator</b>.</p>
 			<button class='button button--primary' id="createComponents"
 				style="margin: 0 auto; margin-top: 16px;">Create
-				Components</button>
-			<button class='button button--tertiary' style="margin: 0 auto; margin-top: 8px;">Use Existing
-				Components</button>
+				Templates</button>
+			<button class='button button--tertiary' style="margin: 0 auto; margin-top: 8px;">Use Own
+				Templates</button>
 		</div>
 	</div>
 
@@ -2226,13 +2354,17 @@
 <div class="page createTablePage" id="createTablePage" style="position: relative;">
 	<div class="icon-button settings-button">
 		<div class="icon icon--ellipses" id="optionsButton"></div>
-		<div class="menu type type--small" style="width: 200px" id="menu">
-			<div id="manageComponentsItem">Manage components</div>
-			<div class="checkbox">
-				<input type="checkbox" class="checkbox__box" id="remember">
-				<label for="remember" class="checkbox__label">Remember settings</label>
+		<div class="menu type type--small" style="width: 174px" id="menu">
+			<div class="triangle"></div>
+			<div id="manageComponentsItem"><label>Manage Templates</label></div>
+			<div>
+				<input type="checkbox" id="remember">
+				<label for="remember">Remember Settings</label>
 			</div>
-			<div>Use top row component</div>
+			<div>
+				<input type="checkbox" id="columnResizing">
+				<label for="columnResizing">Column Resizing</label>
+			</div>
 		</div>
 	</div>
 
@@ -2240,23 +2372,19 @@
 
 		<div class="section-title">Table</div>
 
-		<div class="flex" style="width: 90%">
-			<div class="input" style="flex-basis: 50%">
-				<label for="columnCount" class="label">Columns</label>
-				<input style="width: 100%" type="number" class="input__field" id="columnCount" size="4" step="1" min="1"
-					max="50">
+		<div class="flex">
+			<div class="input" style="display: flex; flex-basis: 50%;">
+				<label for="columnCount" class="label" style="width: 68px">Columns</label>
+				<input type="number" class="input__field" id="columnCount" size="4" step="1" min="1" max="50"
+					style="width: 48px">
+
 			</div>
 
-			<div class="input" style="flex-basis: 50%">
-				<label for="rowCount" class="label">Rows</label>
-				<input style="width: 100%" type="number" class="input__field" id="rowCount" size="4" step="1" min="1"
-					max="50">
-			</div>
+			<div class="input" style="display: flex; flex-basis: 50%;">
+				<label for="rowCount" class="label" style="width: 46px">Rows</label>
+				<input type="number" class="input__field" id="rowCount" size="4" step="1" min="1" max="50"
+					style="width: 48px">
 
-			<div class="input" style="flex-basis: 50%">
-				<label for="cellWidth" class="label">Cell Width</label>
-				<input style="width: 100%" type="number" class="input__field" id="cellWidth" size="4" step="1" min="1"
-					max="400">
 			</div>
 		</div>
 		<div class="checkbox">
@@ -2265,7 +2393,7 @@
 		</div>
 	</section>
 
-	<section class="mt-xxsmall mb-xsmall" style="margin-bottom: 2px; margin-left: 18px; margin-right: 18px;">
+	<section class="mt-xxsmall mb-xsmall" style="margin-bottom: 0px; margin-left: 17px; margin-right: 17px;">
 		<table class="Table flex" id="table">
 			<tr>
 				<td class="input__radio">
@@ -2542,6 +2670,36 @@
 			</tr>
 		</table>
 	</section>
+	<section class="m-xxsmall" style="margin-top: 2px;">
+		<div class="section-title">Cell</div>
+		<div class="flex">
+			<div class="input" style="display: flex; flex-basis: 50%;">
+				<label for="cellWidth" class="label" style="width: 68px">Width</label>
+				<input type="number" class="input__field" id="cellWidth" size="4" step="1" min="1" max="400"
+					style="width: 48px">
+			</div>
+			<div class="radio-buttons">
+				<div class="radio-button">
+					<input id="radioButton1" type="radio" value="Value" name="radioGroup" checked>
+					<label for="radioButton1" class="icon-button">
+						<div class="icon icon--text-align-top"></div>
+					</label>
+				</div>
+				<div class="radio-button">
+					<input id="radioButton2" type="radio" value="Value" name="radioGroup">
+					<label for="radioButton2" class="icon-button">
+						<div class="icon icon--text-align-middle"></div>
+					</label>
+				</div>
+				<div class="radio-button">
+					<input id="radioButton3" type="radio" value="Value" name="radioGroup">
+					<label for="radioButton3" class="icon-button">
+						<div class="icon icon--text-align-bottom"></div>
+					</label>
+				</div>
+			</div>
+		</div>
+	</section>
 	<section class="p-xxsmall"
 		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end; position: fixed; bottom: 0; width: 100%;">
 		<button class='button button--primary' id="create">Create Table</button>
@@ -2551,9 +2709,9 @@
 
 <div class="page manageComponents" id="manageComponentsPage">
 	<section class="m-xxsmall">
-		<div class="section-title">Manage Components</div>
+		<div class="section-title">Manage Templates</div>
 
-		<p class="type m-xxsmall">Click and select the component that new tables should be created
+		<p class="type m-xxsmall">Click and select the frame or component that new tables should be created
 			from.</p>
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
@@ -2580,11 +2738,12 @@
 		</div>
 
 		<p class="type m-xxsmall">Only styles will be copied from <b>Table</b> and <b>Row</b>
-			components. Instances will be created
+			templates. Instances will be created
 			from
-			<b>Cell</b> and <b>Header Cell</b> components.</p>
+			<b>Cell</b> and <b>Header Cell</b> templates.</p>
 
-		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Use default components</a></p>
+		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Update existing tables</a></p>
+		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Use default templates</a></p>
 
 	</section>
 	<section class="p-xxsmall mt-small"
@@ -2747,6 +2906,7 @@
 	const manageComponentsPage = document.getElementById('manageComponentsPage')
 	const doneButton = document.getElementById('doneButton')
 	const menu = document.getElementById('menu')
+	const columnResizing = document.getElementById('columnResizing')
 
 	manageComponentsItem.onclick = () => {
 		createTablePage.classList.add("hide")
@@ -2764,6 +2924,14 @@
 		if (!document.getElementById('menu').contains(event.target) && !document.getElementById('optionsButton').contains(event.target)) {
 			menu.classList.remove("open")
 		}
+	}
+
+	remember.onclick = (event) => {
+		menu.classList.remove("open")
+	}
+
+	columnResizing.onclick = (event) => {
+		menu.classList.remove("open")
 	}
 
 </script>
