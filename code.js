@@ -188,11 +188,11 @@ function findComponentById(id) {
     // Return component if found, otherwise return false
     return component || false;
 }
-function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent) {
+function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
     var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
-    cell.layoutAlign = "CENTER";
+    cell.layoutAlign = cellAlignment;
     var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"));
-    cellHeader.layoutAlign = "CENTER";
+    cellHeader.layoutAlign = cellAlignment;
     var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")));
     // Remove children (we only need the container)
     for (let i = 0; i < row.children.length; i++) {
@@ -362,45 +362,76 @@ var message = {
     rowCount: parseInt(figma.currentPage.getPluginData("rowCount"), 10) || 4,
     cellWidth: parseInt(figma.currentPage.getPluginData("cellWidth"), 10) || 100,
     remember: true,
-    includeHeader: true
+    includeHeader: true,
+    columnResizing: true,
+    cellAlignment: figma.root.getPluginData("cellAlignment") || "MIN",
+    templates: {
+        table: {
+            name: figma.root.getPluginData("tableComponentName") || ""
+        },
+        row: {
+            name: figma.root.getPluginData("rowComponentName") || ""
+        },
+        cell: {
+            name: figma.root.getPluginData("cellComponentName") || ""
+        },
+        headerCell: {
+            name: figma.root.getPluginData("headerCellComponentName") || ""
+        }
+    }
 };
-if (figma.currentPage.getPluginData("remember") == "true")
+if (figma.root.getPluginData("remember") == "true")
     message.remember = true;
-if (figma.currentPage.getPluginData("remember") == "false")
+if (figma.root.getPluginData("remember") == "false")
     message.remember = false;
-if (figma.currentPage.getPluginData("includeHeader") == "true")
+if (figma.root.getPluginData("includeHeader") == "true")
     message.includeHeader = true;
-if (figma.currentPage.getPluginData("includeHeader") == "false")
+if (figma.root.getPluginData("includeHeader") == "false")
     message.includeHeader = false;
+if (figma.root.getPluginData("columnResizing") == "true")
+    message.columnResizing = true;
+if (figma.root.getPluginData("columnResizing") == "false")
+    message.columnResizing = false;
 if (figma.command === "createTable") {
     if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
         message.componentsExist = true;
     }
     figma.showUI(__html__);
-    figma.ui.resize(268, 485);
+    figma.ui.resize(268, 486);
     figma.ui.postMessage(message);
     figma.ui.onmessage = msg => {
         if (msg.type === 'create-components') {
             createComponents();
             figma.root.setPluginData("cellComponentID", components.cell.id);
+            figma.root.setPluginData("cellComponentName", components.cell.name);
             figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
+            figma.root.setPluginData("cellHeaderComponentName", components.cellHeader.name);
             figma.root.setPluginData("rowComponentID", components.row.id);
+            figma.root.setPluginData("rowComponentName", components.row.name);
             figma.root.setPluginData("tableComponentID", components.table.id);
+            figma.root.setPluginData("tableComponentName", components.table.name);
             figma.notify('New page created');
+            // message.templates.cell.name = figma.currentPage.getPluginData("cellComponentName")
+            // console.log(message.templates.cell)
         }
         if (msg.type === 'create-table') {
             if (msg.columnCount < 51 && msg.rowCount < 51) {
-                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, true);
+                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
                 figma.currentPage.setPluginData("columnCount", msg.columnCount.toString());
                 figma.currentPage.setPluginData("rowCount", msg.rowCount.toString());
                 figma.currentPage.setPluginData("cellWidth", msg.cellWidth.toString());
-                figma.currentPage.setPluginData("remember", msg.remember.toString()),
-                    figma.currentPage.setPluginData("includeHeader", msg.includeHeader.toString());
+                figma.currentPage.setPluginData("remember", msg.remember.toString());
+                figma.currentPage.setPluginData("includeHeader", msg.includeHeader.toString());
+                figma.currentPage.setPluginData("columnResizing", msg.columnResizing.toString());
+                figma.currentPage.setPluginData("cellAlignment", msg.cellAlignment);
                 if (figma.currentPage.getPluginData("remember")) {
                     message.remember = (figma.currentPage.getPluginData("remember") == "true");
                 }
                 if (figma.currentPage.getPluginData("includeHeader")) {
                     message.includeHeader = (figma.currentPage.getPluginData("includeHeader") == "true");
+                }
+                if (figma.currentPage.getPluginData("columnResizing")) {
+                    message.includeHeader = (figma.currentPage.getPluginData("columnResizing") == "true");
                 }
                 if (figma.currentPage.getPluginData("columnCount")) {
                     message.columnCount = parseInt(figma.currentPage.getPluginData("columnCount"), 10);
@@ -410,6 +441,9 @@ if (figma.command === "createTable") {
                 }
                 if (figma.currentPage.getPluginData("cellWidth")) {
                     message.rowCount = parseInt(figma.currentPage.getPluginData("cellWidth"), 10);
+                }
+                if (figma.currentPage.getPluginData("cellAlignment")) {
+                    message.cellAlignment = figma.currentPage.getPluginData("cellAlignment");
                 }
                 const nodes = [];
                 nodes.push(table);

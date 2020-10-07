@@ -2021,6 +2021,14 @@
 
 	/* Custom */
 
+	label {
+		z-index: 1;
+	}
+
+	input[type="number"] {
+		line-height: 32px;
+	}
+
 	.icon--text-align-top {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M15 1H1V2H15V1ZM8.35355 3.64645L8 3.29289L7.64645 3.64645L4.64645 6.64645L5.35355 7.35355L7.5 5.20711V13H8.5V5.20711L10.6464 7.35355L11.3536 6.64645L8.35355 3.64645Z' fill='black'/%3E%3C/svg%3E%0A");
 
@@ -2362,8 +2370,8 @@
 				<label for="remember">Remember Settings</label>
 			</div>
 			<div>
-				<input type="checkbox" id="columnResizing">
-				<label for="columnResizing">Column Resizing</label>
+				<input type="checkbox" id="columnResizingInput">
+				<label for="columnResizingInput">Column Resizing</label>
 			</div>
 		</div>
 	</div>
@@ -2376,14 +2384,14 @@
 			<div class="input" style="display: flex; flex-basis: 50%;">
 				<label for="columnCount" class="label" style="width: 68px">Columns</label>
 				<input type="number" class="input__field" id="columnCount" size="4" step="1" min="1" max="50"
-					style="width: 48px">
+					style="width: 104px; margin-left: -68px; padding-left: 68px;">
 
 			</div>
 
 			<div class="input" style="display: flex; flex-basis: 50%;">
 				<label for="rowCount" class="label" style="width: 46px">Rows</label>
-				<input type="number" class="input__field" id="rowCount" size="4" step="1" min="1" max="50"
-					style="width: 48px">
+				<input type="number" class="input__field" id="rowCount" size="4" step="1" min="1" max="50" style="width: 82px; margin-left: -46px;
+		padding-left: 46px;">
 
 			</div>
 		</div>
@@ -2676,23 +2684,23 @@
 			<div class="input" style="display: flex; flex-basis: 50%;">
 				<label for="cellWidth" class="label" style="width: 68px">Width</label>
 				<input type="number" class="input__field" id="cellWidth" size="4" step="1" min="1" max="400"
-					style="width: 48px">
+					style="width: 104px; margin-left: -68px; padding-left: 68px;">
 			</div>
 			<div class="radio-buttons">
 				<div class="radio-button">
-					<input id="radioButton1" type="radio" value="Value" name="radioGroup" checked>
+					<input id="radioButton1" type="radio" value="MIN" name="cellAlignment">
 					<label for="radioButton1" class="icon-button">
 						<div class="icon icon--text-align-top"></div>
 					</label>
 				</div>
 				<div class="radio-button">
-					<input id="radioButton2" type="radio" value="Value" name="radioGroup">
+					<input id="radioButton2" type="radio" value="CENTER" name="cellAlignment">
 					<label for="radioButton2" class="icon-button">
 						<div class="icon icon--text-align-middle"></div>
 					</label>
 				</div>
 				<div class="radio-button">
-					<input id="radioButton3" type="radio" value="Value" name="radioGroup">
+					<input id="radioButton3" type="radio" value="MAX" name="cellAlignment">
 					<label for="radioButton3" class="icon-button">
 						<div class="icon icon--text-align-bottom"></div>
 					</label>
@@ -2759,6 +2767,7 @@
 	const includeHeader = document.getElementById('includeHeader')
 	const welcomePage = document.getElementById('welcomePage')
 	const createTablePage = document.getElementById('createTablePage')
+	const columnResizingInput = document.getElementById('columnResizingInput')
 
 	const cells = table.querySelectorAll('td')
 
@@ -2770,8 +2779,16 @@
 		const message = event.data.pluginMessage
 
 		remember.checked = message.remember
-
 		includeHeader.checked = message.includeHeader
+		columnResizingInput.checked = message.columnResizing
+
+		var cellAlignments = document.getElementsByName("cellAlignment");
+
+
+		for (var i = 0; i < cellAlignments.length; i++) {
+			if (cellAlignments[i].value === message.cellAlignment)
+				cellAlignments[i].checked = true;
+		}
 
 		if (message.componentsExist) {
 			welcomePage.classList.add("hide")
@@ -2887,8 +2904,21 @@
 		const rowCount = parseInt(textbox2.value, 10);
 		const cellWidth = parseInt(textbox3.value, 10);
 		const remember = document.getElementById('remember').checked;
+		const columnResizing = document.getElementById('columnResizingInput').checked;
 		const includeHeader = document.getElementById('includeHeader').checked;
-		parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember, cellWidth, includeHeader } }, '*')
+
+
+		var cellAlignments = document.getElementsByName("cellAlignment");
+		var cellAlignment;
+
+		for (var i = 0; i < cellAlignments.length; i++) {
+			if (cellAlignments[i].checked)
+				cellAlignment = cellAlignments[i].value;
+		}
+
+		console.log(cellAlignment)
+
+		parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember, cellWidth, includeHeader, columnResizing, cellAlignment } }, '*')
 	}
 
 	document.getElementById('createComponents').onclick = () => {
@@ -2906,12 +2936,12 @@
 	const manageComponentsPage = document.getElementById('manageComponentsPage')
 	const doneButton = document.getElementById('doneButton')
 	const menu = document.getElementById('menu')
-	const columnResizing = document.getElementById('columnResizing')
 
 	manageComponentsItem.onclick = () => {
 		createTablePage.classList.add("hide")
 		createTablePage.classList.remove("show")
 		manageComponentsPage.classList.add("show")
+		menu.classList.remove("open")
 	}
 
 	doneButton.onclick = () => {
@@ -2930,7 +2960,7 @@
 		menu.classList.remove("open")
 	}
 
-	columnResizing.onclick = (event) => {
+	columnResizingInput.onclick = (event) => {
 		menu.classList.remove("open")
 	}
 
