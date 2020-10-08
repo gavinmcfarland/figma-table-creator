@@ -10,13 +10,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
 }
-function changeText(node, text) {
+function changeText(node, text, weight = "Regular") {
     return __awaiter(this, void 0, void 0, function* () {
         yield figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-        node.characters = text;
+        yield figma.loadFontAsync({ family: "Roboto", style: "Bold" });
+        if (text) {
+            node.characters = text;
+        }
+        if (text === "") {
+            // Fixes issue where spaces are ignored and node has zero width
+            node.resize(10, node.height);
+        }
+        node.fontName = { family: "Roboto", style: weight };
         node.textAutoResize = "HEIGHT";
-        // Fixes issue where spaces are ignored and node has zero width
-        node.resize(10, node.height);
         node.layoutAlign = "STRETCH";
     });
 }
@@ -154,6 +160,8 @@ function createComponents() {
     components.cellHeader.appendChild(innerCell);
     components.cellHeader.name = "Table/Cell/Header";
     components.cellHeader.layoutMode = "VERTICAL";
+    components.cellHeader.children[0].fills = [];
+    changeText(components.cellHeader.children[0].children[1].children[0], null, "Bold");
     components.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     components.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     const fills = clone(components.cellHeader.fills);
@@ -356,6 +364,20 @@ function selectRow() {
         selectAdjacentCells();
     }
 }
+function linkTemplate(template, selection) {
+    if (selection.length === 1) {
+        const capitalize = (s) => {
+            if (typeof s !== 'string')
+                return '';
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        };
+        var templateID = template + "ComponentID";
+        if (template === "cellHeader")
+            template = "Header Cell";
+        figma.root.setPluginData(templateID, selection[0].id);
+        figma.notify(capitalize(template) + " template succesfully linked");
+    }
+}
 var message = {
     componentsExist: false,
     columnCount: parseInt(figma.currentPage.getPluginData("columnCount"), 10) || 4,
@@ -375,8 +397,8 @@ var message = {
         cell: {
             name: figma.root.getPluginData("cellComponentName") || ""
         },
-        headerCell: {
-            name: figma.root.getPluginData("headerCellComponentName") || ""
+        cellHeader: {
+            name: figma.root.getPluginData("cellHeaderComponentName") || ""
         }
     }
 };
@@ -457,6 +479,9 @@ if (figma.command === "createTable") {
             else {
                 figma.notify("Plugin limited to max of 50 columns and rows");
             }
+        }
+        if (msg.type === "link-template") {
+            linkTemplate(msg.template, figma.currentPage.selection);
         }
     };
 }
