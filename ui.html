@@ -2719,21 +2719,10 @@
 	<section class="m-xxsmall">
 		<div class="section-title">Manage Templates</div>
 
-		<p class="type m-xxsmall">Click and select the frame or component that new tables should be created
-			from.</p>
+		<p class="type m-xxsmall">To link what templates tables should be created
+			from, first select the component and click the link icon.</p>
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
-			<div style="display: flex; place-items: center;"><span id="tableTemplateName"
-					style="flex-grow: 1;">Table</span>
-				<div class="icon-button" name="linkTemplate">
-					<div class="icon icon--link-connected" value="table"></div>
-				</div>
-			</div>
-			<div style="display: flex; place-items: center;"><span id="rowTemplateName" style="flex-grow: 1;">Row</span>
-				<div class="icon-button" name="linkTemplate">
-					<div class="icon icon--link-connected" value="row"></div>
-				</div>
-			</div>
 			<div style="display: flex; place-items: center;"><span id="cellTemplateName"
 					style="flex-grow: 1;">Cell</span>
 				<div class="icon-button" name="linkTemplate">
@@ -2741,11 +2730,25 @@
 				</div>
 			</div>
 			<div style="display: flex; place-items: center;"><span id="cellHeaderTemplateName"
-					style="flex-grow: 1;">Header Cell</span>
+					style="flex-grow: 1;">Header
+					Cell</span>
 				<div class="icon-button" name="linkTemplate">
 					<div class="icon icon--link-connected" value="cellHeader"></div>
 				</div>
 			</div>
+
+			<div style="display: flex; place-items: center;"><span id="rowTemplateName" style="flex-grow: 1;">Row</span>
+				<div class="icon-button" name="linkTemplate">
+					<div class="icon icon--link-connected" value="row"></div>
+				</div>
+			</div>
+			<div style="display: flex; place-items: center;"><span id="tableTemplateName"
+					style="flex-grow: 1;">Table</span>
+				<div class="icon-button" name="linkTemplate">
+					<div class="icon icon--link-connected" value="table"></div>
+				</div>
+			</div>
+
 		</div>
 
 		<p class="type m-xxsmall">Only styles will be copied from <b>Table</b> and <b>Row</b>
@@ -2753,7 +2756,8 @@
 			from
 			<b>Cell</b> and <b>Header Cell</b> templates.</p>
 
-		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Update existing tables</a></p>
+		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small" id="updateTables">Update all
+				tables</a></p>
 		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Use default templates</a></p>
 
 	</section>
@@ -2789,8 +2793,6 @@
 		// cellHeaderTemplateName.innerHTML = message.templates.cellHeader.name
 		// rowTemplateName.innerHTML = message.templates.row.name
 		// tableTemplateName.innerHTML = message.templates.table.name
-
-		console.log(message.templates)
 
 		remember.checked = message.remember
 		includeHeader.checked = message.includeHeader
@@ -2940,6 +2942,12 @@
 		welcomePage.classList.remove("show")
 		createTablePage.classList.add("show")
 		parent.postMessage({ pluginMessage: { type: 'create-components' } }, '*')
+	}
+
+	// Update table styles
+	document.getElementById('updateTables').onclick = () => {
+		console.log("send message")
+		parent.postMessage({ pluginMessage: { type: 'update-tables' } }, '*')
 	}
 
 	document.getElementById('optionsButton').onclick = () => {

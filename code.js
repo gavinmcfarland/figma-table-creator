@@ -28,7 +28,9 @@ function changeText(node, text, weight = "Regular") {
 }
 function cloneComponentAsFrame(component) {
     var frame = figma.createFrame();
-    frame.name = component.name;
+    if (component.name) {
+        frame.name = component.name;
+    }
     frame.fills = component.fills;
     frame.strokes = component.strokes;
     frame.strokeWeight = component.strokeWeight;
@@ -43,12 +45,38 @@ function cloneComponentAsFrame(component) {
     frame.bottomRightRadius = component.bottomRightRadius;
     frame.layoutMode = component.layoutMode;
     frame.counterAxisSizingMode = component.counterAxisSizingMode;
-    var effects = clone(component.effects);
-    frame.effects = effects;
+    frame.effects = clone(component.effects);
     for (let i = 0; i < component.children.length; i++) {
         frame.appendChild(component.children[i].clone());
     }
     return frame;
+}
+function copyAndPasteStyles(current, node) {
+    node.name = current.name;
+    node.fills = current.fills;
+    node.strokes = current.strokes;
+    node.strokeWeight = current.strokeWeight;
+    node.strokeStyleId = current.strokeStyleId;
+    node.strokeAlign = current.strokeAlign;
+    node.strokeCap = current.strokeCap;
+    node.strokeJoin = current.strokeJoin;
+    node.strokeMiterLimit = current.strokeMiterLimit;
+    node.topLeftRadius = current.topLeftRadius;
+    node.topRightRadius = current.topRightRadius;
+    node.bottomLeftRadius = current.bottomLeftRadius;
+    node.bottomRightRadius = current.bottomRightRadius;
+    node.effects = clone(current.effects);
+    for (let i = 0; i < current.children.length; i++) {
+        node.appendChild(current.children[i].clone());
+    }
+}
+function removeChildren(node) {
+    if (node.children.length > 0) {
+        for (let i = 0; i < node.children.length; i++) {
+            node.children[0].remove();
+        }
+        node.children[0].remove();
+    }
 }
 function createBorder() {
     var frame1 = figma.createComponent();
@@ -81,7 +109,6 @@ function createCell(topBorder, leftBorder) {
     var line2 = leftBorder;
     var text = figma.createText();
     frame2.name = "Content";
-    // text.layoutAlign = "STRETCH"
     changeText(text, "");
     cell.name = "Table/Cell/Default";
     const fills = clone(cell.fills);
@@ -143,7 +170,6 @@ function createTable() {
     const fills = clone(table.fills);
     fills[0].visible = true;
     table.fills = fills;
-    // table.strokeWeight = 1
     return table;
 }
 var components = {};
@@ -154,6 +180,7 @@ function createComponents() {
     page.appendChild(border);
     components.cell = createCell(border.createInstance(), border.createInstance());
     page.appendChild(components.cell);
+    components.cell.setPluginData("isCell", "true");
     components.cellHeader = figma.createComponent();
     var innerCell = components.cell.createInstance();
     innerCell.layoutAlign = "STRETCH";
@@ -161,7 +188,9 @@ function createComponents() {
     components.cellHeader.name = "Table/Cell/Header";
     components.cellHeader.layoutMode = "VERTICAL";
     components.cellHeader.children[0].fills = [];
+    components.cellHeader.setPluginData("isCellHeader", "true");
     changeText(components.cellHeader.children[0].children[1].children[0], null, "Bold");
+    // TODO: Needs to be aplied to user linked templates also
     components.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     components.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     const fills = clone(components.cellHeader.fills);
@@ -175,14 +204,12 @@ function createComponents() {
     components.row = createRow();
     components.row.appendChild(components.cell.createInstance());
     components.row.appendChild(components.cell.createInstance());
-    components.row.layoutMode = "HORIZONTAL";
-    components.row.counterAxisSizingMode = "AUTO";
+    components.row.setPluginData("isRow", "true");
     page.appendChild(components.row);
     components.table = createTable();
     components.table.appendChild(cloneComponentAsFrame(components.row));
     components.table.appendChild(cloneComponentAsFrame(components.row));
-    components.table.layoutMode = "VERTICAL";
-    components.table.counterAxisSizingMode = "AUTO";
+    components.table.setPluginData("isTable", "true");
     page.appendChild(components.table);
 }
 var cellID;
@@ -197,30 +224,33 @@ function findComponentById(id) {
     return component || false;
 }
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
+    // Get Cell Template
     var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
     cell.layoutAlign = cellAlignment;
+    // Get Header Cell Template
     var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"));
     cellHeader.layoutAlign = cellAlignment;
+    // Get Row Template
     var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")));
     // Remove children (we only need the container)
-    for (let i = 0; i < row.children.length; i++) {
-        row.children[0].remove();
-    }
-    row.children[0].remove();
+    removeChildren(row);
+    // Set autolayout
+    row.layoutMode = "HORIZONTAL";
+    row.counterAxisSizingMode = "AUTO";
+    // Get Table Template
     var table = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("tableComponentID")));
     // Remove children (we only need the container)
-    for (let i = 0; i < table.children.length; i++) {
-        table.children[0].remove();
-    }
-    table.children[0].remove();
+    removeChildren(table);
+    // Set autolayout
+    table.layoutMode = "VERTICAL";
+    table.counterAxisSizingMode = "AUTO";
+    // Duplicated Cells and Rows
     var firstRow;
     if (usingLocalComponent) {
         firstRow = findComponentById(figma.root.getPluginData("rowComponentID")).clone();
         // Remove children (we only need the container)
-        for (let i = 0; i < firstRow.children.length; i++) {
-            firstRow.children[0].remove();
-        }
-        firstRow.children[0].remove();
+        removeChildren(firstRow);
+        firstRow.setPluginData("isRow", "true");
         firstRow.name = row.name;
         firstRow.layoutMode = "HORIZONTAL";
         firstRow.counterAxisSizingMode = "AUTO";
@@ -228,6 +258,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     }
     else {
         firstRow = row;
+        firstRow.setPluginData("isRow", "true");
     }
     var rowHeader;
     if (includeHeader) {
@@ -235,6 +266,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         for (var i = 0; i < numberColumns; i++) {
             // Duplicate cell for each column and append to row
             var duplicatedCellHeader = cellHeader.createInstance();
+            duplicatedCellHeader.setPluginData("isCellHeader", "true");
             duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height);
             rowHeader.appendChild(duplicatedCellHeader);
         }
@@ -242,28 +274,24 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     }
     for (var i = 0; i < numberColumns; i++) {
         var duplicatedCell = cell.createInstance();
+        duplicatedCell.setPluginData("isCell", "true");
         duplicatedCell.resizeWithoutConstraints(cellWidth, duplicatedCell.height);
         firstRow.appendChild(duplicatedCell);
     }
     // Duplicate row for each row and append to table
     // Easier to append cloned row and then duplicate, than remove later, hence numberRows - 1
-    table.appendChild(firstRow);
-    // var tableBody
-    // if (includeHeader) {
-    // 	if (numberRows > 1) {
-    // 		tableBody = figma.createFrame()
-    // 		tableBody.layoutMode = "VERTICAL"
-    // 		tableBody.layoutAlign = "STRETCH"
-    // 		tableBody.name = "Table/Body"
-    // 	}
-    // }
+    if (!usingLocalComponent || !includeHeader) {
+        table.appendChild(firstRow);
+    }
     for (let i = 0; i < numberRows - 1; i++) {
         var duplicatedRow;
         if (usingLocalComponent) {
             if (includeHeader) {
                 duplicatedRow = rowHeader.createInstance();
+                // duplicatedRow.setPluginData("isRowInstance", "true")
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
                     duplicatedRow.children[b].mainComponent = cell;
+                    duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
                 }
                 firstRow.remove();
             }
@@ -272,26 +300,74 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                 // Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
                     duplicatedRow.children[b].mainComponent = cell;
+                    duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
                 }
             }
         }
         else {
             duplicatedRow = firstRow.clone();
         }
-        // if (numberColumns > 1 && includeHeader) {
-        // 	tableBody.appendChild(duplicatedRow)
-        // }
-        // else {
         table.appendChild(duplicatedRow);
-        // }
     }
-    // if (numberRows > 1 && includeHeader) {
-    // 	table.appendChild(tableBody)
-    // }
     if (includeHeader && !usingLocalComponent) {
         row.remove();
     }
+    // TODO: Needs to be added to components linked by user also
+    table.setPluginData("isTable", "true");
     return table;
+}
+function updateTables() {
+    // Find all tables
+    var pages = figma.root.children;
+    var tables;
+    var tableTemplateID = figma.root.getPluginData("tableComponentID");
+    var tableTemplate = findComponentById(tableTemplateID);
+    removeChildren(tableTemplate);
+    var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"));
+    removeChildren(rowTemplate);
+    var cellTemplateID = figma.root.getPluginData("cellComponentID");
+    var cellTemplate = findComponentById(cellTemplateID);
+    var cellHeaderTemplateID = figma.root.getPluginData("cellHeaderComponentID");
+    var cellHeaderTemplate = findComponentById(cellHeaderTemplateID);
+    // Look through each page to find tables created with plugin
+    for (let i = 0; i < pages.length; i++) {
+        tables = pages[i].findAll(node => node.getPluginData("isTable") === "true" && node.id !== tableTemplateID);
+        for (let b = 0; b < tables.length; b++) {
+            var table = tables[b];
+            copyAndPasteStyles(tableTemplate, table);
+            for (let x = 0; x < table.children.length; x++) {
+                var row = table.children[x];
+                for (let k = 0; k < row.children.length; k++) {
+                    var cell = row.children[k];
+                    if (cell.getPluginData("isCell") === "true") {
+                        console.log("isCellBefore? " + cell.getPluginData("isCell"));
+                        // Checks that main component has not been swapped
+                        console.log(cell.mainComponent.id);
+                        if (cell.mainComponent.id === cellTemplateID) {
+                            cell.mainComponent = cellTemplate;
+                        }
+                        // BUG: This allows instance to be swap one more time (is cause of a bug)
+                        cell.setPluginData("instanceBug", "true");
+                        console.log("isCellAfter? " + cell.getPluginData("isCell"));
+                    }
+                    if (cell.getPluginData("isCellHeader") === "true") {
+                        console.log("isCellHeaderBefore? " + cell.getPluginData("isCellHeader"));
+                        // Checks that main component has not been swapped
+                        if (cell.mainComponent.id === cellHeaderTemplateID) {
+                            cell.mainComponent = cellHeaderTemplate;
+                        }
+                        console.log("isCellHeaderAfter? " + cell.getPluginData("isCellHeader"));
+                    }
+                }
+                if (row.getPluginData("isRow") === "true" && row.type === "COMPONENT") {
+                    copyAndPasteStyles(rowTemplate, row);
+                }
+                else if (row.getPluginData("isRow") === "true" && row.type !== "COMPONENT") {
+                    copyAndPasteStyles(rowTemplate, row);
+                }
+            }
+        }
+    }
 }
 function addNewNodeToSelection(page, node) {
     page.selection = node;
@@ -372,17 +448,29 @@ function linkTemplate(template, selection) {
             return s.charAt(0).toUpperCase() + s.slice(1);
         };
         var templateID = template + "ComponentID";
+        // Make sure old templates don't have any old data on them
+        var oldTemplate = findComponentById(figma.root.getPluginData(template + "ComponentID"));
+        oldTemplate.setPluginData("isTable", "");
+        oldTemplate.setPluginData("isRow", "");
+        oldTemplate.setPluginData("isCell", "");
+        oldTemplate.setPluginData("isCellHeader", "");
+        selection[0].setPluginData("is" + capitalize(template), "true"); // Check
+        figma.root.setPluginData(templateID, selection[0].id);
         if (template === "cellHeader")
             template = "Header Cell";
-        figma.root.setPluginData(templateID, selection[0].id);
         figma.notify(capitalize(template) + " template succesfully linked");
     }
 }
+function positionInCenter(node) {
+    // Position newly created table in center of viewport
+    node.x = figma.viewport.center.x - (node.width / 2);
+    node.y = figma.viewport.center.y - (node.height / 2);
+}
 var message = {
     componentsExist: false,
-    columnCount: parseInt(figma.currentPage.getPluginData("columnCount"), 10) || 4,
-    rowCount: parseInt(figma.currentPage.getPluginData("rowCount"), 10) || 4,
-    cellWidth: parseInt(figma.currentPage.getPluginData("cellWidth"), 10) || 100,
+    columnCount: parseInt(figma.root.getPluginData("columnCount"), 10) || 4,
+    rowCount: parseInt(figma.root.getPluginData("rowCount"), 10) || 4,
+    cellWidth: parseInt(figma.root.getPluginData("cellWidth"), 10) || 100,
     remember: true,
     includeHeader: true,
     columnResizing: true,
@@ -422,56 +510,51 @@ if (figma.command === "createTable") {
     figma.ui.resize(268, 486);
     figma.ui.postMessage(message);
     figma.ui.onmessage = msg => {
+        if (msg.type === "update-tables") {
+            updateTables();
+        }
         if (msg.type === 'create-components') {
             createComponents();
             figma.root.setPluginData("cellComponentID", components.cell.id);
-            figma.root.setPluginData("cellComponentName", components.cell.name);
             figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
-            figma.root.setPluginData("cellHeaderComponentName", components.cellHeader.name);
             figma.root.setPluginData("rowComponentID", components.row.id);
-            figma.root.setPluginData("rowComponentName", components.row.name);
             figma.root.setPluginData("tableComponentID", components.table.id);
-            figma.root.setPluginData("tableComponentName", components.table.name);
-            figma.notify('New page created');
-            // message.templates.cell.name = figma.currentPage.getPluginData("cellComponentName")
-            // console.log(message.templates.cell)
+            figma.notify('Templates created');
         }
         if (msg.type === 'create-table') {
             if (msg.columnCount < 51 && msg.rowCount < 51) {
                 var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
-                figma.currentPage.setPluginData("columnCount", msg.columnCount.toString());
-                figma.currentPage.setPluginData("rowCount", msg.rowCount.toString());
-                figma.currentPage.setPluginData("cellWidth", msg.cellWidth.toString());
-                figma.currentPage.setPluginData("remember", msg.remember.toString());
-                figma.currentPage.setPluginData("includeHeader", msg.includeHeader.toString());
-                figma.currentPage.setPluginData("columnResizing", msg.columnResizing.toString());
-                figma.currentPage.setPluginData("cellAlignment", msg.cellAlignment);
-                if (figma.currentPage.getPluginData("remember")) {
-                    message.remember = (figma.currentPage.getPluginData("remember") == "true");
+                figma.root.setPluginData("columnCount", msg.columnCount.toString());
+                figma.root.setPluginData("rowCount", msg.rowCount.toString());
+                figma.root.setPluginData("cellWidth", msg.cellWidth.toString());
+                figma.root.setPluginData("remember", msg.remember.toString());
+                figma.root.setPluginData("includeHeader", msg.includeHeader.toString());
+                figma.root.setPluginData("columnResizing", msg.columnResizing.toString());
+                figma.root.setPluginData("cellAlignment", msg.cellAlignment);
+                if (figma.root.getPluginData("remember")) {
+                    message.remember = (figma.root.getPluginData("remember") == "true");
                 }
-                if (figma.currentPage.getPluginData("includeHeader")) {
-                    message.includeHeader = (figma.currentPage.getPluginData("includeHeader") == "true");
+                if (figma.root.getPluginData("includeHeader")) {
+                    message.includeHeader = (figma.root.getPluginData("includeHeader") == "true");
                 }
-                if (figma.currentPage.getPluginData("columnResizing")) {
-                    message.includeHeader = (figma.currentPage.getPluginData("columnResizing") == "true");
+                if (figma.root.getPluginData("columnResizing")) {
+                    message.includeHeader = (figma.root.getPluginData("columnResizing") == "true");
                 }
-                if (figma.currentPage.getPluginData("columnCount")) {
-                    message.columnCount = parseInt(figma.currentPage.getPluginData("columnCount"), 10);
+                if (figma.root.getPluginData("columnCount")) {
+                    message.columnCount = parseInt(figma.root.getPluginData("columnCount"), 10);
                 }
-                if (figma.currentPage.getPluginData("rowCount")) {
-                    message.rowCount = parseInt(figma.currentPage.getPluginData("rowCount"), 10);
+                if (figma.root.getPluginData("rowCount")) {
+                    message.rowCount = parseInt(figma.root.getPluginData("rowCount"), 10);
                 }
-                if (figma.currentPage.getPluginData("cellWidth")) {
-                    message.rowCount = parseInt(figma.currentPage.getPluginData("cellWidth"), 10);
+                if (figma.root.getPluginData("cellWidth")) {
+                    message.rowCount = parseInt(figma.root.getPluginData("cellWidth"), 10);
                 }
-                if (figma.currentPage.getPluginData("cellAlignment")) {
-                    message.cellAlignment = figma.currentPage.getPluginData("cellAlignment");
+                if (figma.root.getPluginData("cellAlignment")) {
+                    message.cellAlignment = figma.root.getPluginData("cellAlignment");
                 }
                 const nodes = [];
                 nodes.push(table);
-                // Position newly created table in center of viewport
-                table.x = figma.viewport.center.x - (table.width / 2);
-                table.y = figma.viewport.center.y - (table.height / 2);
+                positionInCenter(table);
                 figma.currentPage.selection = nodes;
                 // figma.viewport.scrollAndZoomIntoView(nodes);
                 figma.closePlugin();
@@ -487,9 +570,15 @@ if (figma.command === "createTable") {
 }
 if (figma.command === "selectColumn") {
     selectColumn();
+    // console.log(figma.currentPage.selection[0].getPluginData("isCellHeader"))
     figma.closePlugin();
 }
 if (figma.command === "selectRow") {
     selectRow();
     figma.closePlugin();
 }
+if (figma.command === "updateTables") {
+    updateTables();
+    figma.closePlugin();
+}
+figma.root.setRelaunchData({ updateTables: 'Update all tables with changes from templates' });

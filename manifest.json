@@ -16,10 +16,15 @@
     {
       "name": "Select Rows",
       "command": "selectRow"
+    },
+     {
+      "name": "Update Tables",
+      "command": "updateTables"
     }
   ],
   "relaunchButtons": [
-      {"command": "selectColumn", "name": "Select Column(s)", "multipleSelection": true},
-      {"command": "selectRow", "name": "Select Row(s)", "multipleSelection": true}
+      {"command": "selectColumn", "name": "Select Columns", "multipleSelection": true},
+      {"command": "selectRow", "name": "Select Rows", "multipleSelection": true},
+      {"command": "updateTables", "name": "Update Tables"}
     ]
 }
