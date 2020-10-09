@@ -482,12 +482,14 @@ function updateTables() {
 
 						// Checks that main component has not been swapped
 						console.log(cell.mainComponent.id)
-						if (cell.mainComponent.id === cellTemplateID) {
-							cell.mainComponent = cellTemplate
-						}
+						console.log(cellTemplateID)
+						// if (cell.mainComponent.id === cellTemplateID) {
+						cell.mainComponent = cellTemplate
+						// }
 
-						// BUG: This allows instance to be swap one more time (is cause of a bug)
 						cell.setPluginData("instanceBug", "true")
+						cell.setPluginData("isCell", "")
+						cell.setPluginData("isCell", "true")
 
 						console.log("isCellAfter? " + cell.getPluginData("isCell"))
 					}
@@ -497,9 +499,9 @@ function updateTables() {
 					if (cell.getPluginData("isCellHeader") === "true") {
 						console.log("isCellHeaderBefore? " + cell.getPluginData("isCellHeader"))
 						// Checks that main component has not been swapped
-						if (cell.mainComponent.id === cellHeaderTemplateID) {
-							cell.mainComponent = cellHeaderTemplate
-						}
+						// if (cell.mainComponent.id === cellHeaderTemplateID) {
+						cell.mainComponent = cellHeaderTemplate
+						// }
 
 						console.log("isCellHeaderAfter? " + cell.getPluginData("isCellHeader"))
 					}

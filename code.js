@@ -343,19 +343,21 @@ function updateTables() {
                         console.log("isCellBefore? " + cell.getPluginData("isCell"));
                         // Checks that main component has not been swapped
                         console.log(cell.mainComponent.id);
-                        if (cell.mainComponent.id === cellTemplateID) {
-                            cell.mainComponent = cellTemplate;
-                        }
-                        // BUG: This allows instance to be swap one more time (is cause of a bug)
+                        console.log(cellTemplateID);
+                        // if (cell.mainComponent.id === cellTemplateID) {
+                        cell.mainComponent = cellTemplate;
+                        // }
                         cell.setPluginData("instanceBug", "true");
+                        cell.setPluginData("isCell", "");
+                        cell.setPluginData("isCell", "true");
                         console.log("isCellAfter? " + cell.getPluginData("isCell"));
                     }
                     if (cell.getPluginData("isCellHeader") === "true") {
                         console.log("isCellHeaderBefore? " + cell.getPluginData("isCellHeader"));
                         // Checks that main component has not been swapped
-                        if (cell.mainComponent.id === cellHeaderTemplateID) {
-                            cell.mainComponent = cellHeaderTemplate;
-                        }
+                        // if (cell.mainComponent.id === cellHeaderTemplateID) {
+                        cell.mainComponent = cellHeaderTemplate;
+                        // }
                         console.log("isCellHeaderAfter? " + cell.getPluginData("isCellHeader"));
                     }
                 }
