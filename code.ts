@@ -4,9 +4,27 @@ function clone(val) {
 
 async function changeText(node, text, weight = "Regular") {
 
-	await Promise.all([figma.loadFontAsync({ family: "Roboto", style: "Regular" }), figma.loadFontAsync({ family: "Roboto", style: "Bold" })])
+	// await figma.loadFontAsync({ family: "Roboto", style: "Regular" })
+	// await figma.loadFontAsync({ family: "Roboto", style: "Bold" })
 
-	node.fontName = { family: "Roboto", style: weight }
+
+
+	if (node.fontName === figma.mixed) {
+		await figma.loadFontAsync(node.getRangeFontName(0, 1) as FontName)
+	} else {
+		await figma.loadFontAsync({
+			family: node.fontName.family,
+			style: node.fontName.style
+		})
+	}
+
+	// await Promise.all([figma.loadFontAsync({ family: node.fontName.family, style: node.fontName.style }), figma.loadFontAsync({ family: node.fontName.family, style: node.fontName.style })])
+
+
+
+	// node.fontName = { family: node.fontName.family, style: weight }
+
+
 
 	// console.log("is text chaning?")
 	if (text) {
@@ -753,7 +771,7 @@ if (figma.command === "createTable") {
 		message.componentsExist = true
 	}
 
-	figma.showUI(__html__);
+	figma.showUI(__uiFiles__.main);
 
 	figma.ui.resize(268, 486)
 
@@ -774,7 +792,7 @@ if (figma.command === "createTable") {
 			figma.root.setPluginData("rowComponentID", components.row.id)
 			figma.root.setPluginData("tableComponentID", components.table.id)
 
-			figma.notify('Templates created')
+			figma.notify('Table components created')
 
 		}
 
@@ -844,6 +862,12 @@ if (figma.command === "createTable") {
 		}
 
 	};
+}
+
+if (figma.command === "linkComponents") {
+	figma.showUI(__uiFiles__.components);
+	figma.ui.resize(268, 486)
+	figma.ui.postMessage(message);
 }
 
 

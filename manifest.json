@@ -3,7 +3,10 @@
   "id": "885838970710285271",
   "api": "1.0.0",
   "main": "code.js",
-  "ui": "ui.html",
+  "ui": {
+      "main": "ui.html",
+      "components": "components.html"
+  },
   "menu": [
     {
       "name": "Create Table",
@@ -17,9 +20,16 @@
       "name": "Select Rows",
       "command": "selectRow"
     },
-     {
+    {
       "name": "Update Tables",
       "command": "updateTables"
+    },
+    {
+        "separator": true
+    },
+    {
+      "name": "Link Components",
+      "command": "linkComponents"
     }
   ],
   "relaunchButtons": [

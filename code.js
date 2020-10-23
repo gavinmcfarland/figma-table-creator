@@ -12,8 +12,19 @@ function clone(val) {
 }
 function changeText(node, text, weight = "Regular") {
     return __awaiter(this, void 0, void 0, function* () {
-        yield Promise.all([figma.loadFontAsync({ family: "Roboto", style: "Regular" }), figma.loadFontAsync({ family: "Roboto", style: "Bold" })]);
-        node.fontName = { family: "Roboto", style: weight };
+        // await figma.loadFontAsync({ family: "Roboto", style: "Regular" })
+        // await figma.loadFontAsync({ family: "Roboto", style: "Bold" })
+        if (node.fontName === figma.mixed) {
+            yield figma.loadFontAsync(node.getRangeFontName(0, 1));
+        }
+        else {
+            yield figma.loadFontAsync({
+                family: node.fontName.family,
+                style: node.fontName.style
+            });
+        }
+        // await Promise.all([figma.loadFontAsync({ family: node.fontName.family, style: node.fontName.style }), figma.loadFontAsync({ family: node.fontName.family, style: node.fontName.style })])
+        // node.fontName = { family: node.fontName.family, style: weight }
         // console.log("is text chaning?")
         if (text) {
             node.characters = text;
@@ -558,7 +569,7 @@ if (figma.command === "createTable") {
     if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
         message.componentsExist = true;
     }
-    figma.showUI(__html__);
+    figma.showUI(__uiFiles__.main);
     figma.ui.resize(268, 486);
     figma.ui.postMessage(message);
     figma.ui.onmessage = msg => {
@@ -571,7 +582,7 @@ if (figma.command === "createTable") {
             figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
             figma.root.setPluginData("rowComponentID", components.row.id);
             figma.root.setPluginData("tableComponentID", components.table.id);
-            figma.notify('Templates created');
+            figma.notify('Table components created');
         }
         if (msg.type === 'create-table') {
             if (msg.columnCount < 51 && msg.rowCount < 51) {
@@ -619,6 +630,11 @@ if (figma.command === "createTable") {
             linkTemplate(msg.template, figma.currentPage.selection);
         }
     };
+}
+if (figma.command === "linkComponents") {
+    figma.showUI(__uiFiles__.components);
+    figma.ui.resize(268, 486);
+    figma.ui.postMessage(message);
 }
 if (figma.command === "selectColumn") {
     selectColumn();
