@@ -2339,6 +2339,16 @@
 		right: 0;
 		margin-right: 8px;
 	}
+
+	.warning {
+		border-radius: 6px;
+		background-color: #E1F3FF;
+		display: none;
+		padding: 8px;
+		margin-left: -8px;
+		margin-right: -8px;
+		margin-bottom: 8px;
+	}
 </style>
 
 <div class="page welcomePage type m-xsmall" id="welcomePage">
@@ -2723,12 +2733,14 @@
 			from, first select the component and then click the link icon.</p>
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
-			<div style="display: flex; place-items: center;"><span id="cellTemplateName"
-					style="flex-grow: 1;">Cell</span>
+			<div style="display: flex; place-items: center;"><span id="cellTemplateName" style="flex-grow: 1;">Cell
+					<span style="color: var(--black3);">(required)</span></span>
 				<div class="icon-button" name="linkTemplate">
 					<div class="icon icon--link-connected" value="cell"></div>
 				</div>
 			</div>
+			<div id="warning" class="warning">Cannot find component. Please link to a component to use for the
+				table cell.</div>
 			<div style="display: flex; place-items: center;"><span id="cellHeaderTemplateName"
 					style="flex-grow: 1;">Header
 					Cell</span>
@@ -2779,6 +2791,11 @@
 	const rowTemplateName = document.getElementById('rowTemplateName')
 	const cellTemplateName = document.getElementById('cellTemplateName')
 	const cellHeaderTemplateName = document.getElementById('cellHeaderTemplateName')
+	const manageComponentsItem = document.getElementById('manageComponentsItem')
+	const manageComponentsPage = document.getElementById('manageComponentsPage')
+	const doneButton = document.getElementById('doneButton')
+	const menu = document.getElementById('menu')
+	const warning = document.getElementById('warning')
 
 
 	const cells = table.querySelectorAll('td')
@@ -2794,6 +2811,8 @@
 		// cellHeaderTemplateName.innerHTML = message.templates.cellHeader.name
 		// rowTemplateName.innerHTML = message.templates.row.name
 		// tableTemplateName.innerHTML = message.templates.table.name
+
+
 
 		remember.checked = message.remember
 		includeHeader.checked = message.includeHeader
@@ -2815,6 +2834,15 @@
 			welcomePage.classList.add("show")
 			createTablePage.classList.add("hide")
 		}
+
+		// if (!message.cellExists) {
+		// 	manageComponentsPage.classList.add("show")
+		// 	manageComponentsPage.classList.remove("hide")
+		// 	welcomePage.classList.add("hide")
+		// 	createTablePage.classList.add("hide")
+		// 	createTablePage.classList.remove("show")
+		// 	warning.classList.add("show")
+		// }
 
 
 		if (message.remember) {
@@ -2963,10 +2991,7 @@
 		menu.classList.toggle("open")
 	}
 
-	const manageComponentsItem = document.getElementById('manageComponentsItem')
-	const manageComponentsPage = document.getElementById('manageComponentsPage')
-	const doneButton = document.getElementById('doneButton')
-	const menu = document.getElementById('menu')
+
 
 	manageComponentsItem.onclick = () => {
 		createTablePage.classList.add("hide")

@@ -245,19 +245,48 @@ function createTable() {
 
 var components: any = {}
 
-function createComponents() {
+function createDefaultComponents() {
+
+
+	var componentSpacing = 200
 
 	var page = figma.createPage()
 	page.name = "Table Creator"
 
+	var introText = figma.createText()
+	page.appendChild(introText)
+	changeText(introText, "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Link Components. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.")
+	introText.resizeWithoutConstraints(250, 100)
+
 	var border = createBorder()
 	page.appendChild(border)
+	border.y = componentSpacing
+
+	var borderText = figma.createText()
+	page.appendChild(borderText)
+	changeText(borderText, "This is used as a hack to support table cells with varying content height.")
+	borderText.x = 300
+	borderText.y = componentSpacing
+	borderText.resizeWithoutConstraints(250, 100)
 
 	components.cell = createCell(border.createInstance(), border.createInstance())
 	page.appendChild(components.cell)
 	components.cell.setPluginData("isCell", "true")
 
+	var cellText = figma.createText()
+	page.appendChild(cellText)
+	changeText(cellText, "This component is required for Table Creator to be able to create new tables from and update existing ones. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Link Components")
+	cellText.y = componentSpacing * 2
+	cellText.x = 300
+	cellText.resizeWithoutConstraints(250, 100)
+
+	components.cell.y = componentSpacing * 2
+
+
 	components.cellHeader = figma.createComponent()
+	components.cellHeader.y = componentSpacing * 3
+
+
 	var innerCell = components.cell.createInstance()
 	innerCell.layoutAlign = "STRETCH"
 	components.cellHeader.appendChild(innerCell)
@@ -267,6 +296,13 @@ function createComponents() {
 	components.cellHeader.setPluginData("isCellHeader", "true")
 
 	changeText(components.cellHeader.children[0].children[1].children[0], null, "Bold")
+
+	var cellHeaderText = figma.createText()
+	page.appendChild(cellHeaderText)
+	changeText(cellHeaderText, "An alternative style for Header Cells")
+	cellHeaderText.y = componentSpacing * 3
+	cellHeaderText.x = 300
+	cellHeaderText.resizeWithoutConstraints(250, 100)
 
 	// TODO: Needs to be aplied to user linked templates also
 	components.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
@@ -288,16 +324,37 @@ function createComponents() {
 	page.appendChild(components.cellHeader)
 
 	components.row = createRow()
+	components.row.y = componentSpacing * 4
 	components.row.appendChild(components.cell.createInstance())
 	components.row.appendChild(components.cell.createInstance())
 	components.row.setPluginData("isRow", "true")
+	components.row.layoutMode = "HORIZONTAL"
+	components.row.counterAxisSizingMode = "AUTO"
+
+	var rowText = figma.createText()
+	page.appendChild(rowText)
+	changeText(rowText, "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.")
+	rowText.y = componentSpacing * 4
+	rowText.x = 300
+	rowText.resizeWithoutConstraints(250, 100)
 
 	page.appendChild(components.row)
 
 	components.table = createTable()
+	components.table.y = componentSpacing * 5
 	components.table.appendChild(cloneComponentAsFrame(components.row))
 	components.table.appendChild(cloneComponentAsFrame(components.row))
 	components.table.setPluginData("isTable", "true")
+
+	components.table.layoutMode = "VERTICAL"
+	components.table.counterAxisSizingMode = "AUTO"
+
+	var tableText = figma.createText()
+	page.appendChild(tableText)
+	changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used for tables when creating them. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Update Tables")
+	tableText.y = componentSpacing * 5
+	tableText.x = 300
+	tableText.resizeWithoutConstraints(250, 100)
 
 	page.appendChild(components.table)
 
@@ -461,27 +518,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 	return table
 }
-
-// function replaceChildrenChars(sourceLayer, targetLayer) {
-// 	for (let a = 0; a < sourceLayer.children.length; a++) {
-// 		var sourceSubLayer = sourceLayer.children[a]
-
-// 		for (let b = 0; b < targetLayer.mainComponent.children.length; b++) {
-// 			var targetSubLayer = targetLayer.children[b]
-
-
-// 			if (sourceSubLayer.children) {
-// 				replaceChildrenChars(sourceSubLayer, targetSubLayer)
-// 			}
-// 			else if (sourceSubLayer.type === "TEXT") {
-// 				if (sourceSubLayer.name === targetSubLayer.name) {
-// 					targetSubLayer.children[a].characters
-// 				}
-// 			}
-
-// 		}
-// 	}
-// }
 
 // Must pass in both the source/target and their matching main components
 async function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
@@ -733,6 +769,7 @@ function positionInCenter(node) {
 
 var message = {
 	componentsExist: false,
+	cellExists: false,
 	columnCount: parseInt(figma.root.getPluginData("columnCount"), 10) || 4,
 	rowCount: parseInt(figma.root.getPluginData("rowCount"), 10) || 4,
 	cellWidth: parseInt(figma.root.getPluginData("cellWidth"), 10) || 100,
@@ -767,9 +804,21 @@ if (figma.root.getPluginData("columnResizing") == "false") message.columnResizin
 
 if (figma.command === "createTable") {
 
+
 	if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 		message.componentsExist = true
+
 	}
+
+	// if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+	// 	console.log("component exists")
+	// 	message.cellExists = true
+
+	// }
+	// else {
+	// 	console.log("component doesn't exist")
+	// 	message.cellExists = false
+	// }
 
 	figma.showUI(__uiFiles__.main);
 
@@ -785,7 +834,7 @@ if (figma.command === "createTable") {
 
 		if (msg.type === 'create-components') {
 
-			createComponents()
+			createDefaultComponents()
 
 			figma.root.setPluginData("cellComponentID", components.cell.id)
 			figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id)

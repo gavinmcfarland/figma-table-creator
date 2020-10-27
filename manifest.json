@@ -21,20 +21,19 @@
       "command": "selectRow"
     },
     {
-      "name": "Update Tables",
-      "command": "updateTables"
-    },
-    {
         "separator": true
     },
     {
       "name": "Link Components",
       "command": "linkComponents"
+    },
+        {
+      "name": "Update Tables",
+      "command": "updateTables"
     }
   ],
   "relaunchButtons": [
       {"command": "selectColumn", "name": "Select Columns", "multipleSelection": true},
-      {"command": "selectRow", "name": "Select Rows", "multipleSelection": true},
-      {"command": "updateTables", "name": "Update Tables"}
+      {"command": "selectRow", "name": "Select Rows", "multipleSelection": true}
     ]
 }
