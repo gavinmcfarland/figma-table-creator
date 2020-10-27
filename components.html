@@ -2350,7 +2350,7 @@
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
 			<div style="display: flex; place-items: center;"><span id="cellTemplateName"
-					style="flex-grow: 1;">Cell</span>
+					style="flex-grow: 1;">Cell <span style="color: var(--black3);">(required)</span></span></span>
 				<div class="icon-button" name="linkTemplate">
 					<div class="icon icon--link-connected" value="cell"></div>
 				</div>
@@ -2395,23 +2395,7 @@
 	const rowTemplateName = document.getElementById('rowTemplateName')
 	const cellTemplateName = document.getElementById('cellTemplateName')
 	const cellHeaderTemplateName = document.getElementById('cellHeaderTemplateName')
-
-
-
-
-
-
-	window.onmessage = async (event) => {
-		const message = event.data.pluginMessage
-
-	}
-
 	const manageComponentsPage = document.getElementById('manageComponentsPage')
-
-
-
-
-
 
 	// Link new templates
 	var linkTemplates = document.getElementsByName("linkTemplate");
