@@ -461,7 +461,10 @@ function updateTables() {
         // Add && node.id !== tableTemplateID ^^ if don't want it to update linked component
         for (let b = 0; b < tables.length; b++) {
             var table = tables[b];
-            copyAndPasteStyles(tableTemplate, table);
+            // Don't apply if an instance
+            if (table.type !== "INSTANCE") {
+                copyAndPasteStyles(tableTemplate, table);
+            }
             for (let x = 0; x < table.children.length; x++) {
                 var row = table.children[x];
                 for (let k = 0; k < row.children.length; k++) {
@@ -500,7 +503,10 @@ function updateTables() {
                 }
                 // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
                 // if (row.getPluginData("isRow") === "true") {
-                copyAndPasteStyles(rowTemplate, row);
+                // Don't apply if an instance
+                if (row.type !== "INSTANCE" && table.type !== "INSTANCE") {
+                    copyAndPasteStyles(rowTemplate, row);
+                }
                 // }
             }
         }
@@ -578,6 +584,7 @@ function selectRow() {
     }
 }
 function linkTemplate(template, selection) {
+    console.log(template);
     if (selection.length === 1) {
         const capitalize = (s) => {
             if (typeof s !== 'string')
@@ -587,11 +594,14 @@ function linkTemplate(template, selection) {
         var templateID = template + "ComponentID";
         // Make sure old templates don't have any old data on them
         var oldTemplate = findComponentById(figma.root.getPluginData(template + "ComponentID"));
-        figma.root.setPluginData("previous" + capitalize(template) + "ComponentID", oldTemplate.id);
-        oldTemplate.setPluginData("isTable", "");
-        oldTemplate.setPluginData("isRow", "");
-        oldTemplate.setPluginData("isCell", "");
-        oldTemplate.setPluginData("isCellHeader", "");
+        // Check if a previous template has been set first
+        if (oldTemplate) {
+            figma.root.setPluginData("previous" + capitalize(template) + "ComponentID", oldTemplate.id);
+            oldTemplate.setPluginData("isTable", "");
+            oldTemplate.setPluginData("isRow", "");
+            oldTemplate.setPluginData("isCell", "");
+            oldTemplate.setPluginData("isCellHeader", "");
+        }
         selection[0].setPluginData("is" + capitalize(template), "true"); // Check
         figma.root.setPluginData(templateID, selection[0].id);
         if (template === "cellHeader")
@@ -715,6 +725,37 @@ if (figma.command === "createTable") {
         if (msg.type === "link-template") {
             linkTemplate(msg.template, figma.currentPage.selection);
         }
+        if (msg.type === "update") {
+            console.log("updated");
+            if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+                message.componentsExist = true;
+            }
+            else {
+                message.componentsExist = false;
+            }
+            console.log(message.componentsExist);
+            figma.ui.postMessage(message);
+        }
+        if (msg.type === "link-components") {
+            figma.showUI(__uiFiles__.components);
+            figma.ui.resize(268, 486);
+            figma.ui.postMessage(message);
+            figma.ui.onmessage = msg => {
+                if (msg.type === "link-template") {
+                    linkTemplate(msg.template, figma.currentPage.selection);
+                }
+                if (msg.type === "update") {
+                    console.log("updated");
+                    if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+                        message.componentsExist = true;
+                    }
+                    else {
+                        message.componentsExist = false;
+                    }
+                    figma.ui.postMessage(message);
+                }
+            };
+        }
     };
 }
 if (figma.command === "linkComponents") {
@@ -724,6 +765,16 @@ if (figma.command === "linkComponents") {
     figma.ui.onmessage = msg => {
         if (msg.type === "link-template") {
             linkTemplate(msg.template, figma.currentPage.selection);
+        }
+        if (msg.type === "update") {
+            console.log("updated");
+            if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+                message.componentsExist = true;
+            }
+            else {
+                message.componentsExist = false;
+            }
+            figma.ui.postMessage(message);
         }
     };
 }

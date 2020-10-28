@@ -13,11 +13,11 @@
       "command": "createTable"
     },
     {
-      "name": "Select Columns",
+      "name": "Select Column",
       "command": "selectColumn"
     },
     {
-      "name": "Select Rows",
+      "name": "Select Row",
       "command": "selectRow"
     },
     {
@@ -33,7 +33,7 @@
     }
   ],
   "relaunchButtons": [
-      {"command": "selectColumn", "name": "Select Columns", "multipleSelection": true},
-      {"command": "selectRow", "name": "Select Rows", "multipleSelection": true}
+      {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
+      {"command": "selectRow", "name": "Select Row", "multipleSelection": true}
     ]
 }

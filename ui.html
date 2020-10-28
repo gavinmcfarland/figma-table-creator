@@ -2812,7 +2812,26 @@
 		// rowTemplateName.innerHTML = message.templates.row.name
 		// tableTemplateName.innerHTML = message.templates.table.name
 
+		// Link new templates
+		var linkTemplates = document.getElementsByName("linkTemplate");
+		var linkTemplate
 
+		for (var i = 0; i < linkTemplates.length; i++) {
+			linkTemplate = linkTemplates[i]
+			linkTemplates[i].onclick = (event) => {
+				var template = event.target.getAttribute("value")
+				parent.postMessage({ pluginMessage: { type: 'link-template', template } }, '*')
+			}
+
+		}
+
+		doneButton.onclick = () => {
+			parent.postMessage({ pluginMessage: { type: 'update' } }, '*')
+
+			manageComponentsPage.classList.add("hide")
+			manageComponentsPage.classList.remove("show")
+
+		}
 
 		remember.checked = message.remember
 		includeHeader.checked = message.includeHeader
@@ -2961,8 +2980,6 @@
 				cellAlignment = cellAlignments[i].value;
 		}
 
-		console.log(cellAlignment)
-
 		parent.postMessage({ pluginMessage: { type: 'create-table', columnCount, rowCount, remember, cellWidth, includeHeader, columnResizing, cellAlignment } }, '*')
 	}
 
@@ -2982,7 +2999,6 @@
 
 	// Update table styles
 	document.getElementById('updateTables').onclick = () => {
-		console.log("send message")
 		parent.postMessage({ pluginMessage: { type: 'update-tables' } }, '*')
 	}
 
@@ -2999,12 +3015,6 @@
 		menu.classList.remove("open")
 	}
 
-	doneButton.onclick = () => {
-		manageComponentsPage.classList.add("hide")
-		manageComponentsPage.classList.remove("show")
-		createTablePage.classList.add("show")
-	}
-
 	createTablePage.onclick = (event) => {
 		if (!document.getElementById('menu').contains(event.target) && !document.getElementById('optionsButton').contains(event.target)) {
 			menu.classList.remove("open")
@@ -3017,19 +3027,6 @@
 
 	columnResizingInput.onclick = (event) => {
 		menu.classList.remove("open")
-	}
-
-
-	// Link new templates
-	var linkTemplates = document.getElementsByName("linkTemplate");
-	var linkTemplate
-
-	for (var i = 0; i < linkTemplates.length; i++) {
-		linkTemplate = linkTemplates[i]
-		linkTemplates[i].onclick = (event) => {
-			var template = event.target.getAttribute("value")
-			parent.postMessage({ pluginMessage: { type: 'link-template', template } }, '*')
-		}
 	}
 
 </script>
