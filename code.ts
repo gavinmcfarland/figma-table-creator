@@ -157,7 +157,6 @@ function createCell(topBorder?, leftBorder?) {
 	var frame1 = figma.createFrame()
 	var frame2 = figma.createFrame()
 	var line1 = topBorder
-	var line2 = leftBorder
 	var text = figma.createText()
 
 	frame2.name = "Content"
@@ -177,20 +176,14 @@ function createCell(topBorder?, leftBorder?) {
 	frame2.layoutMode = "VERTICAL"
 
 	frame1.appendChild(line1)
-	frame1.appendChild(line2)
+
 
 	frame1.locked = true
 
 	frame1.fills = []
 	frame2.fills = []
 	line1.rotation = -90
-	line2.rotation = 180
-	line2.x = 100
-
-	line2.constraints = {
-		horizontal: "STRETCH",
-		vertical: "STRETCH"
-	}
+	line1.y = -5000
 
 	frame1.resizeWithoutConstraints(100, 0.01)
 	frame1.clipsContent = false
@@ -218,6 +211,31 @@ function createRow() {
 	var row = figma.createComponent()
 	row.name = "Table/Row"
 	row.clipsContent = true
+
+	const paint = {
+		r: 0.725490196078431,
+		g: 0.725490196078431,
+		b: 0.725490196078431,
+		a: 1
+	}
+
+	var innerShadow: ShadowEffect = {
+		type: "INNER_SHADOW",
+		color: paint,
+		offset: { x: 0, y: 1 },
+		radius: 0,
+		visible: true,
+		blendMode: "NORMAL"
+	}
+
+	row.effects = [innerShadow]
+
+	const fills = clone(row.fills)
+
+	fills[0].opacity = 0.0001
+	fills[0].visible = true
+
+	row.fills = fills
 
 	return row
 }
@@ -277,7 +295,7 @@ function createDefaultComponents() {
 	borderText.y = componentSpacing
 	borderText.resizeWithoutConstraints(250, 100)
 
-	components.cell = createCell(border.createInstance(), border.createInstance())
+	components.cell = createCell(border.createInstance())
 	page.appendChild(components.cell)
 	components.cell.setPluginData("isCell", "true")
 
