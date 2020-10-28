@@ -464,50 +464,49 @@ function updateTables() {
             // Don't apply if an instance
             if (table.type !== "INSTANCE") {
                 copyAndPasteStyles(tableTemplate, table);
-            }
-            for (let x = 0; x < table.children.length; x++) {
-                var row = table.children[x];
-                for (let k = 0; k < row.children.length; k++) {
-                    var cell = row.children[k];
-                    var width = cell.width;
-                    var height = cell.height;
-                    // Checks that main component has not been swapped by user
-                    if (cell.mainComponent.id === previousCellTemplateID) {
-                        var newInstance = cellTemplate.createInstance();
-                        // console.log(newInstance.children)
-                        overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children);
-                        // cell.mainComponent = cellTemplate
-                        newInstance.resize(width, height);
-                        // Bug where plugin data is lost when instance swapped
-                        newInstance.setPluginData("instanceBug", "true");
-                        newInstance.setPluginData("isCell", "");
-                        newInstance.setPluginData("isCell", "true");
-                        row.insertChild(k, newInstance);
-                        // row.appendChild(newInstance)
-                    }
-                    if (cell.mainComponent.id === previousCellHeaderTemplateID) {
-                        var newInstance = cellHeaderTemplate.createInstance();
-                        // console.log(newInstance.children)
-                        overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
-                        // cell.mainComponent = cellTemplate
-                        newInstance.resize(width, height);
-                        // Bug where plugin data is lost when instance swapped
-                        newInstance.setPluginData("instanceBug", "true");
-                        newInstance.setPluginData("isCellHeader", "");
-                        newInstance.setPluginData("isCellHeader", "true");
-                        row.insertChild(k, newInstance);
-                    }
-                    if (cell.mainComponent.id === previousCellTemplateID || cell.mainComponent.id === previousCellHeaderTemplateID) {
-                        cell.remove();
+                for (let x = 0; x < table.children.length; x++) {
+                    var row = table.children[x];
+                    if (row.type === "COMPONENT") {
+                        for (let k = 0; k < row.children.length; k++) {
+                            var cell = row.children[k];
+                            var width = cell.width;
+                            var height = cell.height;
+                            // Checks that main component has not been swapped by user
+                            if (cell.mainComponent.id === previousCellTemplateID) {
+                                // var newInstance = cellTemplate.createInstance()
+                                // console.log(newInstance.children)
+                                overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, cell.children);
+                                cell.mainComponent = cellTemplate;
+                                cell.resize(width, height);
+                                // Bug where plugin data is lost when instance swapped
+                                cell.setPluginData("instanceBug", "true");
+                                cell.setPluginData("isCell", "");
+                                cell.setPluginData("isCell", "true");
+                                // cell.insertChild(k, newInstance)
+                                // row.appendChild(newInstance)
+                            }
+                            if (cell.mainComponent.id === previousCellHeaderTemplateID) {
+                                // var newInstance = cellHeaderTemplate.createInstance()
+                                // console.log(newInstance.children)
+                                overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, cell.children);
+                                cell.mainComponent = cellHeaderTemplate;
+                                cell.resize(width, height);
+                                // Bug where plugin data is lost when instance swapped
+                                cell.setPluginData("instanceBug", "true");
+                                cell.setPluginData("isCellHeader", "");
+                                cell.setPluginData("isCellHeader", "true");
+                                // cell.insertChild(k, newInstance)
+                            }
+                            if (cell.mainComponent.id === previousCellTemplateID || cell.mainComponent.id === previousCellHeaderTemplateID) {
+                                // cell.remove()
+                            }
+                        }
+                        // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
+                        // if (row.getPluginData("isRow") === "true") {
+                        copyAndPasteStyles(rowTemplate, row);
+                        // }
                     }
                 }
-                // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
-                // if (row.getPluginData("isRow") === "true") {
-                // Don't apply if an instance
-                if (row.type !== "INSTANCE" && table.type !== "INSTANCE") {
-                    copyAndPasteStyles(rowTemplate, row);
-                }
-                // }
             }
         }
     }
@@ -679,47 +678,54 @@ if (figma.command === "createTable") {
             figma.notify('Table components created');
         }
         if (msg.type === 'create-table') {
-            if (msg.columnCount < 51 && msg.rowCount < 51) {
-                var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
-                if (table) {
-                    figma.root.setPluginData("columnCount", msg.columnCount.toString());
-                    figma.root.setPluginData("rowCount", msg.rowCount.toString());
-                    figma.root.setPluginData("cellWidth", msg.cellWidth.toString());
-                    figma.root.setPluginData("remember", msg.remember.toString());
-                    figma.root.setPluginData("includeHeader", msg.includeHeader.toString());
-                    figma.root.setPluginData("columnResizing", msg.columnResizing.toString());
-                    figma.root.setPluginData("cellAlignment", msg.cellAlignment);
-                    if (figma.root.getPluginData("remember")) {
-                        message.remember = (figma.root.getPluginData("remember") == "true");
+            if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+                message.componentsExist = true;
+                if (msg.columnCount < 51 && msg.rowCount < 51) {
+                    var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
+                    if (table) {
+                        figma.root.setPluginData("columnCount", msg.columnCount.toString());
+                        figma.root.setPluginData("rowCount", msg.rowCount.toString());
+                        figma.root.setPluginData("cellWidth", msg.cellWidth.toString());
+                        figma.root.setPluginData("remember", msg.remember.toString());
+                        figma.root.setPluginData("includeHeader", msg.includeHeader.toString());
+                        figma.root.setPluginData("columnResizing", msg.columnResizing.toString());
+                        figma.root.setPluginData("cellAlignment", msg.cellAlignment);
+                        if (figma.root.getPluginData("remember")) {
+                            message.remember = (figma.root.getPluginData("remember") == "true");
+                        }
+                        if (figma.root.getPluginData("includeHeader")) {
+                            message.includeHeader = (figma.root.getPluginData("includeHeader") == "true");
+                        }
+                        if (figma.root.getPluginData("columnResizing")) {
+                            message.includeHeader = (figma.root.getPluginData("columnResizing") == "true");
+                        }
+                        if (figma.root.getPluginData("columnCount")) {
+                            message.columnCount = parseInt(figma.root.getPluginData("columnCount"), 10);
+                        }
+                        if (figma.root.getPluginData("rowCount")) {
+                            message.rowCount = parseInt(figma.root.getPluginData("rowCount"), 10);
+                        }
+                        if (figma.root.getPluginData("cellWidth")) {
+                            message.rowCount = parseInt(figma.root.getPluginData("cellWidth"), 10);
+                        }
+                        if (figma.root.getPluginData("cellAlignment")) {
+                            message.cellAlignment = figma.root.getPluginData("cellAlignment");
+                        }
+                        const nodes = [];
+                        nodes.push(table);
+                        positionInCenter(table);
+                        figma.currentPage.selection = nodes;
+                        // figma.viewport.scrollAndZoomIntoView(nodes);
+                        figma.closePlugin();
                     }
-                    if (figma.root.getPluginData("includeHeader")) {
-                        message.includeHeader = (figma.root.getPluginData("includeHeader") == "true");
-                    }
-                    if (figma.root.getPluginData("columnResizing")) {
-                        message.includeHeader = (figma.root.getPluginData("columnResizing") == "true");
-                    }
-                    if (figma.root.getPluginData("columnCount")) {
-                        message.columnCount = parseInt(figma.root.getPluginData("columnCount"), 10);
-                    }
-                    if (figma.root.getPluginData("rowCount")) {
-                        message.rowCount = parseInt(figma.root.getPluginData("rowCount"), 10);
-                    }
-                    if (figma.root.getPluginData("cellWidth")) {
-                        message.rowCount = parseInt(figma.root.getPluginData("cellWidth"), 10);
-                    }
-                    if (figma.root.getPluginData("cellAlignment")) {
-                        message.cellAlignment = figma.root.getPluginData("cellAlignment");
-                    }
-                    const nodes = [];
-                    nodes.push(table);
-                    positionInCenter(table);
-                    figma.currentPage.selection = nodes;
-                    // figma.viewport.scrollAndZoomIntoView(nodes);
-                    figma.closePlugin();
+                }
+                else {
+                    figma.notify("Plugin limited to max of 50 columns and rows");
                 }
             }
             else {
-                figma.notify("Plugin limited to max of 50 columns and rows");
+                message.componentsExist = false;
+                figma.notify("Cannot find Cell component");
             }
         }
         if (msg.type === "link-template") {
