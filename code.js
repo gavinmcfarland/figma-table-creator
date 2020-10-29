@@ -10,22 +10,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
 }
-function changeText(node, text, weight = "Regular") {
+function changeText(node, text, weight) {
     return __awaiter(this, void 0, void 0, function* () {
-        // await figma.loadFontAsync({ family: "Roboto", style: "Regular" })
-        // await figma.loadFontAsync({ family: "Roboto", style: "Bold" })
         if (node.fontName === figma.mixed) {
             yield figma.loadFontAsync(node.getRangeFontName(0, 1));
         }
         else {
             yield figma.loadFontAsync({
                 family: node.fontName.family,
-                style: node.fontName.style
+                style: weight || node.fontName.style
             });
         }
-        // await Promise.all([figma.loadFontAsync({ family: node.fontName.family, style: node.fontName.style }), figma.loadFontAsync({ family: node.fontName.family, style: node.fontName.style })])
-        // node.fontName = { family: node.fontName.family, style: weight }
-        // console.log("is text chaning?")
+        if (weight) {
+            node.fontName = {
+                family: node.fontName.family,
+                style: weight
+            };
+        }
         if (text) {
             node.characters = text;
         }
@@ -288,9 +289,6 @@ function createDefaultComponents() {
     tableText.y = componentSpacing * 5;
     tableText.x = 300;
     tableText.resizeWithoutConstraints(250, 100);
-    for (let i = 0; i < components.table.children.length; i++) {
-        console.log(components.table.children[i].getPluginData("isRow"));
-    }
     page.appendChild(components.table);
 }
 var cellID;
@@ -423,22 +421,47 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 }
 // Must pass in both the source/target and their matching main components
 function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (let a = 0; a < targetChildren.length; a++) {
-            for (let b = 0; b < sourceChildren.length; b++) {
-                // If layer has children then run function again
-                if (sourceComponentChildren[a].children && targetComponentChildren[a].children && targetChildren[a].children && sourceChildren[a].children) {
-                    overrideChildrenChars(sourceComponentChildren[a].children, targetComponentChildren[b].children, sourceChildren[b].children, targetChildren[b].children);
-                }
-                // If layer is a text node then check if the main components share the same name
-                else if (sourceChildren[a].type === "TEXT") {
-                    if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
-                        changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
-                    }
+    for (let a = 0; a < targetChildren.length; a++) {
+        for (let b = 0; b < sourceChildren.length; b++) {
+            // If layer has children then run function again
+            if (sourceComponentChildren[a].children && targetComponentChildren[a].children && targetChildren[a].children && sourceChildren[a].children) {
+                overrideChildrenChars(sourceComponentChildren[a].children, targetComponentChildren[b].children, sourceChildren[b].children, targetChildren[b].children);
+            }
+            // If layer is a text node then check if the main components share the same name
+            else if (sourceChildren[a].type === "TEXT") {
+                if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
+                    changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
                 }
             }
         }
-    });
+    }
+}
+function overrideChildrenChars2(sourceChildren, targetChildren) {
+    for (let a = 0; a < sourceChildren.length; a++) {
+        // If layer has children then run function again
+        if (targetChildren[a].children && sourceChildren[a].children) {
+            overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children);
+        }
+        // If layer is a text node then check if the main components share the same name
+        else if (sourceChildren[a].type === "TEXT") {
+            // if (sourceChildren[a].name === targetChildren[b].name) {
+            changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
+            // }
+        }
+    }
+}
+function loopThroughChildren(children) {
+    for (let p = 0; p < children.length; p++) {
+        if (children[p].children) {
+            loopThroughChildren(children[p].children);
+        }
+        else {
+            if (children[p].type === "TEXT") {
+                console.log(children[p].id);
+                console.log(children[p].characters);
+            }
+        }
+    }
 }
 function updateTables() {
     // Find all tables
@@ -455,61 +478,56 @@ function updateTables() {
     var cellHeaderTemplateID = figma.root.getPluginData("cellHeaderComponentID");
     var previousCellHeaderTemplateID = figma.root.getPluginData("previousCellHeaderComponentID");
     var cellHeaderTemplate = findComponentById(cellHeaderTemplateID);
+    var discardBucket = figma.createFrame();
     // Look through each page to find tables created with plugin
     for (let i = 0; i < pages.length; i++) {
         tables = pages[i].findAll(node => node.getPluginData("isTable") === "true");
         // Add && node.id !== tableTemplateID ^^ if don't want it to update linked component
         for (let b = 0; b < tables.length; b++) {
+            console.log(tables.length);
             var table = tables[b];
             // Don't apply if an instance
             if (table.type !== "INSTANCE") {
                 copyAndPasteStyles(tableTemplate, table);
                 for (let x = 0; x < table.children.length; x++) {
                     var row = table.children[x];
-                    if (row.type === "COMPONENT") {
-                        for (let k = 0; k < row.children.length; k++) {
-                            var cell = row.children[k];
-                            var width = cell.width;
-                            var height = cell.height;
-                            // Checks that main component has not been swapped by user
-                            if (cell.mainComponent.id === previousCellTemplateID) {
-                                // var newInstance = cellTemplate.createInstance()
-                                // console.log(newInstance.children)
-                                overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, cell.children);
-                                cell.mainComponent = cellTemplate;
-                                cell.resize(width, height);
-                                // Bug where plugin data is lost when instance swapped
-                                cell.setPluginData("instanceBug", "true");
-                                cell.setPluginData("isCell", "");
-                                cell.setPluginData("isCell", "true");
-                                // cell.insertChild(k, newInstance)
-                                // row.appendChild(newInstance)
-                            }
-                            if (cell.mainComponent.id === previousCellHeaderTemplateID) {
-                                // var newInstance = cellHeaderTemplate.createInstance()
-                                // console.log(newInstance.children)
-                                overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, cell.children);
-                                cell.mainComponent = cellHeaderTemplate;
-                                cell.resize(width, height);
-                                // Bug where plugin data is lost when instance swapped
-                                cell.setPluginData("instanceBug", "true");
-                                cell.setPluginData("isCellHeader", "");
-                                cell.setPluginData("isCellHeader", "true");
-                                // cell.insertChild(k, newInstance)
-                            }
-                            if (cell.mainComponent.id === previousCellTemplateID || cell.mainComponent.id === previousCellHeaderTemplateID) {
-                                // cell.remove()
-                            }
+                    for (let k = 0; k < row.children.length; k++) {
+                        var cell = row.children[k];
+                        var width = cell.width;
+                        var height = cell.height;
+                        var newInstance = cell.clone();
+                        discardBucket.appendChild(newInstance);
+                        // Checks that main component has not been swapped by user
+                        if (cell.mainComponent.id === previousCellTemplateID) {
+                            overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children);
+                            cell.mainComponent = cellTemplate;
+                            cell.resize(width, height);
+                            // Bug where plugin data is lost when instance swapped
+                            cell.setPluginData("instanceBug", "true");
+                            cell.setPluginData("isCell", "");
+                            cell.setPluginData("isCell", "true");
+                            overrideChildrenChars2(newInstance.children, cell.children);
                         }
-                        // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
-                        // if (row.getPluginData("isRow") === "true") {
-                        copyAndPasteStyles(rowTemplate, row);
-                        // }
+                        if (cell.mainComponent.id === previousCellHeaderTemplateID) {
+                            overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
+                            cell.mainComponent = cellHeaderTemplate;
+                            cell.resize(width, height);
+                            // Bug where plugin data is lost when instance swapped
+                            cell.setPluginData("instanceBug", "true");
+                            cell.setPluginData("isCellHeader", "");
+                            cell.setPluginData("isCellHeader", "true");
+                            overrideChildrenChars2(newInstance.children, cell.children);
+                        }
                     }
+                    // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
+                    // if (row.getPluginData("isRow") === "true") {
+                    copyAndPasteStyles(rowTemplate, row);
+                    // }
                 }
             }
         }
     }
+    discardBucket.remove();
 }
 function addNewNodeToSelection(page, node) {
     page.selection = node;
@@ -605,7 +623,7 @@ function linkTemplate(template, selection) {
         figma.root.setPluginData(templateID, selection[0].id);
         if (template === "cellHeader")
             template = "Header Cell";
-        figma.notify(capitalize(template) + " template succesfully linked");
+        figma.notify(capitalize(template) + " component succesfully linked");
     }
 }
 function positionInCenter(node) {
@@ -675,7 +693,7 @@ if (figma.command === "createTable") {
             figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
             figma.root.setPluginData("rowComponentID", components.row.id);
             figma.root.setPluginData("tableComponentID", components.table.id);
-            figma.notify('Table components created');
+            figma.notify('Default table components created');
         }
         if (msg.type === 'create-table') {
             if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
