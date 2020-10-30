@@ -688,7 +688,8 @@
 		padding: 0;
 		font-weight: var(--font-weight-normal);
 		letter-spacing: var(--font-letter-spacing-pos-small);
-		cursor: pointer
+		cursor: pointer;
+		background-color: transparent;
 	}
 
 	.button--tertiary-destructive:enabled:focus,
@@ -2356,15 +2357,15 @@
 		<div>
 			<span class="table-creator-icon" src="./table-creator-plugin-icon.png"></span>
 			<h2 class="type--small type--bold">Welcome</h2>
-			<p>This plugin lets you to link components to
-				create new tables from. It allows you to customise, rename, and integrate them with your own design
-				system. To get started quickly, use the default components. Can you always link your own components
-				later.</p>
+			<p>This plugin needs to create some components which will be used to
+				create new tables from. This allows you to customise their appearance and intergrate them into your
+				design system.
+				They will be created in a new page called <b>Table Creator</b>.</p>
 			<button class='button button--primary' id="createComponents"
-				style="margin: 0 auto; margin-top: 16px;">Create Default
+				style="margin: 0 auto; margin-top: 16px;">Create
 				Components</button>
 			<button id="linkComponents" class='button button--tertiary' style="margin: 0 auto; margin-top: 8px;">Link
-				Components</button>
+				Own Components</button>
 		</div>
 	</div>
 
@@ -2730,13 +2731,17 @@
 	<section class="m-xxsmall">
 		<div class="section-title">Link Components</div>
 
-		<p class="type m-xxsmall">To change what templates tables should be created
-			from, first select the component and then click the link icon.</p>
+		<p class="type m-xxsmall">To control that components should be used to create tables from, first select the
+			component and then click the link
+			icon. Only styles such as background, effects, border
+			etc will be copied from <b>Table</b> and
+			<b>Row</b>
+			components.</p>
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
 			<div style="display: flex; place-items: center;"><span id="cellTemplateName" style="flex-grow: 1;">Cell
 					<span style="color: var(--black3);">(required)</span></span>
-				<div class="icon-button" name="linkTemplate">
+				<div class="icon-button" name="linkTemplate" value="cell">
 					<div class="icon icon--link-connected" value="cell"></div>
 				</div>
 			</div>
@@ -2745,33 +2750,29 @@
 			<div style="display: flex; place-items: center;"><span id="cellHeaderTemplateName"
 					style="flex-grow: 1;">Header
 					Cell</span>
-				<div class="icon-button" name="linkTemplate">
+				<div class="icon-button" name="linkTemplate" value="cellHeader">
 					<div class="icon icon--link-connected" value="cellHeader"></div>
 				</div>
 			</div>
 
 			<div style="display: flex; place-items: center;"><span id="rowTemplateName" style="flex-grow: 1;">Row</span>
-				<div class="icon-button" name="linkTemplate">
+				<div class="icon-button" name="linkTemplate" value="row">
 					<div class="icon icon--link-connected" value="row"></div>
 				</div>
 			</div>
 			<div style="display: flex; place-items: center;"><span id="tableTemplateName"
 					style="flex-grow: 1;">Table</span>
-				<div class="icon-button" name="linkTemplate">
+				<div class="icon-button" name="linkTemplate" value="table">
 					<div class="icon icon--link-connected" value="table"></div>
 				</div>
 			</div>
 
 		</div>
 
-		<p class="type m-xxsmall">Only styles will be copied from <b>Table</b> and <b>Row</b>
-			templates. Instances will be created
-			from
-			<b>Cell</b> and <b>Header Cell</b> templates.</p>
-
-		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small" id="updateTables">Update all
+		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small" id="updateTables">Update
 				tables</a></p>
-		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small">Use default templates</a></p>
+		<p class="type m-xxsmall">This will update the appearence of all
+			tables. It could take some time depending on the size of the file and how many tables there are.</p>
 
 	</section>
 	<section class="p-xxsmall mt-small"

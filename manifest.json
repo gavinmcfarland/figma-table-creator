@@ -26,10 +26,6 @@
     {
       "name": "Link Components",
       "command": "linkComponents"
-    },
-        {
-      "name": "Update Tables",
-      "command": "updateTables"
     }
   ],
   "relaunchButtons": [

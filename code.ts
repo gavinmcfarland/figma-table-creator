@@ -284,7 +284,7 @@ function createDefaultComponents() {
 
 	var borderText = figma.createText()
 	page.appendChild(borderText)
-	changeText(borderText, "This is used as a hack to support table cells with varying content height.")
+	changeText(borderText, "This is a hack to support table cells with varying content height.")
 	borderText.x = 300
 	borderText.y = componentSpacing
 	borderText.resizeWithoutConstraints(250, 100)
@@ -295,7 +295,7 @@ function createDefaultComponents() {
 
 	var cellText = figma.createText()
 	page.appendChild(cellText)
-	changeText(cellText, "This component is required for Table Creator to be able to create new tables from and update existing ones. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Link Components")
+	changeText(cellText, "This is the only component required for Table Creator to be able to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Link Components")
 	cellText.y = componentSpacing * 2
 	cellText.x = 300
 	cellText.resizeWithoutConstraints(250, 100)
@@ -376,7 +376,7 @@ function createDefaultComponents() {
 
 	var tableText = figma.createText()
 	page.appendChild(tableText)
-	changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used for tables when creating them. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Update Tables")
+	changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update all tables")
 	tableText.y = componentSpacing * 5
 	tableText.x = 300
 	tableText.resizeWithoutConstraints(250, 100)
@@ -395,11 +395,19 @@ function findComponentById(id) {
 
 	// Look through each page to see if matches node id
 	for (let i = 0; i < pages.length; i++) {
-		component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
+
+		if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
+			component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
+		}
+
 	}
 
-	// Return component if found, otherwise return false
 	return component || false
+
+
+
+	// Return component if found, otherwise return false
+
 }
 
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
@@ -413,7 +421,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"))
 
 	// try {
-	if (!cellHeader) {
+	if (!cellHeader && includeHeader) {
 		// throw "No Header Cell component found";
 		figma.notify("No Header Cell component found")
 		return
@@ -445,7 +453,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	var table = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("tableComponentID")))
 
 	if (!table) {
-		console.log("no table component")
 		table = figma.createFrame()
 	}
 
@@ -817,36 +824,56 @@ function selectRow() {
 function linkTemplate(template, selection) {
 	console.log(template)
 	if (selection.length === 1) {
-		const capitalize = (s) => {
-			if (typeof s !== 'string') return ''
-			return s.charAt(0).toUpperCase() + s.slice(1)
+		if (selection[0].type !== "COMPONENT") {
+			figma.notify("Please make sure node is a component")
+		}
+		else {
+			const capitalize = (s) => {
+				if (typeof s !== 'string') return ''
+				return s.charAt(0).toUpperCase() + s.slice(1)
+			}
+
+			var templateID = template + "ComponentID"
+
+			// Make sure old templates don't have any old data on them
+			var oldTemplate = findComponentById(figma.root.getPluginData(template + "ComponentID"))
+
+			// Check if a previous template has been set first
+			if (oldTemplate) {
+				figma.root.setPluginData("previous" + capitalize(template) + "ComponentID", oldTemplate.id)
+				oldTemplate.setPluginData("isTable", "")
+				oldTemplate.setPluginData("isRow", "")
+				oldTemplate.setPluginData("isCell", "")
+				oldTemplate.setPluginData("isCellHeader", "")
+			}
+
+
+
+
+
+			selection[0].setPluginData("is" + capitalize(template), "true") // Check
+
+			// if (template === "cell") {
+			// 	figma.root.setPluginData("cellWidth", selection[0].width.toString())
+			// }
+
+			figma.root.setPluginData(templateID, selection[0].id)
+
+			if (template === "cellHeader") template = "Header Cell"
+			figma.notify(capitalize(template) + " component succesfully linked")
 		}
 
-		var templateID = template + "ComponentID"
-
-		// Make sure old templates don't have any old data on them
-		var oldTemplate = findComponentById(figma.root.getPluginData(template + "ComponentID"))
-
-		// Check if a previous template has been set first
-		if (oldTemplate) {
-			figma.root.setPluginData("previous" + capitalize(template) + "ComponentID", oldTemplate.id)
-			oldTemplate.setPluginData("isTable", "")
-			oldTemplate.setPluginData("isRow", "")
-			oldTemplate.setPluginData("isCell", "")
-			oldTemplate.setPluginData("isCellHeader", "")
-		}
-
-
-
-
-
-		selection[0].setPluginData("is" + capitalize(template), "true") // Check
-
-		figma.root.setPluginData(templateID, selection[0].id)
-
-		if (template === "cellHeader") template = "Header Cell"
-		figma.notify(capitalize(template) + " component succesfully linked")
 	}
+
+	if (selection.length > 1) {
+		figma.notify("Make sure only one component is selected")
+	}
+
+	if (selection.length === 0) {
+		figma.notify("No components selected")
+	}
+
+
 
 }
 
@@ -1016,12 +1043,15 @@ if (figma.command === "createTable") {
 		if (msg.type === "update") {
 			console.log("updated")
 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+				console.log("component exists")
 				message.componentsExist = true
+				// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
 			}
 			else {
+				console.log("component doesn't exist")
 				message.componentsExist = false
 			}
-			console.log(message.componentsExist)
+			console.log(message.componentsExist, figma.root.getPluginData("cellComponentID"))
 			figma.ui.postMessage(message);
 		}
 
@@ -1040,6 +1070,7 @@ if (figma.command === "createTable") {
 					console.log("updated")
 					if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 						message.componentsExist = true
+						// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
 					}
 					else {
 						message.componentsExist = false
@@ -1066,6 +1097,7 @@ if (figma.command === "linkComponents") {
 			console.log("updated")
 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 				message.componentsExist = true
+				// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
 			}
 			else {
 				message.componentsExist = false
