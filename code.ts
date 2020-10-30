@@ -36,7 +36,7 @@ async function changeText(node, text, weight?) {
 }
 
 function cloneComponentAsFrame(component) {
-	if (component === false) {
+	if (!component) {
 		return false
 	}
 
@@ -103,11 +103,14 @@ function copyAndPasteStyles(current, node) {
 
 function removeChildren(node) {
 
-	if (node.children.length > 0) {
-		for (let i = 0; i < node.children.length; i++) {
+	var length = node.children.length
+
+	if (length > 0) {
+		for (let i = 0; i < length; i++) {
+			console.log(node.children[0])
 			node.children[0].remove()
 		}
-		node.children[0].remove()
+		// node.children[0].remove()
 	}
 
 }
@@ -390,23 +393,29 @@ function createDefaultComponents() {
 var cellID
 
 function findComponentById(id) {
-	var pages = figma.root.children
-	var component
+	// var pages = figma.root.children
+	// var component
 
-	// Look through each page to see if matches node id
-	for (let i = 0; i < pages.length; i++) {
+	// // Look through each page to see if matches node id
+	// for (let i = 0; i < pages.length; i++) {
 
-		if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
-			component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
-		}
+	// 	if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
+	// 		component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
+	// 	}
 
+	// }
+
+
+	// return component || false
+
+	var node = figma.getNodeById(id)
+
+	if (node?.parent === null) {
+		return false
 	}
-
-	return component || false
-
-
-
-	// Return component if found, otherwise return false
+	else {
+		return node
+	}
 
 }
 
@@ -415,6 +424,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	// Get Cell Template
 	var cell = findComponentById(figma.root.getPluginData("cellComponentID"))
 	cell.layoutAlign = cellAlignment
+
+
 
 
 	// Get Header Cell Template
@@ -442,8 +453,12 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		row = figma.createFrame()
 	}
 
+
+
 	// Remove children (we only need the container)
 	removeChildren(row)
+
+	console.log(row.children)
 
 	// Set autolayout
 	row.layoutMode = "HORIZONTAL"
@@ -620,22 +635,6 @@ function overrideChildrenChars2(sourceChildren, targetChildren) {
 	}
 }
 
-function loopThroughChildren(children) {
-	for (let p = 0; p < children.length; p++) {
-		if (children[p].children) {
-			loopThroughChildren(children[p].children)
-		}
-		else {
-			if (children[p].type === "TEXT") {
-				console.log(children[p].id)
-				console.log(children[p].characters)
-			}
-
-		}
-
-	}
-}
-
 function updateTables() {
 
 	// Find all tables
@@ -645,8 +644,19 @@ function updateTables() {
 	var tableTemplate = findComponentById(tableTemplateID)
 	// removeChildren(tableTemplate)
 
+
+
 	var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"))
 	// removeChildren(rowTemplate)
+
+	// If can't find table and row templates use plain frame
+	if (!tableTemplate) {
+		tableTemplate = figma.createFrame()
+	}
+
+	if (!rowTemplate) {
+		rowTemplate = figma.createFrame()
+	}
 
 	var cellTemplateID = figma.root.getPluginData("cellComponentID")
 	var previousCellTemplateID = figma.root.getPluginData("previousCellComponentID")
@@ -664,13 +674,15 @@ function updateTables() {
 
 
 		for (let b = 0; b < tables.length; b++) {
-			console.log(tables.length)
+
 			var table = tables[b]
 
 			// Don't apply if an instance
 			if (table.type !== "INSTANCE") {
 
+
 				copyAndPasteStyles(tableTemplate, table)
+
 
 				for (let x = 0; x < table.children.length; x++) {
 					var row = table.children[x]
@@ -726,6 +738,7 @@ function updateTables() {
 		}
 	}
 	discardBucket.remove()
+
 }
 
 
@@ -822,7 +835,7 @@ function selectRow() {
 }
 
 function linkTemplate(template, selection) {
-	console.log(template)
+
 	if (selection.length === 1) {
 		if (selection[0].type !== "COMPONENT") {
 			figma.notify("Please make sure node is a component")
@@ -877,6 +890,14 @@ function linkTemplate(template, selection) {
 
 }
 
+function restoreComponent(component) {
+	var component: any = findComponentById(figma.root.getPluginData(component + "ComponentID"))
+
+	figma.currentPage.appendChild(component)
+
+	positionInCenter(component)
+}
+
 function positionInCenter(node) {
 	// Position newly created table in center of viewport
 	node.x = figma.viewport.center.x - (node.width / 2)
@@ -925,16 +946,6 @@ if (figma.command === "createTable") {
 		message.componentsExist = true
 
 	}
-
-	// if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-	// 	console.log("component exists")
-	// 	message.cellExists = true
-
-	// }
-	// else {
-	// 	console.log("component doesn't exist")
-	// 	message.cellExists = false
-	// }
 
 	figma.showUI(__uiFiles__.main);
 
@@ -1041,17 +1052,16 @@ if (figma.command === "createTable") {
 		}
 
 		if (msg.type === "update") {
-			console.log("updated")
+
 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-				console.log("component exists")
+
 				message.componentsExist = true
 				// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
 			}
 			else {
-				console.log("component doesn't exist")
+
 				message.componentsExist = false
 			}
-			console.log(message.componentsExist, figma.root.getPluginData("cellComponentID"))
 			figma.ui.postMessage(message);
 		}
 
@@ -1067,7 +1077,7 @@ if (figma.command === "createTable") {
 
 				}
 				if (msg.type === "update") {
-					console.log("updated")
+
 					if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 						message.componentsExist = true
 						// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
@@ -1078,6 +1088,10 @@ if (figma.command === "createTable") {
 					figma.ui.postMessage(message);
 				}
 			}
+		}
+
+		if (msg.type === "restore-component") {
+			restoreComponent(msg.component)
 		}
 	};
 }
@@ -1094,7 +1108,7 @@ if (figma.command === "linkComponents") {
 
 		}
 		if (msg.type === "update") {
-			console.log("updated")
+
 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 				message.componentsExist = true
 				// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)

@@ -2741,27 +2741,38 @@
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
 			<div style="display: flex; place-items: center;"><span id="cellTemplateName" style="flex-grow: 1;">Cell
 					<span style="color: var(--black3);">(required)</span></span>
+				<div class="icon-button" name="restoreComponent" value="cell">
+					<div class="icon icon--component" value="cell"></div>
+				</div>
 				<div class="icon-button" name="linkTemplate" value="cell">
 					<div class="icon icon--link-connected" value="cell"></div>
 				</div>
+
 			</div>
-			<div id="warning" class="warning">Cannot find component. Please link to a component to use for the
-				table cell.</div>
 			<div style="display: flex; place-items: center;"><span id="cellHeaderTemplateName"
 					style="flex-grow: 1;">Header
 					Cell</span>
+				<div class="icon-button" name="restoreComponent" value="cellHeader">
+					<div class="icon icon--component" value="cellHeader"></div>
+				</div>
 				<div class="icon-button" name="linkTemplate" value="cellHeader">
 					<div class="icon icon--link-connected" value="cellHeader"></div>
 				</div>
 			</div>
 
 			<div style="display: flex; place-items: center;"><span id="rowTemplateName" style="flex-grow: 1;">Row</span>
+				<div class="icon-button" name="restoreComponent" value="row">
+					<div class="icon icon--component" value="row"></div>
+				</div>
 				<div class="icon-button" name="linkTemplate" value="row">
 					<div class="icon icon--link-connected" value="row"></div>
 				</div>
 			</div>
 			<div style="display: flex; place-items: center;"><span id="tableTemplateName"
 					style="flex-grow: 1;">Table</span>
+				<div class="icon-button" name="restoreComponent" value="table">
+					<div class="icon icon--component" value="table"></div>
+				</div>
 				<div class="icon-button" name="linkTemplate" value="table">
 					<div class="icon icon--link-connected" value="table"></div>
 				</div>
@@ -2823,6 +2834,18 @@
 			linkTemplates[i].onclick = (event) => {
 				var template = event.target.getAttribute("value")
 				parent.postMessage({ pluginMessage: { type: 'link-template', template } }, '*')
+			}
+
+		}
+
+		var restoreComponents = document.getElementsByName("restoreComponent");
+		var restoreComponent
+
+		for (var i = 0; i < restoreComponents.length; i++) {
+			restoreComponent = restoreComponents[i]
+			restoreComponents[i].onclick = (event) => {
+				var component = event.target.getAttribute("value")
+				parent.postMessage({ pluginMessage: { type: 'restore-component', component } }, '*')
 			}
 
 		}
