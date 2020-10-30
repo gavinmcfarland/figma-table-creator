@@ -1130,5 +1130,4 @@ if (figma.command === "updateTables") {
 	figma.closePlugin();
 }
 
-
 figma.root.setRelaunchData({ updateTables: 'Update all tables with changes from templates' })

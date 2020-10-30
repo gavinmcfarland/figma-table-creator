@@ -26,6 +26,14 @@
     {
       "name": "Link Components",
       "command": "linkComponents"
+    },
+    {
+      "name": "Set Local Storage",
+      "command": "setAsync"
+    },
+    {
+      "name": "Get Local Storage",
+      "command": "getAsync"
     }
   ],
   "relaunchButtons": [
