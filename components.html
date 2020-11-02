@@ -2021,6 +2021,12 @@
 
 	/* Custom */
 
+	.icon--go-to-component {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M5.74279 4.74795L8.00006 2.5L10.2573 4.74795L8.00006 6.9959L5.74279 4.74795ZM4.74819 10.2571L2.50024 7.9998L4.74819 5.74253L6.99614 7.9998L4.74819 10.2571ZM10.2573 11.2517L8.00004 13.4996L5.74278 11.2517L8.00004 9.00371L10.2573 11.2517ZM13.4999 7.99981L11.2519 5.74254L9.00396 7.99981L11.2519 10.2571L13.4999 7.99981Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+		background-repeat: no-repeat;
+		background-position: center;
+	}
+
 	label {
 		z-index: 1;
 	}
@@ -2229,9 +2235,13 @@
 		display: none;
 	}
 
-	{# .manageComponents {
-		display: none;
-	} #}
+		{
+		# .manageComponents {
+			display: none;
+		}
+
+		#
+	}
 
 	.hide {
 		display: none !important;
@@ -2345,45 +2355,64 @@
 	<section class="m-xxsmall">
 		<div class="section-title">Link Components</div>
 
-		<p class="type m-xxsmall">To control that components should be used to create tables from, first select the component and then click the link icon. Only styles such as background, effects, border
+		<p class="type m-xxsmall">First select the component and then click the link icon, to link what components
+			should be used to create tables.</p>
+
+		<p class="type m-xxsmall">Only layer styles such as background, effects, border
 			etc will be copied from <b>Table</b> and
 			<b>Row</b>
 			components.</p>
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
-			<div style="display: flex; place-items: center;"><span id="cellTemplateName"
-					style="flex-grow: 1;">Cell <span style="color: var(--black3);">(required)</span></span></span>
-				<div class="icon-button" name="linkTemplate">
+			<div style="display: flex; place-items: center;"><span id="cellTemplateName" style="flex-grow: 1;">Cell
+					<span style="color: var(--black3);">(required)</span></span>
+				<!-- <div class="icon-button" name="restoreComponent" value="cell" style="margin-right: 0"
+							title="Go to component">
+							<div class="icon icon--go-to-component" value="cell"></div>
+					</div> -->
+				<div class="icon-button" name="linkTemplate" value="cell" title="Link selected component">
 					<div class="icon icon--link-connected" value="cell"></div>
 				</div>
+
 			</div>
 			<div style="display: flex; place-items: center;"><span id="cellHeaderTemplateName"
 					style="flex-grow: 1;">Header
 					Cell</span>
-				<div class="icon-button" name="linkTemplate">
+				<!-- <div class="icon-button" name="restoreComponent" value="cellHeader" style="margin-right: 0"
+							title="Go to component">
+							<div class="icon icon--go-to-component" value="cellHeader"></div>
+				</div> -->
+				<div class="icon-button" name="linkTemplate" value="cellHeader" title="Link selected component">
 					<div class="icon icon--link-connected" value="cellHeader"></div>
 				</div>
 			</div>
 
 			<div style="display: flex; place-items: center;"><span id="rowTemplateName" style="flex-grow: 1;">Row</span>
-				<div class="icon-button" name="linkTemplate">
+				<!-- <div class="icon-button" name="restoreComponent" value="row" style="margin-right: 0"
+							title="Go to component">
+			<div class="icon icon--go-to-component" value="row"></div>
+		</div> -->
+				<div class="icon-button" name="linkTemplate" value="row" title="Link selected component">
 					<div class="icon icon--link-connected" value="row"></div>
 				</div>
 			</div>
 			<div style="display: flex; place-items: center;"><span id="tableTemplateName"
 					style="flex-grow: 1;">Table</span>
-				<div class="icon-button" name="linkTemplate">
+				<!-- <div class="icon-button" name="restoreComponent" value="table" style="margin-right: 0"
+							title="Go to component">
+							<div class="icon icon--go-to-component" value="table"></div>
+					</div> -->
+				<div class="icon-button" name="linkTemplate" value="table" title="Link selected component">
 					<div class="icon icon--link-connected" value="table"></div>
 				</div>
 			</div>
 
 		</div>
 
-		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small" id="updateTables">Update all
+		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small" id="updateTables">Update
 				tables</a></p>
-
-		<p class="type m-xxsmall">This will update the appearence of all
-			tables. It could take some time depending on the size of the file and how many tables there are.</p>
+		<p class="type m-xxsmall">It could take some time to update the appearance of all tables depending on how many
+			tables there are.</p>
 	</section>
 </div>
 
@@ -2406,5 +2435,23 @@
 			parent.postMessage({ pluginMessage: { type: 'link-template', template } }, '*')
 		}
 	}
+
+	document.getElementById('updateTables').onclick = () => {
+		parent.postMessage({ pluginMessage: { type: 'update-tables' } }, '*')
+	}
+
+	// var restoreComponents = document.getElementsByName("restoreComponent");
+	// var restoreComponent
+
+	// for (var i = 0; i < restoreComponents.length; i++) {
+	// 	restoreComponent = restoreComponents[i]
+
+	// 	restoreComponents[i].onclick = (event) => {
+	// 		var component = event.target.getAttribute("value")
+
+	// 		parent.postMessage({ pluginMessage: { type: 'restore-component', component } }, '*')
+	// 	}
+
+	// }
 
 </script>

@@ -26,17 +26,10 @@
     {
       "name": "Link Components",
       "command": "linkComponents"
-    },
-    {
-      "name": "Set Local Storage",
-      "command": "setAsync"
-    },
-    {
-      "name": "Get Local Storage",
-      "command": "getAsync"
     }
   ],
   "relaunchButtons": [
+      {"command": "createTable", "name": "Create Table"},
       {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
       {"command": "selectRow", "name": "Select Row", "multipleSelection": true}
     ]

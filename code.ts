@@ -61,6 +61,9 @@ function cloneComponentAsFrame(component) {
 	frame.layoutMode = component.layoutMode
 	frame.counterAxisSizingMode = component.counterAxisSizingMode
 
+	frame.dashPattern = component.dashPattern
+	frame.clipsContent = component.clipsContent
+
 	frame.effects = clone(component.effects)
 
 
@@ -379,7 +382,7 @@ function createDefaultComponents() {
 
 	var tableText = figma.createText()
 	page.appendChild(tableText)
-	changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update all tables")
+	changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update tables")
 	tableText.y = componentSpacing * 5
 	tableText.x = 300
 	tableText.resizeWithoutConstraints(250, 100)
@@ -410,11 +413,18 @@ function findComponentById(id) {
 
 	var node = figma.getNodeById(id)
 
+
 	if (node?.parent === null) {
+		figma.root.setPluginData("cellComponentState", "exists")
 		return false
 	}
-	else {
+	else if (node) {
+		figma.root.setPluginData("cellComponentState", "removed")
 		return node
+	}
+	else {
+		figma.root.setPluginData("cellComponentState", "deleted")
+		return null
 	}
 
 }
@@ -891,11 +901,22 @@ function linkTemplate(template, selection) {
 }
 
 function restoreComponent(component) {
-	var component: any = findComponentById(figma.root.getPluginData(component + "ComponentID"))
 
+	var component: any = figma.getNodeById(figma.root.getPluginData(component + "ComponentID"))
+
+	console.log(component)
 	figma.currentPage.appendChild(component)
+	if (component) {
 
-	positionInCenter(component)
+		figma.currentPage.selection = [component]
+		figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection);
+	}
+	else {
+		figma.notify("Component not found")
+	}
+
+
+
 }
 
 function positionInCenter(node) {
@@ -916,16 +937,20 @@ var message = {
 	cellAlignment: figma.root.getPluginData("cellAlignment") || "MIN",
 	templates: {
 		table: {
-			name: figma.root.getPluginData("tableComponentName") || ""
+			name: figma.root.getPluginData("tableComponentName") || "",
+			state: figma.root.getPluginData("tableComponentState") || null
 		},
 		row: {
-			name: figma.root.getPluginData("rowComponentName") || ""
+			name: figma.root.getPluginData("rowComponentName") || "",
+			state: figma.root.getPluginData("rowComponentState") || null
 		},
 		cell: {
-			name: figma.root.getPluginData("cellComponentName") || ""
+			name: figma.root.getPluginData("cellComponentName") || "",
+			state: figma.root.getPluginData("cellComponentState") || null
 		},
 		cellHeader: {
-			name: figma.root.getPluginData("cellHeaderComponentName") || ""
+			name: figma.root.getPluginData("cellHeaderComponentName") || "",
+			state: figma.root.getPluginData("cellHeaderComponentState") || null
 		}
 	}
 }
@@ -940,9 +965,9 @@ if (figma.root.getPluginData("columnResizing") == "false") message.columnResizin
 
 
 if (figma.command === "createTable") {
-
-
+	// figma.root.setRelaunchData({ createTable: 'Create a new table' })
 	if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+
 		message.componentsExist = true
 
 	}
@@ -962,6 +987,7 @@ if (figma.command === "createTable") {
 		if (msg.type === 'create-components') {
 
 			createDefaultComponents()
+			figma.root.setRelaunchData({ createTable: 'Create a new table' })
 
 			figma.root.setPluginData("cellComponentID", components.cell.id)
 			figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id)
@@ -973,6 +999,7 @@ if (figma.command === "createTable") {
 		}
 
 		if (msg.type === 'create-table') {
+
 
 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 				message.componentsExist = true
@@ -1118,6 +1145,14 @@ if (figma.command === "linkComponents") {
 			}
 			figma.ui.postMessage(message);
 		}
+
+		if (msg.type === "restore-component") {
+			restoreComponent(msg.component)
+		}
+
+		if (msg.type === "update-tables") {
+			updateTables()
+		}
 	}
 }
 
@@ -1144,4 +1179,5 @@ if (figma.command === "updateTables") {
 	figma.closePlugin();
 }
 
-figma.root.setRelaunchData({ updateTables: 'Update all tables with changes from templates' })
+
+// figma.root.setRelaunchData({ updateTables: 'Update all tables with changes from templates' })
