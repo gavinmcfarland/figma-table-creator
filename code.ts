@@ -638,6 +638,7 @@ function overrideChildrenChars2(sourceChildren, targetChildren) {
 		// If layer is a text node then check if the main components share the same name
 		else if (sourceChildren[a].type === "TEXT") {
 			// if (sourceChildren[a].name === targetChildren[b].name) {
+			targetChildren[a].name = sourceChildren[a].name
 			changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
 			// }
 		}
