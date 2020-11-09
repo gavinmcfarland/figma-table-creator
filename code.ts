@@ -46,10 +46,22 @@ function cloneComponentAsFrame(component) {
 		frame.name = component.name
 	}
 
-	frame.fills = component.fills
-	frame.strokes = component.strokes
+	if (component.fillStyleId == "") {
+		frame.fills = component.fills
+	}
+	else {
+		frame.fillStyleId = component.fillStyleId
+	}
+
+	if (component.strokeStyleId == "") {
+		frame.strokes = component.strokes
+	}
+	else {
+		frame.strokeStyleId = component.strokeStyleId
+	}
+
 	frame.strokeWeight = component.strokeWeight
-	frame.strokeStyleId = component.strokeStyleId
+
 	frame.strokeAlign = component.strokeAlign
 	frame.strokeCap = component.strokeCap
 	frame.strokeJoin = component.strokeJoin
@@ -77,10 +89,24 @@ function cloneComponentAsFrame(component) {
 function copyAndPasteStyles(current, node) {
 
 	node.name = current.name
-	node.fills = current.fills
-	node.strokes = current.strokes
+
+	if (current.fillStyleId == "") {
+		node.fills = current.fills
+	}
+	else {
+		node.fillStyleId = current.fillStyleId
+	}
+
+	if (current.strokeStyleId == "") {
+		node.strokes = current.strokes
+	}
+	else {
+		node.strokeStyleId = current.strokeStyleId
+	}
+
+
 	node.strokeWeight = current.strokeWeight
-	node.strokeStyleId = current.strokeStyleId
+
 	node.strokeAlign = current.strokeAlign
 	node.strokeCap = current.strokeCap
 	node.strokeJoin = current.strokeJoin
@@ -110,7 +136,6 @@ function removeChildren(node) {
 
 	if (length > 0) {
 		for (let i = 0; i < length; i++) {
-			console.log(node.children[0])
 			node.children[0].remove()
 		}
 		// node.children[0].remove()
@@ -468,7 +493,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	// Remove children (we only need the container)
 	removeChildren(row)
 
-	console.log(row.children)
+
 
 	// Set autolayout
 	row.layoutMode = "HORIZONTAL"
@@ -688,6 +713,9 @@ function updateTables() {
 
 			var table = tables[b]
 
+
+
+
 			// Don't apply if an instance
 			if (table.type !== "INSTANCE") {
 
@@ -905,7 +933,7 @@ function restoreComponent(component) {
 
 	var component: any = figma.getNodeById(figma.root.getPluginData(component + "ComponentID"))
 
-	console.log(component)
+
 	figma.currentPage.appendChild(component)
 	if (component) {
 
@@ -1170,12 +1198,6 @@ if (figma.command === "selectRow") {
 }
 
 if (figma.command === "updateTables") {
-	if (figma.currentPage.selection[0]) {
-		console.log("row", figma.currentPage.selection[0].getPluginData("isRow"))
-		console.log("table", figma.currentPage.selection[0].getPluginData("isTable"))
-		console.log("cell", figma.currentPage.selection[0].getPluginData("isCell"))
-	}
-
 	updateTables()
 	figma.closePlugin();
 }
