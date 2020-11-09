@@ -470,16 +470,18 @@ function overrideChildrenChars(sourceComponentChildren, targetComponentChildren,
         }
     }
 }
-function overrideChildrenChars2(sourceChildren, targetChildren) {
+function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
     for (let a = 0; a < sourceChildren.length; a++) {
+        if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
+            targetChildren[a].name = sourceChildren[a].name;
+        }
         // If layer has children then run function again
         if (targetChildren[a].children && sourceChildren[a].children) {
-            overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children);
+            overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children);
         }
         // If layer is a text node then check if the main components share the same name
         else if (sourceChildren[a].type === "TEXT") {
             // if (sourceChildren[a].name === targetChildren[b].name) {
-            targetChildren[a].name = sourceChildren[a].name;
             changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
             // }
         }
@@ -534,7 +536,7 @@ function updateTables() {
                             cell.setPluginData("instanceBug", "true");
                             cell.setPluginData("isCell", "");
                             cell.setPluginData("isCell", "true");
-                            overrideChildrenChars2(newInstance.children, cell.children);
+                            overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
                         }
                         if (cell.mainComponent.id === previousCellHeaderTemplateID) {
                             overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
@@ -544,7 +546,7 @@ function updateTables() {
                             cell.setPluginData("instanceBug", "true");
                             cell.setPluginData("isCellHeader", "");
                             cell.setPluginData("isCellHeader", "true");
-                            overrideChildrenChars2(newInstance.children, cell.children);
+                            overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
                         }
                     }
                     // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
@@ -870,6 +872,11 @@ if (figma.command === "selectRow") {
     figma.closePlugin();
 }
 if (figma.command === "updateTables") {
+    // if (figma.currentPage.selection[0]) {
+    // 	console.log("row", figma.currentPage.selection[0].getPluginData("isRow"))
+    // 	console.log("table", figma.currentPage.selection[0].getPluginData("isTable"))
+    // 	console.log("cell", figma.currentPage.selection[0].getPluginData("isCell"))
+    // }
     updateTables();
     figma.closePlugin();
 }
