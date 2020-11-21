@@ -148,6 +148,7 @@ function createCell(topBorder, leftBorder) {
     var line1 = topBorder;
     var text = figma.createText();
     frame2.name = "Content";
+    frame2.primaryAxisSizingMode = "AUTO";
     changeText(text, "");
     cell.name = "Table/Cell/Default";
     const fills = clone(cell.fills);
@@ -255,8 +256,11 @@ function createDefaultComponents() {
     components.cellHeader = figma.createComponent();
     components.cellHeader.y = componentSpacing * 3;
     var innerCell = components.cell.createInstance();
-    innerCell.layoutAlign = "STRETCH";
+    innerCell.layoutAlign = "INHERIT";
     components.cellHeader.appendChild(innerCell);
+    // for (let i = 0; i < components.cellHeader.children.length; i++) {
+    // 	components.cellHeader.children[i].primaryAxisSizingMode = "AUTO"
+    // }
     components.cellHeader.name = "Table/Cell/Header";
     components.cellHeader.layoutMode = "VERTICAL";
     components.cellHeader.children[0].fills = [];
@@ -338,11 +342,17 @@ function findComponentById(id) {
     }
 }
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
+    var _a, _b, _c, _d;
     // Get Cell Template
     var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
-    cell.layoutAlign = cellAlignment;
+    // cell.counterAxisSizingMode = "FIXED"
+    // cell.primaryAxisSizingMode = "FIXED"
+    // cell.layoutAlign = "STRETCH"
+    // cell.layoutGrow = 1
     // Get Header Cell Template
     var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"));
+    // cellHeader.layoutAlign = "STRETCH"
+    // cellHeader.layoutGrow = 1
     // try {
     if (!cellHeader && includeHeader) {
         // throw "No Header Cell component found";
@@ -364,6 +374,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     // Set autolayout
     row.layoutMode = "HORIZONTAL";
     row.counterAxisSizingMode = "AUTO";
+    row.counterAxisAlignItems = cellAlignment;
     // Get Table Template
     var table = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("tableComponentID")));
     if (!table) {
@@ -391,6 +402,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         firstRow.name = row.name;
         firstRow.layoutMode = "HORIZONTAL";
         firstRow.counterAxisSizingMode = "AUTO";
+        firstRow.counterAxisAlignItems = cellAlignment;
         row.remove();
     }
     else {
@@ -405,14 +417,29 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
             var duplicatedCellHeader = cellHeader.createInstance();
             duplicatedCellHeader.setPluginData("isCellHeader", "true");
             duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height);
+            duplicatedCellHeader.layoutAlign = "STRETCH";
+            // duplicatedCellHeader.layoutGrow = 1
+            duplicatedCellHeader.primaryAxisSizingMode = "FIXED";
+            if (duplicatedCellHeader.children.length === 1) {
+                if (((_a = duplicatedCellHeader.children[0].children[1]) === null || _a === void 0 ? void 0 : _a.name) === "Content") {
+                    duplicatedCellHeader.primaryAxisAlignItems = cellAlignment;
+                }
+            }
             rowHeader.appendChild(duplicatedCellHeader);
         }
         table.appendChild(rowHeader);
     }
     for (var i = 0; i < numberColumns; i++) {
         var duplicatedCell = cell.createInstance();
+        console.log(duplicatedCell.layoutAlign);
         duplicatedCell.setPluginData("isCell", "true");
+        duplicatedCell.layoutAlign = "STRETCH";
+        // duplicatedCell.layoutGrow = 1
         duplicatedCell.resizeWithoutConstraints(cellWidth, duplicatedCell.height);
+        duplicatedCell.primaryAxisSizingMode = "FIXED";
+        if (((_b = duplicatedCell.children[1]) === null || _b === void 0 ? void 0 : _b.name) === "Content") {
+            duplicatedCell.primaryAxisAlignItems = cellAlignment;
+        }
         firstRow.appendChild(duplicatedCell);
     }
     // Duplicate row for each row and append to table
@@ -428,7 +455,11 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                 // duplicatedRow.setPluginData("isRowInstance", "true")
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
                     duplicatedRow.children[b].mainComponent = cell;
+                    duplicatedRow.children[b].primaryAxisSizingMode = "FIXED";
                     duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
+                    if (((_c = duplicatedRow.children[b].children[1]) === null || _c === void 0 ? void 0 : _c.name) === "Content") {
+                        duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment;
+                    }
                 }
                 firstRow.remove();
             }
@@ -437,7 +468,11 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                 // Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
                     duplicatedRow.children[b].mainComponent = cell;
+                    duplicatedRow.children[b].primaryAxisSizingMode = "FIXED";
                     duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
+                    if (((_d = duplicatedRow.children[b].children[1]) === null || _d === void 0 ? void 0 : _d.name) === "Content") {
+                        duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment;
+                    }
                 }
             }
         }
@@ -521,38 +556,40 @@ function updateTables() {
                 copyAndPasteStyles(tableTemplate, table);
                 for (let x = 0; x < table.children.length; x++) {
                     var row = table.children[x];
-                    for (let k = 0; k < row.children.length; k++) {
-                        var cell = row.children[k];
-                        var width = cell.width;
-                        var height = cell.height;
-                        var newInstance = cell.clone();
-                        discardBucket.appendChild(newInstance);
-                        // Checks that main component has not been swapped by user
-                        if (cell.mainComponent.id === previousCellTemplateID) {
-                            overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children);
-                            cell.mainComponent = cellTemplate;
-                            cell.resize(width, height);
-                            // Bug where plugin data is lost when instance swapped
-                            cell.setPluginData("instanceBug", "true");
-                            cell.setPluginData("isCell", "");
-                            cell.setPluginData("isCell", "true");
-                            overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
+                    if (row.children && row.getPluginData("isRow") === "true") {
+                        for (let k = 0; k < row.children.length; k++) {
+                            var cell = row.children[k];
+                            var width = cell.width;
+                            var height = cell.height;
+                            var newInstance = cell.clone();
+                            discardBucket.appendChild(newInstance);
+                            // Checks that main component has not been swapped by user
+                            if (cell.mainComponent.id === previousCellTemplateID) {
+                                overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children);
+                                cell.mainComponent = cellTemplate;
+                                cell.resize(width, height);
+                                // Bug where plugin data is lost when instance swapped
+                                cell.setPluginData("instanceBug", "true");
+                                cell.setPluginData("isCell", "");
+                                cell.setPluginData("isCell", "true");
+                                overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
+                            }
+                            if (cell.mainComponent.id === previousCellHeaderTemplateID) {
+                                overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
+                                cell.mainComponent = cellHeaderTemplate;
+                                cell.resize(width, height);
+                                // Bug where plugin data is lost when instance swapped
+                                cell.setPluginData("instanceBug", "true");
+                                cell.setPluginData("isCellHeader", "");
+                                cell.setPluginData("isCellHeader", "true");
+                                overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
+                            }
                         }
-                        if (cell.mainComponent.id === previousCellHeaderTemplateID) {
-                            overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
-                            cell.mainComponent = cellHeaderTemplate;
-                            cell.resize(width, height);
-                            // Bug where plugin data is lost when instance swapped
-                            cell.setPluginData("instanceBug", "true");
-                            cell.setPluginData("isCellHeader", "");
-                            cell.setPluginData("isCellHeader", "true");
-                            overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
-                        }
+                        // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
+                        // if (row.getPluginData("isRow") === "true") {
+                        copyAndPasteStyles(rowTemplate, row);
+                        // }
                     }
-                    // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
-                    // if (row.getPluginData("isRow") === "true") {
-                    copyAndPasteStyles(rowTemplate, row);
-                    // }
                 }
             }
         }
