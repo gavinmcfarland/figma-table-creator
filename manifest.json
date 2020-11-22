@@ -5,7 +5,8 @@
   "main": "code.js",
   "ui": {
       "main": "ui.html",
-      "components": "components.html"
+      "components": "components.html",
+      "versionLog": "version-log.html"
   },
   "menu": [
     {
