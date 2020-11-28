@@ -435,7 +435,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         firstRow.setPluginData("isRow", "true");
         firstRow.name = row.name;
         firstRow.layoutMode = "HORIZONTAL";
-        firstRow.counterAxisSizingMode = "AUTO";
+        firstRow.primaryAxisSizingMode = "FIXED";
+        firstRow.layoutAlign = "STRETCH";
         firstRow.counterAxisAlignItems = cellAlignment;
         row.remove();
     }
@@ -451,7 +452,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         for (var i = 0; i < numberColumns; i++) {
             // Duplicate cell for each column and append to row
             var duplicatedCellHeader = cellHeader.createInstance();
-            var sizing = cellHeader.layoutAlign;
             duplicatedCellHeader.setPluginData("isCellHeader", "true");
             duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height);
             duplicatedCellHeader.primaryAxisAlignItems = cellAlignment;
@@ -464,9 +464,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     }
     for (var i = 0; i < numberColumns; i++) {
         var duplicatedCell = cell.createInstance();
-        console.log("layoutAlign", duplicatedCell.layoutAlign);
-        console.log(duplicatedCell.layoutAlign);
         duplicatedCell.setPluginData("isCell", "true");
+        // Bug: layoutAlign is not inherited when creating an instance
         duplicatedCell.layoutAlign = cell.layoutAlign;
         duplicatedCell.layoutGrow = 1;
         duplicatedCell.primaryAxisSizingMode = "FIXED";
@@ -517,7 +516,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                     // duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
                     duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
                     // When main component is changed set back to what original main component was
-                    duplicatedRow.children[b].layoutAlign = sizing;
+                    // duplicatedRow.children[b].layoutAlign = sizing
                     duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment;
                     if (duplicatedRow.children[b].children.length === 1) {
                         duplicatedRow.children[b].children[0].primaryAxisAlignItems = cellAlignment;

@@ -625,7 +625,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 		firstRow.name = row.name
 		firstRow.layoutMode = "HORIZONTAL"
-		firstRow.counterAxisSizingMode = "AUTO"
+		firstRow.primaryAxisSizingMode = "FIXED"
+		firstRow.layoutAlign = "STRETCH"
 		firstRow.counterAxisAlignItems = cellAlignment
 		row.remove()
 	}
@@ -647,7 +648,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 			// Duplicate cell for each column and append to row
 			var duplicatedCellHeader = cellHeader.createInstance()
 
-			var sizing = cellHeader.layoutAlign
 
 			duplicatedCellHeader.setPluginData("isCellHeader", "true")
 
@@ -676,9 +676,10 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	for (var i = 0; i < numberColumns; i++) {
 
 		var duplicatedCell = cell.createInstance()
-		console.log("layoutAlign", duplicatedCell.layoutAlign)
-		console.log(duplicatedCell.layoutAlign)
+
 		duplicatedCell.setPluginData("isCell", "true")
+		// Bug: layoutAlign is not inherited when creating an instance
+
 		duplicatedCell.layoutAlign = cell.layoutAlign
 		duplicatedCell.layoutGrow = 1
 
@@ -750,12 +751,13 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 				// Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
 				for (let b = 0; b < duplicatedRow.children.length; b++) {
+
 					duplicatedRow.children[b].mainComponent = cell
 					// duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
 					duplicatedRow.children[b].setPluginData("isCell", "true") // Check
 
 					// When main component is changed set back to what original main component was
-					duplicatedRow.children[b].layoutAlign = sizing
+					// duplicatedRow.children[b].layoutAlign = sizing
 
 
 					duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment
