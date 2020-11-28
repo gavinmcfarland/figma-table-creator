@@ -190,7 +190,7 @@ function createCell(topBorder, leftBorder) {
     frame2.name = "Content";
     frame2.primaryAxisSizingMode = "AUTO";
     changeText(text, "");
-    cell.name = "Table/Cell/Default";
+    cell.name = "Default";
     const fills = clone(cell.fills);
     fills[0].opacity = 0.0001;
     fills[0].visible = true;
@@ -275,43 +275,27 @@ function createDefaultComponents() {
     changeText(introText, "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Link Components. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.");
     introText.resizeWithoutConstraints(250, 100);
     var border = createBorder();
-    page.appendChild(border);
-    border.y = componentSpacing;
-    var borderText = figma.createText();
-    page.appendChild(borderText);
-    changeText(borderText, "This is a hack to support table cells with varying content height.");
-    borderText.x = 300;
-    borderText.y = componentSpacing;
-    borderText.resizeWithoutConstraints(250, 100);
     components.cell = createCell(border.createInstance());
-    page.appendChild(components.cell);
+    border.remove();
     components.cell.setPluginData("isCell", "true");
     var cellText = figma.createText();
     page.appendChild(cellText);
-    changeText(cellText, "This is the only component required for Table Creator to be able to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Link Components");
-    cellText.y = componentSpacing * 2;
+    changeText(cellText, "The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Link Components.");
+    cellText.y = componentSpacing;
     cellText.x = 300;
     cellText.resizeWithoutConstraints(250, 100);
-    components.cell.y = componentSpacing * 2;
     components.cellHeader = figma.createComponent();
-    components.cellHeader.y = componentSpacing * 3;
     var innerCell = components.cell.createInstance();
-    innerCell.layoutAlign = "STRETCH";
+    innerCell.primaryAxisSizingMode = "AUTO";
     components.cellHeader.appendChild(innerCell);
     // for (let i = 0; i < components.cellHeader.children.length; i++) {
     // 	components.cellHeader.children[i].primaryAxisSizingMode = "AUTO"
     // }
-    components.cellHeader.name = "Table/Cell/Header";
+    components.cellHeader.name = "Header";
     components.cellHeader.layoutMode = "VERTICAL";
     components.cellHeader.children[0].fills = [];
     components.cellHeader.setPluginData("isCellHeader", "true");
     changeText(components.cellHeader.children[0].children[1].children[0], null, "Bold");
-    var cellHeaderText = figma.createText();
-    page.appendChild(cellHeaderText);
-    changeText(cellHeaderText, "An alternative style for Header Cells");
-    cellHeaderText.y = componentSpacing * 3;
-    cellHeaderText.x = 300;
-    cellHeaderText.resizeWithoutConstraints(250, 100);
     // TODO: Needs to be aplied to user linked templates also
     components.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     components.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
@@ -322,9 +306,8 @@ function createDefaultComponents() {
     fills[0].color.g = 0;
     fills[0].visible = true;
     components.cellHeader.fills = fills;
-    page.appendChild(components.cellHeader);
     components.row = createRow();
-    components.row.y = componentSpacing * 4;
+    components.row.y = componentSpacing * 2;
     components.row.appendChild(components.cell.createInstance());
     components.row.appendChild(components.cell.createInstance());
     components.row.setPluginData("isRow", "true");
@@ -333,12 +316,12 @@ function createDefaultComponents() {
     var rowText = figma.createText();
     page.appendChild(rowText);
     changeText(rowText, "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.");
-    rowText.y = componentSpacing * 4;
+    rowText.y = componentSpacing * 2;
     rowText.x = 300;
     rowText.resizeWithoutConstraints(250, 100);
     page.appendChild(components.row);
     components.table = createTable();
-    components.table.y = componentSpacing * 5;
+    components.table.y = componentSpacing * 3;
     var clonedRow = cloneComponentAsFrame(components.row);
     var clonedRow2 = cloneComponentAsFrame(components.row);
     components.table.appendChild(clonedRow);
@@ -351,9 +334,23 @@ function createDefaultComponents() {
     var tableText = figma.createText();
     page.appendChild(tableText);
     changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update tables");
-    tableText.y = componentSpacing * 5;
+    tableText.y = componentSpacing * 3;
     tableText.x = 300;
     tableText.resizeWithoutConstraints(250, 100);
+    page.appendChild(components.cell);
+    page.appendChild(components.cellHeader);
+    var cellHoldingFrame = figma.combineAsVariants([components.cell, components.cellHeader], page);
+    components.cell.layoutAlign = "STRETCH";
+    components.cell.primaryAxisSizingMode = "FIXED";
+    cellHoldingFrame.fills = [];
+    cellHoldingFrame.itemSpacing = 16;
+    cellHoldingFrame.name = "Table/Cell";
+    cellHoldingFrame.layoutMode = "HORIZONTAL";
+    cellHoldingFrame.counterAxisSizingMode = "AUTO";
+    cellHoldingFrame.y = componentSpacing * 1;
+    // Bug: you need to set name first in order to set sizing mode for some reason
+    innerCell.name = "Table/Cell";
+    innerCell.primaryAxisSizingMode = "AUTO";
     page.appendChild(components.table);
 }
 var cellID;
@@ -368,13 +365,15 @@ function findComponentById(id) {
     // }
     // return component || false
     var node = figma.getNodeById(id);
-    if ((node === null || node === void 0 ? void 0 : node.parent) === null) {
-        figma.root.setPluginData("cellComponentState", "exists");
-        return false;
-    }
-    else if (node) {
-        figma.root.setPluginData("cellComponentState", "removed");
-        return node;
+    if (node) {
+        if (node.parent === null || node.parent.parent === null) {
+            figma.root.setPluginData("cellComponentState", "exists");
+            return false;
+        }
+        else {
+            figma.root.setPluginData("cellComponentState", "removed");
+            return node;
+        }
     }
     else {
         figma.root.setPluginData("cellComponentState", "deleted");
@@ -386,7 +385,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
     // cell.counterAxisSizingMode = "FIXED"
     // cell.primaryAxisSizingMode = "FIXED"
-    // cell.layoutAlign = "STRETCH"
     // cell.layoutGrow = 1
     // Get Header Cell Template
     var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"));
@@ -410,12 +408,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     }
     // Remove children (we only need the container)
     removeChildren(row);
-    // Set autolayout
-    row.layoutMode = "HORIZONTAL";
-    row.counterAxisSizingMode = "AUTO";
-    row.counterAxisAlignItems = cellAlignment;
-    row.layoutAlign = "STRETCH";
-    row.primaryAxisSizingMode = "FIXED";
     // Get Table Template
     var table = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("tableComponentID")));
     if (!table) {
@@ -445,8 +437,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         firstRow.layoutMode = "HORIZONTAL";
         firstRow.counterAxisSizingMode = "AUTO";
         firstRow.counterAxisAlignItems = cellAlignment;
-        firstRow.layoutAlign = "STRETCH";
-        firstRow.primaryAxisSizingMode = "FIXED";
         row.remove();
     }
     else {
@@ -461,11 +451,9 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         for (var i = 0; i < numberColumns; i++) {
             // Duplicate cell for each column and append to row
             var duplicatedCellHeader = cellHeader.createInstance();
+            var sizing = cellHeader.layoutAlign;
             duplicatedCellHeader.setPluginData("isCellHeader", "true");
-            duplicatedCellHeader.layoutAlign = "STRETCH";
-            // duplicatedCellHeader.layoutGrow = 1
-            duplicatedCellHeader.primaryAxisSizingMode = "FIXED";
-            duplicatedCellHeader.layoutGrow = 1;
+            duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height);
             duplicatedCellHeader.primaryAxisAlignItems = cellAlignment;
             if (duplicatedCellHeader.children.length === 1) {
                 duplicatedCellHeader.children[0].primaryAxisAlignItems = cellAlignment;
@@ -476,13 +464,14 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     }
     for (var i = 0; i < numberColumns; i++) {
         var duplicatedCell = cell.createInstance();
+        console.log("layoutAlign", duplicatedCell.layoutAlign);
         console.log(duplicatedCell.layoutAlign);
         duplicatedCell.setPluginData("isCell", "true");
-        duplicatedCell.layoutAlign = "STRETCH";
+        duplicatedCell.layoutAlign = cell.layoutAlign;
         duplicatedCell.layoutGrow = 1;
-        // duplicatedCell.layoutGrow = 1
         duplicatedCell.primaryAxisSizingMode = "FIXED";
         duplicatedCell.primaryAxisAlignItems = cellAlignment;
+        duplicatedCell.resizeWithoutConstraints(cellWidth, duplicatedCell.height);
         if (duplicatedCell.children.length === 1) {
             duplicatedCell.children[0].primaryAxisAlignItems = cellAlignment;
         }
@@ -502,10 +491,14 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                 duplicatedRow.primaryAxisSizingMode = "FIXED";
                 // duplicatedRow.setPluginData("isRowInstance", "true")
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
+                    // Save original layout align of component before it gets swapped
+                    var sizing = console.log(sizing);
                     duplicatedRow.children[b].mainComponent = cell;
-                    duplicatedRow.children[b].primaryAxisSizingMode = "FIXED";
+                    // duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
                     duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
-                    // if (duplicatedRow.children[b].children[1]?.name === "Content") {
+                    // When main component is changed set back to what original component was
+                    duplicatedRow.children[b].layoutAlign = cell.layoutAlign;
+                    duplicatedRow.children[b].primaryAxisSizingMode = "FIXED";
                     duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment;
                     if (duplicatedRow.children[b].children.length === 1) {
                         duplicatedRow.children[b].children[0].primaryAxisAlignItems = cellAlignment;
@@ -521,9 +514,10 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                 // Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
                     duplicatedRow.children[b].mainComponent = cell;
-                    duplicatedRow.children[b].primaryAxisSizingMode = "FIXED";
+                    // duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
                     duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
-                    // if (duplicatedRow.children[b].children[1]?.name === "Content") {
+                    // When main component is changed set back to what original main component was
+                    duplicatedRow.children[b].layoutAlign = sizing;
                     duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment;
                     if (duplicatedRow.children[b].children.length === 1) {
                         duplicatedRow.children[b].children[0].primaryAxisAlignItems = cellAlignment;
@@ -823,7 +817,12 @@ if (figma.root.getPluginData("columnResizing") == "true")
 if (figma.root.getPluginData("columnResizing") == "false")
     message.columnResizing = false;
 if (figma.root.getPluginData("pluginVersion") === "") {
-    figma.root.setPluginData("pluginVersion", "10.0.0");
+    if (figma.root.getPluginData("cellComponentID")) {
+        figma.root.setPluginData("pluginVersion", "10.0.0");
+    }
+    else {
+        figma.root.setPluginData("pluginVersion", "11.0.0");
+    }
 }
 function checkVersion() {
     if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg.version) < 0) {
@@ -844,6 +843,7 @@ block_1: {
             break block_1;
             // expected output: "Parameter is not a number!"
         }
+        console.log(findComponentById(figma.root.getPluginData("cellComponentID")));
         // figma.root.setRelaunchData({ createTable: 'Create a new table' })
         if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
             message.componentsExist = true;
