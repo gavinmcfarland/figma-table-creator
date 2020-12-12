@@ -475,12 +475,17 @@ function createDefaultComponents() {
 	components.cell.layoutAlign = "STRETCH"
 	components.cell.primaryAxisSizingMode = "FIXED"
 
+	components.cellHeader.layoutAlign = "STRETCH"
+	components.cellHeader.primaryAxisSizingMode = "FIXED"
+	components.cellHeader.children[0].layoutAlign = "STRETCH"
+
 	cellHoldingFrame.fills = []
 	cellHoldingFrame.itemSpacing = 16
 	cellHoldingFrame.name = "Table/Cell"
 	cellHoldingFrame.layoutMode = "HORIZONTAL"
 	cellHoldingFrame.counterAxisSizingMode = "AUTO"
 	cellHoldingFrame.y = componentSpacing * 1
+
 
 
 	// Bug: you need to set name first in order to set sizing mode for some reason
@@ -633,6 +638,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	else {
 		firstRow = row
 		firstRow.setPluginData("isRow", "true")
+		firstRow.layoutAlign = "STRETCH"
+		firstRow.primaryAxisSizingMode = "FIXED"
 	}
 
 
@@ -650,6 +657,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 
 			duplicatedCellHeader.setPluginData("isCellHeader", "true")
+			duplicatedCellHeader.layoutAlign = cellHeader.layoutAlign
+			duplicatedCellHeader.layoutGrow = cellHeader.layoutGrow
 
 			duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height)
 
@@ -681,7 +690,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		// Bug: layoutAlign is not inherited when creating an instance
 
 		duplicatedCell.layoutAlign = cell.layoutAlign
-		duplicatedCell.layoutGrow = 1
+		duplicatedCell.layoutGrow = cell.layoutGrow
 
 
 

@@ -342,6 +342,9 @@ function createDefaultComponents() {
     var cellHoldingFrame = figma.combineAsVariants([components.cell, components.cellHeader], page);
     components.cell.layoutAlign = "STRETCH";
     components.cell.primaryAxisSizingMode = "FIXED";
+    components.cellHeader.layoutAlign = "STRETCH";
+    components.cellHeader.primaryAxisSizingMode = "FIXED";
+    components.cellHeader.children[0].layoutAlign = "STRETCH";
     cellHoldingFrame.fills = [];
     cellHoldingFrame.itemSpacing = 16;
     cellHoldingFrame.name = "Table/Cell";
@@ -443,6 +446,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
     else {
         firstRow = row;
         firstRow.setPluginData("isRow", "true");
+        firstRow.layoutAlign = "STRETCH";
+        firstRow.primaryAxisSizingMode = "FIXED";
     }
     var rowHeader;
     if (includeHeader) {
@@ -453,6 +458,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
             // Duplicate cell for each column and append to row
             var duplicatedCellHeader = cellHeader.createInstance();
             duplicatedCellHeader.setPluginData("isCellHeader", "true");
+            duplicatedCellHeader.layoutAlign = cellHeader.layoutAlign;
+            duplicatedCellHeader.layoutGrow = cellHeader.layoutGrow;
             duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height);
             duplicatedCellHeader.primaryAxisAlignItems = cellAlignment;
             if (duplicatedCellHeader.children.length === 1) {
@@ -467,7 +474,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         duplicatedCell.setPluginData("isCell", "true");
         // Bug: layoutAlign is not inherited when creating an instance
         duplicatedCell.layoutAlign = cell.layoutAlign;
-        duplicatedCell.layoutGrow = 1;
+        duplicatedCell.layoutGrow = cell.layoutGrow;
         duplicatedCell.primaryAxisSizingMode = "FIXED";
         duplicatedCell.primaryAxisAlignItems = cellAlignment;
         duplicatedCell.resizeWithoutConstraints(cellWidth, duplicatedCell.height);
