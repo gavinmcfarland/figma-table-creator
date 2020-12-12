@@ -306,37 +306,6 @@ function createDefaultComponents() {
     fills[0].color.g = 0;
     fills[0].visible = true;
     components.cellHeader.fills = fills;
-    components.row = createRow();
-    components.row.y = componentSpacing * 2;
-    components.row.appendChild(components.cell.createInstance());
-    components.row.appendChild(components.cell.createInstance());
-    components.row.setPluginData("isRow", "true");
-    components.row.layoutMode = "HORIZONTAL";
-    components.row.counterAxisSizingMode = "AUTO";
-    var rowText = figma.createText();
-    page.appendChild(rowText);
-    changeText(rowText, "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.");
-    rowText.y = componentSpacing * 2;
-    rowText.x = 300;
-    rowText.resizeWithoutConstraints(250, 100);
-    page.appendChild(components.row);
-    components.table = createTable();
-    components.table.y = componentSpacing * 3;
-    var clonedRow = cloneComponentAsFrame(components.row);
-    var clonedRow2 = cloneComponentAsFrame(components.row);
-    components.table.appendChild(clonedRow);
-    components.table.appendChild(clonedRow2);
-    components.table.setPluginData("isTable", "true");
-    clonedRow.setPluginData("isRow", "true");
-    clonedRow2.setPluginData("isRow", "true");
-    components.table.layoutMode = "VERTICAL";
-    components.table.counterAxisSizingMode = "AUTO";
-    var tableText = figma.createText();
-    page.appendChild(tableText);
-    changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update tables");
-    tableText.y = componentSpacing * 3;
-    tableText.x = 300;
-    tableText.resizeWithoutConstraints(250, 100);
     page.appendChild(components.cell);
     page.appendChild(components.cellHeader);
     var cellHoldingFrame = figma.combineAsVariants([components.cell, components.cellHeader], page);
@@ -351,6 +320,45 @@ function createDefaultComponents() {
     cellHoldingFrame.layoutMode = "HORIZONTAL";
     cellHoldingFrame.counterAxisSizingMode = "AUTO";
     cellHoldingFrame.y = componentSpacing * 1;
+    components.row = createRow();
+    components.row.y = componentSpacing * 2;
+    var rowCell = components.cell.createInstance();
+    var rowCell2 = components.cell.createInstance();
+    components.row.appendChild(rowCell);
+    components.row.appendChild(rowCell2);
+    rowCell.layoutAlign = components.cell.layoutAlign;
+    rowCell.layoutGrow = components.cell.layoutGrow;
+    rowCell2.layoutAlign = components.cell.layoutAlign;
+    rowCell2.layoutGrow = components.cell.layoutGrow;
+    components.row.setPluginData("isRow", "true");
+    components.row.layoutMode = "HORIZONTAL";
+    components.row.counterAxisSizingMode = "AUTO";
+    var rowText = figma.createText();
+    page.appendChild(rowText);
+    changeText(rowText, "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.");
+    rowText.y = componentSpacing * 2;
+    rowText.x = 300;
+    rowText.resizeWithoutConstraints(250, 100);
+    page.appendChild(components.row);
+    components.table = createTable();
+    components.table.y = componentSpacing * 3;
+    // var clonedRow = cloneComponentAsFrame(components.row)
+    // var clonedRow2 = cloneComponentAsFrame(components.row)
+    var clonedRow = components.row.createInstance();
+    var clonedRow2 = components.row.createInstance();
+    components.table.appendChild(clonedRow);
+    components.table.appendChild(clonedRow2);
+    components.table.setPluginData("isTable", "true");
+    clonedRow.setPluginData("isRow", "true");
+    clonedRow2.setPluginData("isRow", "true");
+    components.table.layoutMode = "VERTICAL";
+    components.table.counterAxisSizingMode = "AUTO";
+    var tableText = figma.createText();
+    page.appendChild(tableText);
+    changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update tables");
+    tableText.y = componentSpacing * 3;
+    tableText.x = 300;
+    tableText.resizeWithoutConstraints(250, 100);
     // Bug: you need to set name first in order to set sizing mode for some reason
     innerCell.name = "Table/Cell";
     innerCell.primaryAxisSizingMode = "AUTO";
@@ -498,7 +506,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
                 // duplicatedRow.setPluginData("isRowInstance", "true")
                 for (let b = 0; b < duplicatedRow.children.length; b++) {
                     // Save original layout align of component before it gets swapped
-                    var sizing = console.log(sizing);
                     duplicatedRow.children[b].mainComponent = cell;
                     // duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
                     duplicatedRow.children[b].setPluginData("isCell", "true"); // Check
@@ -849,7 +856,6 @@ block_1: {
             break block_1;
             // expected output: "Parameter is not a number!"
         }
-        console.log(findComponentById(figma.root.getPluginData("cellComponentID")));
         // figma.root.setRelaunchData({ createTable: 'Create a new table' })
         if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
             message.componentsExist = true;
