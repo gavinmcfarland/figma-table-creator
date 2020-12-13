@@ -2349,19 +2349,22 @@
 		right: 0;
 		margin-right: 8px;
 	}
+
+	.icon-link {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M8 3.5C8.82843 3.5 9.5 4.17157 9.5 5V6.5H10.25V5C10.25 3.75736 9.24264 2.75 8 2.75C6.75736 2.75 5.75 3.75736 5.75 5V6.5H6.5V5C6.5 4.17157 7.17157 3.5 8 3.5ZM9.5 9.5H10.25V11C10.25 12.2426 9.24264 13.25 8 13.25C6.75736 13.25 5.75 12.2426 5.75 11V9.5H6.5V11C6.5 11.8284 7.17157 12.5 8 12.5C8.82843 12.5 9.5 11.8284 9.5 11V9.5ZM7.625 5.75V10.25H8.375V5.75H7.625Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+		width: 16px;
+		height: 16px;
+		display: inline-block;
+		vertical-align: bottom;
+	}
 </style>
 
 <div class="page manageComponents" id="manageComponentsPage">
 	<section class="m-xxsmall">
-		<div class="section-title">Link Components</div>
+		<div class="section-title">Settings</div>
 
-		<p class="type m-xxsmall">First select the component and then click the link icon, to link what components
-			should be used to create tables.</p>
-
-		<p class="type m-xxsmall">Only layer styles such as background, effects, border
-			etc will be copied from <b>Table</b> and
-			<b>Row</b>
-			components.</p>
+		<p class="type m-xxsmall">Select a component on the canvas and then click <span class="icon-link"></span> to assign what components
+			will be used to create tables from.</p>
 
 		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
 			<div style="display: flex; place-items: center;"><span id="cellTemplateName" style="flex-grow: 1;">Cell
@@ -2409,10 +2412,14 @@
 
 		</div>
 
-		<p class="m-xxsmall mt-xsmall mb-xsmall"><a class="type type--small" id="updateTables">Update
-				tables</a></p>
-		<p class="type m-xxsmall">It could take some time to update the appearance of all tables depending on how many
-			tables there are.</p>
+		<p class="m-xxsmall mt-xsmall mb-xxsmall"><a style="cursor: pointer" class="type type--small" id="updateTables">Update
+				table styles</a></p>
+								<p class="type m-xxsmall">Only layer styles such as background, effects, border
+			etc will be copied from <b>Table</b> and
+			<b>Row</b>
+			components.</p>
+			<p class="m-xxsmall mt-xsmall mb-xxsmall"><a style="cursor: pointer" class="type type--small" id="upgradeTables">Upgrade to new Auto Layout</a></p>
+			<p class="type m-xxsmall">This upgrades new and existing tables so that cells fill the height of rows.</p>
 	</section>
 </div>
 
@@ -2438,6 +2445,10 @@
 
 	document.getElementById('updateTables').onclick = () => {
 		parent.postMessage({ pluginMessage: { type: 'update-tables' } }, '*')
+	}
+
+	document.getElementById('upgradeTables').onclick = () => {
+		parent.postMessage({ pluginMessage: { type: 'upgrade-tables' } }, '*')
 	}
 
 	// var restoreComponents = document.getElementsByName("restoreComponent");

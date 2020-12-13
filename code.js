@@ -821,6 +821,7 @@ var message = {
     remember: true,
     includeHeader: true,
     columnResizing: true,
+    upgradedTables: figma.root.getPluginData("upgradedTables") || null,
     cellAlignment: figma.root.getPluginData("cellAlignment") || "MIN",
     templates: {
         table: {
@@ -870,10 +871,11 @@ function checkVersion() {
     }
 }
 function upgradeTables() {
-    // TODO: Add check for header cell
-    // TODO: Check for when no cellVariantsName can be identified
-    // TODO: Set cellVariantsContainer to fixed width
-    // TODO: Set plugin data so you can check if file has been upgraded to new tables
+    // TODO: Add check for header cell DONE
+    // TODO: Check for when no cellVariantsName can be identified DONE
+    // TODO: make rows in table template fill container
+    // TODO: Set plugin data so you can check if file has been upgraded to new tables DONE
+    // TODO: Investigate if layout properties are supposed to be inherited by instances/variants
     var _a, _b;
     // Find cell templates
     var cellTemplate = figma.getNodeById(figma.root.getPluginData("cellComponentID"));
@@ -882,10 +884,31 @@ function upgradeTables() {
     var y = cellTemplate.y;
     var height = cellTemplate.height;
     var array = cellTemplate.name.split("/");
-    var cellName = array.pop();
-    var cellHeaderName = cellHeaderTemplate.name.split("/").pop();
-    var cellVariantsName = array.join("/");
-    var cellVariants = figma.combineAsVariants([cellTemplate, cellHeaderTemplate], pageNode(cellTemplate));
+    var cellName;
+    var cellVariantsName;
+    if (array.length > 1) {
+        cellName = array.pop();
+        cellVariantsName = array.join("/");
+    }
+    else {
+        if (cellTemplate.name === "Cell" || cellTemplate.name === "cell") {
+            cellName = "Default";
+        }
+        else {
+            cellName = cellTemplate.name;
+        }
+        cellVariantsName = "Table/Cell";
+    }
+    var nodes = [];
+    if (cellTemplate) {
+        nodes.push(cellTemplate);
+    }
+    var cellHeaderName = "";
+    if (cellHeaderTemplate) {
+        cellHeaderTemplate.name.split("/").pop();
+        nodes.push(cellHeaderTemplate);
+    }
+    var cellVariants = figma.combineAsVariants(nodes, pageNode(cellTemplate));
     cellVariants.x = x;
     cellVariants.y = y;
     cellVariants.layoutMode = "HORIZONTAL";
@@ -893,7 +916,9 @@ function upgradeTables() {
     cellVariants.resize(cellVariants.width, height);
     cellVariants.name = cellVariantsName;
     cellTemplate.name = "Type=" + cellName;
-    cellHeaderTemplate.name = "Type=" + cellHeaderName;
+    if (cellHeaderTemplate) {
+        cellHeaderTemplate.name = "Type=" + cellHeaderName;
+    }
     var cells = figma.currentPage.findAll(node => node.getPluginData("isCell") === "true");
     var headerCells = figma.currentPage.findAll(node => node.getPluginData("isCellHeader") === "true");
     for (let i = 0; i < cells.length; i++) {
@@ -920,90 +945,98 @@ function upgradeTables() {
             cell.primaryAxisSizingMode = "FIXED";
         }
     }
+    figma.notify("Table components upgraded");
+    figma.root.setPluginData("upgradedTables", "true");
 }
-block_1: {
-    if (figma.command === "createTable") {
-        try {
-            checkVersion();
+function createTableCommand(message, msg) {
+    if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+        message.componentsExist = true;
+        message.upgradedTables = figma.root.getPluginData("upgradedTables");
+        if (msg.columnCount < 51 && msg.rowCount < 51) {
+            var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
+            if (table) {
+                figma.root.setPluginData("columnCount", msg.columnCount.toString());
+                figma.root.setPluginData("rowCount", msg.rowCount.toString());
+                figma.root.setPluginData("cellWidth", msg.cellWidth.toString());
+                figma.root.setPluginData("remember", msg.remember.toString());
+                figma.root.setPluginData("includeHeader", msg.includeHeader.toString());
+                figma.root.setPluginData("columnResizing", msg.columnResizing.toString());
+                figma.root.setPluginData("cellAlignment", msg.cellAlignment);
+                if (figma.root.getPluginData("remember")) {
+                    message.remember = (figma.root.getPluginData("remember") == "true");
+                }
+                if (figma.root.getPluginData("includeHeader")) {
+                    message.includeHeader = (figma.root.getPluginData("includeHeader") == "true");
+                }
+                if (figma.root.getPluginData("columnResizing")) {
+                    message.includeHeader = (figma.root.getPluginData("columnResizing") == "true");
+                }
+                if (figma.root.getPluginData("columnCount")) {
+                    message.columnCount = parseInt(figma.root.getPluginData("columnCount"), 10);
+                }
+                if (figma.root.getPluginData("rowCount")) {
+                    message.rowCount = parseInt(figma.root.getPluginData("rowCount"), 10);
+                }
+                if (figma.root.getPluginData("cellWidth")) {
+                    message.rowCount = parseInt(figma.root.getPluginData("cellWidth"), 10);
+                }
+                if (figma.root.getPluginData("cellAlignment")) {
+                    message.cellAlignment = figma.root.getPluginData("cellAlignment");
+                }
+                const nodes = [];
+                nodes.push(table);
+                positionInCenter(table);
+                figma.currentPage.selection = nodes;
+                // figma.viewport.scrollAndZoomIntoView(nodes);
+                figma.closePlugin();
+            }
         }
-        catch (e) {
-            figma.showUI(__uiFiles__.versionLog);
-            figma.ui.resize(268, 486);
-            console.error(e);
-            break block_1;
-            // expected output: "Parameter is not a number!"
+        else {
+            figma.notify("Plugin limited to max of 50 columns and rows");
         }
-        // figma.root.setRelaunchData({ createTable: 'Create a new table' })
+    }
+    else {
+        message.componentsExist = false;
+        figma.notify("Cannot find Cell component");
+    }
+}
+function createTableCommands(message, msg) {
+    if (msg.type === "update-tables") {
+        updateTables();
+    }
+    if (msg.type === "upgrade-tables") {
+        upgradeTables();
+    }
+    if (msg.type === 'create-components') {
+        createDefaultComponents();
+        figma.root.setRelaunchData({ createTable: 'Create a new table' });
+        figma.root.setPluginData("cellComponentID", components.cell.id);
+        figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
+        figma.root.setPluginData("rowComponentID", components.row.id);
+        figma.root.setPluginData("tableComponentID", components.table.id);
+        figma.notify('Default table components created');
+    }
+    if (msg.type === 'create-table') {
+        createTableCommand(message, msg);
+    }
+    if (msg.type === "link-template") {
+        linkTemplate(msg.template, figma.currentPage.selection);
+    }
+    if (msg.type === "update") {
         if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
             message.componentsExist = true;
+            // message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
         }
-        figma.showUI(__uiFiles__.main);
-        figma.ui.resize(268, 486);
+        else {
+            message.componentsExist = false;
+        }
+        figma.ui.postMessage(message);
+    }
+    if (msg.type === "link-components") {
+        figma.showUI(__uiFiles__.components);
+        figma.ui.resize(268, 504);
         figma.ui.postMessage(message);
         figma.ui.onmessage = msg => {
-            if (msg.type === "update-tables") {
-                updateTables();
-            }
-            if (msg.type === 'create-components') {
-                createDefaultComponents();
-                figma.root.setRelaunchData({ createTable: 'Create a new table' });
-                figma.root.setPluginData("cellComponentID", components.cell.id);
-                figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
-                figma.root.setPluginData("rowComponentID", components.row.id);
-                figma.root.setPluginData("tableComponentID", components.table.id);
-                figma.notify('Default table components created');
-            }
-            if (msg.type === 'create-table') {
-                if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-                    message.componentsExist = true;
-                    if (msg.columnCount < 51 && msg.rowCount < 51) {
-                        var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
-                        if (table) {
-                            figma.root.setPluginData("columnCount", msg.columnCount.toString());
-                            figma.root.setPluginData("rowCount", msg.rowCount.toString());
-                            figma.root.setPluginData("cellWidth", msg.cellWidth.toString());
-                            figma.root.setPluginData("remember", msg.remember.toString());
-                            figma.root.setPluginData("includeHeader", msg.includeHeader.toString());
-                            figma.root.setPluginData("columnResizing", msg.columnResizing.toString());
-                            figma.root.setPluginData("cellAlignment", msg.cellAlignment);
-                            if (figma.root.getPluginData("remember")) {
-                                message.remember = (figma.root.getPluginData("remember") == "true");
-                            }
-                            if (figma.root.getPluginData("includeHeader")) {
-                                message.includeHeader = (figma.root.getPluginData("includeHeader") == "true");
-                            }
-                            if (figma.root.getPluginData("columnResizing")) {
-                                message.includeHeader = (figma.root.getPluginData("columnResizing") == "true");
-                            }
-                            if (figma.root.getPluginData("columnCount")) {
-                                message.columnCount = parseInt(figma.root.getPluginData("columnCount"), 10);
-                            }
-                            if (figma.root.getPluginData("rowCount")) {
-                                message.rowCount = parseInt(figma.root.getPluginData("rowCount"), 10);
-                            }
-                            if (figma.root.getPluginData("cellWidth")) {
-                                message.rowCount = parseInt(figma.root.getPluginData("cellWidth"), 10);
-                            }
-                            if (figma.root.getPluginData("cellAlignment")) {
-                                message.cellAlignment = figma.root.getPluginData("cellAlignment");
-                            }
-                            const nodes = [];
-                            nodes.push(table);
-                            positionInCenter(table);
-                            figma.currentPage.selection = nodes;
-                            // figma.viewport.scrollAndZoomIntoView(nodes);
-                            figma.closePlugin();
-                        }
-                    }
-                    else {
-                        figma.notify("Plugin limited to max of 50 columns and rows");
-                    }
-                }
-                else {
-                    message.componentsExist = false;
-                    figma.notify("Cannot find Cell component");
-                }
-            }
             if (msg.type === "link-template") {
                 linkTemplate(msg.template, figma.currentPage.selection);
             }
@@ -1017,29 +1050,40 @@ block_1: {
                 }
                 figma.ui.postMessage(message);
             }
-            if (msg.type === "link-components") {
-                figma.showUI(__uiFiles__.components);
-                figma.ui.resize(268, 486);
-                figma.ui.postMessage(message);
-                figma.ui.onmessage = msg => {
-                    if (msg.type === "link-template") {
-                        linkTemplate(msg.template, figma.currentPage.selection);
-                    }
-                    if (msg.type === "update") {
-                        if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-                            message.componentsExist = true;
-                            // message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-                        }
-                        else {
-                            message.componentsExist = false;
-                        }
-                        figma.ui.postMessage(message);
-                    }
-                };
-            }
-            if (msg.type === "restore-component") {
-                restoreComponent(msg.component);
-            }
+        };
+    }
+    if (msg.type === "restore-component") {
+        restoreComponent(msg.component);
+    }
+}
+block_1: {
+    if (figma.command === "createTable") {
+        // figma.root.setRelaunchData({ createTable: 'Create a new table' })
+        if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+            message.componentsExist = true;
+        }
+        try {
+            checkVersion();
+        }
+        catch (e) {
+            figma.showUI(__uiFiles__.versionLog);
+            figma.ui.resize(268, 504);
+            console.error(e);
+            figma.ui.onmessage = msg => {
+                if (msg.type === "to-create-table") {
+                    figma.showUI(__uiFiles__.main);
+                    figma.ui.postMessage(message);
+                }
+                createTableCommands(message, msg);
+            };
+            break block_1;
+            // expected output: "Parameter is not a number!"
+        }
+        figma.showUI(__uiFiles__.main);
+        figma.ui.resize(268, 504);
+        figma.ui.postMessage(message);
+        figma.ui.onmessage = msg => {
+            createTableCommands(message, msg);
         };
     }
     if (figma.command === "linkComponents") {
@@ -1065,6 +1109,9 @@ block_1: {
             }
             if (msg.type === "update-tables") {
                 updateTables();
+            }
+            if (msg.type === "upgrade-tables") {
+                upgradeTables();
             }
         };
     }

@@ -2349,17 +2349,30 @@
 		right: 0;
 		margin-right: 8px;
 	}
+	code {
+		background: rgba(1,1,1,0.1);
+		padding: 2px 4px;
+		border-radius: 4px;
+	}
 </style>
 
 <div class="page manageComponents" id="manageComponentsPage">
 	<section class="m-xxsmall">
-		<div class="section-title">What's New</div>
+		<div style="padding-top: 8px;" class="m-xxsmall"><b>What's New</b> <code>11.0.0</code></div>
 
-		<ul>
-			<li class="type m-xxsmall"><b>NEW</b> Upgraded to use new auto layout. New tables support equal height
-				cells.</li>
-			<li class="type m-xxsmall"><b>NEW</b> Tables which have been duplicated from the asset panel can now be
-				updated.</li>
-		</ul>
+		<div>
+			<div class="type m-xxsmall"><b>NEW</b> Now supports Variants and new Auto Layout features. To update, go to <code>Settings > Update Available</code></div>
+			<div class="type m-xxsmall"><b>FIXED</b> Tables duplicated from the asset panel are can now be refreshed.
+				<code>Go to Settings > Refresh Tables</code>.</div>
+		</div>
+	</section>
+	<section class="p-xxsmall mt-small"
+		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end; position: fixed; bottom: 0; width: 100%;">
+		<button class='button button--primary' id="continue">Continue</button>
 	</section>
 </div>
+<script>
+	document.getElementById('continue').onclick = () => {
+		parent.postMessage({ pluginMessage: { type: 'to-create-table' } }, '*')
+	}
+</script>
