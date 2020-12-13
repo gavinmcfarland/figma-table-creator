@@ -7,6 +7,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+function pageNode(node) {
+    if (node.parent.type === "PAGE") {
+        return node.parent;
+    }
+    else {
+        return pageNode(node.parent);
+    }
+}
 function compareVersion(v1, v2, options) {
     var lexicographical = options && options.lexicographical, zeroExtend = options && options.zeroExtend, v1parts = v1.split('.'), v2parts = v2.split('.');
     function isValidPart(x) {
@@ -314,6 +322,8 @@ function createDefaultComponents() {
     components.cellHeader.layoutAlign = "STRETCH";
     components.cellHeader.primaryAxisSizingMode = "FIXED";
     components.cellHeader.children[0].layoutAlign = "STRETCH";
+    components.cell.name = "Type=Default";
+    components.cellHeader.name = "Type=Header";
     cellHoldingFrame.fills = [];
     cellHoldingFrame.itemSpacing = 16;
     cellHoldingFrame.name = "Table/Cell";
@@ -633,7 +643,14 @@ function updateTables() {
                             if (cell.mainComponent.id === previousCellTemplateID) {
                                 overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children);
                                 cell.mainComponent = cellTemplate;
-                                cell.resize(width, height);
+                                // We should not set width or layout properties of cells inside row instances
+                                if (row.type === "INSTANCE") {
+                                }
+                                else {
+                                    cell.resize(width, height);
+                                    cell.layoutAlign = cellTemplate.layoutAlign;
+                                    cell.layoutGrow = cellTemplate.layoutGrow;
+                                }
                                 // Bug where plugin data is lost when instance swapped
                                 cell.setPluginData("instanceBug", "true");
                                 cell.setPluginData("isCell", "");
@@ -643,7 +660,14 @@ function updateTables() {
                             if (cell.mainComponent.id === previousCellHeaderTemplateID) {
                                 overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
                                 cell.mainComponent = cellHeaderTemplate;
-                                cell.resize(width, height);
+                                // We should not set width or layout properties of cells inside row instances
+                                if (row.type === "INSTANCE") {
+                                }
+                                else {
+                                    cell.resize(width, height);
+                                    cell.layoutAlign = cellHeaderTemplate.layoutAlign;
+                                    cell.layoutGrow = cellHeaderTemplate.layoutGrow;
+                                }
                                 // Bug where plugin data is lost when instance swapped
                                 cell.setPluginData("instanceBug", "true");
                                 cell.setPluginData("isCellHeader", "");
@@ -839,9 +863,62 @@ if (figma.root.getPluginData("pluginVersion") === "") {
 }
 function checkVersion() {
     if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg.version) < 0) {
+        // TODO: Change to store version on client storage?
         figma.root.setPluginData("pluginVersion", pkg.version);
         console.log(figma.root.getPluginData("pluginVersion"));
         throw 'New Version';
+    }
+}
+function upgradeTables() {
+    // TODO: Add check for header cell
+    // TODO: Check for when no cellVariantsName can be identified
+    // TODO: Set cellVariantsContainer to fixed width
+    // TODO: Set plugin data so you can check if file has been upgraded to new tables
+    var _a, _b;
+    // Find cell templates
+    var cellTemplate = figma.getNodeById(figma.root.getPluginData("cellComponentID"));
+    var cellHeaderTemplate = figma.getNodeById(figma.root.getPluginData("cellHeaderComponentID"));
+    var x = cellTemplate.x;
+    var y = cellTemplate.y;
+    var height = cellTemplate.height;
+    var array = cellTemplate.name.split("/");
+    var cellName = array.pop();
+    var cellHeaderName = cellHeaderTemplate.name.split("/").pop();
+    var cellVariantsName = array.join("/");
+    var cellVariants = figma.combineAsVariants([cellTemplate, cellHeaderTemplate], pageNode(cellTemplate));
+    cellVariants.x = x;
+    cellVariants.y = y;
+    cellVariants.layoutMode = "HORIZONTAL";
+    cellVariants.itemSpacing = 16;
+    cellVariants.resize(cellVariants.width, height);
+    cellVariants.name = cellVariantsName;
+    cellTemplate.name = "Type=" + cellName;
+    cellHeaderTemplate.name = "Type=" + cellHeaderName;
+    var cells = figma.currentPage.findAll(node => node.getPluginData("isCell") === "true");
+    var headerCells = figma.currentPage.findAll(node => node.getPluginData("isCellHeader") === "true");
+    for (let i = 0; i < cells.length; i++) {
+        var cell = cells[i];
+        if (((_a = cell.parent) === null || _a === void 0 ? void 0 : _a.type) === "INSTANCE") {
+        }
+        else {
+            if (cell.parent.getPluginData("isCellHeader") === "true") {
+                cell.layoutAlign = "INHERIT";
+                cell.primaryAxisSizingMode = "AUTO";
+            }
+            else {
+                cell.layoutAlign = "STRETCH";
+                cell.primaryAxisSizingMode = "FIXED";
+            }
+        }
+    }
+    for (let i = 0; i < headerCells.length; i++) {
+        var cell = headerCells[i];
+        if (((_b = cell.parent) === null || _b === void 0 ? void 0 : _b.type) === "INSTANCE") {
+        }
+        else {
+            cell.layoutAlign = "STRETCH";
+            cell.primaryAxisSizingMode = "FIXED";
+        }
     }
 }
 block_1: {
@@ -998,6 +1075,10 @@ block_1: {
     }
     if (figma.command === "selectRow") {
         selectRow();
+        figma.closePlugin();
+    }
+    if (figma.command === "upgradeTables") {
+        upgradeTables();
         figma.closePlugin();
     }
     if (figma.command === "updateTables") {

@@ -25,6 +25,10 @@
         "separator": true
     },
     {
+      "name": "Upgrade Tables to AL3",
+      "command": "upgradeTables"
+    },
+    {
       "name": "Link Components",
       "command": "linkComponents"
     }
