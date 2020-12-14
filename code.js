@@ -53,7 +53,7 @@ function compareVersion(v1, v2, options) {
     return 0;
 }
 let pkg = {
-    version: "11.0.0"
+    version: "6.0.0"
 };
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
@@ -280,7 +280,7 @@ function createDefaultComponents() {
     page.name = "Table Creator";
     var introText = figma.createText();
     page.appendChild(introText);
-    changeText(introText, "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Link Components. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.");
+    changeText(introText, "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Settings. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.");
     introText.resizeWithoutConstraints(250, 100);
     var border = createBorder();
     components.cell = createCell(border.createInstance());
@@ -288,7 +288,7 @@ function createDefaultComponents() {
     components.cell.setPluginData("isCell", "true");
     var cellText = figma.createText();
     page.appendChild(cellText);
-    changeText(cellText, "The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Link Components.");
+    changeText(cellText, "The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Settings.");
     cellText.y = componentSpacing;
     cellText.x = 300;
     cellText.resizeWithoutConstraints(250, 100);
@@ -365,7 +365,7 @@ function createDefaultComponents() {
     components.table.counterAxisSizingMode = "AUTO";
     var tableText = figma.createText();
     page.appendChild(tableText);
-    changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Link Components and select Update tables");
+    changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables");
     tableText.y = componentSpacing * 3;
     tableText.x = 300;
     tableText.resizeWithoutConstraints(250, 100);
@@ -741,20 +741,30 @@ function selectAdjacentCells() {
 }
 function selectColumn() {
     var _a, _b;
-    if (((_a = figma.currentPage.selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent.layoutMode) === "VERTICAL") {
-        selectParallelCells();
+    if (figma.currentPage.selection.length > 0) {
+        if (((_a = figma.currentPage.selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent.layoutMode) === "VERTICAL") {
+            selectParallelCells();
+        }
+        if (((_b = figma.currentPage.selection[0].parent) === null || _b === void 0 ? void 0 : _b.parent.layoutMode) === "HORIZONTAL") {
+            selectAdjacentCells();
+        }
     }
-    if (((_b = figma.currentPage.selection[0].parent) === null || _b === void 0 ? void 0 : _b.parent.layoutMode) === "HORIZONTAL") {
-        selectAdjacentCells();
+    else {
+        figma.notify("One or more table cells must be selected");
     }
 }
 function selectRow() {
     var _a, _b;
-    if (((_a = figma.currentPage.selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent.layoutMode) === "HORIZONTAL") {
-        selectParallelCells();
+    if (figma.currentPage.selection.length > 0) {
+        if (((_a = figma.currentPage.selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent.layoutMode) === "HORIZONTAL") {
+            selectParallelCells();
+        }
+        if (((_b = figma.currentPage.selection[0].parent) === null || _b === void 0 ? void 0 : _b.parent.layoutMode) === "VERTICAL") {
+            selectAdjacentCells();
+        }
     }
-    if (((_b = figma.currentPage.selection[0].parent) === null || _b === void 0 ? void 0 : _b.parent.layoutMode) === "VERTICAL") {
-        selectAdjacentCells();
+    else {
+        figma.notify("One or more table cells must be selected");
     }
 }
 function linkTemplate(template, selection) {
@@ -812,6 +822,15 @@ function positionInCenter(node) {
     node.x = figma.viewport.center.x - (node.width / 2);
     node.y = figma.viewport.center.y - (node.height / 2);
 }
+if (figma.root.getPluginData("pluginVersion") === "") {
+    if (figma.root.getPluginData("cellComponentID")) {
+        figma.root.setPluginData("pluginVersion", "5.0.0");
+        figma.root.setPluginData("upgradedTables", "false");
+    }
+    else {
+        figma.root.setPluginData("pluginVersion", "6.0.0");
+    }
+}
 var message = {
     componentsExist: false,
     cellExists: false,
@@ -854,14 +873,6 @@ if (figma.root.getPluginData("columnResizing") == "true")
     message.columnResizing = true;
 if (figma.root.getPluginData("columnResizing") == "false")
     message.columnResizing = false;
-if (figma.root.getPluginData("pluginVersion") === "") {
-    if (figma.root.getPluginData("cellComponentID")) {
-        figma.root.setPluginData("pluginVersion", "10.0.0");
-    }
-    else {
-        figma.root.setPluginData("pluginVersion", "11.0.0");
-    }
-}
 function checkVersion() {
     if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg.version) < 0) {
         // TODO: Change to store version on client storage?
@@ -873,10 +884,20 @@ function checkVersion() {
 function upgradeTables() {
     // TODO: Add check for header cell DONE
     // TODO: Check for when no cellVariantsName can be identified DONE
-    // TODO: make rows in table template fill container
     // TODO: Set plugin data so you can check if file has been upgraded to new tables DONE
     // TODO: Investigate if layout properties are supposed to be inherited by instances/variants
     var _a, _b;
+    // TODO: make rows in table template fill container DONE
+    var tableTemplate = figma.getNodeById(figma.root.getPluginData("tableComponentID"));
+    if (tableTemplate) {
+        for (let i = 0; i < tableTemplate.children.length; i++) {
+            var node = tableTemplate.children[i];
+            if (node.getPluginData("isRow")) {
+                node.layoutAlign = "STRETCH";
+                node.primaryAxisSizingMode = "FIXED";
+            }
+        }
+    }
     // Find cell templates
     var cellTemplate = figma.getNodeById(figma.root.getPluginData("cellComponentID"));
     var cellHeaderTemplate = figma.getNodeById(figma.root.getPluginData("cellHeaderComponentID"));
@@ -905,7 +926,7 @@ function upgradeTables() {
     }
     var cellHeaderName = "";
     if (cellHeaderTemplate) {
-        cellHeaderTemplate.name.split("/").pop();
+        cellHeaderName = cellHeaderTemplate.name.split("/").pop();
         nodes.push(cellHeaderTemplate);
     }
     var cellVariants = figma.combineAsVariants(nodes, pageNode(cellTemplate));
@@ -919,8 +940,8 @@ function upgradeTables() {
     if (cellHeaderTemplate) {
         cellHeaderTemplate.name = "Type=" + cellHeaderName;
     }
-    var cells = figma.currentPage.findAll(node => node.getPluginData("isCell") === "true");
-    var headerCells = figma.currentPage.findAll(node => node.getPluginData("isCellHeader") === "true");
+    var cells = figma.root.findAll(node => node.getPluginData("isCell") === "true");
+    var headerCells = figma.root.findAll(node => node.getPluginData("isCellHeader") === "true");
     for (let i = 0; i < cells.length; i++) {
         var cell = cells[i];
         if (((_a = cell.parent) === null || _a === void 0 ? void 0 : _a.type) === "INSTANCE") {

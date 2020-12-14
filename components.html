@@ -2361,12 +2361,11 @@
 
 <div class="page manageComponents" id="manageComponentsPage">
 	<section class="m-xxsmall">
-		<div class="section-title">Settings</div>
-
-		<p class="type m-xxsmall">Select a component on the canvas and then click <span class="icon-link"></span> to assign what components
-			will be used to create tables from.</p>
-
-		<div class="type list m-xxsmall mt-xsmall mb-xsmall">
+		<p class="section-title" style="margin-bottom: 0">Link Components</p>
+		<p class="type m-xxsmall">Select a component on the canvas first, then click <span class="icon-link"></span>
+			to
+			link.</p>
+		<div class="type list m-xxsmall mb-xsmall">
 			<div style="display: flex; place-items: center;"><span id="cellTemplateName" style="flex-grow: 1;">Cell
 					<span style="color: var(--black3);">(required)</span></span>
 				<!-- <div class="icon-button" name="restoreComponent" value="cell" style="margin-right: 0"
@@ -2412,14 +2411,43 @@
 
 		</div>
 
-		<p class="m-xxsmall mt-xsmall mb-xxsmall"><a style="cursor: pointer" class="type type--small" id="updateTables">Update
-				table styles</a></p>
-								<p class="type m-xxsmall">Only layer styles such as background, effects, border
+		<div style="border-top:1px solid rgba(0, 0, 0, .1); margin-left: -8px; margin-right: -8px;"
+			class="pl-xsmall pr-xsmall mt-xsmall">
+			<p class="section-title" id="updateTables"
+				style="color: #18a0fb; margin-bottom: 0; padding-left: 0; cursor: pointer; z-index: 200;">
+				Refresh
+				Tables</p>
+			<div style="display: flex; align-items: center;">
+				<p class="type" style="color: #b3b3b3; margin-top: 8px; margin-right: 8px; margin-bottom: 8px">
+					Updates
+					new styles
+					and any components which have been relinked.
+				</p>
+				<!-- <button style="float: right" class='button button--secondary' id="updateTables">Refresh</button> -->
+			</div>
+		</div>
+		<!-- <p class="type m-xxsmall">Only layer styles such as background, effects, border
 			etc will be copied from <b>Table</b> and
 			<b>Row</b>
-			components.</p>
-			<p class="m-xxsmall mt-xsmall mb-xxsmall"><a style="cursor: pointer" class="type type--small" id="upgradeTables">Upgrade to new Auto Layout</a></p>
-			<p class="type m-xxsmall">This upgrades new and existing tables so that cells fill the height of rows.</p>
+			components.</p> -->
+		<div id="upgradeTablesContainer" class="hide pl-xsmall pr-xsmall mt-xsmall"
+			style="margin-left: -8px; margin-right: -8px; border-top:1px solid rgba(0, 0, 0, .1);">
+			<!-- <p class="m-xxsmall mt-xsmall mb-xxsmall"><a style="cursor: pointer" class="type type--small"
+					id="upgradeTables">Update to new Auto Layout</a></p> -->
+			<p class="section-title" style="padding-left: 0; margin-bottom: 0">Upgrade Tables</p>
+			<div style="display: flex; align-items: center;">
+
+				<p class="type" style="margin-right: 8px; color: #b3b3b3; margin-top: 8px; margin-bottom: 8px">Upgrade
+					tables to use Variants and new Auto
+					Layout features.
+				</p>
+				<button style="float: right" class='button button--secondary' id="upgradeTables">Upgrade</button>
+			</div>
+		</div>
+	</section>
+	<section class="p-xxsmall mt-small"
+		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end; position: fixed; bottom: 0; width: 100%;">
+		<button class='button button--primary' id="doneButton">Done</button>
 	</section>
 </div>
 
@@ -2449,6 +2477,7 @@
 
 	document.getElementById('upgradeTables').onclick = () => {
 		parent.postMessage({ pluginMessage: { type: 'upgrade-tables' } }, '*')
+		document.getElementById("upgradeTablesContainer").classList.remove("show")
 	}
 
 	// var restoreComponents = document.getElementsByName("restoreComponent");

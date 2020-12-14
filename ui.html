@@ -2395,14 +2395,13 @@
 		<div class="icon icon--ellipses" id="optionsButton"></div>
 		<div class="menu type type--small" style="width: 174px" id="menu">
 			<div class="triangle"></div>
-			<div id="manageComponentsItem"><label>Link Components</label></div>
-			<div>
-				<input type="checkbox" id="remember">
-				<label for="remember">Remember Settings</label>
-			</div>
 			<div>
 				<input type="checkbox" id="columnResizingInput">
 				<label for="columnResizingInput">Column Resizing</label>
+			</div>
+			<div>
+				<input type="checkbox" id="remember">
+				<label for="remember">Remember Settings</label>
 			</div>
 		</div>
 	</div>
@@ -2749,7 +2748,7 @@
 <div class="page manageComponents" id="manageComponentsPage">
 	<section class="m-xxsmall">
 		<p class="section-title" style="margin-bottom: 0">Link Components</p>
-		<p class="type m-xxsmall">Select a component on the canvas first then click <span class="icon-link"></span>
+		<p class="type m-xxsmall">Select a component on the canvas first, then click <span class="icon-link"></span>
 			to
 			link.</p>
 		<div class="type list m-xxsmall mb-xsmall">
@@ -2817,18 +2816,18 @@
 			etc will be copied from <b>Table</b> and
 			<b>Row</b>
 			components.</p> -->
-		<div id="upgradeTablesContainer" class="pl-xsmall pr-xsmall mt-xsmall"
+		<div id="upgradeTablesContainer" class="hide pl-xsmall pr-xsmall mt-xsmall"
 			style="margin-left: -8px; margin-right: -8px; border-top:1px solid rgba(0, 0, 0, .1);">
 			<!-- <p class="m-xxsmall mt-xsmall mb-xxsmall"><a style="cursor: pointer" class="type type--small"
 					id="upgradeTables">Update to new Auto Layout</a></p> -->
-			<p class="section-title" style="padding-left: 0; margin-bottom: 0">Update Available</p>
+			<p class="section-title" style="padding-left: 0; margin-bottom: 0">Upgrade Tables</p>
 			<div style="display: flex; align-items: center;">
 
-				<p class="type" style="margin-right: 8px; color: #b3b3b3; margin-top: 8px; margin-bottom: 8px">Update
+				<p class="type" style="margin-right: 8px; color: #b3b3b3; margin-top: 8px; margin-bottom: 8px">Upgrade
 					tables to use Variants and new Auto
 					Layout features.
 				</p>
-				<button style="float: right" class='button button--secondary' id="upgradeTables">Update</button>
+				<button style="float: right" class='button button--secondary' id="upgradeTables">Upgrade</button>
 			</div>
 		</div>
 	</section>
@@ -2850,7 +2849,7 @@
 	const rowTemplateName = document.getElementById('rowTemplateName')
 	const cellTemplateName = document.getElementById('cellTemplateName')
 	const cellHeaderTemplateName = document.getElementById('cellHeaderTemplateName')
-	const manageComponentsItem = document.getElementById('manageComponentsItem')
+
 	const manageComponentsPage = document.getElementById('manageComponentsPage')
 	const doneButton = document.getElementById('doneButton')
 	const menu = document.getElementById('menu')
@@ -2961,6 +2960,19 @@
 				cellWidthInput.value = message.cellWidth
 			}
 		}
+		else {
+			if (message.columnCount) {
+				columnInput.value = 4
+			}
+
+			if (message.rowCount) {
+				rowInput.value = 4
+			}
+
+			if (message.cellWidth) {
+				cellWidthInput.value = 100
+			}
+		}
 
 
 
@@ -2979,8 +2991,8 @@
 
 		console.log("upgradedTables", message.upgradedTables)
 
-		if (message.upgradedTables === "true") {
-			upgradeTablesContainer.classList.add("hide");
+		if (message.upgradedTables === "false") {
+			upgradeTablesContainer.classList.add("show");
 		}
 
 		columnInput.addEventListener('input', function (evt) {
@@ -3092,7 +3104,7 @@
 
 	document.getElementById('upgradeTables').onclick = () => {
 		parent.postMessage({ pluginMessage: { type: 'upgrade-tables' } }, '*')
-		document.getElementById("upgradeTablesContainer").classList.add("hide")
+		document.getElementById("upgradeTablesContainer").classList.remove("show")
 	}
 
 	document.getElementById('optionsButton').onclick = () => {
@@ -3101,12 +3113,12 @@
 
 
 
-	manageComponentsItem.onclick = () => {
-		createTablePage.classList.add("hide")
-		createTablePage.classList.remove("show")
-		manageComponentsPage.classList.add("show")
-		menu.classList.remove("open")
-	}
+	// manageComponentsItem.onclick = () => {
+	// 	createTablePage.classList.add("hide")
+	// 	createTablePage.classList.remove("show")
+	// 	manageComponentsPage.classList.add("show")
+	// 	menu.classList.remove("open")
+	// }
 
 	createTablePage.onclick = (event) => {
 		if (!document.getElementById('menu').contains(event.target) && !document.getElementById('optionsButton').contains(event.target)) {
