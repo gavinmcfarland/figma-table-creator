@@ -2445,10 +2445,6 @@
 			</div>
 		</div>
 	</section>
-	<section class="p-xxsmall mt-small"
-		style="display: flex; border-top:1px solid rgba(0, 0, 0, .1); justify-content: flex-end; position: fixed; bottom: 0; width: 100%;">
-		<button class='button button--primary' id="doneButton">Done</button>
-	</section>
 </div>
 
 <script>
@@ -2476,8 +2472,16 @@
 	}
 
 	document.getElementById('upgradeTables').onclick = () => {
-		parent.postMessage({ pluginMessage: { type: 'upgrade-tables' } }, '*')
 		document.getElementById("upgradeTablesContainer").classList.remove("show")
+		parent.postMessage({ pluginMessage: { type: 'upgrade-tables' } }, '*')
+
+	}
+
+	window.onmessage = async (event) => {
+		const message = event.data.pluginMessage
+		if (message.upgradedTables === "false") {
+				upgradeTablesContainer.classList.add("show");
+			}
 	}
 
 	// var restoreComponents = document.getElementsByName("restoreComponent");
