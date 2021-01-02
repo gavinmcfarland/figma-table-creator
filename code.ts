@@ -1,3 +1,211 @@
+
+/**
+ * Copy properties from one node to another while avoiding conflicts. When no target node is provided it returns a new object.
+ *
+ * For example:
+ * ```js
+ * const rectangle = figma.createRectangle()
+ * const frame = figma.createFrame()
+ *
+ * copyPaste({ rectangle, frame, exclude: ['fills'] })
+ * ```
+ *
+ * This will copy and paste all properties except for `fills` and readonly properties.
+ *
+ * @param source - Node being copied from
+ * @param target - Node being copied to
+ * @param include - Props that should be copied
+ * @param exclude - Props that shouldn't be copied
+ */
+
+interface Options {
+	include?: string[]
+	exclude?: string[]
+}
+
+const nodeProps: string[] = [
+	'id',
+	'parent',
+	'name',
+	'removed',
+	'visible',
+	'locked',
+	'children',
+	'constraints',
+	'absoluteTransform',
+	'relativeTransform',
+	'x',
+	'y',
+	'rotation',
+	'width',
+	'height',
+	'constrainProportions',
+	'layoutAlign',
+	'layoutGrow',
+	'opacity',
+	'blendMode',
+	'isMask',
+	'effects',
+	'effectStyleId',
+	'expanded',
+	'backgrounds',
+	'backgroundStyleId',
+	'fills',
+	'strokes',
+	'strokeWeight',
+	'strokeMiterLimit',
+	'strokeAlign',
+	'strokeCap',
+	'strokeJoin',
+	'dashPattern',
+	'fillStyleId',
+	'strokeStyleId',
+	'cornerRadius',
+	'cornerSmoothing',
+	'topLeftRadius',
+	'topRightRadius',
+	'bottomLeftRadius',
+	'bottomRightRadius',
+	'exportSettings',
+	'overflowDirection',
+	'numberOfFixedChildren',
+	'overlayPositionType',
+	'overlayBackground',
+	'overlayBackgroundInteraction',
+	'reactions',
+	'description',
+	'remote',
+	'key',
+	'layoutMode',
+	'primaryAxisSizingMode',
+	'counterAxisSizingMode',
+	'primaryAxisAlignItems',
+	'counterAxisAlignItems',
+	'paddingLeft',
+	'paddingRight',
+	'paddingTop',
+	'paddingBottom',
+	'itemSpacing',
+	// 'horizontalPadding',
+	// 'verticalPadding',
+	'layoutGrids',
+	'gridStyleId',
+	'clipsContent',
+	'guides'
+]
+
+const readonly: string[] = [
+	'id',
+	'parent',
+	'removed',
+	'children',
+	'absoluteTransform',
+	'width',
+	'height',
+	'overlayPositionType',
+	'overlayBackground',
+	'overlayBackgroundInteraction',
+	'reactions',
+	'remote',
+	'key',
+	'type'
+]
+
+const defaults: string[] = [
+	'name',
+	'guides',
+	'description',
+	'remote',
+	'key',
+	'reactions',
+	'x',
+	'y',
+	'exportSettings',
+	'expanded',
+	'isMask',
+	'exportSettings',
+	'overflowDirection',
+	'numberOfFixedChildren',
+	'constraints',
+	'relativeTransform'
+]
+
+function copyPasteProps(source, target?, { include, exclude }: Options = {}) {
+	let allowlist: string[] = nodeProps.filter(function (el) {
+		return !defaults.concat(readonly).includes(el)
+	})
+
+	if (include) {
+		allowlist = allowlist.concat(include)
+	}
+
+	if (exclude) {
+		allowlist = allowlist.filter(function (el) {
+			return !exclude.includes(el)
+		})
+	}
+
+	const val = source
+	const type = typeof source
+
+	if (
+		type === 'undefined' ||
+		type === 'number' ||
+		type === 'string' ||
+		type === 'boolean' ||
+		type === 'symbol' ||
+		source === null
+	) {
+		return val
+	} else if (type === 'object') {
+		if (val instanceof Array) {
+			return val.map(copyPasteProps)
+		} else if (val instanceof Uint8Array) {
+			return new Uint8Array(val)
+		} else {
+			const o: any = {}
+			for (const key1 in val) {
+				if (target) {
+					for (const key2 in target) {
+						if (allowlist.includes(key2)) {
+							if (key1 === key2) {
+								o[key1] = copyPasteProps(val[key1])
+							}
+						}
+					}
+				} else {
+					o[key1] = copyPasteProps(val[key1])
+				}
+			}
+
+			if (target) {
+				!o.fillStyleId && o.fills ? null : delete o.fills
+				!o.strokeStyleId && o.strokes ? null : delete o.strokes
+				!o.backgroundStyleId && o.backgrounds ? null : delete o.backgrounds
+
+				if (o.cornerRadius !== figma.mixed) {
+					delete o.topLeftRadius
+					delete o.topRightRadius
+					delete o.bottomLeftRadius
+					delete o.bottomRightRadius
+				}
+				else {
+					delete o.cornerRadius
+				}
+
+				return target ? Object.assign(target, o) : o
+			}
+			else {
+				return o
+			}
+
+		}
+	}
+
+	throw 'unknown'
+}
+
+
 function pageNode(node) {
 	if (node.parent.type === "PAGE") {
 		return node.parent
@@ -597,31 +805,25 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 
 	// Get Row Template
-	var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")))
+	// var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")))
 
-	if (!row) {
-		row = figma.createFrame()
-	}
+	var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"))
+	var row = figma.createFrame()
 
-
-
-	// Remove children (we only need the container)
-	removeChildren(row)
+	copyPasteProps(rowTemplate, row, { include: ['name'])
 
 
 	// Get Table Template
-	var table = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("tableComponentID")))
+	var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"))
+	var table = figma.createFrame()
 
-	if (!table) {
-		table = figma.createFrame()
-	}
+	copyPasteProps(tableTemplate, table, { include: ['name'] })
 
-	// Remove children (we only need the container)
-	removeChildren(table)
 
-	// Set autolayout
+	// Manually set layout mode
 	table.layoutMode = "VERTICAL"
-	table.counterAxisSizingMode = "AUTO"
+	row.layoutMode = "HORIZONTAL"
+
 
 
 
@@ -632,8 +834,8 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	var firstRow
 
 	if (usingLocalComponent) {
-		if (findComponentById(figma.root.getPluginData("rowComponentID"))) {
-			firstRow = findComponentById(figma.root.getPluginData("rowComponentID")).clone()
+		if (rowTemplate) {
+			firstRow = rowTemplate.clone()
 		}
 		else {
 			firstRow = figma.createComponent()
@@ -653,7 +855,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		firstRow.primaryAxisSizingMode = "FIXED"
 		firstRow.layoutAlign = "STRETCH"
 		firstRow.counterAxisAlignItems = cellAlignment
-		row.remove()
 	}
 	else {
 		firstRow = row
@@ -799,7 +1000,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 		}
 		else {
-			duplicatedRow = firstRow.clone()
+			duplicatedRow = row.clone()
 			duplicatedRow.layoutAlign = "STRETCH"
 			duplicatedRow.primaryAxisSizingMode = "FIXED"
 		}
@@ -813,7 +1014,12 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		row.remove()
 	}
 
-	table.resize(cellWidth * numberColumns, table.height)
+	// Resize table
+
+	var padding = tableTemplate.paddingLeft + tableTemplate.paddingRight + rowTemplate.paddingLeft + rowTemplate.paddingRight + (rowTemplate.itemSpacing * (numberColumns - 1))
+
+	table.resize(cellWidth * numberColumns + padding, table.height)
+	table.counterAxisSizingMode = "AUTO"
 
 	// TODO: Needs to be added to components linked by user also
 	table.setPluginData("isTable", "true")
@@ -912,8 +1118,7 @@ function updateTables() {
 			// Don't apply if an instance
 			if (table.type !== "INSTANCE") {
 
-
-				copyAndPasteStyles(tableTemplate, table)
+				copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode'] })
 
 				for (let x = 0; x < table.children.length; x++) {
 					var row = table.children[x]
@@ -981,7 +1186,7 @@ function updateTables() {
 
 						// Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
 						// if (row.getPluginData("isRow") === "true") {
-						copyAndPasteStyles(rowTemplate, row);
+						// copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode'] })
 						// }
 					}
 				}
