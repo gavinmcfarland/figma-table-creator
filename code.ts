@@ -1010,7 +1010,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	}
 
 
-	if (includeHeader && !usingLocalComponent) {
+	if (includeHeader || usingLocalComponent) {
 		row.remove()
 	}
 

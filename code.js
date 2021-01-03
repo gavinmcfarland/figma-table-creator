@@ -739,7 +739,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
         }
         table.appendChild(duplicatedRow);
     }
-    if (includeHeader && !usingLocalComponent) {
+    if (includeHeader || usingLocalComponent) {
         row.remove();
     }
     // Resize table
