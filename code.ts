@@ -263,7 +263,7 @@ function compareVersion(v1, v2, options?) {
 }
 
 let pkg = {
-	version: "6.0.0"
+	version: "6.1.0"
 }
 
 function clone(val) {
@@ -810,7 +810,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"))
 	var row = figma.createFrame()
 
-	copyPasteProps(rowTemplate, row, { include: ['name'])
+	copyPasteProps(rowTemplate, row, { include: ['name'] })
 
 
 	// Get Table Template
@@ -1118,7 +1118,7 @@ function updateTables() {
 			// Don't apply if an instance
 			if (table.type !== "INSTANCE") {
 
-				copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode'] })
+				copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign'] })
 
 				for (let x = 0; x < table.children.length; x++) {
 					var row = table.children[x]
@@ -1186,7 +1186,7 @@ function updateTables() {
 
 						// Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
 						// if (row.getPluginData("isRow") === "true") {
-						// copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode'] })
+						copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign'] })
 						// }
 					}
 				}

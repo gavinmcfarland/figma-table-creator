@@ -242,7 +242,7 @@ function compareVersion(v1, v2, options) {
     return 0;
 }
 let pkg = {
-    version: "6.0.0"
+    version: "6.1.0"
 };
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
@@ -815,7 +815,7 @@ function updateTables() {
             var table = tables[b];
             // Don't apply if an instance
             if (table.type !== "INSTANCE") {
-                copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode'] });
+                copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign'] });
                 for (let x = 0; x < table.children.length; x++) {
                     var row = table.children[x];
                     if (row.children && row.getPluginData("isRow") === "true") {
@@ -863,7 +863,7 @@ function updateTables() {
                         }
                         // Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
                         // if (row.getPluginData("isRow") === "true") {
-                        // copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode'] })
+                        copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign'] });
                         // }
                     }
                 }
