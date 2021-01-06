@@ -1052,6 +1052,12 @@ if (figma.root.getPluginData("pluginVersion") === "") {
         figma.root.setPluginData("pluginVersion", pkg.version);
     }
 }
+if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.2.0") < 0) {
+    var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"));
+    if (tableTemplate) {
+        tableTemplate.setRelaunchData({ detachTable: 'Detaches table and rows' });
+    }
+}
 var message = {
     componentsExist: false,
     cellExists: false,
