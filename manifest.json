@@ -32,6 +32,7 @@
   "relaunchButtons": [
       {"command": "createTable", "name": "Create Table"},
       {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
-      {"command": "selectRow", "name": "Select Row", "multipleSelection": true}
+      {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
+      {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
     ]
 }

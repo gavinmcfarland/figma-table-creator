@@ -723,6 +723,7 @@ function createDefaultComponents() {
 
 
 
+	components.table.setRelaunchData({ detachTable: 'Detaches table and rows' })
 
 	page.appendChild(components.table)
 
@@ -769,43 +770,15 @@ function findComponentById(id) {
 
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
 
-	// Get Cell Template
+	// Get Cell Templa
 	var cell = findComponentById(figma.root.getPluginData("cellComponentID"))
-
-	// cell.counterAxisSizingMode = "FIXED"
-	// cell.primaryAxisSizingMode = "FIXED"
-
-	// cell.layoutGrow = 1
-
-
-
-
-	// Get Header Cell Template
 	var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"))
 
-	// cellHeader.layoutAlign = "STRETCH"
-	// cellHeader.layoutGrow = 1
-
-
-
-
-	// try {
 	if (!cellHeader && includeHeader) {
 		// throw "No Header Cell component found";
 		figma.notify("No Header Cell component found")
 		return
 	}
-	// }
-	// catch (err) {
-	// 	figma.notify("No Header Cell component found")
-	// 	console.log(err);
-	// }
-
-
-
-
-	// Get Row Template
-	// var row = cloneComponentAsFrame(findComponentById(figma.root.getPluginData("rowComponentID")))
 
 	var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"))
 	var row = figma.createFrame()
@@ -813,7 +786,7 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	copyPasteProps(rowTemplate, row, { include: ['name'] })
 
 
-	// Get Table Template
+
 	var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"))
 	var table = figma.createFrame()
 
@@ -823,10 +796,6 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	// Manually set layout mode
 	table.layoutMode = "VERTICAL"
 	row.layoutMode = "HORIZONTAL"
-
-
-
-
 
 
 
@@ -1301,6 +1270,70 @@ function selectRow() {
 	}
 }
 
+function detachInstance(instance, parent) {
+	if (instance.type === "INSTANCE") {
+		var newInstance = figma.createFrame()
+
+		newInstance.resize(instance.width, instance.width)
+
+		copyPasteProps(instance, newInstance, { include: ["name", "x", "y"] })
+
+		var length = instance.children.length
+
+		for (var i = 0; i < length; i++) {
+			newInstance.appendChild(instance.children[i].clone())
+		}
+
+		parent.appendChild(newInstance)
+		// instance.remove()
+
+		return newInstance
+	}
+
+
+}
+
+function detachTable(selection) {
+
+	let length1 = selection.length
+	let discard = []
+	let newTable
+
+	if (length1) {
+		let newRows = []
+		for (let i = 0; i < length1; i++) {
+			let table = selection[i]
+			discard.push(table)
+			newTable = detachInstance(table, table.parent)
+
+
+			let length2 = table.children.length
+			for (let b = 0; b < length2; b++) {
+				let row = newTable.children[b]
+				if (row.getPluginData("isRow") === "true") {
+					discard.push(row)
+					newRows.push(detachInstance(row, row.parent))
+				}
+				else {
+					newRows.push(row)
+				}
+
+			}
+
+			for (let b = 0; b < newRows.length; b++) {
+				newTable.insertChild(b, newRows[i])
+			}
+		}
+	}
+	else {
+		figma.notify("One or more table must be selected")
+	}
+
+	for (let b = 0; b < discard.length; b++) {
+		discard[b].remove()
+	}
+}
+
 function linkTemplate(template, selection) {
 
 	if (selection.length === 1) {
@@ -1383,12 +1416,14 @@ function positionInCenter(node) {
 }
 
 if (figma.root.getPluginData("pluginVersion") === "") {
+	// If plugin was used before new auto layout tables were supported
 	if (figma.root.getPluginData("cellComponentID")) {
 		figma.root.setPluginData("pluginVersion", "5.0.0")
 		figma.root.setPluginData("upgradedTables", "false")
 	}
+	// Else if plugin never used
 	else {
-		figma.root.setPluginData("pluginVersion", "6.0.0")
+		figma.root.setPluginData("pluginVersion", pkg.version)
 	}
 
 }
@@ -1803,6 +1838,11 @@ block_1: {
 	if (figma.command === "selectRow") {
 		selectRow()
 		figma.closePlugin();
+	}
+
+	if (figma.command === "detachTable") {
+		detachTable(figma.currentPage.selection)
+		figma.closePlugin()
 	}
 
 	if (figma.command === "upgradeTables") {
