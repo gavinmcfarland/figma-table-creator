@@ -1,7 +1,38 @@
 {
-  "name": "Create Shapes",
-  "id": "795096273369409539",
+  "name": "Table Creator",
+  "id": "885838970710285271",
   "api": "1.0.0",
   "main": "code.js",
-  "ui": "index.html"
+  "ui": {
+      "main": "index.html",
+      "components": "components.html",
+      "versionLog": "version-log.html"
+  },
+  "menu": [
+    {
+      "name": "Create Table",
+      "command": "createTable"
+    },
+    {
+      "name": "Select Column",
+      "command": "selectColumn"
+    },
+    {
+      "name": "Select Row",
+      "command": "selectRow"
+    },
+    {
+        "separator": true
+    },
+    {
+      "name": "Settings",
+      "command": "linkComponents"
+    }
+  ],
+  "relaunchButtons": [
+      {"command": "createTable", "name": "Create Table"},
+      {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
+      {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
+      {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
+    ]
 }
