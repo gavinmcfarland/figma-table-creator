@@ -8,7 +8,8 @@ import typescript from 'rollup-plugin-typescript';
 
 /* Post CSS */
 import postcss from 'rollup-plugin-postcss';
-import cssnano from 'cssnano';
+// import cssnano from 'cssnano';
+import stylup from 'stylup';
 
 /* Inline to single html */
 import htmlBundle from 'rollup-plugin-html-bundle';
@@ -25,7 +26,17 @@ export default [{
 	plugins: [
 		svelte({
 			// enable run-time checks when not in production
-			dev: !production
+			// dev: !production,
+			preprocess:
+				[{
+					markup({ content, filename }) {
+						// phtml trips over sveltes markup attribute={handlerbars}. So this replaces those occurances with attribute="{handlebars}"
+						content = content.replace(/(?<=\<[^>]*)=(\{[^{}]*\})/gmi, (match, p1) => {
+							return `="${p1}"`
+						})
+						return stylup.process(content, { from: filename }).then(result => ({ code: result.html, map: null }));
+					}
+				}]
 		}),
 
 		// If you have external dependencies installed from
@@ -40,10 +51,7 @@ export default [{
 		}),
 		commonjs(),
 		svg(),
-		postcss({
-			extensions: ['.css'],
-			plugins: [cssnano()]
-		}),
+		postcss(),
 		htmlBundle({
 			template: 'src/template.html',
 			target: 'public/index.html',

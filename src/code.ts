@@ -649,6 +649,8 @@ function createDefaultComponents() {
 	page.appendChild(components.cellHeader)
 	var cellHoldingFrame = figma.combineAsVariants([components.cell, components.cellHeader], page)
 
+	// console.log(cellHoldingFrame)
+
 	components.cell.layoutAlign = "STRETCH"
 	components.cell.primaryAxisSizingMode = "FIXED"
 
