@@ -1,4 +1,5 @@
 
+
 /**
  * Copy properties from one node to another while avoiding conflicts. When no target node is provided it returns a new object.
  *
@@ -1074,6 +1075,7 @@ function updateTables() {
 	for (let i = 0; i < pages.length; i++) {
 		tables = pages[i].findAll(node => node.getPluginData("isTable") === "true")
 
+
 		// Add && node.id !== tableTemplateID ^^ if don't want it to update linked component
 
 
@@ -1081,13 +1083,10 @@ function updateTables() {
 
 			var table = tables[b]
 
-
-
-
 			// Don't apply if an instance
 			if (table.type !== "INSTANCE") {
 
-				copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign'] })
+				copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions'] })
 
 				for (let x = 0; x < table.children.length; x++) {
 					var row = table.children[x]
@@ -1153,10 +1152,9 @@ function updateTables() {
 							}
 						}
 
-						// Due to bug in Figma Plugin API that loses pluginData on children of instance we are going to ignore this rule
-						// if (row.getPluginData("isRow") === "true") {
-						copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign'] })
-						// }
+						if (row.getPluginData("isRow") === "true" && row.type !== "INSTANCE") {
+							copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions'] })
+						}
 					}
 				}
 
@@ -1305,14 +1303,17 @@ function detachTable(selection) {
 			let table = selection[i]
 			discard.push(table)
 			newTable = detachInstance(table, table.parent)
-
+			newTable.setPluginData("isTable", "true")
 
 			let length2 = table.children.length
 			for (let b = 0; b < length2; b++) {
 				let row = newTable.children[b]
 				if (row.getPluginData("isRow") === "true") {
 					discard.push(row)
-					newRows.push(detachInstance(row, row.parent))
+					row = detachInstance(row, row.parent)
+					row.setPluginData("isRow", "true")
+					newRows.push(row)
+
 				}
 				else {
 					newRows.push(row)
@@ -1321,7 +1322,7 @@ function detachTable(selection) {
 			}
 
 			for (let b = 0; b < newRows.length; b++) {
-				newTable.insertChild(b, newRows[i])
+				newTable.insertChild(b, newRows[b])
 			}
 		}
 	}
@@ -1369,6 +1370,10 @@ function linkTemplate(template, selection) {
 			// if (template === "cell") {
 			// 	figma.root.setPluginData("cellWidth", selection[0].width.toString())
 			// }
+
+			if (template === "table") {
+				selection[0].setRelaunchData({ detachTable: 'Detaches table and rows' })
+			}
 
 			figma.root.setPluginData(templateID, selection[0].id)
 
@@ -1428,7 +1433,7 @@ if (figma.root.getPluginData("pluginVersion") === "") {
 
 }
 
-if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.2.0") < 0) {
+if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
 	var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"))
 	if (tableTemplate) {
 		tableTemplate.setRelaunchData({ detachTable: 'Detaches table and rows' })
