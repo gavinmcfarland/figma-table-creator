@@ -5,11 +5,22 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import svg from 'rollup-plugin-svg';
 import typescript from 'rollup-plugin-typescript';
+import { globalStyle } from 'svelte-preprocess';
 
 /* Post CSS */
 import postcss from 'rollup-plugin-postcss';
 // import cssnano from 'cssnano';
 import stylup from 'stylup';
+
+const processStylup = {
+	markup({ content, filename }) {
+		// phtml trips over sveltes markup attribute={handlerbars}. So this replaces those occurances with attribute="{handlebars}"
+		content = content.replace(/(?<=\<[^>]*)=(\{[^{}]*\})/gmi, (match, p1) => {
+			return `="${p1}"`
+		})
+		return stylup.process(content, { from: filename }).then(result => ({ code: result.html, map: null }));
+	}
+}
 
 /* Inline to single html */
 import htmlBundle from 'rollup-plugin-html-bundle';
@@ -28,15 +39,8 @@ export default [{
 			// enable run-time checks when not in production
 			// dev: !production,
 			preprocess:
-				[{
-					markup({ content, filename }) {
-						// phtml trips over sveltes markup attribute={handlerbars}. So this replaces those occurances with attribute="{handlebars}"
-						content = content.replace(/(?<=\<[^>]*)=(\{[^{}]*\})/gmi, (match, p1) => {
-							return `="${p1}"`
-						})
-						return stylup.process(content, { from: filename }).then(result => ({ code: result.html, map: null }));
-					}
-				}]
+				[// processStylup,
+					globalStyle()]
 		}),
 
 		// If you have external dependencies installed from
