@@ -1,5 +1,6 @@
 <script>
 	import { getContext, createEventDispatcher } from "svelte"
+	import { valueStore } from "./data.js"
 
 	export let placeholder = "PLACEHOLDER"
 	export let value = ""
@@ -15,13 +16,13 @@
 	export let checked
 	export let icon
 
-	const contextHandleInput = getContext("handleInput")
+	export let group = "MIN"
 
-	const dispatch = createEventDispatcher()
-
-	function handleInput(e) {
-		contextHandleInput(e)
-		dispatch("input", e)
+	function handleInput() {
+		valueStore.update((data) => {
+			data[name] = group
+			return data
+		})
 	}
 </script>
 
@@ -84,7 +85,7 @@
 		height: 28px;
 		display: flex;
 		place-items: center;
-		margin-block: 2px;
+		/* margin-block: 2px; */
 		flex-grow: 1;
 	}
 
@@ -111,6 +112,14 @@
 </style>
 
 <div class="RadioButton {classes}" {icon}>
-	<input {id} type="radio" {disabled} bind:value {name} {checked} />
+	<input
+		{id}
+		type="radio"
+		{disabled}
+		{value}
+		{checked}
+		{name}
+		bind:group
+		on:change={handleInput} />
 	<label for={id}>{label}</label>
 </div>

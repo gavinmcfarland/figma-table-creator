@@ -8,18 +8,43 @@
 	import Matrix from "./Matrix.svelte"
 
 	let data
-	let columns
-	let rows
-	let width = 100
+	let columnResizing = true
+	let rememberSettings = true
+	let columnCount
+	let rowCount
+	let includeHeader
+	let cellWidth = 100
+	let cellAlignment
 
 	valueStore.subscribe((value) => {
-		columns = value.columns
-		rows = value.rows
+		columnCount = value.columnCount
+		rowCount = value.rowCount
+		cellWidth = value.cellWidth
+		includeHeader = value.includeHeader
+		cellAlignment = value.cellAlignment
 	})
 
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
 	}
+
+	function createTable() {
+		console.log("table created")
+		parent.postMessage({
+			pluginMessage: {
+					type: 'create-table',
+					remember: rememberSettings,
+					columnResizing: columnResizing,
+					columnCount: columnCount,
+					rowCount: rowCount,
+					includeHeader: includeHeader,
+					cellWidth: cellWidth,
+					cellAlignment: cellAlignment
+				}
+			},
+		'*')
+	}
+
 </script>
 
 <style global>
@@ -34,7 +59,7 @@
 	}
 	.container {
 		width: 240px;
-		height: 500px;
+		height: 600px;
 		box-shadow: 0px 2px 14px 0px rgba(0, 0, 0, 0.15);
 		border: 0.5px solid rgba(0, 0, 0, 0.15);
 		border-radius: 4px;
@@ -205,7 +230,41 @@
 		/* margin-left: 11px; */
 		position: relative;
 		margin-left: calc(var(--fgp-gap_item_column, 0px) + 8px) !important;
-		/* border: 2px solid transparent; */
+
+	}
+
+	.RadioButtons:hover::before,
+	.RadioButtons:focus-within::before {
+		content: "";
+		display: block;
+		position: absolute;
+		top: 4px;
+		left: 0px;
+		bottom: 4px;
+		right: 0px;
+		border-radius: 2px;
+		border: 1px solid transparent;
+		border-color: #E5E5E5;
+		user-select: none;
+		pointer-events: none;
+	}
+
+	.RadioButtons:focus-within::before {
+		border-color: var(--color-blue);
+	}
+
+	.RadioButtons:hover label {
+		border-radius: 0 !important;
+	}
+
+	.RadioButtons:hover :first-child label {
+		border-top-left-radius: 2px !important;
+		border-bottom-left-radius: 2px !important;
+	}
+
+	.RadioButtons:hover :last-child label {
+		border-top-right-radius: 2px !important;
+		border-bottom-right-radius: 2px !important;
 	}
 
 	.RadioButtons > * {
@@ -244,60 +303,65 @@
 	<div class="SectionTitle">Table</div>
 	<div class="field-group">
 		<Field
-			id="columns"
+			id="columnCount"
 			label="Columns"
 			type="number"
 			step="1"
 			min="1"
 			max="50"
-			value={columns} />
+			value={columnCount} />
 		<Field
-			id="rows"
+			id="rowCount"
 			label="Rows"
 			type="number"
 			step="1"
 			min="1"
 			max="50"
-			value={rows} />
+			value={rowCount} />
 	</div>
 
-	<Checkbox id="includeHeader" label="Include table header" value="4" />
+	<p>Include header: {includeHeader}</p>
 
-	<Matrix {columns} {rows} grid={[8, 8]} />
+	<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
 
+	<Matrix {columnCount} {rowCount} grid={[8, 8]} />
+
+	<div class="SectionTitle">Cell</div>
 	<div style="display: flex; gap: var(--size-200); & > * {
 		flex-grow: 1;
 	}">
 		<Field
-			id="width"
+			id="cellWidth"
 			label="Width"
 			type="number"
 			step="1"
 			min="1"
 			max="1000"
-			value={width} />
+			value={cellWidth} />
 
 		<div class="RadioButtons">
 			<RadioButton
 				id="min"
 				icon="text-align-top"
 				value="MIN"
-				name="cellAlignment" />
+				name="cellAlignment"
+				group="{cellAlignment}"/>
 			<RadioButton
 				id="center"
 				icon="text-align-middle"
-				value="MIN"
+				value="CENTER"
 				name="cellAlignment"
-				checked />
+				group="{cellAlignment}" />
 			<RadioButton
 				id="max"
 				icon="text-align-bottom"
-				value="MIN"
-				name="cellAlignment" />
+				value="MAX"
+				name="cellAlignment"
+				group="{cellAlignment}" />
 		</div>
 	</div>
 
 	<div class="BottomBar">
-		<Button id="create-table">Create table</Button>
+		<span on:click={createTable}><Button id="create-table">Create table</Button></span>
 	</div>
 </div>

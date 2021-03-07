@@ -2,11 +2,11 @@
 	import { valueStore } from "./data.js"
 
 	export let grid = [4, 4]
-	export let columns = 4
-	export let rows = 4
+	export let columnCount = 4
+	export let rowCount = 4
 
-	let origColumns = columns
-	let origRows = rows
+	let origColumnCount = columnCount
+	let origRowCount = rowCount
 
 	let table_state = []
 
@@ -21,52 +21,56 @@
 		}
 	}
 
-	let selected_end = [columns, rows]
+	let selected_end = [columnCount, rowCount]
 
 	let hover_end = []
 
 	function select(x, y) {
-		columns = y + 1
-		rows = x + 1
+		columnCount = y + 1
+		rowCount = x + 1
 
 		// Reset to no state
 		set_state("selected", [grid[0], grid[1]], false)
 
 		// Set new state
 		set_state("selected", [x, y])
-		origColumns = x + 1
-		valueStore.set({ columns, rows })
+		origColumnCount = x + 1
+		valueStore.update((data) => {
+			data.columnCount = columnCount
+			data.rowCount = rowCount
+			return data
+		})
 	}
 
 	// TODO: Check rows and columns are right way round
 	// TODO: Need to disable onload and active this to subscribe to changes to input
 	valueStore.subscribe((value) => {
-		// columns = value.columns;
-		// rows = value.rows;
+		// columnCount = value.columnCount;
+		// rowCount = value.rowCount;
 		// Reset to no state
 
 		set_state("selected", [grid[0], grid[1]], false)
-		set_state("selected", [value.rows - 1, value.columns - 1])
+		set_state("selected", [value.rowCount - 1, value.columnCount - 1])
 	})
 
 	function on_load(node) {
 		// Set default checked radio
-		table_state[rows - 1][columns - 1].checked = true
+		table_state[rowCount - 1][columnCount - 1].checked = true
 
 		// Set default state
-		set_state("selected", [rows - 1, columns - 1])
+		set_state("selected", [rowCount - 1, columnCount - 1])
 	}
 
 	function enter(x, y) {
 		hover_end = [x, y]
 		set_state("hover", hover_end)
-		// valueStore.set({ columns: x + 1, rows: y + 1 })
+		// valueStore.set({ columnCount: x + 1, rowCount: y + 1 })
 	}
 
 	function leave(x, y) {
 		hover_end = [x, y]
 		set_state("hover", hover_end, false)
-		// valueStore.set({ columns: origColumns, rows: origRows })
+		// valueStore.set({ columnCount: origColumnCount, rowCount: origRowCount })
 	}
 
 	function set_state(type, end, value = true) {
@@ -100,9 +104,8 @@
 		border: 0 solid transparent;
 		border-spacing: 0;
 		border-collapse: collapse;
-		margin-right: -6px;
-		margin-top: 12px;
-		margin-bottom: 12px;
+		margin-top: 8px;
+		margin-bottom: 3px;
 	}
 
 	/* tr > *:last-child label {
@@ -128,13 +131,13 @@
 		/* padding-top: calc(76% + 1px); */
 
 		margin-right: 5px;
-		margin-bottom: 6px;
+		margin-bottom: 5px;
 		border-radius: 2px;
 	}
 
 	@supports (aspect-ratio: 1) {
 		table {
-			width: calc(100% + 6px);
+			width: calc(100% + 5px);
 		}
 		label {
 			width: auto;
@@ -172,8 +175,8 @@
 </style>
 
 <!-- <p>
-	Selected value: {columns}
-	{rows}
+	Selected value: {columnCount}
+	{rowCount}
 </p> -->
 
 <table>
@@ -187,7 +190,7 @@
 					on:click={() => select(x, y)}
 					on:mouseover={() => enter(x, y)}
 					on:mouseout={() => leave(x, y)}>
-					<label for="{x}of{y}" />
+					<label for="{x}of{y}" tabindex="-1" />
 					<input
 						id="{x}of{y}"
 						type="radio"

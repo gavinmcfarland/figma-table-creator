@@ -1,5 +1,6 @@
 <script>
 	import { getContext, createEventDispatcher } from "svelte"
+	import { valueStore } from "./data.js"
 
 	export let placeholder = "PLACEHOLDER"
 	export let value = ""
@@ -11,20 +12,19 @@
 	export let max
 	export let step
 	export let classes = ""
+	export let checked
 
-	const contextHandleInput = getContext("handleInput")
-
-	const dispatch = createEventDispatcher()
-
-	function handleInput(e) {
-		contextHandleInput(e)
-		dispatch("input", e)
+	function handleInput() {
+		valueStore.update((data) => {
+			data[id] = checked
+			return data
+		})
 	}
 </script>
 
 <style>
 	.Checkbox {
-		height: 28px;
+		height: 32px;
 		display: flex;
 		place-items: center;
 		padding-block: 2px;
@@ -40,7 +40,7 @@
 	input[type="checkbox"] + label {
 		/* display: flex; */
 		vertical-align: middle;
-		margin-top: 6px;
+		margin-top: 2px;
 	}
 	input[type="checkbox"] + label::before {
 		width: var(--size-150);
@@ -57,6 +57,11 @@
 		vertical-align: middle;
 		box-sizing: border-box;
 	}
+
+	.Checkbox:focus-within input[type="checkbox"] + label::before {
+		border: 1px solid var(--color-blue);
+	}
+
 	input[type="checkbox"]:checked + label::before {
 		border-color: var(--color-blue);
 		background-color: var(--color-blue);
@@ -65,6 +70,11 @@
 </style>
 
 <div class="Checkbox {classes}">
-	<input {id} type="checkbox" {disabled} bind:value />
+	<input
+		{id}
+		type="checkbox"
+		bind:checked
+		on:change={handleInput}
+		bind:value />
 	<label for={id}>{label}</label>
 </div>
