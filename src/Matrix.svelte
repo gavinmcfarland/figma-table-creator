@@ -92,35 +92,6 @@
 	}
 </script>
 
-<!-- <p>
-	Selected value: {columns}
-	{rows}
-</p> -->
-
-<table>
-	{#each { length: grid[0] } as _, x}
-		<tr>
-			{#each { length: grid[1] } as _, y}
-				<td
-					class:hover={table_state[x][y].hover}
-					class:selected={table_state[x][y].selected}
-					use:on_load
-					on:click={() => select(x, y)}
-					on:mouseover={() => enter(x, y)}
-					on:mouseout={() => leave(x, y)}>
-					<label for="{x}of{y}" />
-					<input
-						id="{x}of{y}"
-						type="radio"
-						value="{x}of{y}"
-						name="selection"
-						checked={table_state[x][y].checked} />
-				</td>
-			{/each}
-		</tr>
-	{/each}
-</table>
-
 <style>
 	* {
 		box-sizing: border-box;
@@ -131,6 +102,7 @@
 		border-collapse: collapse;
 		margin-right: -6px;
 		margin-top: 12px;
+		margin-bottom: 12px;
 	}
 
 	/* tr > *:last-child label {
@@ -155,7 +127,7 @@
 		padding: 1px;
 		/* padding-top: calc(76% + 1px); */
 
-		margin-right: 6px;
+		margin-right: 5px;
 		margin-bottom: 6px;
 		border-radius: 2px;
 	}
@@ -198,3 +170,32 @@
 		position: absolute;
 	}
 </style>
+
+<!-- <p>
+	Selected value: {columns}
+	{rows}
+</p> -->
+
+<table>
+	{#each { length: grid[0] } as _, x}
+		<tr>
+			{#each { length: grid[1] } as _, y}
+				<td
+					class:hover={table_state[x][y].hover}
+					class:selected={table_state[x][y].selected}
+					use:on_load
+					on:click={() => select(x, y)}
+					on:mouseover={() => enter(x, y)}
+					on:mouseout={() => leave(x, y)}>
+					<label for="{x}of{y}" />
+					<input
+						id="{x}of{y}"
+						type="radio"
+						value="{x}of{y}"
+						name="selection"
+						checked={table_state[x][y].checked} />
+				</td>
+			{/each}
+		</tr>
+	{/each}
+</table>

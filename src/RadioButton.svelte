@@ -63,8 +63,9 @@
 	.RadioButton input[type="radio"] ~ label {
 		border-radius: 2px;
 		display: block;
-		width: 100%;
+		/* width: 100%; */
 		height: 24px;
+		min-width: 24px;
 	}
 
 	.RadioButton input {
@@ -77,11 +78,6 @@
 
 	.RadioButton .icon-button:hover {
 		background-color: transparent;
-	}
-
-	.RadioButton .icon {
-		background-repeat: no-repeat;
-		background-position: 3px 3px;
 	}
 
 	.RadioButton {
@@ -99,6 +95,15 @@
 		margin: 0;
 		padding: 0;
 	} */
+
+	.RadioButton input + label::before {
+		content: "";
+		height: 100%;
+		display: block;
+		width: 100%;
+		background-repeat: no-repeat;
+		background-position: center;
+	}
 
 	.RadioButton input:checked + label {
 		background-color: var(--color-black-10);

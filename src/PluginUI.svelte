@@ -2,6 +2,7 @@
 	import { valueStore } from "./data.js"
 	import { onMount } from "svelte"
 	import Field from "./Field.svelte"
+	import Button from "./Button.svelte"
 	import Checkbox from "./Checkbox.svelte"
 	import RadioButton from "./RadioButton.svelte"
 	import Matrix from "./Matrix.svelte"
@@ -32,11 +33,12 @@
 		height: 100%;
 	}
 	.container {
-		width: 268px;
+		width: 240px;
 		height: 500px;
 		box-shadow: 0px 2px 14px 0px rgba(0, 0, 0, 0.15);
 		border: 0.5px solid rgba(0, 0, 0, 0.15);
 		border-radius: 4px;
+		position: relative;
 	}
 	.field-group {
 		display: flex;
@@ -196,13 +198,18 @@
 
 	.RadioButtons {
 		display: flex;
-		padding: 1px;
-		margin: 2px;
+		flex-grow: 0 !important;
+		padding-block: 2px;
 		flex-grow: 0;
 		flex-basis: auto;
 		/* margin-left: 11px; */
 		position: relative;
-		border: 2px solid transparent;
+		margin-left: calc(var(--fgp-gap_item_column, 0px) + 8px) !important;
+		/* border: 2px solid transparent; */
+	}
+
+	.RadioButtons > * {
+		flex-grow: 0;
 	}
 
 	/* .RadioButtons:hover::before {
@@ -217,6 +224,17 @@
 
 	.RadioButtons:hover .icon-button {
 		border-radius: 0;
+	}
+
+	.BottomBar {
+		display: flex;
+		place-content: flex-end;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		border-top: 1px solid var(--color-black-10);
+		padding: var(--size-100);
 	}
 </style>
 
@@ -247,34 +265,39 @@
 
 	<Matrix {columns} {rows} grid={[8, 8]} />
 
-	<Field
-		id="width"
-		label="Width"
-		type="number"
-		step="1"
-		min="1"
-		max="1000"
-		value={width} />
+	<div style="display: flex; gap: var(--size-200); & > * {
+		flex-grow: 1;
+	}">
+		<Field
+			id="width"
+			label="Width"
+			type="number"
+			step="1"
+			min="1"
+			max="1000"
+			value={width} />
 
-	<div class="RadioButtons">
-		<RadioButton
-			id="min"
-			icon="text-align-top"
-			label="min"
-			value="MIN"
-			name="cellAlignment" />
-		<RadioButton
-			id="center"
-			icon="text-align-top"
-			label="center"
-			value="MIN"
-			name="cellAlignment"
-			checked />
-		<RadioButton
-			id="max"
-			icon="text-align-bottom"
-			label="max"
-			value="MIN"
-			name="cellAlignment" />
+		<div class="RadioButtons">
+			<RadioButton
+				id="min"
+				icon="text-align-top"
+				value="MIN"
+				name="cellAlignment" />
+			<RadioButton
+				id="center"
+				icon="text-align-middle"
+				value="MIN"
+				name="cellAlignment"
+				checked />
+			<RadioButton
+				id="max"
+				icon="text-align-bottom"
+				value="MIN"
+				name="cellAlignment" />
+		</div>
+	</div>
+
+	<div class="BottomBar">
+		<Button id="create-table">Create table</Button>
 	</div>
 </div>

@@ -32,27 +32,15 @@
 	}
 </script>
 
-<label class="TextField {classes}">
-	<span>{label}</span>
-	<input
-		{id}
-		{type}
-		{disabled}
-		{value}
-		{min}
-		{max}
-		{step}
-		on:change={handleInput} />
-</label>
-
 <style>
+	div {
+		padding-block: 2px;
+	}
 	.TextField {
 		display: flex;
 		border: 2px solid transparent;
 		place-items: center;
 		height: 28px;
-		margin-top: calc(var(--fgp-gap_item_row, 0px) + 2px);
-		margin-bottom: 2px;
 		margin-left: calc(
 			var(--fgp-gap_item_column, 0px) + (-1 * var(--margin-100))
 		);
@@ -83,3 +71,18 @@
 		cursor: default;
 	}
 </style>
+
+<div>
+	<label class="TextField {classes}">
+		<span>{label}</span>
+		<input
+			{id}
+			{type}
+			{disabled}
+			{value}
+			{min}
+			{max}
+			{step}
+			on:change={handleInput} />
+	</label>
+</div>
