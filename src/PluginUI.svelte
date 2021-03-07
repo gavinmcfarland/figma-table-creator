@@ -1,53 +1,52 @@
 <script>
-	import { valueStore } from "./data.js";
-	import { onMount } from "svelte";
-	import Field from "./Field.svelte";
-	import Checkbox from "./Checkbox.svelte";
-	import Matrix from "./Matrix.svelte";
+	import { valueStore } from "./data.js"
+	import { onMount } from "svelte"
+	import Field from "./Field.svelte"
+	import Checkbox from "./Checkbox.svelte"
+	import RadioButton from "./RadioButton.svelte"
+	import Matrix from "./Matrix.svelte"
 
-	let data;
-	let columns;
-	let rows;
+	let data
+	let columns
+	let rows
+	let width = 100
 
-	// onMount(() => {
 	valueStore.subscribe((value) => {
-		columns = value.columns;
-		rows = value.rows;
-	});
-	// });
+		columns = value.columns
+		rows = value.rows
+	})
 
 	async function onLoad(event) {
-		data = await event.data.pluginMessage;
+		data = await event.data.pluginMessage
 	}
 </script>
 
-<svelte:window on:message={onLoad} />
-
-<!-- {console.log(data)} -->
-{columns}
-<Field
-	id="columns"
-	label="Columns"
-	type="number"
-	step="1"
-	min="1"
-	max="50"
-	value={columns}
-/>
-<Field
-	id="rows"
-	label="Rows"
-	type="number"
-	step="1"
-	min="1"
-	max="50"
-	value={rows}
-/>
-<Checkbox id="includeHeader" label="Include table header" value="4" />
-
-<Matrix {columns} {rows} grid={[8, 8]} />
-
 <style global>
+	html {
+		height: 100%;
+	}
+	body {
+		display: flex;
+		place-items: center;
+		place-content: center;
+		height: 100%;
+	}
+	.container {
+		width: 268px;
+		height: 500px;
+		box-shadow: 0px 2px 14px 0px rgba(0, 0, 0, 0.15);
+		border: 0.5px solid rgba(0, 0, 0, 0.15);
+		border-radius: 4px;
+	}
+	.field-group {
+		display: flex;
+		gap: var(--size-400);
+	}
+
+	.field-group > * {
+		flex-grow: 1;
+		flex-basis: 100%;
+	}
 	/* Reset */
 	button {
 		font: inherit;
@@ -194,4 +193,88 @@
 		font-weight: 600;
 		line-height: var(--size-400);
 	}
+
+	.RadioButtons {
+		display: flex;
+		padding: 1px;
+		margin: 2px;
+		flex-grow: 0;
+		flex-basis: auto;
+		/* margin-left: 11px; */
+		position: relative;
+		border: 2px solid transparent;
+	}
+
+	/* .RadioButtons:hover::before {
+		content: "";
+		width: calc(100% - 4px);
+		height: calc(100% - 4px);
+		position: absolute;
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		border-radius: 2px;
+		user-select: none;
+	} */
+
+	.RadioButtons:hover .icon-button {
+		border-radius: 0;
+	}
 </style>
+
+<svelte:window on:message={onLoad} />
+
+<div class="container" style="padding: var(--size-200)">
+	<div class="SectionTitle">Table</div>
+	<div class="field-group">
+		<Field
+			id="columns"
+			label="Columns"
+			type="number"
+			step="1"
+			min="1"
+			max="50"
+			value={columns} />
+		<Field
+			id="rows"
+			label="Rows"
+			type="number"
+			step="1"
+			min="1"
+			max="50"
+			value={rows} />
+	</div>
+
+	<Checkbox id="includeHeader" label="Include table header" value="4" />
+
+	<Matrix {columns} {rows} grid={[8, 8]} />
+
+	<Field
+		id="width"
+		label="Width"
+		type="number"
+		step="1"
+		min="1"
+		max="1000"
+		value={width} />
+
+	<div class="RadioButtons">
+		<RadioButton
+			id="min"
+			icon="text-align-top"
+			label="min"
+			value="MIN"
+			name="cellAlignment" />
+		<RadioButton
+			id="center"
+			icon="text-align-top"
+			label="center"
+			value="MIN"
+			name="cellAlignment"
+			checked />
+		<RadioButton
+			id="max"
+			icon="text-align-bottom"
+			label="max"
+			value="MIN"
+			name="cellAlignment" />
+	</div>
+</div>

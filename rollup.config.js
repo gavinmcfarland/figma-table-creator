@@ -10,7 +10,7 @@ import { globalStyle } from 'svelte-preprocess';
 /* Post CSS */
 import postcss from 'rollup-plugin-postcss';
 // import cssnano from 'cssnano';
-import stylup from 'stylup';
+import { stylup } from './stylup'
 
 const processStylup = {
 	markup({ content, filename }) {
@@ -40,6 +40,7 @@ export default [{
 			// dev: !production,
 			preprocess:
 				[// processStylup,
+					stylup,
 					globalStyle()]
 		}),
 

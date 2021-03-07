@@ -1,0 +1,6 @@
+{
+	"useTabs": true,
+	"semi": false,
+	"svelteBracketNewLine": false,
+	"svelteSortOrder": "options-scripts-styles-markup"
+}
