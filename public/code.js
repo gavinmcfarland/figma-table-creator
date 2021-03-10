@@ -931,6 +931,7 @@ function detachTable(selection) {
     }
 }
 function linkTemplate(template, selection) {
+    console.log(template);
     if (selection.length === 1) {
         if (selection[0].type !== "COMPONENT") {
             figma.notify("Please make sure node is a component");
@@ -1207,7 +1208,7 @@ function createTableCommands(message, msg) {
         figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
         figma.root.setPluginData("rowComponentID", components.row.id);
         figma.root.setPluginData("tableComponentID", components.table.id);
-        figma.notify('Default table components created');
+        figma.notify('Default components created');
     }
     if (msg.type === 'create-table') {
         createTableCommand(message, msg);
@@ -1225,26 +1226,26 @@ function createTableCommands(message, msg) {
         }
         figma.ui.postMessage(message);
     }
-    if (msg.type === "link-components") {
-        figma.showUI(__uiFiles__.components);
-        figma.ui.resize(268, 504);
-        figma.ui.postMessage(message);
-        figma.ui.onmessage = msg => {
-            if (msg.type === "link-template") {
-                linkTemplate(msg.template, figma.currentPage.selection);
-            }
-            if (msg.type === "update") {
-                if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-                    message.componentsExist = true;
-                    // message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-                }
-                else {
-                    message.componentsExist = false;
-                }
-                figma.ui.postMessage(message);
-            }
-        };
-    }
+    // if (msg.type === "link-components") {
+    // 	figma.showUI(__uiFiles__.components);
+    // 	figma.ui.resize(268, 504)
+    // 	figma.ui.postMessage(message);
+    // 	figma.ui.onmessage = msg => {
+    // 		if (msg.type === "link-template") {
+    // 			linkTemplate(msg.template, figma.currentPage.selection)
+    // 		}
+    // 		if (msg.type === "update") {
+    // 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+    // 				message.componentsExist = true
+    // 				// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
+    // 			}
+    // 			else {
+    // 				message.componentsExist = false
+    // 			}
+    // 			figma.ui.postMessage(message);
+    // 		}
+    // 	}
+    // }
     if (msg.type === "restore-component") {
         restoreComponent(msg.component);
     }
@@ -1274,14 +1275,16 @@ block_1: {
         }
         figma.showUI(__uiFiles__.main);
         figma.ui.resize(268, 504);
+        message.type = "create-table";
         figma.ui.postMessage(message);
         figma.ui.onmessage = msg => {
             createTableCommands(message, msg);
         };
     }
     if (figma.command === "linkComponents") {
-        figma.showUI(__uiFiles__.components);
+        figma.showUI(__uiFiles__.main);
         figma.ui.resize(268, 486);
+        message.type = "settings";
         figma.ui.postMessage(message);
         figma.ui.onmessage = msg => {
             if (msg.type === "link-template") {

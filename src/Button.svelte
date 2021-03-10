@@ -4,6 +4,7 @@
 	export let id
 	export let classes = ""
 	export let label = ""
+	export let icon
 
 	const contextHandleInput = getContext("handleInput")
 
@@ -15,11 +16,39 @@
 	}
 </script>
 
+<div>
+	<button {id} class="Button {classes}">
+		{#if icon}<span class="icon" />{/if}<slot />
+	</button>
+</div>
+
 <style>
+	div {
+		padding-block: 1px;
+	}
+	.Button,
+	button {
+		line-height: 26px;
+		padding: var(--padding-0) var(--padding-200);
+		border: 2px solid var(--color-blue);
+		background-color: var(--color-blue);
+		color: white;
+		border-radius: var(--border-radius-75);
+		font-weight: 500;
+		letter-spacing: 0.055px;
+	}
+
 	.Button {
 		border-radius: var(--border-radius-50);
 		background-color: var(--color-blue);
+		display: flex;
+		place-items: center;
+	}
+
+	.icon {
+		display: inline-block;
+		width: 24px;
+		height: 24px;
+		background-color: pink;
 	}
 </style>
-
-<button {id} class="Button {classes}"><slot /></button>

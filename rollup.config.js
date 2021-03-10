@@ -40,7 +40,7 @@ export default [{
 			// dev: !production,
 			preprocess:
 				[// processStylup,
-					stylup,
+					// stylup,
 					globalStyle()]
 		}),
 
