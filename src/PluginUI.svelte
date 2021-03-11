@@ -32,15 +32,17 @@
 			cellAlignment = value.cellAlignment
 		})
 
-		if (data.componentsExist === false) {
-			welcomePageActive = true
-			createTablePageActive = false
-		}
 		if (data.type === "create-table") {
 			welcomePageActive = false
 			createTablePageActive = true
 			settingsPageActive = false
 		}
+
+		if (data.componentsExist === false) {
+			welcomePageActive = true
+			createTablePageActive = false
+		}
+
 		if (data.type === "settings") {
 			welcomePageActive = false
 			createTablePageActive = false

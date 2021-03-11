@@ -222,6 +222,23 @@ function pageNode(node) {
         return pageNode(node.parent);
     }
 }
+function clone(val) {
+    return JSON.parse(JSON.stringify(val));
+}
+function removeChildren(node) {
+    var length = node.children.length;
+    if (length > 0) {
+        for (let i = 0; i < length; i++) {
+            node.children[0].remove();
+        }
+        // node.children[0].remove()
+    }
+}
+function positionInCenter(node) {
+    // Position newly created table in center of viewport
+    node.x = figma.viewport.center.x - (node.width / 2);
+    node.y = figma.viewport.center.y - (node.height / 2);
+}
 function compareVersion(v1, v2, options) {
     var lexicographical = options && options.lexicographical, zeroExtend = options && options.zeroExtend, v1parts = v1.split('.'), v2parts = v2.split('.');
     function isValidPart(x) {
@@ -259,12 +276,6 @@ function compareVersion(v1, v2, options) {
     }
     return 0;
 }
-let pkg = {
-    version: "6.1.0"
-};
-function clone(val) {
-    return JSON.parse(JSON.stringify(val));
-}
 function changeText(node, text, weight) {
     return __awaiter(this, void 0, void 0, function* () {
         if (node.fontName === figma.mixed) {
@@ -293,224 +304,15 @@ function changeText(node, text, weight) {
         node.layoutAlign = "STRETCH";
     });
 }
-function removeChildren(node) {
-    var length = node.children.length;
-    if (length > 0) {
-        for (let i = 0; i < length; i++) {
-            node.children[0].remove();
-        }
-        // node.children[0].remove()
+function ungroupNode(node, parent) {
+    // Avoid children changing while looping
+    let children = node.children;
+    for (let i = 0; i < children.length; i++) {
+        parent.appendChild(children[i]);
     }
-}
-function createBorder() {
-    var frame1 = figma.createComponent();
-    var line1 = figma.createLine();
-    // frame1.resizeWithoutConstraints(0.01, 0.01)
-    frame1.name = "Table Border";
-    line1.constraints = {
-        horizontal: "STRETCH",
-        vertical: "STRETCH"
-    };
-    frame1.constraints = {
-        horizontal: "STRETCH",
-        vertical: "STRETCH"
-    };
-    frame1.clipsContent = false;
-    line1.resizeWithoutConstraints(10000, 0);
-    const strokes = clone(line1.strokes);
-    strokes[0].color.r = 0.725490196078431;
-    strokes[0].color.g = 0.725490196078431;
-    strokes[0].color.b = 0.725490196078431;
-    line1.strokes = strokes;
-    frame1.appendChild(line1);
-    return frame1;
-}
-function createCell(topBorder, leftBorder) {
-    var cell = figma.createComponent();
-    var frame1 = figma.createFrame();
-    var frame2 = figma.createFrame();
-    var line1 = topBorder;
-    var text = figma.createText();
-    frame2.name = "Content";
-    frame2.primaryAxisSizingMode = "AUTO";
-    changeText(text, "");
-    cell.name = "Default";
-    const fills = clone(cell.fills);
-    fills[0].opacity = 0.0001;
-    fills[0].visible = true;
-    cell.fills = fills;
-    frame2.layoutMode = "VERTICAL";
-    frame1.appendChild(line1);
-    frame1.locked = true;
-    frame1.fills = [];
-    frame2.fills = [];
-    line1.rotation = -90;
-    line1.y = -5000;
-    frame1.resizeWithoutConstraints(100, 0.01);
-    frame1.clipsContent = false;
-    frame1.layoutAlign = "STRETCH";
-    frame2.layoutAlign = "STRETCH";
-    frame2.horizontalPadding = 8;
-    frame2.verticalPadding = 10;
-    cell.layoutMode = "VERTICAL";
-    cell.appendChild(frame1);
-    cell.appendChild(frame2);
-    frame2.appendChild(text);
-    return cell;
-}
-// function createCellHeader() {
-// 	var cell = figma.createComponent()
-// 	cell.name = "Table/Cell/Header"
-// 	return cell
-// }
-function createRow() {
-    var row = figma.createComponent();
-    row.name = "Table/Row";
-    row.clipsContent = true;
-    const paint = {
-        r: 0.725490196078431,
-        g: 0.725490196078431,
-        b: 0.725490196078431,
-        a: 1
-    };
-    var innerShadow = {
-        type: "INNER_SHADOW",
-        color: paint,
-        offset: { x: 0, y: 1 },
-        radius: 0,
-        visible: true,
-        blendMode: "NORMAL"
-    };
-    row.effects = [innerShadow];
-    const fills = clone(row.fills);
-    fills[0].opacity = 0.0001;
-    fills[0].visible = true;
-    row.fills = fills;
-    return row;
-}
-function createTable() {
-    var table = figma.createComponent();
-    table.name = "Table";
-    const strokes = clone(table.strokes);
-    const paint = {
-        type: "SOLID",
-        color: {
-            r: 0.725490196078431,
-            g: 0.725490196078431,
-            b: 0.725490196078431
-        }
-    };
-    strokes[0] = paint;
-    table.strokes = strokes;
-    table.cornerRadius = 2;
-    table.clipsContent = true;
-    const fills = clone(table.fills);
-    fills[0].visible = true;
-    table.fills = fills;
-    return table;
-}
-var components = {};
-function createDefaultComponents() {
-    var componentSpacing = 200;
-    var page = figma.createPage();
-    page.name = "Table Creator";
-    var introText = figma.createText();
-    page.appendChild(introText);
-    changeText(introText, "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Settings. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.");
-    introText.resizeWithoutConstraints(250, 100);
-    var border = createBorder();
-    components.cell = createCell(border.createInstance());
-    border.remove();
-    components.cell.setPluginData("isCell", "true");
-    var cellText = figma.createText();
-    page.appendChild(cellText);
-    changeText(cellText, "The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Settings.");
-    cellText.y = componentSpacing;
-    cellText.x = 300;
-    cellText.resizeWithoutConstraints(250, 100);
-    components.cellHeader = figma.createComponent();
-    var innerCell = components.cell.createInstance();
-    innerCell.primaryAxisSizingMode = "AUTO";
-    components.cellHeader.appendChild(innerCell);
-    // for (let i = 0; i < components.cellHeader.children.length; i++) {
-    // 	components.cellHeader.children[i].primaryAxisSizingMode = "AUTO"
-    // }
-    components.cellHeader.name = "Header";
-    components.cellHeader.layoutMode = "VERTICAL";
-    components.cellHeader.children[0].fills = [];
-    components.cellHeader.setPluginData("isCellHeader", "true");
-    changeText(components.cellHeader.children[0].children[1].children[0], null, "Bold");
-    // TODO: Needs to be aplied to user linked templates also
-    components.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
-    components.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
-    const fills = clone(components.cellHeader.fills);
-    fills[0].opacity = 0.05;
-    fills[0].color.r = 0;
-    fills[0].color.b = 0;
-    fills[0].color.g = 0;
-    fills[0].visible = true;
-    components.cellHeader.fills = fills;
-    page.appendChild(components.cell);
-    page.appendChild(components.cellHeader);
-    var cellHoldingFrame = figma.combineAsVariants([components.cell, components.cellHeader], page);
-    // console.log(cellHoldingFrame)
-    components.cell.layoutAlign = "STRETCH";
-    components.cell.primaryAxisSizingMode = "FIXED";
-    components.cellHeader.layoutAlign = "STRETCH";
-    components.cellHeader.primaryAxisSizingMode = "FIXED";
-    components.cellHeader.children[0].layoutAlign = "STRETCH";
-    components.cell.name = "Type=Default";
-    components.cellHeader.name = "Type=Header";
-    cellHoldingFrame.fills = [];
-    cellHoldingFrame.itemSpacing = 16;
-    cellHoldingFrame.name = "Table/Cell";
-    cellHoldingFrame.layoutMode = "HORIZONTAL";
-    cellHoldingFrame.counterAxisSizingMode = "AUTO";
-    cellHoldingFrame.y = componentSpacing * 1;
-    components.row = createRow();
-    components.row.y = componentSpacing * 2;
-    var rowCell = components.cell.createInstance();
-    var rowCell2 = components.cell.createInstance();
-    components.row.appendChild(rowCell);
-    components.row.appendChild(rowCell2);
-    rowCell.layoutAlign = components.cell.layoutAlign;
-    rowCell.layoutGrow = components.cell.layoutGrow;
-    rowCell2.layoutAlign = components.cell.layoutAlign;
-    rowCell2.layoutGrow = components.cell.layoutGrow;
-    components.row.setPluginData("isRow", "true");
-    components.row.layoutMode = "HORIZONTAL";
-    components.row.counterAxisSizingMode = "AUTO";
-    var rowText = figma.createText();
-    page.appendChild(rowText);
-    changeText(rowText, "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.");
-    rowText.y = componentSpacing * 2;
-    rowText.x = 300;
-    rowText.resizeWithoutConstraints(250, 100);
-    page.appendChild(components.row);
-    components.table = createTable();
-    components.table.y = componentSpacing * 3;
-    // var clonedRow = cloneComponentAsFrame(components.row)
-    // var clonedRow2 = cloneComponentAsFrame(components.row)
-    var clonedRow = components.row.createInstance();
-    var clonedRow2 = components.row.createInstance();
-    components.table.appendChild(clonedRow);
-    components.table.appendChild(clonedRow2);
-    components.table.setPluginData("isTable", "true");
-    clonedRow.setPluginData("isRow", "true");
-    clonedRow2.setPluginData("isRow", "true");
-    components.table.layoutMode = "VERTICAL";
-    components.table.counterAxisSizingMode = "AUTO";
-    var tableText = figma.createText();
-    page.appendChild(tableText);
-    changeText(tableText, "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables");
-    tableText.y = componentSpacing * 3;
-    tableText.x = 300;
-    tableText.resizeWithoutConstraints(250, 100);
-    // Bug: you need to set name first in order to set sizing mode for some reason
-    innerCell.name = "Table/Cell";
-    innerCell.primaryAxisSizingMode = "AUTO";
-    components.table.setRelaunchData({ detachTable: 'Detaches table and rows' });
-    page.appendChild(components.table);
+    if (node.type === "FRAME") {
+        node.remove();
+    }
 }
 function findComponentById(id) {
     // var pages = figma.root.children
@@ -538,6 +340,304 @@ function findComponentById(id) {
         return null;
     }
 }
+
+// Load FONTS
+function loadFonts() {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield Promise.all([
+            figma.loadFontAsync({
+                family: "Roboto",
+                style: "Regular"
+            })
+        ]);
+    });
+}
+function createDefaultComponents() {
+    const obj = {};
+    var tempContainer = figma.createFrame();
+    tempContainer.fills = [];
+    tempContainer.clipsContent = false;
+    // Create TEXT
+    var text_4_43 = figma.createText();
+    text_4_43.resize(250.0000000000, 98.0000000000);
+    text_4_43.name = "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Settings. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.";
+    text_4_43.layoutAlign = "STRETCH";
+    loadFonts().then((res) => {
+        text_4_43.fontName = {
+            family: "Roboto",
+            style: "Regular"
+        };
+        text_4_43.characters = "Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Settings. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.";
+        text_4_43.textAutoResize = "HEIGHT";
+    });
+    tempContainer.appendChild(text_4_43);
+    // Create TEXT
+    var text_4_52 = figma.createText();
+    text_4_52.resize(250.0000000000, 70.0000000000);
+    text_4_52.name = "The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Settings.";
+    text_4_52.relativeTransform = [[1, 0, 300], [0, 1, 200]];
+    text_4_52.x = 300;
+    text_4_52.y = 200;
+    text_4_52.layoutAlign = "STRETCH";
+    loadFonts().then((res) => {
+        text_4_52.fontName = {
+            family: "Roboto",
+            style: "Regular"
+        };
+        text_4_52.characters = "The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Settings.";
+        text_4_52.textAutoResize = "HEIGHT";
+    });
+    tempContainer.appendChild(text_4_52);
+    // Create COMPONENT
+    var component_4_48 = figma.createComponent();
+    component_4_48.resize(100.0000000000, 34.0099983215);
+    component_4_48.name = "Type=Default";
+    component_4_48.layoutAlign = "STRETCH";
+    component_4_48.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_4_48.primaryAxisSizingMode = "FIXED";
+    component_4_48.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_4_48.layoutMode = "VERTICAL";
+    component_4_48.description = "";
+    component_4_48.setPluginData("isCell", "true");
+    obj.cell = component_4_48;
+    // Create FRAME
+    var frame_4_49 = figma.createFrame();
+    frame_4_49.resizeWithoutConstraints(100.0000000000, 0.01);
+    frame_4_49.locked = true;
+    frame_4_49.layoutAlign = "STRETCH";
+    frame_4_49.fills = [];
+    frame_4_49.backgrounds = [];
+    frame_4_49.clipsContent = false;
+    component_4_48.appendChild(frame_4_49);
+    // Create COMPONENT
+    var component_6_0 = figma.createComponent();
+    component_6_0.name = "Table Border";
+    component_6_0.constraints = { "horizontal": "STRETCH", "vertical": "STRETCH" };
+    component_6_0.description = "";
+    // Create LINE
+    var line_6_1 = figma.createLine();
+    line_6_1.resizeWithoutConstraints(10000.0000000000, 0.0000000000);
+    line_6_1.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }];
+    line_6_1.constraints = { "horizontal": "STRETCH", "vertical": "STRETCH" };
+    component_6_0.appendChild(line_6_1);
+    // Create INSTANCE
+    var instance_4_46 = component_6_0.createInstance();
+    instance_4_46.relativeTransform = [[0, -1, 0], [1, 0, -5000]];
+    instance_4_46.y = -5000;
+    instance_4_46.rotation = -90;
+    instance_4_46.expanded = false;
+    instance_4_46.constraints = { "horizontal": "MIN", "vertical": "MIN" };
+    frame_4_49.appendChild(instance_4_46);
+    // Create FRAME
+    var frame_4_50 = figma.createFrame();
+    frame_4_50.resize(100.0000000000, 34.0000000000);
+    frame_4_50.name = "Content";
+    frame_4_50.relativeTransform = [[1, 0, 0], [0, 1, 0.0099999998]];
+    frame_4_50.y = 0.009999999776482582;
+    frame_4_50.layoutAlign = "STRETCH";
+    frame_4_50.fills = [];
+    frame_4_50.paddingLeft = 8;
+    frame_4_50.paddingRight = 8;
+    frame_4_50.paddingTop = 10;
+    frame_4_50.paddingBottom = 10;
+    frame_4_50.backgrounds = [];
+    frame_4_50.layoutMode = "VERTICAL";
+    component_4_48.appendChild(frame_4_50);
+    // Create TEXT
+    var text_4_51 = figma.createText();
+    text_4_51.resize(84.0000000000, 14.0000000000);
+    text_4_51.relativeTransform = [[1, 0, 8], [0, 1, 10]];
+    text_4_51.x = 8;
+    text_4_51.y = 10;
+    text_4_51.layoutAlign = "STRETCH";
+    loadFonts().then((res) => {
+        text_4_51.fontName = {
+            family: "Roboto",
+            style: "Regular"
+        };
+        text_4_51.characters = "";
+        text_4_51.textAutoResize = "HEIGHT";
+    });
+    frame_4_50.appendChild(text_4_51);
+    // Create COMPONENT
+    var component_4_53 = figma.createComponent();
+    component_4_53.resize(100.0000000000, 34.0099983215);
+    component_4_53.name = "Type=Header";
+    component_4_53.relativeTransform = [[1, 0, 116], [0, 1, 8.391e-7]];
+    component_4_53.x = 116;
+    component_4_53.y = 8.391216397285461e-7;
+    component_4_53.layoutAlign = "STRETCH";
+    component_4_53.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05000000074505806, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    component_4_53.primaryAxisSizingMode = "FIXED";
+    component_4_53.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05000000074505806, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    component_4_53.layoutMode = "VERTICAL";
+    component_4_53.description = "";
+    component_4_53.setPluginData("isCellHeader", "true");
+    obj.cellHeader = component_4_53;
+    // Create INSTANCE
+    var instance_4_54 = component_4_48.createInstance();
+    instance_4_54.name = "Table/Cell";
+    instance_4_54.fills = [];
+    instance_4_54.primaryAxisSizingMode = "AUTO";
+    instance_4_54.backgrounds = [];
+    component_4_53.appendChild(instance_4_54);
+    // Create COMPONENT_SET
+    var componentSet_4_60 = figma.combineAsVariants([component_4_48, component_4_53], tempContainer);
+    componentSet_4_60.resize(216.0000000000, 34.0099983215);
+    componentSet_4_60.name = "Table/Cell";
+    componentSet_4_60.visible = true;
+    componentSet_4_60.locked = false;
+    componentSet_4_60.opacity = 1;
+    componentSet_4_60.blendMode = "PASS_THROUGH";
+    componentSet_4_60.isMask = false;
+    componentSet_4_60.effects = [];
+    componentSet_4_60.relativeTransform = [[1, 0, 0], [0, 1, 200]];
+    componentSet_4_60.x = 0;
+    componentSet_4_60.y = 200;
+    componentSet_4_60.rotation = 0;
+    componentSet_4_60.layoutAlign = "INHERIT";
+    componentSet_4_60.constrainProportions = false;
+    componentSet_4_60.layoutGrow = 0;
+    componentSet_4_60.exportSettings = [];
+    componentSet_4_60.fills = [];
+    componentSet_4_60.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.48235294222831726, "g": 0.3803921639919281, "b": 1 } }];
+    componentSet_4_60.strokeWeight = 1;
+    componentSet_4_60.strokeAlign = "INSIDE";
+    componentSet_4_60.strokeCap = "NONE";
+    componentSet_4_60.strokeJoin = "MITER";
+    componentSet_4_60.strokeMiterLimit = 4;
+    componentSet_4_60.dashPattern = [10, 5];
+    componentSet_4_60.cornerRadius = 5;
+    componentSet_4_60.cornerSmoothing = 0;
+    componentSet_4_60.paddingLeft = 0;
+    componentSet_4_60.paddingRight = 0;
+    componentSet_4_60.paddingTop = 0;
+    componentSet_4_60.paddingBottom = 0;
+    componentSet_4_60.primaryAxisAlignItems = "MIN";
+    componentSet_4_60.counterAxisAlignItems = "MIN";
+    componentSet_4_60.primaryAxisSizingMode = "AUTO";
+    componentSet_4_60.layoutGrids = [];
+    componentSet_4_60.backgrounds = [];
+    componentSet_4_60.clipsContent = true;
+    componentSet_4_60.guides = [];
+    componentSet_4_60.expanded = true;
+    componentSet_4_60.constraints = { "horizontal": "MIN", "vertical": "MIN" };
+    componentSet_4_60.layoutMode = "HORIZONTAL";
+    componentSet_4_60.counterAxisSizingMode = "AUTO";
+    componentSet_4_60.itemSpacing = 16;
+    componentSet_4_60.description = "";
+    // Create COMPONENT
+    var component_4_61 = figma.createComponent();
+    component_4_61.resize(200.0000000000, 34.0099983215);
+    component_4_61.name = "Table/Row";
+    component_4_61.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
+    component_4_61.relativeTransform = [[1, 0, 0], [0, 1, 400]];
+    component_4_61.y = 400;
+    component_4_61.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_4_61.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_4_61.clipsContent = true;
+    component_4_61.layoutMode = "HORIZONTAL";
+    component_4_61.counterAxisSizingMode = "AUTO";
+    component_4_61.description = "";
+    component_4_61.setPluginData("isRow", "true");
+    tempContainer.appendChild(component_4_61);
+    obj.row = component_4_61;
+    // Create INSTANCE
+    var instance_4_62 = component_4_48.createInstance();
+    instance_4_62.name = "Table/Cell";
+    instance_4_62.expanded = false;
+    component_4_61.appendChild(instance_4_62);
+    // Create INSTANCE
+    var instance_4_68 = component_4_48.createInstance();
+    instance_4_68.name = "Table/Cell";
+    instance_4_68.relativeTransform = [[1, 0, 100], [0, 1, 8.391e-7]];
+    instance_4_68.x = 100;
+    instance_4_68.y = 8.391216397285461e-7;
+    instance_4_68.expanded = false;
+    component_4_61.appendChild(instance_4_68);
+    // Create TEXT
+    var text_4_74 = figma.createText();
+    text_4_74.resize(250.0000000000, 42.0000000000);
+    text_4_74.name = "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.";
+    text_4_74.relativeTransform = [[1, 0, 300], [0, 1, 400]];
+    text_4_74.x = 300;
+    text_4_74.y = 400;
+    text_4_74.layoutAlign = "STRETCH";
+    loadFonts().then((res) => {
+        text_4_74.fontName = {
+            family: "Roboto",
+            style: "Regular"
+        };
+        text_4_74.characters = "Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.";
+        text_4_74.textAutoResize = "HEIGHT";
+    });
+    tempContainer.appendChild(text_4_74);
+    // Create COMPONENT
+    var component_4_75 = figma.createComponent();
+    component_4_75.resize(200.0000000000, 68.0199966431);
+    component_4_75.name = "Table";
+    component_4_75.relativeTransform = [[1, 0, 0], [0, 1, 600]];
+    component_4_75.y = 600;
+    component_4_75.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_4_75.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }];
+    component_4_75.cornerRadius = 2;
+    component_4_75.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_4_75.clipsContent = true;
+    component_4_75.layoutMode = "VERTICAL";
+    component_4_75.counterAxisSizingMode = "AUTO";
+    component_4_75.description = "";
+    component_4_75.setPluginData("isTable", "true");
+    tempContainer.appendChild(component_4_75);
+    obj.table = component_4_75;
+    // Create INSTANCE
+    var instance_4_76 = component_4_61.createInstance();
+    instance_4_76.relativeTransform = [[1, 0, 0], [0, 1, 0]];
+    instance_4_76.expanded = false;
+    component_4_75.appendChild(instance_4_76);
+    // Create INSTANCE
+    var instance_4_89 = component_4_61.createInstance();
+    instance_4_89.relativeTransform = [[1, 0, 0], [0, 1, 34.0099983215]];
+    instance_4_89.y = 34.0099983215332;
+    instance_4_89.expanded = false;
+    component_4_75.appendChild(instance_4_89);
+    // Create TEXT
+    var text_4_102 = figma.createText();
+    text_4_102.resize(250.0000000000, 140.0000000000);
+    text_4_102.name = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
+    text_4_102.relativeTransform = [[1, 0, 300], [0, 1, 600]];
+    text_4_102.x = 300;
+    text_4_102.y = 600;
+    text_4_102.layoutAlign = "STRETCH";
+    loadFonts().then((res) => {
+        text_4_102.fontName = {
+            family: "Roboto",
+            style: "Regular"
+        };
+        text_4_102.characters = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
+        text_4_102.textAutoResize = "HEIGHT";
+    });
+    tempContainer.appendChild(text_4_102);
+    // Remove table border component from canvas
+    component_6_0.remove();
+    ungroupNode(tempContainer, figma.currentPage);
+    return obj;
+}
+
+let pkg = {
+    version: "6.1.0"
+};
+if (figma.root.getPluginData("pluginVersion") === "") {
+    // If plugin was used before new auto layout tables were supported
+    if (figma.root.getPluginData("cellComponentID")) {
+        figma.root.setPluginData("pluginVersion", "5.0.0");
+        figma.root.setPluginData("upgradedTables", "false");
+    }
+    // Else if plugin never used
+    else {
+        figma.root.setPluginData("pluginVersion", pkg.version);
+    }
+}
+// --------
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
     // Get Cell Templa
     var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
@@ -880,57 +980,7 @@ function selectRow() {
         figma.notify("One or more table cells must be selected");
     }
 }
-function detachInstance(instance, parent) {
-    if (instance.type === "INSTANCE") {
-        var newInstance = figma.createFrame();
-        newInstance.resize(instance.width, instance.width);
-        copyPasteProps(instance, newInstance, { include: ["name", "x", "y"] });
-        var length = instance.children.length;
-        for (var i = 0; i < length; i++) {
-            newInstance.appendChild(instance.children[i].clone());
-        }
-        parent.appendChild(newInstance);
-        // instance.remove()
-        return newInstance;
-    }
-}
-function detachTable(selection) {
-    let length1 = selection.length;
-    let discard = [];
-    let newTable;
-    if (length1) {
-        let newRows = [];
-        for (let i = 0; i < length1; i++) {
-            let table = selection[i];
-            discard.push(table);
-            newTable = detachInstance(table, table.parent);
-            newTable.setPluginData("isTable", "true");
-            let length2 = table.children.length;
-            for (let b = 0; b < length2; b++) {
-                let row = newTable.children[b];
-                if (row.getPluginData("isRow") === "true") {
-                    discard.push(row);
-                    row = detachInstance(row, row.parent);
-                    row.setPluginData("isRow", "true");
-                    newRows.push(row);
-                }
-                else {
-                    newRows.push(row);
-                }
-            }
-            for (let b = 0; b < newRows.length; b++) {
-                newTable.insertChild(b, newRows[b]);
-            }
-        }
-    }
-    else {
-        figma.notify("One or more table must be selected");
-    }
-    for (let b = 0; b < discard.length; b++) {
-        discard[b].remove();
-    }
-}
-function linkTemplate(template, selection) {
+function linkComponent(template, selection) {
     console.log(template);
     if (selection.length === 1) {
         if (selection[0].type !== "COMPONENT") {
@@ -982,22 +1032,6 @@ function restoreComponent(component) {
     }
     else {
         figma.notify("Component not found");
-    }
-}
-function positionInCenter(node) {
-    // Position newly created table in center of viewport
-    node.x = figma.viewport.center.x - (node.width / 2);
-    node.y = figma.viewport.center.y - (node.height / 2);
-}
-if (figma.root.getPluginData("pluginVersion") === "") {
-    // If plugin was used before new auto layout tables were supported
-    if (figma.root.getPluginData("cellComponentID")) {
-        figma.root.setPluginData("pluginVersion", "5.0.0");
-        figma.root.setPluginData("upgradedTables", "false");
-    }
-    // Else if plugin never used
-    else {
-        figma.root.setPluginData("pluginVersion", pkg.version);
     }
 }
 if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
@@ -1056,6 +1090,7 @@ function checkVersion() {
         throw 'New Version';
     }
 }
+// Upgrades old tables to use new Auto Layout. Could be assumed that it is no longer needed.
 function upgradeTables() {
     // TODO: Add check for header cell DONE
     // TODO: Check for when no cellVariantsName can be identified DONE
@@ -1142,7 +1177,8 @@ function upgradeTables() {
     figma.notify("Table components upgraded");
     figma.root.setPluginData("upgradedTables", "true");
 }
-function createTableCommand(message, msg) {
+// Takes input like rowCount and columnCount to create table and sets plugin data to root.
+function createTable(message, msg) {
     if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
         message.componentsExist = true;
         message.upgradedTables = figma.root.getPluginData("upgradedTables");
@@ -1202,7 +1238,7 @@ function createTableCommands(message, msg) {
         upgradeTables();
     }
     if (msg.type === 'create-components') {
-        createDefaultComponents();
+        var components = createDefaultComponents();
         figma.root.setRelaunchData({ createTable: 'Create a new table' });
         figma.root.setPluginData("cellComponentID", components.cell.id);
         figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
@@ -1211,10 +1247,10 @@ function createTableCommands(message, msg) {
         figma.notify('Default components created');
     }
     if (msg.type === 'create-table') {
-        createTableCommand(message, msg);
+        createTable(message, msg);
     }
-    if (msg.type === "link-template") {
-        linkTemplate(msg.template, figma.currentPage.selection);
+    if (msg.type === "link-component") {
+        linkComponent(msg.template, figma.currentPage.selection);
     }
     if (msg.type === "update") {
         if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
@@ -1226,32 +1262,13 @@ function createTableCommands(message, msg) {
         }
         figma.ui.postMessage(message);
     }
-    // if (msg.type === "link-components") {
-    // 	figma.showUI(__uiFiles__.components);
-    // 	figma.ui.resize(268, 504)
-    // 	figma.ui.postMessage(message);
-    // 	figma.ui.onmessage = msg => {
-    // 		if (msg.type === "link-template") {
-    // 			linkTemplate(msg.template, figma.currentPage.selection)
-    // 		}
-    // 		if (msg.type === "update") {
-    // 			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-    // 				message.componentsExist = true
-    // 				// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-    // 			}
-    // 			else {
-    // 				message.componentsExist = false
-    // 			}
-    // 			figma.ui.postMessage(message);
-    // 		}
-    // 	}
-    // }
     if (msg.type === "restore-component") {
         restoreComponent(msg.component);
     }
 }
 block_1: {
     if (figma.command === "createTable") {
+        console.log("create table");
         // figma.root.setRelaunchData({ createTable: 'Create a new table' })
         if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
             message.componentsExist = true;
@@ -1287,8 +1304,8 @@ block_1: {
         message.type = "settings";
         figma.ui.postMessage(message);
         figma.ui.onmessage = msg => {
-            if (msg.type === "link-template") {
-                linkTemplate(msg.template, figma.currentPage.selection);
+            if (msg.type === "link-component") {
+                linkComponent(msg.template, figma.currentPage.selection);
             }
             if (msg.type === "update") {
                 if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
@@ -1313,29 +1330,10 @@ block_1: {
     }
     if (figma.command === "selectColumn") {
         selectColumn();
-        // console.log(figma.currentPage.selection[0].getPluginData("isCellHeader"))
         figma.closePlugin();
     }
     if (figma.command === "selectRow") {
         selectRow();
         figma.closePlugin();
     }
-    if (figma.command === "detachTable") {
-        detachTable(figma.currentPage.selection);
-        figma.closePlugin();
-    }
-    if (figma.command === "upgradeTables") {
-        upgradeTables();
-        figma.closePlugin();
-    }
-    if (figma.command === "updateTables") {
-        // if (figma.currentPage.selection[0]) {
-        // 	console.log("row", figma.currentPage.selection[0].getPluginData("isRow"))
-        // 	console.log("table", figma.currentPage.selection[0].getPluginData("isTable"))
-        // 	console.log("cell", figma.currentPage.selection[0].getPluginData("isCell"))
-        // }
-        updateTables();
-        figma.closePlugin();
-    }
 }
-// figma.root.setRelaunchData({ updateTables: 'Update all tables with changes from templates' })

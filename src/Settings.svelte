@@ -7,7 +7,7 @@
 
 	function linkComponent(component) {
 		console.log("Component linked")
-		parent.postMessage({ pluginMessage: { type: "link-template", template: component } }, "*")
+		parent.postMessage({ pluginMessage: { type: "link-component", template: component } }, "*")
 	}
 </script>
 
