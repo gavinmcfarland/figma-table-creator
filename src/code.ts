@@ -1,9 +1,11 @@
-import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersion, loadFonts, changeText, ungroupNode, findComponentById } from './helpers'
+import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersions, loadFonts, changeText, ungroupNode, findComponentById, postMessage, onMessage, onCommand } from './helpers'
 import { createDefaultComponents } from './defaultComponents'
+import pkg from '../package.json';
+import semver from 'semver'
 
-let pkg = {
-	version: "6.1.0"
-}
+
+const currentVersion = figma.root.getPluginData("pluginVersion")
+const newVersion = pkg.version
 
 if (figma.root.getPluginData("pluginVersion") === "") {
 	// If plugin was used before new auto layout tables were supported
@@ -673,7 +675,7 @@ function restoreComponent(component) {
 
 }
 
-if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
+if (compareVersions(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
 	var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"))
 	if (tableTemplate) {
 		tableTemplate.setRelaunchData({ detachTable: 'Detaches table and rows' })
@@ -717,19 +719,6 @@ if (figma.root.getPluginData("includeHeader") == "true") message.includeHeader =
 if (figma.root.getPluginData("includeHeader") == "false") message.includeHeader = false
 if (figma.root.getPluginData("columnResizing") == "true") message.columnResizing = true
 if (figma.root.getPluginData("columnResizing") == "false") message.columnResizing = false
-
-
-
-
-function checkVersion() {
-	if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg.version) < 0) {
-		// TODO: Change to store version on client storage?
-		figma.root.setPluginData("pluginVersion", pkg.version)
-		console.log(figma.root.getPluginData("pluginVersion"))
-
-		throw 'New Version'
-	}
-}
 
 // Upgrades old tables to use new Auto Layout. Could be assumed that it is no longer needed.
 
@@ -974,99 +963,101 @@ function createTableCommands(message, msg) {
 }
 
 
-block_1: {
-	if (figma.command === "createTable") {
-		console.log("create table")
-		// figma.root.setRelaunchData({ createTable: 'Create a new table' })
-		if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-
-			message.componentsExist = true
-
-		}
-
-		try {
-			checkVersion()
-		} catch (e) {
-			figma.showUI(__uiFiles__.versionLog);
-
-			figma.ui.resize(268, 504)
-
-			console.error(e);
-			figma.ui.onmessage = msg => {
-				if (msg.type === "to-create-table") {
-					figma.showUI(__uiFiles__.main);
-					figma.ui.postMessage(message);
-				}
-				createTableCommands(message, msg)
-
-			}
-			break block_1
-			// expected output: "Parameter is not a number!"
-		}
 
 
+// block_1: {
+// 	if (figma.command === "createTable") {
 
 
-		figma.showUI(__uiFiles__.main);
+// 		if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 
-		figma.ui.resize(268, 504)
+// 			message.componentsExist = true
 
-		message.type = "create-table"
+// 		}
 
-		figma.ui.postMessage(message);
+// 		try {
+// 			checkVersion()
+// 		} catch (e) {
+// 			figma.showUI(__uiFiles__.versionLog);
 
-		figma.ui.onmessage = msg => {
+// 			figma.ui.resize(268, 504)
 
-			createTableCommands(message, msg)
-		};
-	}
+// 			console.error(e);
+// 			figma.ui.onmessage = msg => {
+// 				if (msg.type === "to-create-table") {
+// 					figma.showUI(__uiFiles__.main);
+// 					figma.ui.postMessage(message);
+// 				}
+// 				createTableCommands(message, msg)
 
-	if (figma.command === "linkComponents") {
-		figma.showUI(__uiFiles__.main);
-		figma.ui.resize(268, 486)
-		message.type = "settings"
-		figma.ui.postMessage(message);
-
-		figma.ui.onmessage = msg => {
-
-			if (msg.type === "link-component") {
-				linkComponent(msg.template, figma.currentPage.selection)
-
-			}
-			if (msg.type === "update") {
-
-				if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-					message.componentsExist = true
-					// message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-				}
-				else {
-					message.componentsExist = false
-				}
-				figma.ui.postMessage(message);
-			}
-
-			if (msg.type === "restore-component") {
-				restoreComponent(msg.component)
-			}
-
-			if (msg.type === "update-tables") {
-				updateTables()
-			}
-			if (msg.type === "upgrade-tables") {
-				upgradeTables()
-			}
-		}
-	}
+// 			}
+// 			break block_1
+// 			// expected output: "Parameter is not a number!"
+// 		}
 
 
-	if (figma.command === "selectColumn") {
-		selectColumn()
-		figma.closePlugin();
-	}
 
-	if (figma.command === "selectRow") {
-		selectRow()
-		figma.closePlugin();
-	}
 
+// 		figma.showUI(__uiFiles__.main);
+
+// 		figma.ui.resize(268, 504)
+
+// 		message.type = "create-table"
+
+// 		figma.ui.postMessage(message);
+
+// 		figma.ui.onmessage = msg => {
+
+// 			createTableCommands(message, msg)
+// 		};
+// 	}
+
+// }
+
+
+// if (compareVersions(currentVersion, newVersion) > 0) {
+// 	throw 'New Version'
+// }
+// else {
+// 	console.log("new Version")
+// }
+
+var showVersionLog = false;
+var closePluginWhenDone = true;
+
+if (semver.gte(newVersion, currentVersion)) {
+	showVersionLog = true
 }
+
+function closePlugin(close?) {
+	if (closePluginWhenDone || close) {
+		figma.closePlugin();
+	}
+}
+
+onCommand({
+	'createTable': () => {
+		console.log("Creating table")
+
+		figma.showUI(__uiFiles__.main);
+		figma.ui.resize(268, 504)
+		postMessage('create-table', {
+			showVersionLog
+		})
+	},
+	'selectColumn': () => {
+		console.log("Selecting columns")
+
+		selectColumn()
+		closePlugin()
+	},
+	'selectRow': () => {
+		console.log("Selecting rows")
+
+		selectRow()
+		closePlugin()
+	}
+})
+
+
+

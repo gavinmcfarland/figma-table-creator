@@ -238,7 +238,7 @@ export function positionInCenter(node) {
 	node.y = figma.viewport.center.y - (node.height / 2)
 }
 
-export function compareVersion(v1, v2, options?) {
+export function compareVersions(v1, v2, options?) {
 	var lexicographical = options && options.lexicographical,
 		zeroExtend = options && options.zeroExtend,
 		v1parts = v1.split('.'),
@@ -375,4 +375,34 @@ export function findComponentById(id) {
 
 }
 
+const eventListeners: { type: String; callback: Function }[] = [];
+
+export function postMessage(action: String, data?: any) {
+	figma.ui.postMessage({ action, data });
+};
+
+export function onMessage(type: String, callback: Function) {
+	eventListeners.push({ type, callback });
+};
+
+export function onCommand(arg1, arg2?) {
+	if (typeof arguments[0] === "object") {
+		for (let [key, value] of Object.entries(arguments[0])) {
+			if (figma.command === key) {
+				value()
+			}
+		}
+	}
+	else {
+		if (figma.command === arguments[0]) {
+			arguments[1]()
+		}
+	}
+};
+
+figma.ui.onmessage = message => {
+	for (let eventListener of eventListeners) {
+		if (message.action === eventListener.type) eventListener.callback(message.data);
+	}
+};
 

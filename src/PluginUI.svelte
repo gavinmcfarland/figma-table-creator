@@ -9,7 +9,7 @@
 	import Settings from "./Settings.svelte"
 	import "./reset.css"
 
-	let data
+	let message
 	let columnResizing = true
 	let rememberSettings = true
 	let columnCount
@@ -20,10 +20,12 @@
 	let welcomePageActive = false
 	let createTablePageActive = false
 	let settingsPageActive = false
+	let versionLogPage = false
 
 	async function onLoad(event) {
-		data = await event.data.pluginMessage
-		valueStore.set(data)
+		message = await event.data.pluginMessage
+
+		valueStore.set(message)
 		valueStore.subscribe((value) => {
 			columnCount = value.columnCount
 			rowCount = value.rowCount
@@ -32,18 +34,21 @@
 			cellAlignment = value.cellAlignment
 		})
 
-		if (data.type === "create-table") {
+		if (message.action === "create-table") {
+			if (message.data.showVersionLog) {
+				versionLogPage = true
+			}
 			welcomePageActive = false
 			createTablePageActive = true
 			settingsPageActive = false
 		}
 
-		if (data.componentsExist === false) {
+		if (message.componentsExist === false) {
 			welcomePageActive = true
 			createTablePageActive = false
 		}
 
-		if (data.type === "settings") {
+		if (message.type === "settings") {
 			welcomePageActive = false
 			createTablePageActive = false
 			settingsPageActive = true
@@ -88,6 +93,7 @@
 
 {#if createTablePageActive}
 	<div class="container" style="padding: var(--size-200)">
+		<p>showVersionLog: {versionLogPage}</p>
 		<div class="SectionTitle">Table</div>
 		<div class="field-group">
 			<Field id="columnCount" label="Columns" type="number" step="1" min="1" max="50" value={columnCount} />

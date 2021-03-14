@@ -6,6 +6,7 @@ import { terser } from 'rollup-plugin-terser';
 import svg from 'rollup-plugin-svg';
 import typescript from 'rollup-plugin-typescript';
 import { globalStyle } from 'svelte-preprocess';
+import json from '@rollup/plugin-json'
 
 /* Post CSS */
 import postcss from 'rollup-plugin-postcss';
@@ -88,7 +89,9 @@ export default [{
 	},
 	plugins: [
 		typescript(),
+		json(),
 		commonjs(),
+		resolve(),
 		production && terser()
 	]
 }];
