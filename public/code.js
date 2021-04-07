@@ -189,14 +189,6 @@ function copyPasteProps(source, target, { include, exclude } = {}) {
     }
     throw 'unknown';
 }
-function pageNode(node) {
-    if (node.parent.type === "PAGE") {
-        return node.parent;
-    }
-    else {
-        return pageNode(node.parent);
-    }
-}
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
 }
@@ -765,6 +757,25 @@ function plugma(plugin) {
 
 var dist = plugma;
 
+function getPluginData(node, key) {
+    return JSON.parse(node.getPluginData(key));
+}
+function updatePluginData(node, key, callback) {
+    var data;
+    if (node.getPluginData(key)) {
+        data = JSON.parse(node.getPluginData(key));
+    }
+    else {
+        data = null;
+    }
+    data = callback(data);
+    // What should happen if user doesn't return anything in callback?
+    if (!data) {
+        data = null;
+    }
+    node.setPluginData(key, JSON.stringify(data));
+    return data;
+}
 let pkg$1 = {
     version: "6.1.0"
 };
@@ -782,17 +793,17 @@ if (figma.root.getPluginData("pluginVersion") === "") {
 // --------
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
     // Get Cell Templa
-    var cell = findComponentById(figma.root.getPluginData("cellComponentID"));
-    var cellHeader = findComponentById(figma.root.getPluginData("cellHeaderComponentID"));
+    var cell = findComponentById(getPluginData(figma.root, 'preferences').components.cell.id);
+    var cellHeader = findComponentById(getPluginData(figma.root, 'preferences').components.cellHeader.id);
     if (!cellHeader && includeHeader) {
         // throw "No Header Cell component found";
         figma.notify("No Header Cell component found");
         return;
     }
-    var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"));
+    var rowTemplate = findComponentById(getPluginData(figma.root, 'preferences').components.row.id);
     var row = figma.createFrame();
     copyPasteProps(rowTemplate, row, { include: ['name'] });
-    var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"));
+    var tableTemplate = findComponentById(getPluginData(figma.root, 'preferences').components.table.id);
     var table = figma.createFrame();
     copyPasteProps(tableTemplate, table, { include: ['name'] });
     // Manually set layout mode
@@ -1011,7 +1022,7 @@ function updateTables() {
                                     cell.layoutAlign = cellTemplate.layoutAlign;
                                     cell.layoutGrow = cellTemplate.layoutGrow;
                                 }
-                                // Bug where plugin data is lost when instance swapped
+                                // Bug where plugin preferences is lost when instance swapped
                                 cell.setPluginData("instanceBug", "true");
                                 cell.setPluginData("isCell", "");
                                 cell.setPluginData("isCell", "true");
@@ -1027,7 +1038,7 @@ function updateTables() {
                                     cell.layoutAlign = cellHeaderTemplate.layoutAlign;
                                     cell.layoutGrow = cellHeaderTemplate.layoutGrow;
                                 }
-                                // Bug where plugin data is lost when instance swapped
+                                // Bug where plugin preferences is lost when instance swapped
                                 cell.setPluginData("instanceBug", "true");
                                 cell.setPluginData("isCellHeader", "");
                                 cell.setPluginData("isCellHeader", "true");
@@ -1135,8 +1146,9 @@ function linkComponent(template, selection) {
                 return s.charAt(0).toUpperCase() + s.slice(1);
             };
             var templateID = template + "ComponentID";
-            // Make sure old templates don't have any old data on them
-            var oldTemplate = findComponentById(figma.root.getPluginData(template + "ComponentID"));
+            // Make sure old templates don't have any old preferences on them
+            // TODO: Need to check this works
+            var oldTemplate = findComponentById(getPluginData(figma.root, 'preferences').components[template].id);
             // Check if a previous template has been set first
             if (oldTemplate) {
                 figma.root.setPluginData("previous" + capitalize(template) + "ComponentID", oldTemplate.id);
@@ -1152,7 +1164,11 @@ function linkComponent(template, selection) {
             if (template === "table") {
                 selection[0].setRelaunchData({ detachTable: 'Detaches table and rows' });
             }
-            figma.root.setPluginData(templateID, selection[0].id);
+            // Save component ids which are used to create tables to preferences
+            updatePluginData(figma.root, 'preferences', (data) => {
+                data.components[templateID] = selection[0].id;
+                return data;
+            });
             if (template === "cellHeader")
                 template = "Header Cell";
             figma.notify(capitalize(template) + " component succesfully linked");
@@ -1182,184 +1198,35 @@ if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
         tableTemplate.setRelaunchData({ detachTable: 'Detaches table and rows' });
     }
 }
-var message = {
-    componentsExist: false,
-    cellExists: false,
-    columnCount: parseInt(figma.root.getPluginData("columnCount"), 10) || 4,
-    rowCount: parseInt(figma.root.getPluginData("rowCount"), 10) || 4,
-    cellWidth: parseInt(figma.root.getPluginData("cellWidth"), 10) || 100,
-    remember: true,
-    includeHeader: true,
-    columnResizing: true,
-    upgradedTables: figma.root.getPluginData("upgradedTables") || null,
-    cellAlignment: figma.root.getPluginData("cellAlignment") || "MIN",
-    templates: {
-        table: {
-            name: figma.root.getPluginData("tableComponentName") || "",
-            state: figma.root.getPluginData("tableComponentState") || null
-        },
-        row: {
-            name: figma.root.getPluginData("rowComponentName") || "",
-            state: figma.root.getPluginData("rowComponentState") || null
-        },
-        cell: {
-            name: figma.root.getPluginData("cellComponentName") || "",
-            state: figma.root.getPluginData("cellComponentState") || null
-        },
-        cellHeader: {
-            name: figma.root.getPluginData("cellHeaderComponentName") || "",
-            state: figma.root.getPluginData("cellHeaderComponentState") || null
-        }
-    }
-};
-if (figma.root.getPluginData("remember") == "true")
-    message.remember = true;
-if (figma.root.getPluginData("remember") == "false")
-    message.remember = false;
-if (figma.root.getPluginData("includeHeader") == "true")
-    message.includeHeader = true;
-if (figma.root.getPluginData("includeHeader") == "false")
-    message.includeHeader = false;
-if (figma.root.getPluginData("columnResizing") == "true")
-    message.columnResizing = true;
-if (figma.root.getPluginData("columnResizing") == "false")
-    message.columnResizing = false;
-function checkVersion() {
-    if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg$1.version) < 0) {
-        // TODO: Change to store version on client storage?
-        figma.root.setPluginData("pluginVersion", pkg$1.version);
-        console.log(figma.root.getPluginData("pluginVersion"));
-        throw 'New Version';
-    }
-}
-// Upgrades old tables to use new Auto Layout. Could be assumed that it is no longer needed.
-function upgradeTables() {
-    // TODO: Add check for header cell DONE
-    // TODO: Check for when no cellVariantsName can be identified DONE
-    // TODO: Set plugin data so you can check if file has been upgraded to new tables DONE
-    // TODO: Investigate if layout properties are supposed to be inherited by instances/variants
-    var _a, _b;
-    // TODO: make rows in table template fill container DONE
-    var tableTemplate = figma.getNodeById(figma.root.getPluginData("tableComponentID"));
-    if (tableTemplate) {
-        for (let i = 0; i < tableTemplate.children.length; i++) {
-            var node = tableTemplate.children[i];
-            if (node.getPluginData("isRow")) {
-                node.layoutAlign = "STRETCH";
-                node.primaryAxisSizingMode = "FIXED";
-            }
-        }
-    }
-    // Find cell templates
-    var cellTemplate = figma.getNodeById(figma.root.getPluginData("cellComponentID"));
-    var cellHeaderTemplate = figma.getNodeById(figma.root.getPluginData("cellHeaderComponentID"));
-    var x = cellTemplate.x;
-    var y = cellTemplate.y;
-    var height = cellTemplate.height;
-    var array = cellTemplate.name.split("/");
-    var cellName;
-    var cellVariantsName;
-    if (array.length > 1) {
-        cellName = array.pop();
-        cellVariantsName = array.join("/");
-    }
-    else {
-        if (cellTemplate.name === "Cell" || cellTemplate.name === "cell") {
-            cellName = "Default";
-        }
-        else {
-            cellName = cellTemplate.name;
-        }
-        cellVariantsName = "Table/Cell";
-    }
-    var nodes = [];
-    if (cellTemplate) {
-        nodes.push(cellTemplate);
-    }
-    var cellHeaderName = "";
-    if (cellHeaderTemplate) {
-        cellHeaderName = cellHeaderTemplate.name.split("/").pop();
-        nodes.push(cellHeaderTemplate);
-    }
-    var cellVariants = figma.combineAsVariants(nodes, pageNode(cellTemplate));
-    cellVariants.x = x;
-    cellVariants.y = y;
-    cellVariants.layoutMode = "HORIZONTAL";
-    cellVariants.itemSpacing = 16;
-    cellVariants.resize(cellVariants.width, height);
-    cellVariants.name = cellVariantsName;
-    cellTemplate.name = "Type=" + cellName;
-    if (cellHeaderTemplate) {
-        cellHeaderTemplate.name = "Type=" + cellHeaderName;
-    }
-    var cells = figma.root.findAll(node => node.getPluginData("isCell") === "true");
-    var headerCells = figma.root.findAll(node => node.getPluginData("isCellHeader") === "true");
-    for (let i = 0; i < cells.length; i++) {
-        var cell = cells[i];
-        if (((_a = cell.parent) === null || _a === void 0 ? void 0 : _a.type) === "INSTANCE") ;
-        else {
-            if (cell.parent.getPluginData("isCellHeader") === "true") {
-                cell.layoutAlign = "INHERIT";
-                cell.primaryAxisSizingMode = "AUTO";
-            }
-            else {
-                cell.layoutAlign = "STRETCH";
-                cell.primaryAxisSizingMode = "FIXED";
-            }
-        }
-    }
-    for (let i = 0; i < headerCells.length; i++) {
-        var cell = headerCells[i];
-        if (((_b = cell.parent) === null || _b === void 0 ? void 0 : _b.type) === "INSTANCE") ;
-        else {
-            cell.layoutAlign = "STRETCH";
-            cell.primaryAxisSizingMode = "FIXED";
-        }
-    }
-    figma.notify("Table components upgraded");
-    figma.root.setPluginData("upgradedTables", "true");
-}
-// Takes input like rowCount and columnCount to create table and sets plugin data to root.
-function createTable(message, msg) {
-    if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-        message.componentsExist = true;
-        message.upgradedTables = figma.root.getPluginData("upgradedTables");
+// Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
+function createTable(preferences, msg) {
+    // Does a check to only create a table if a table cell component is already defined
+    if (findComponentById(getPluginData(figma.root, 'preferences').components.cell.id)) {
+        updatePluginData(figma.root, 'preferences', (data) => {
+            data.componentsExist = true;
+            data.upgradedTables = figma.root.getPluginData("upgradedTables");
+            return data;
+        });
+        // Will only let you create a table if less than 50 columns and rows
         if (msg.columnCount < 51 && msg.rowCount < 51) {
+            // Will input from user and create table node
             var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
+            // If table successfully created?
             if (table) {
-                figma.root.setPluginData("columnCount", msg.columnCount.toString());
-                figma.root.setPluginData("rowCount", msg.rowCount.toString());
-                figma.root.setPluginData("cellWidth", msg.cellWidth.toString());
-                figma.root.setPluginData("remember", msg.remember.toString());
-                figma.root.setPluginData("includeHeader", msg.includeHeader.toString());
-                figma.root.setPluginData("columnResizing", msg.columnResizing.toString());
-                figma.root.setPluginData("cellAlignment", msg.cellAlignment);
-                if (figma.root.getPluginData("remember")) {
-                    message.remember = (figma.root.getPluginData("remember") == "true");
-                }
-                if (figma.root.getPluginData("includeHeader")) {
-                    message.includeHeader = (figma.root.getPluginData("includeHeader") == "true");
-                }
-                if (figma.root.getPluginData("columnResizing")) {
-                    message.includeHeader = (figma.root.getPluginData("columnResizing") == "true");
-                }
-                if (figma.root.getPluginData("columnCount")) {
-                    message.columnCount = parseInt(figma.root.getPluginData("columnCount"), 10);
-                }
-                if (figma.root.getPluginData("rowCount")) {
-                    message.rowCount = parseInt(figma.root.getPluginData("rowCount"), 10);
-                }
-                if (figma.root.getPluginData("cellWidth")) {
-                    message.rowCount = parseInt(figma.root.getPluginData("cellWidth"), 10);
-                }
-                if (figma.root.getPluginData("cellAlignment")) {
-                    message.cellAlignment = figma.root.getPluginData("cellAlignment");
-                }
-                const nodes = [];
-                nodes.push(table);
+                // This updates the plugin preferences
+                updatePluginData(figma.root, 'preferences', (data) => {
+                    data.columnCount = msg.columnCount;
+                    data.rowCount = msg.rowCount;
+                    data.cellWidth = msg.cellWidth;
+                    data.remember = msg.remember;
+                    data.includeHeader = msg.includeHeader;
+                    data.cellAlignment = msg.cellAlignment;
+                    return data;
+                });
+                // Positions the table in the center of the viewport
                 positionInCenter(table);
-                figma.currentPage.selection = nodes;
-                // figma.viewport.scrollAndZoomIntoView(nodes);
+                // Makes table the users current selection
+                figma.currentPage.selection = [table];
                 figma.closePlugin();
             }
         }
@@ -1368,109 +1235,61 @@ function createTable(message, msg) {
         }
     }
     else {
-        message.componentsExist = false;
+        updatePluginData(figma.root, 'preferences', (data) => {
+            data.componentsExist = false;
+            return data;
+        });
         figma.notify("Cannot find Cell component");
     }
 }
-function createTableCommands(message, msg) {
-    if (msg.type === "update-tables") {
-        updateTables();
-    }
-    if (msg.type === "upgrade-tables") {
-        upgradeTables();
-    }
-    if (msg.type === 'create-components') {
-        var components = createDefaultComponents();
-        figma.root.setRelaunchData({ createTable: 'Create a new table' });
-        figma.root.setPluginData("cellComponentID", components.cell.id);
-        figma.root.setPluginData("cellHeaderComponentID", components.cellHeader.id);
-        figma.root.setPluginData("rowComponentID", components.row.id);
-        figma.root.setPluginData("tableComponentID", components.table.id);
-        figma.notify('Default components created');
-    }
-    if (msg.type === 'create-table') {
-        createTable(message, msg);
-    }
-    if (msg.type === "link-component") {
-        linkComponent(msg.template, figma.currentPage.selection);
-    }
-    if (msg.type === "update") {
-        if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-            message.componentsExist = true;
-            // message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-        }
-        else {
-            message.componentsExist = false;
-        }
-        figma.ui.postMessage(message);
-    }
-    if (msg.type === "restore-component") {
-        restoreComponent(msg.component);
-    }
-}
 dist((plugin) => {
-    console.log(plugin);
-    plugin.command('createTable', () => {
-        block_1: {
-            // figma.root.setRelaunchData({ createTable: 'Create a new table' })
-            if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-                message.componentsExist = true;
-            }
-            try {
-                checkVersion();
-            }
-            catch (e) {
-                figma.showUI(__uiFiles__.versionLog);
-                figma.ui.resize(268, 504);
-                console.error(e);
-                figma.ui.onmessage = msg => {
-                    if (msg.type === "to-create-table") {
-                        figma.showUI(__uiFiles__.main);
-                        figma.ui.postMessage(message);
-                    }
-                    createTableCommands(message, msg);
-                };
-                break block_1;
-                // expected output: "Parameter is not a number!"
-            }
-            figma.showUI(__uiFiles__.main);
-            figma.ui.resize(268, 504);
-            message.type = "create-table";
-            figma.ui.postMessage(message);
-            figma.ui.onmessage = msg => {
-                createTableCommands(message, msg);
-            };
-        }
-    });
-    plugin.command('linkComponents', () => {
-        figma.showUI(__uiFiles__.main);
-        figma.ui.resize(268, 486);
-        message.type = "settings";
-        figma.ui.postMessage(message);
-        figma.ui.onmessage = msg => {
-            if (msg.type === "link-component") {
-                linkComponent(msg.template, figma.currentPage.selection);
-            }
-            if (msg.type === "update") {
-                if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-                    message.componentsExist = true;
-                    // message.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-                }
-                else {
-                    message.componentsExist = false;
-                }
-                figma.ui.postMessage(message);
-            }
-            if (msg.type === "restore-component") {
-                restoreComponent(msg.component);
-            }
-            if (msg.type === "update-tables") {
-                updateTables();
-            }
-            if (msg.type === "upgrade-tables") {
-                upgradeTables();
-            }
+    plugin.ui = {
+        html: __uiFiles__.main,
+        width: 268,
+        height: 504
+    };
+    // Set default preferences
+    var preferences = updatePluginData(figma.root, 'preferences', (data) => {
+        data = data || {
+            componentsExist: false,
+            cellExists: false,
+            columnCount: 4,
+            rowCount: 4,
+            cellWidth: 100,
+            remember: true,
+            includeHeader: true,
+            columnResizing: true,
+            upgradedTables: null,
+            cellAlignment: "MIN",
+            components: {}
         };
+        return data;
+    });
+    plugin.command('createTable', ({ ui, data }) => {
+        // Check if table components already exist
+        if (findComponentById(getPluginData(figma.root, 'preferences').components.cell.id)) {
+            preferences = updatePluginData(figma.root, 'preferences', (data) => {
+                data.componentsExist = true;
+                return data;
+            });
+        }
+        ui.show(Object.assign({ type: "create-table" }, preferences));
+        // try {
+        // 	checkVersion()
+        // } catch (e) {
+        // 	figma.showUI(__uiFiles__.versionLog);
+        // 	figma.ui.resize(268, 504)
+        // 	console.error(e);
+        // 	figma.ui.onmessage = msg => {
+        // 		createTableCommands(preferences, msg)
+        // 	}
+        // 	break block_1
+        // 	// expected output: "Parameter is not a number!"
+        // }
+    });
+    plugin.command('linkComponents', ({ ui }) => {
+        preferences.type = "settings";
+        ui.show(preferences);
     });
     plugin.command('selectColumn', () => {
         selectColumn();
@@ -1479,5 +1298,44 @@ dist((plugin) => {
     plugin.command('selectRow', () => {
         selectRow();
         figma.closePlugin();
+    });
+    // Listen for events from UI
+    plugin.on('to-create-table', (msg) => {
+        plugin.ui.show(preferences);
+    });
+    plugin.on('update-tables', (msg) => {
+        updateTables();
+    });
+    plugin.on('upgrade-tables', (msg) => {
+        upgradeTables();
+    });
+    plugin.on('create-components', (msg) => {
+        var components = createDefaultComponents();
+        figma.root.setRelaunchData({ createTable: 'Create a new table' });
+        updatePluginData(figma.root, 'preferences', (data) => {
+            data.components = Object.assign(data.components, components);
+            return data;
+        });
+        figma.notify('Default components created');
+    });
+    plugin.on('create-table', (msg) => {
+        createTable(preferences, msg);
+    });
+    plugin.on('link-component', (msg) => {
+        linkComponent(msg.template, figma.currentPage.selection);
+    });
+    // Updates what?
+    plugin.on('update', (msg) => {
+        if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+            preferences.componentsExist = true;
+            // preferences.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
+        }
+        else {
+            preferences.componentsExist = false;
+        }
+        figma.ui.postMessage(preferences);
+    });
+    plugin.on('restore-component', (msg) => {
+        restoreComponent(msg.component);
     });
 });
