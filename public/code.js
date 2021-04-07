@@ -1,30 +1,5 @@
 'use strict';
 
-/*! *****************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-}
-
 /**
  * Copy properties from one node to another while avoiding conflicts. When no target node is provided it returns a new object.
  *
@@ -276,33 +251,31 @@ function compareVersion(v1, v2, options) {
     }
     return 0;
 }
-function changeText(node, text, weight) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (node.fontName === figma.mixed) {
-            yield figma.loadFontAsync(node.getRangeFontName(0, 1));
-        }
-        else {
-            yield figma.loadFontAsync({
-                family: node.fontName.family,
-                style: weight || node.fontName.style
-            });
-        }
-        if (weight) {
-            node.fontName = {
-                family: node.fontName.family,
-                style: weight
-            };
-        }
-        if (text) {
-            node.characters = text;
-        }
-        if (text === "") {
-            // Fixes issue where spaces are ignored and node has zero width
-            node.resize(10, node.height);
-        }
-        node.textAutoResize = "HEIGHT";
-        node.layoutAlign = "STRETCH";
-    });
+async function changeText(node, text, weight) {
+    if (node.fontName === figma.mixed) {
+        await figma.loadFontAsync(node.getRangeFontName(0, 1));
+    }
+    else {
+        await figma.loadFontAsync({
+            family: node.fontName.family,
+            style: weight || node.fontName.style
+        });
+    }
+    if (weight) {
+        node.fontName = {
+            family: node.fontName.family,
+            style: weight
+        };
+    }
+    if (text) {
+        node.characters = text;
+    }
+    if (text === "") {
+        // Fixes issue where spaces are ignored and node has zero width
+        node.resize(10, node.height);
+    }
+    node.textAutoResize = "HEIGHT";
+    node.layoutAlign = "STRETCH";
 }
 function ungroupNode(node, parent) {
     // Avoid children changing while looping
@@ -342,15 +315,13 @@ function findComponentById(id) {
 }
 
 // Load FONTS
-function loadFonts() {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield Promise.all([
-            figma.loadFontAsync({
-                family: "Roboto",
-                style: "Regular"
-            })
-        ]);
-    });
+async function loadFonts() {
+    await Promise.all([
+        figma.loadFontAsync({
+            family: "Roboto",
+            style: "Regular"
+        })
+    ]);
 }
 function createDefaultComponents() {
     const obj = {};
@@ -623,7 +594,178 @@ function createDefaultComponents() {
     return obj;
 }
 
-let pkg = {
+var name = "svelte-app";
+var version = "1.0.2";
+var scripts = {
+	build: "rollup -c",
+	dev: "rollup -c -w",
+	start: "sirv public"
+};
+var devDependencies = {
+	"@rollup/plugin-commonjs": "^17.0.0",
+	"@rollup/plugin-image": "^2.0.6",
+	"@rollup/plugin-json": "^4.1.0",
+	"@rollup/plugin-node-resolve": "^11.2.1",
+	"@rollup/plugin-replace": "^2.4.2",
+	cssnano: "^4.1.10",
+	"figma-plugin-ds-svelte": "^1.0.7",
+	"flex-gap-polyfill": "^2.2.1",
+	plugma: "0.0.0-alpha0.7",
+	postcss: "^8.2.4",
+	"postcss-nested": "^5.0.3",
+	rollup: "^2.36.2",
+	"rollup-plugin-html-bundle": "0.0.3",
+	"rollup-plugin-livereload": "^2.0.0",
+	"rollup-plugin-node-polyfills": "^0.2.1",
+	"rollup-plugin-postcss": "^4.0.0",
+	"rollup-plugin-svelte": "^7.0.0",
+	"rollup-plugin-svg": "^2.0.0",
+	"rollup-plugin-terser": "^7.0.2",
+	"rollup-plugin-typescript": "^1.0.1",
+	svelte: "^3.31.2",
+	"svelte-preprocess": "^4.6.9",
+	tslib: "^2.1.0",
+	typescript: "^4.1.3"
+};
+var dependencies = {
+	autoprefixer: "^10.2.1",
+	"common-tags": "^1.8.0",
+	"fs-extra": "^9.1.0",
+	"postcss-logical": "^4.0.2",
+	"sirv-cli": "^1.0.10",
+	stylup: "0.0.0-alpha.3",
+	uniqid: "^5.3.0"
+};
+var require$$0 = {
+	name: name,
+	version: version,
+	scripts: scripts,
+	devDependencies: devDependencies,
+	dependencies: dependencies
+};
+
+// TODO: Check package from working directory
+// TODO: Check versions from working directory
+// TODO: How to fix issue of referenceing file when used as depency
+// import pkg from '../package.json';
+// import versionHistory from './versions.json';
+// import semver from 'semver';
+// import fs from 'fs';
+// import path from 'path';
+var pkg;
+
+{
+    pkg = require$$0;
+}
+// try {
+// 	versionHistory = require("./package.json");
+// }
+// catch {
+// 	versionHistory = {}
+// }
+// pkg = require(process.cwd() + "/package.json");
+// }
+// console.log(process.cwd() + "/package.json");
+// fs.readFile("../package.json", (err, data) => {
+// 	console.log(err, data)
+// })
+// const file = require("package.json")
+// console.log(file)
+// function updateAvailable() {
+// 	var currentVersion = figma.root.getPluginData("pluginVersion") || pkg.version;
+// 	var newVersion = pkg.version;
+// 	if (semver.gt(newVersion, currentVersion)) {
+// 		return true
+// 	}
+// 	else {
+// 		false
+// 	}
+// }
+function plugma(plugin) {
+    var pluginState = {
+        updateAvailable: false,
+        ui: {}
+    };
+    // console.log(pkg)
+    if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
+        pluginState.version = pkg.version;
+    }
+    // pluginState.updateAvailable = updateAvailable()
+    var eventListeners = [];
+    var menuCommands = [];
+    pluginState.on = (type, callback) => {
+        eventListeners.push({ type, callback });
+    };
+    pluginState.command = (type, callback) => {
+        menuCommands.push({ type, callback });
+    };
+    // Override default page name if set
+    var pageMannuallySet = false;
+    pluginState.setStartPage = (name) => {
+        pluginState.ui.page = name;
+        pageMannuallySet = true;
+    };
+    // pluginState.update = (callback) => {
+    // 	for (let [version, changes] of Object.entries(versionHistory)) {
+    // 		if (version === pkg.version) {
+    // 			// for (let i = 0; i < changes.length; i++) {
+    // 			// 	var change = changes[i]
+    // 			// }
+    // 			callback({ version, changes })
+    // 		}
+    // 	}
+    // }
+    var pluginCommands = plugin(pluginState);
+    // // Override default page name if set
+    // if (pageName[0]) {
+    // 	pluginState.ui.page = pageName[0]
+    // }
+    // console.log("pageName", pluginState.ui.page)
+    Object.assign({}, pluginState, { commands: pluginCommands });
+    if (pluginCommands) {
+        for (let [key, value] of Object.entries(pluginCommands)) {
+            // If command exists in manifest
+            if (figma.command === key) {
+                // Pass default page for ui
+                if (!pageMannuallySet) {
+                    pluginState.ui.page = key;
+                }
+                // Override default page name if set
+                // if (pageName[0]) {
+                // 	pluginState.ui.page = pageName[0]
+                // }
+                // Call function for that command
+                value(pluginState);
+                // Show UI?
+                if (pluginState.ui.open) {
+                    console.log("open?");
+                    figma.showUI(pluginState.ui.html);
+                }
+            }
+        }
+    }
+    figma.ui.onmessage = message => {
+        for (let eventListener of eventListeners) {
+            // console.log(message)
+            if (message.type === eventListener.type)
+                eventListener.callback(message);
+        }
+    };
+    pluginState.ui.show = (data) => {
+        figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
+        figma.ui.postMessage(data);
+    };
+    for (let command of menuCommands) {
+        if (figma.command === command.type) {
+            command.callback(pluginState);
+        }
+    }
+    // console.log(pluginObject)
+}
+
+var dist = plugma;
+
+let pkg$1 = {
     version: "6.1.0"
 };
 if (figma.root.getPluginData("pluginVersion") === "") {
@@ -634,7 +776,7 @@ if (figma.root.getPluginData("pluginVersion") === "") {
     }
     // Else if plugin never used
     else {
-        figma.root.setPluginData("pluginVersion", pkg.version);
+        figma.root.setPluginData("pluginVersion", pkg$1.version);
     }
 }
 // --------
@@ -1083,9 +1225,9 @@ if (figma.root.getPluginData("columnResizing") == "true")
 if (figma.root.getPluginData("columnResizing") == "false")
     message.columnResizing = false;
 function checkVersion() {
-    if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg.version) < 0) {
+    if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg$1.version) < 0) {
         // TODO: Change to store version on client storage?
-        figma.root.setPluginData("pluginVersion", pkg.version);
+        figma.root.setPluginData("pluginVersion", pkg$1.version);
         console.log(figma.root.getPluginData("pluginVersion"));
         throw 'New Version';
     }
@@ -1266,39 +1408,41 @@ function createTableCommands(message, msg) {
         restoreComponent(msg.component);
     }
 }
-block_1: {
-    if (figma.command === "createTable") {
-        console.log("create table");
-        // figma.root.setRelaunchData({ createTable: 'Create a new table' })
-        if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
-            message.componentsExist = true;
-        }
-        try {
-            checkVersion();
-        }
-        catch (e) {
-            figma.showUI(__uiFiles__.versionLog);
+dist((plugin) => {
+    console.log(plugin);
+    plugin.command('createTable', () => {
+        block_1: {
+            // figma.root.setRelaunchData({ createTable: 'Create a new table' })
+            if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+                message.componentsExist = true;
+            }
+            try {
+                checkVersion();
+            }
+            catch (e) {
+                figma.showUI(__uiFiles__.versionLog);
+                figma.ui.resize(268, 504);
+                console.error(e);
+                figma.ui.onmessage = msg => {
+                    if (msg.type === "to-create-table") {
+                        figma.showUI(__uiFiles__.main);
+                        figma.ui.postMessage(message);
+                    }
+                    createTableCommands(message, msg);
+                };
+                break block_1;
+                // expected output: "Parameter is not a number!"
+            }
+            figma.showUI(__uiFiles__.main);
             figma.ui.resize(268, 504);
-            console.error(e);
+            message.type = "create-table";
+            figma.ui.postMessage(message);
             figma.ui.onmessage = msg => {
-                if (msg.type === "to-create-table") {
-                    figma.showUI(__uiFiles__.main);
-                    figma.ui.postMessage(message);
-                }
                 createTableCommands(message, msg);
             };
-            break block_1;
-            // expected output: "Parameter is not a number!"
         }
-        figma.showUI(__uiFiles__.main);
-        figma.ui.resize(268, 504);
-        message.type = "create-table";
-        figma.ui.postMessage(message);
-        figma.ui.onmessage = msg => {
-            createTableCommands(message, msg);
-        };
-    }
-    if (figma.command === "linkComponents") {
+    });
+    plugin.command('linkComponents', () => {
         figma.showUI(__uiFiles__.main);
         figma.ui.resize(268, 486);
         message.type = "settings";
@@ -1327,13 +1471,13 @@ block_1: {
                 upgradeTables();
             }
         };
-    }
-    if (figma.command === "selectColumn") {
+    });
+    plugin.command('selectColumn', () => {
         selectColumn();
         figma.closePlugin();
-    }
-    if (figma.command === "selectRow") {
+    });
+    plugin.command('selectRow', () => {
         selectRow();
         figma.closePlugin();
-    }
-}
+    });
+});

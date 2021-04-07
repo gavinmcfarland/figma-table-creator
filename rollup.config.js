@@ -6,6 +6,10 @@ import { terser } from 'rollup-plugin-terser';
 import svg from 'rollup-plugin-svg';
 import typescript from 'rollup-plugin-typescript';
 import { globalStyle } from 'svelte-preprocess';
+import replace from '@rollup/plugin-replace';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import json from '@rollup/plugin-json'
+import nodePolyfills from 'rollup-plugin-node-polyfills'
 
 /* Post CSS */
 import postcss from 'rollup-plugin-postcss';
@@ -54,6 +58,7 @@ export default [{
 			dedupe: importee => importee === 'svelte' || importee.startsWith('svelte/'),
 			extensions: ['.svelte', '.mjs', '.js', '.json', '.node']
 		}),
+		json(),
 		commonjs(),
 		svg(),
 		postcss(),
@@ -88,6 +93,13 @@ export default [{
 	},
 	plugins: [
 		typescript(),
+		nodePolyfills(),
+		nodeResolve(),
+		replace({
+			'process.env.PKG_PATH': JSON.stringify(process.cwd() + '/package.json'),
+			'process.env.VERSIONS_PATH': JSON.stringify(process.cwd() + '/.plugma/versions.json')
+		}),
+		json(),
 		commonjs(),
 		production && terser()
 	]

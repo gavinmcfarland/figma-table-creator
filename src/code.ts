@@ -1,5 +1,6 @@
 import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersion, loadFonts, changeText, ungroupNode, findComponentById } from './helpers'
 import { createDefaultComponents } from './defaultComponents'
+import plugma from 'plugma'
 
 let pkg = {
 	version: "6.1.0"
@@ -974,54 +975,57 @@ function createTableCommands(message, msg) {
 }
 
 
-block_1: {
-	if (figma.command === "createTable") {
-		console.log("create table")
-		// figma.root.setRelaunchData({ createTable: 'Create a new table' })
-		if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
+plugma((plugin) => {
+	console.log(plugin)
 
-			message.componentsExist = true
+	plugin.command('createTable', () => {
+		block_1: {
+			// figma.root.setRelaunchData({ createTable: 'Create a new table' })
+			if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 
-		}
+				message.componentsExist = true
 
-		try {
-			checkVersion()
-		} catch (e) {
-			figma.showUI(__uiFiles__.versionLog);
+			}
+
+			try {
+				checkVersion()
+			} catch (e) {
+				figma.showUI(__uiFiles__.versionLog);
+
+				figma.ui.resize(268, 504)
+
+				console.error(e);
+				figma.ui.onmessage = msg => {
+					if (msg.type === "to-create-table") {
+						figma.showUI(__uiFiles__.main);
+						figma.ui.postMessage(message);
+					}
+					createTableCommands(message, msg)
+
+				}
+				break block_1
+				// expected output: "Parameter is not a number!"
+			}
+
+
+
+
+			figma.showUI(__uiFiles__.main);
 
 			figma.ui.resize(268, 504)
 
-			console.error(e);
+			message.type = "create-table"
+
+			figma.ui.postMessage(message);
+
 			figma.ui.onmessage = msg => {
-				if (msg.type === "to-create-table") {
-					figma.showUI(__uiFiles__.main);
-					figma.ui.postMessage(message);
-				}
+
 				createTableCommands(message, msg)
-
-			}
-			break block_1
-			// expected output: "Parameter is not a number!"
+			};
 		}
+	})
 
-
-
-
-		figma.showUI(__uiFiles__.main);
-
-		figma.ui.resize(268, 504)
-
-		message.type = "create-table"
-
-		figma.ui.postMessage(message);
-
-		figma.ui.onmessage = msg => {
-
-			createTableCommands(message, msg)
-		};
-	}
-
-	if (figma.command === "linkComponents") {
+	plugin.command('linkComponents', () => {
 		figma.showUI(__uiFiles__.main);
 		figma.ui.resize(268, 486)
 		message.type = "settings"
@@ -1056,17 +1060,16 @@ block_1: {
 				upgradeTables()
 			}
 		}
-	}
+	})
 
-
-	if (figma.command === "selectColumn") {
+	plugin.command('selectColumn', () => {
 		selectColumn()
 		figma.closePlugin();
-	}
+	})
 
-	if (figma.command === "selectRow") {
+	plugin.command('selectRow', () => {
 		selectRow()
 		figma.closePlugin();
-	}
+	})
 
-}
+})
