@@ -1235,21 +1235,22 @@ function createTable(msg) {
             var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
             // If table successfully created?
             if (table) {
-                // This updates the plugin preferences
-                // updateClientStorageAsync('preferences', (data) => {
-                // 	data.columnCount = msg.columnCount
-                // 	data.rowCount = msg.rowCount
-                // 	data.cellWidth = msg.cellWidth
-                // 	data.remember = msg.remember
-                // 	data.includeHeader = msg.includeHeader
-                // 	data.cellAlignment = msg.cellAlignment
-                // 	return data
-                // })
                 // Positions the table in the center of the viewport
                 positionInCenter(table);
                 // Makes table the users current selection
                 figma.currentPage.selection = [table];
-                figma.closePlugin();
+                // This updates the plugin preferences
+                updateClientStorageAsync('preferences', (data) => {
+                    data.columnCount = msg.columnCount;
+                    data.rowCount = msg.rowCount;
+                    data.cellWidth = msg.cellWidth;
+                    data.remember = msg.remember;
+                    data.includeHeader = msg.includeHeader;
+                    data.cellAlignment = msg.cellAlignment;
+                    return data;
+                }).then(() => {
+                    figma.closePlugin();
+                });
             }
         }
         else {
@@ -1347,12 +1348,6 @@ dist((plugin) => {
         figma.notify('Default components created');
     });
     plugin.on('create-table', (msg) => {
-        figma.clientStorage.getAsync('what').then((res) => {
-            console.log("success");
-        }).catch((res) => {
-            console.log("fail");
-        });
-        console.log("test");
         createTable(msg);
     });
     plugin.on('link-component', (msg) => {

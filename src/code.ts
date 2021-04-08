@@ -712,28 +712,25 @@ function createTable(msg) {
 			// If table successfully created?
 			if (table) {
 
-				// This updates the plugin preferences
-				// updateClientStorageAsync('preferences', (data) => {
-				// 	data.columnCount = msg.columnCount
-				// 	data.rowCount = msg.rowCount
-				// 	data.cellWidth = msg.cellWidth
-				// 	data.remember = msg.remember
-				// 	data.includeHeader = msg.includeHeader
-				// 	data.cellAlignment = msg.cellAlignment
-
-				// 	return data
-				// })
-
-
-
 				// Positions the table in the center of the viewport
 				positionInCenter(table)
 
 				// Makes table the users current selection
 				figma.currentPage.selection = [table];
 
-				figma.closePlugin();
+				// This updates the plugin preferences
+				updateClientStorageAsync('preferences', (data) => {
+					data.columnCount = msg.columnCount
+					data.rowCount = msg.rowCount
+					data.cellWidth = msg.cellWidth
+					data.remember = msg.remember
+					data.includeHeader = msg.includeHeader
+					data.cellAlignment = msg.cellAlignment
 
+					return data
+				}).then(() => {
+					figma.closePlugin();
+				})
 
 			}
 
@@ -864,12 +861,6 @@ plugma((plugin) => {
 	})
 
 	plugin.on('create-table', (msg) => {
-		figma.clientStorage.getAsync('what').then((res) => {
-			console.log("success")
-		}).catch((res) => {
-			console.log("fail")
-		})
-		console.log("test")
 		createTable(msg)
 	})
 
