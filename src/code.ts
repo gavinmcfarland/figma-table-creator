@@ -1,63 +1,49 @@
-import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersion, loadFonts, changeText, ungroupNode, findComponentById } from './helpers'
+import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersion, loadFonts, changeText, ungroupNode, findComponentById, getPluginData, setPluginData, updatePluginData, detachInstance, updateClientStorageAsync } from './helpers'
 import { createDefaultComponents } from './defaultComponents'
 import plugma from 'plugma'
 
-function getPluginData(node, key) {
-	return JSON.parse(node.getPluginData(key))
-}
 
-function setPluginData(node, key, data) {
-	node.setPluginData(key, JSON.stringify(data))
-}
+// figma.clientStorage.setAsync('test2', {
+// 	test: "something"
+// }).then(res => console.log(res))
 
-function updatePluginData(node, key, callback) {
-	var data
+// figma.clientStorage.getAsync('test2').then((res) => {
+// 	res.test = "something else"
+// 	figma.clientStorage.setAsync('test2', res)
+// })
 
-	if (node.getPluginData(key)) {
-		data = JSON.parse(node.getPluginData(key))
-	}
-	else {
-		data = null
-	}
+// figma.clientStorage.getAsync('test2').then((res) => {
+// 	console.log(res)
+// })
+// let pkg = {
+// 	version: "6.1.0"
+// }
 
-	data = callback(data)
+// if (figma.root.getPluginData("pluginVersion") === "") {
+// 	// If plugin was used before new auto layout tables were supported
+// 	if (figma.root.getPluginData("cellComponentID")) {
+// 		figma.root.setPluginData("pluginVersion", "5.0.0")
+// 		figma.root.setPluginData("upgradedTables", "false")
+// 	}
+// 	// Else if plugin never used
+// 	else {
+// 		figma.root.setPluginData("pluginVersion", pkg.version)
+// 	}
 
-	// What should happen if user doesn't return anything in callback?
-	if (!data) {
-		data = null
-	}
-
-	node.setPluginData(key, JSON.stringify(data))
-
-	return data
-}
-
-let pkg = {
-	version: "6.1.0"
-}
-
-if (figma.root.getPluginData("pluginVersion") === "") {
-	// If plugin was used before new auto layout tables were supported
-	if (figma.root.getPluginData("cellComponentID")) {
-		figma.root.setPluginData("pluginVersion", "5.0.0")
-		figma.root.setPluginData("upgradedTables", "false")
-	}
-	// Else if plugin never used
-	else {
-		figma.root.setPluginData("pluginVersion", pkg.version)
-	}
-
-}
+// }
 
 
 // --------
+
+// TODO: Change preferences to clientStorage
+// TODO: Create seperate store for component settings
 
 
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
 
 	// Get Cell Templa
-	var cell = findComponentById(getPluginData(figma.root, 'preferences').components.cell.id)
-	var cellHeader = findComponentById(getPluginData(figma.root, 'preferences').components.cellHeader.id)
+	var cell = findComponentById(getPluginData(figma.root, 'components').current.cell.id)
+	var cellHeader = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id)
 
 	if (!cellHeader && includeHeader) {
 		// throw "No Header Cell component found";
@@ -65,14 +51,14 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 		return
 	}
 
-	var rowTemplate = findComponentById(getPluginData(figma.root, 'preferences').components.row.id)
+	var rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id)
 	var row = figma.createFrame()
 
 	copyPasteProps(rowTemplate, row, { include: ['name'] })
 
 
 
-	var tableTemplate = findComponentById(getPluginData(figma.root, 'preferences').components.table.id)
+	var tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id)
 	var table = figma.createFrame()
 
 	copyPasteProps(tableTemplate, table, { include: ['name'] })
@@ -332,13 +318,13 @@ function updateTables() {
 	// Find all tables
 	var pages = figma.root.children
 	var tables
-	var tableTemplateID = figma.root.getPluginData("tableComponentID")
+	var tableTemplateID = getPluginData(figma.root, 'components').current.table.id
 	var tableTemplate = findComponentById(tableTemplateID)
 	// removeChildren(tableTemplate)
 
 
 
-	var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"))
+	var rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id)
 	// removeChildren(rowTemplate)
 
 	// If can't find table and row templates use plain frame
@@ -350,12 +336,12 @@ function updateTables() {
 		rowTemplate = figma.createFrame()
 	}
 
-	var cellTemplateID = figma.root.getPluginData("cellComponentID")
-	var previousCellTemplateID = figma.root.getPluginData("previousCellComponentID")
+	var cellTemplateID = getPluginData(figma.root, 'components').current.cell.id
+	var previousCellTemplateID = getPluginData(figma.root, 'components').prevous.cell.id
 	var cellTemplate = findComponentById(cellTemplateID)
 
-	var cellHeaderTemplateID = figma.root.getPluginData("cellHeaderComponentID")
-	var previousCellHeaderTemplateID = figma.root.getPluginData("previousCellHeaderComponentID")
+	var cellHeaderTemplateID = getPluginData(figma.root, 'components').current.cellHeader.id
+	var previousCellHeaderTemplateID = getPluginData(figma.root, 'components').prevous.cellHeader.id
 	var cellHeaderTemplate = findComponentById(cellHeaderTemplateID)
 	var discardBucket = figma.createFrame()
 
@@ -556,28 +542,7 @@ function selectRow() {
 	}
 }
 
-function detachInstance(instance, parent) {
-	if (instance.type === "INSTANCE") {
-		var newInstance = figma.createFrame()
 
-		newInstance.resize(instance.width, instance.width)
-
-		copyPasteProps(instance, newInstance, { include: ["name", "x", "y"] })
-
-		var length = instance.children.length
-
-		for (var i = 0; i < length; i++) {
-			newInstance.appendChild(instance.children[i].clone())
-		}
-
-		parent.appendChild(newInstance)
-		// instance.remove()
-
-		return newInstance
-	}
-
-
-}
 
 function detachTable(selection) {
 
@@ -637,24 +602,18 @@ function linkComponent(template, selection) {
 				return s.charAt(0).toUpperCase() + s.slice(1)
 			}
 
-			var templateID = template + "ComponentID"
-
 			// Make sure old templates don't have any old preferences on them
 			// TODO: Need to check this works
-			var oldTemplate = findComponentById(getPluginData(figma.root, 'preferences').components[template].id)
+			var oldTemplate = findComponentById(getPluginData(figma.root, 'components').current[template].id)
 
 			// Check if a previous template has been set first
 			if (oldTemplate) {
-				figma.root.setPluginData("previous" + capitalize(template) + "ComponentID", oldTemplate.id)
+				updatePluginData(figma.root, 'components', (data) => { data.previous[template] = oldTemplate.id })
 				oldTemplate.setPluginData("isTable", "")
 				oldTemplate.setPluginData("isRow", "")
 				oldTemplate.setPluginData("isCell", "")
 				oldTemplate.setPluginData("isCellHeader", "")
 			}
-
-
-
-
 
 			selection[0].setPluginData("is" + capitalize(template), "true") // Check
 
@@ -667,8 +626,8 @@ function linkComponent(template, selection) {
 			}
 
 			// Save component ids which are used to create tables to preferences
-			updatePluginData(figma.root, 'preferences', (data) => {
-				data.components[templateID] = selection[0].id
+			updateClientStorageAsync('preferences', (data) => {
+				data.components[template] = selection[0].id
 
 				return data
 			})
@@ -728,12 +687,12 @@ function checkVersion() {
 
 
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
-function createTable(preferences, msg) {
+function createTable(msg) {
 
 	// Does a check to only create a table if a table cell component is already defined
-	if (findComponentById(getPluginData(figma.root, 'preferences').components.cell.id)) {
+	if (findComponentById(getPluginData(figma.root, 'components').current.cell.id)) {
 
-		preferences = updatePluginData(figma.root, 'preferences', (data) => {
+		updatePluginData(figma.root, 'components', (data) => {
 			data.componentsExist = true
 			data.upgradedTables = figma.root.getPluginData("upgradedTables")
 
@@ -748,20 +707,24 @@ function createTable(preferences, msg) {
 			// Will input from user and create table node
 			var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
 
+
+
 			// If table successfully created?
 			if (table) {
 
 				// This updates the plugin preferences
-				preferences = updatePluginData(figma.root, 'preferences', (data) => {
-					data.columnCount = msg.columnCount
-					data.rowCount = msg.rowCount
-					data.cellWidth = msg.cellWidth
-					data.remember = msg.remember
-					data.includeHeader = msg.includeHeader
-					data.cellAlignment = msg.cellAlignment
+				// updateClientStorageAsync('preferences', (data) => {
+				// 	data.columnCount = msg.columnCount
+				// 	data.rowCount = msg.rowCount
+				// 	data.cellWidth = msg.cellWidth
+				// 	data.remember = msg.remember
+				// 	data.includeHeader = msg.includeHeader
+				// 	data.cellAlignment = msg.cellAlignment
 
-					return data
-				})
+				// 	return data
+				// })
+
+
 
 				// Positions the table in the center of the viewport
 				positionInCenter(table)
@@ -781,7 +744,7 @@ function createTable(preferences, msg) {
 		}
 	}
 	else {
-		preferences = updatePluginData(figma.root, 'preferences', (data) => {
+		updatePluginData(figma.root, 'components', (data) => {
 			data.componentsExist = false
 
 			return data
@@ -798,20 +761,26 @@ plugma((plugin) => {
 		height: 504
 	}
 
-	// Set default preferences
-	var preferences = updatePluginData(figma.root, 'preferences', (data) => {
+	var components = updatePluginData(figma.root, 'components', (data) => {
 		data = data || {
 			componentsExist: false,
-			cellExists: false,
+			current: {},
+			previous: {}
+		}
+
+		return data
+	})
+
+	// Set default preferences
+	updateClientStorageAsync('preferences', (data) => {
+		data = data || {
 			columnCount: 4,
 			rowCount: 4,
 			cellWidth: 100,
 			remember: true,
 			includeHeader: true,
 			columnResizing: true,
-			upgradedTables: null,
-			cellAlignment: "MIN",
-			components: {}
+			cellAlignment: "MIN"
 		}
 
 		return data
@@ -820,15 +789,22 @@ plugma((plugin) => {
 	plugin.command('createTable', ({ ui, data }) => {
 
 		// Check if table components already exist
-		if (findComponentById(getPluginData(figma.root, 'preferences').components.cell.id)) {
-			preferences = updatePluginData(figma.root, 'preferences', (data) => {
+		components = updatePluginData(figma.root, 'components', (data) => {
+			if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
 				data.componentsExist = true
+			}
+			else {
+				data.componentsExist = false
+			}
 
-				return data
-			})
-		}
+			return data
+		})
 
-		ui.show({ type: "create-table", ...preferences })
+		figma.clientStorage.getAsync('preferences').then((res) => {
+			ui.show({ type: "create-table", ...res, componentsExist: components.componentsExist })
+		})
+
+
 
 		// try {
 		// 	checkVersion()
@@ -850,8 +826,7 @@ plugma((plugin) => {
 	})
 
 	plugin.command('linkComponents', ({ ui }) => {
-		preferences.type = "settings"
-		ui.show(preferences)
+		ui.show({ type: "settings", ...preferences })
 	})
 
 	plugin.command('selectColumn', () => {
@@ -868,23 +843,19 @@ plugma((plugin) => {
 	// Listen for events from UI
 
 	plugin.on('to-create-table', (msg) => {
-		plugin.ui.show(preferences)
+		plugin.ui.show({ ...preferences })
 	})
 
 	plugin.on('update-tables', (msg) => {
 		updateTables()
 	})
 
-	plugin.on('upgrade-tables', (msg) => {
-		upgradeTables()
-	})
-
 	plugin.on('create-components', (msg) => {
 		var components = createDefaultComponents()
 		figma.root.setRelaunchData({ createTable: 'Create a new table' })
 
-		updatePluginData(figma.root, 'preferences', (data) => {
-			data.components = Object.assign(data.components, components)
+		updatePluginData(figma.root, 'components', (data) => {
+			data.current = Object.assign(data.current, components)
 
 			return data
 		})
@@ -893,7 +864,13 @@ plugma((plugin) => {
 	})
 
 	plugin.on('create-table', (msg) => {
-		createTable(preferences, msg)
+		figma.clientStorage.getAsync('what').then((res) => {
+			console.log("success")
+		}).catch((res) => {
+			console.log("fail")
+		})
+		console.log("test")
+		createTable(msg)
 	})
 
 	plugin.on('link-component', (msg) => {
@@ -902,16 +879,19 @@ plugma((plugin) => {
 
 	// Updates what?
 	plugin.on('update', (msg) => {
-		if (findComponentById(figma.root.getPluginData("cellComponentID"))) {
 
-			preferences.componentsExist = true
-			// preferences.cellWidth = parseInt(figma.root.getPluginData("cellWidth"), 10)
-		}
-		else {
+		components = updatePluginData(figma.root, 'components', (data) => {
+			if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
+				data.componentsExist = true
+			}
+			else {
+				data.componentsExist = false
+			}
 
-			preferences.componentsExist = false
-		}
-		figma.ui.postMessage(preferences);
+			return data
+		})
+
+		figma.ui.postMessage({ ...preferences, componentsExist: components.componentsExist });
 	})
 
 	plugin.on('restore-component', (msg) => {

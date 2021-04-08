@@ -20,6 +20,7 @@
 	let welcomePageActive = false
 	let createTablePageActive = false
 	let settingsPageActive = false
+	let chooseComponentsPageActive = false
 
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
@@ -82,6 +83,19 @@
 			"*"
 		)
 	}
+
+	function chooseComponents() {
+		welcomePageActive = false
+		chooseComponentsPageActive = true
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "choose-components",
+				},
+			},
+			"*"
+		)
+	}
 </script>
 
 <svelte:window on:message={onLoad} />
@@ -130,6 +144,13 @@
 			Table Creator.
 		</p>
 		<span on:click={createComponents}><Button>Create Components</Button></span>
+		<span on:click={chooseComponents}><Button>Link Existing Components</Button></span>
+	</div>
+{/if}
+
+{#if chooseComponentsPageActive}
+	<div class="container" style="padding: var(--size-200)">
+		<p>Choose components</p>
 	</div>
 {/if}
 
