@@ -752,6 +752,44 @@ function createTable(msg) {
 	}
 }
 
+async function syncComponentsToStorage() {
+
+	return updateClientStorageAsync('components', (data) => {
+		data = data || []
+
+		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
+
+			updatePluginData(figma.root, 'components', (components) => {
+				components.componentsExist = true
+				return components
+			})
+
+			var newValue = {
+				id: getPluginData(figma.root, 'documentId'),
+				name: figma.root.name,
+				components: getPluginData(figma.root, 'components').current
+			}
+
+			// Only add to array if unique
+			if (!data.some((item) => item.id === newValue.id)) {
+				data.push(newValue)
+			}
+		}
+		else {
+			updatePluginData(figma.root, 'components', (components) => {
+				components.componentsExist = false
+				return components
+			})
+
+			if (getPluginData(figma.root, 'documentId')) {
+				data = data.filter(item => item.id === getPluginData(figma.root, 'documentId'))
+			}
+		}
+
+		return data
+	})
+}
+
 plugma((plugin) => {
 
 	plugin.ui = {
@@ -792,7 +830,7 @@ plugma((plugin) => {
 		return data
 	})
 
-	// async function checkComponentsExist() {
+	// async function syncComponentsToStorage() {
 
 	// 	updatePluginData(figma.root, 'components', (components) => {
 	// 		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
@@ -835,46 +873,8 @@ plugma((plugin) => {
 	// 	})
 	// }
 
-	async function checkComponentsExist() {
-
-		return updateClientStorageAsync('components', (data) => {
-			data = data || []
-
-			if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
-
-				updatePluginData(figma.root, 'components', (components) => {
-					components.componentsExist = true
-					return components
-				})
-
-				var newValue = {
-					id: getPluginData(figma.root, 'documentId'),
-					name: figma.root.name,
-					components: getPluginData(figma.root, 'components').current
-				}
-
-				// Only add to array if unique
-				if (!data.some((item) => item.id === newValue.id)) {
-					data.push(newValue)
-				}
-			}
-			else {
-				updatePluginData(figma.root, 'components', (components) => {
-					components.componentsExist = false
-					return components
-				})
-
-				if (getPluginData(figma.root, 'documentId')) {
-					data = data.filter(item => item.id === getPluginData(figma.root, 'documentId'))
-				}
-			}
-
-			return data
-		})
-	}
-
 	// Look for any components in file and update component settings and add to storage
-	checkComponentsExist().then((res) => {
+	syncComponentsToStorage().then((res) => {
 		console.log(res)
 	})
 
