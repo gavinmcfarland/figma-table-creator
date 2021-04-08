@@ -24,6 +24,7 @@
 
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
+		data.components = Object.entries(data.components)
 		valueStore.set(data)
 		valueStore.subscribe((value) => {
 			columnCount = value.columnCount
@@ -49,6 +50,7 @@
 			createTablePageActive = false
 			settingsPageActive = true
 		}
+		return data
 	}
 
 	function createTable() {
@@ -95,6 +97,15 @@
 			},
 			"*"
 		)
+	}
+
+	function genRandomId() {
+		function randomId() {
+			const uint32 = window.crypto.getRandomValues(new Uint32Array(1))[0]
+			return uint32.toString(16)
+		}
+
+		parent.postMessage({ pluginMessage: { type: "generate-uuid", uuid: randomId() } }, "*")
 	}
 </script>
 
@@ -151,6 +162,9 @@
 {#if chooseComponentsPageActive}
 	<div class="container" style="padding: var(--size-200)">
 		<p>Choose components</p>
+		{#each data.components as component}
+			<p>{component[1].cell.id}</p>
+		{/each}
 	</div>
 {/if}
 

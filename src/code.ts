@@ -1,6 +1,8 @@
 import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersion, loadFonts, changeText, ungroupNode, findComponentById, getPluginData, setPluginData, updatePluginData, detachInstance, updateClientStorageAsync } from './helpers'
 import { createDefaultComponents } from './defaultComponents'
 import plugma from 'plugma'
+// import { nanoid } from 'nanoid'
+import { v4 as uuidv4 } from 'uuid';
 
 
 // figma.clientStorage.setAsync('test2', {
@@ -758,7 +760,7 @@ plugma((plugin) => {
 		height: 504
 	}
 
-	var components = updatePluginData(figma.root, 'components', (data) => {
+	updatePluginData(figma.root, 'components', (data) => {
 		data = data || {
 			componentsExist: false,
 			current: {},
@@ -783,22 +785,70 @@ plugma((plugin) => {
 		return data
 	})
 
-	plugin.command('createTable', ({ ui, data }) => {
+	// Set random id on  document
+	updatePluginData(figma.root, 'documentId', (data) => {
+		var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
+		data = data || randPassword
+		return data
+	})
 
-		// Check if table components already exist
-		components = updatePluginData(figma.root, 'components', (data) => {
+	function checkComponentsExist() {
+
+		updatePluginData(figma.root, 'components', (components) => {
 			if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
-				data.componentsExist = true
+
+				// Store any components created by user to local storage
+				updateClientStorageAsync('components', (data) => {
+					data = data || []
+
+					var newValue = {
+						id: getPluginData(figma.root, 'documentId'),
+						name: "file",
+						components: components.current
+					}
+
+					// Only add to array if unique
+					if (!data.some((item) => item.id === newValue.id)) {
+						data.push(newValue)
+					}
+
+					return data
+				})
+
+				components.componentsExist = true
 			}
 			else {
-				data.componentsExist = false
+				// If no cell component found then remove from client storage list
+				if (getPluginData(figma.root, 'documentId')) {
+					updateClientStorageAsync('components', (data) => {
+						data = data || []
+
+						data = data.filter(item => item.id === getPluginData(figma.root, 'documentId'))
+
+						return data
+					})
+				}
+				components.componentsExist = false
 			}
 
-			return data
+			return components
 		})
+	}
+
+	// Look for any components in file and update component settings and add to storage
+	checkComponentsExist()
+
+
+	figma.clientStorage.getAsync('components').then((res) => { console.log(res) })
+
+
+
+	plugin.command('createTable', ({ ui, data }) => {
 
 		figma.clientStorage.getAsync('preferences').then((res) => {
-			ui.show({ type: "create-table", ...res, componentsExist: components.componentsExist })
+			figma.clientStorage.getAsync('components').then((components) => {
+				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, components })
+			})
 		})
 
 
@@ -823,7 +873,9 @@ plugma((plugin) => {
 	})
 
 	plugin.command('linkComponents', ({ ui }) => {
-		ui.show({ type: "settings", ...preferences })
+		figma.clientStorage.getAsync('components').then((components) => {
+			ui.show({ type: "settings", components })
+		})
 	})
 
 	plugin.command('selectColumn', () => {
@@ -840,7 +892,9 @@ plugma((plugin) => {
 	// Listen for events from UI
 
 	plugin.on('to-create-table', (msg) => {
-		plugin.ui.show({ ...preferences })
+		figma.clientStorage.getAsync('preferences').then((res) => {
+			plugin.ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist })
+		})
 	})
 
 	plugin.on('update-tables', (msg) => {
@@ -882,7 +936,11 @@ plugma((plugin) => {
 			return data
 		})
 
-		figma.ui.postMessage({ ...preferences, componentsExist: components.componentsExist });
+		figma.clientStorage.getAsync('preferences').then((res) => {
+			figma.ui.postMessage({ ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist });
+		})
+
+
 	})
 
 	plugin.on('restore-component', (msg) => {

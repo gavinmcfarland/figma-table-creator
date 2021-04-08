@@ -15,6 +15,7 @@
     "cssnano": "^4.1.10",
     "figma-plugin-ds-svelte": "^1.0.7",
     "flex-gap-polyfill": "^2.2.1",
+    "nanoid": "^3.1.22",
     "plugma": "0.0.0-alpha0.7",
     "postcss": "^8.2.4",
     "postcss-nested": "^5.0.3",
@@ -39,6 +40,7 @@
     "postcss-logical": "^4.0.2",
     "sirv-cli": "^1.0.10",
     "stylup": "0.0.0-alpha.3",
-    "uniqid": "^5.3.0"
+    "uniqid": "^5.3.0",
+    "uuid": "^8.3.2"
   }
 }

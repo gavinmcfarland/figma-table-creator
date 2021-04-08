@@ -6,7 +6,8 @@
   "ui": {
       "main": "index.html",
       "components": "components.html",
-      "versionLog": "version-log.html"
+      "versionLog": "version-log.html",
+      "uuid": "uuid.html"
   },
   "menu": [
     {

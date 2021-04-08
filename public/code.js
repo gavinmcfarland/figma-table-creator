@@ -632,6 +632,7 @@ var devDependencies = {
 	cssnano: "^4.1.10",
 	"figma-plugin-ds-svelte": "^1.0.7",
 	"flex-gap-polyfill": "^2.2.1",
+	nanoid: "^3.1.22",
 	plugma: "0.0.0-alpha0.7",
 	postcss: "^8.2.4",
 	"postcss-nested": "^5.0.3",
@@ -656,7 +657,8 @@ var dependencies = {
 	"postcss-logical": "^4.0.2",
 	"sirv-cli": "^1.0.10",
 	stylup: "0.0.0-alpha.3",
-	uniqid: "^5.3.0"
+	uniqid: "^5.3.0",
+	uuid: "^8.3.2"
 };
 var require$$0 = {
 	name: name,
@@ -1271,7 +1273,7 @@ dist((plugin) => {
         width: 268,
         height: 504
     };
-    var components = updatePluginData(figma.root, 'components', (data) => {
+    updatePluginData(figma.root, 'components', (data) => {
         data = data || {
             componentsExist: false,
             current: {},
@@ -1292,20 +1294,54 @@ dist((plugin) => {
         };
         return data;
     });
-    plugin.command('createTable', ({ ui, data }) => {
-        // Check if table components already exist
-        components = updatePluginData(figma.root, 'components', (data) => {
+    // Set random id on  document
+    updatePluginData(figma.root, 'documentId', (data) => {
+        var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
+        data = data || randPassword;
+        return data;
+    });
+    function checkComponentsExist() {
+        updatePluginData(figma.root, 'components', (components) => {
             var _a, _b;
             if (findComponentById((_b = (_a = getPluginData(figma.root, 'components').current) === null || _a === void 0 ? void 0 : _a.cell) === null || _b === void 0 ? void 0 : _b.id)) {
-                data.componentsExist = true;
+                // Store any components created by user to local storage
+                updateClientStorageAsync('components', (data) => {
+                    data = data || [];
+                    var newValue = {
+                        id: getPluginData(figma.root, 'documentId'),
+                        name: "file",
+                        components: components.current
+                    };
+                    // Only add to array if unique
+                    if (!data.some((item) => item.id === newValue.id)) {
+                        data.push(newValue);
+                    }
+                    return data;
+                });
+                components.componentsExist = true;
             }
             else {
-                data.componentsExist = false;
+                // If no cell component found then remove from client storage list
+                if (getPluginData(figma.root, 'documentId')) {
+                    updateClientStorageAsync('components', (data) => {
+                        data = data || [];
+                        data = data.filter(item => item.id === getPluginData(figma.root, 'documentId'));
+                        return data;
+                    });
+                }
+                components.componentsExist = false;
             }
-            return data;
+            return components;
         });
+    }
+    // Look for any components in file and update component settings and add to storage
+    checkComponentsExist();
+    figma.clientStorage.getAsync('components').then((res) => { console.log(res); });
+    plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('preferences').then((res) => {
-            ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: components.componentsExist }));
+            figma.clientStorage.getAsync('components').then((components) => {
+                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, components }));
+            });
         });
         // try {
         // 	checkVersion()
@@ -1321,7 +1357,9 @@ dist((plugin) => {
         // }
     });
     plugin.command('linkComponents', ({ ui }) => {
-        ui.show(Object.assign({ type: "settings" }, preferences));
+        figma.clientStorage.getAsync('components').then((components) => {
+            ui.show({ type: "settings", components });
+        });
     });
     plugin.command('selectColumn', () => {
         selectColumn();
@@ -1333,7 +1371,9 @@ dist((plugin) => {
     });
     // Listen for events from UI
     plugin.on('to-create-table', (msg) => {
-        plugin.ui.show(Object.assign({}, preferences));
+        figma.clientStorage.getAsync('preferences').then((res) => {
+            plugin.ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist }));
+        });
     });
     plugin.on('update-tables', (msg) => {
         updateTables();
@@ -1365,7 +1405,9 @@ dist((plugin) => {
             }
             return data;
         });
-        figma.ui.postMessage(Object.assign(Object.assign({}, preferences), { componentsExist: components.componentsExist }));
+        figma.clientStorage.getAsync('preferences').then((res) => {
+            figma.ui.postMessage(Object.assign(Object.assign({}, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist }));
+        });
     });
     plugin.on('restore-component', (msg) => {
         restoreComponent(msg.component);
