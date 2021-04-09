@@ -816,20 +816,29 @@ var dist = plugma;
 // --------
 // TODO: Change preferences to clientStorage
 // TODO: Create seperate store for component settings
-function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
-    // Get Cell Templa
-    var cell = findComponentById(getPluginData(figma.root, 'components').current.cell.id);
-    var cellHeader = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id);
+async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
+    var cell, cellHeader, rowTemplate, tableTemplate;
+    if (getPluginData(figma.root, 'components').componentsRemote == true) {
+        var components = getPluginData(figma.root, 'components').current;
+        cell = await figma.importComponentByKeyAsync(components.cell.key);
+        cellHeader = await figma.importComponentByKeyAsync(components.cellHeader.key);
+        rowTemplate = await figma.importComponentByKeyAsync(components.row.key);
+        tableTemplate = await figma.importComponentByKeyAsync(components.table.key);
+    }
+    else {
+        cell = findComponentById(getPluginData(figma.root, 'components').current.cell.id);
+        cellHeader = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id);
+        rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id);
+        tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id);
+    }
     if (!cellHeader && includeHeader) {
         // throw "No Header Cell component found";
         figma.notify("No Header Cell component found");
         return;
     }
-    var rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id);
+    var table = figma.createFrame();
     var row = figma.createFrame();
     copyPasteProps(rowTemplate, row, { include: ['name'] });
-    var tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id);
-    var table = figma.createFrame();
     copyPasteProps(tableTemplate, table, { include: ['name'] });
     // Manually set layout mode
     table.layoutMode = "VERTICAL";
@@ -1225,7 +1234,7 @@ if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
     // Does a check to only create a table if a table cell component is already defined
-    if (findComponentById(getPluginData(figma.root, 'components').current.cell.id)) {
+    if (findComponentById(getPluginData(figma.root, 'components').current.cell.id) || getPluginData(figma.root, 'components').componentsRemote) {
         updatePluginData(figma.root, 'components', (data) => {
             data.componentsExist = true;
             data.upgradedTables = figma.root.getPluginData("upgradedTables");
@@ -1234,26 +1243,27 @@ function createTable(msg) {
         // Will only let you create a table if less than 50 columns and rows
         if (msg.columnCount < 51 && msg.rowCount < 51) {
             // Will input from user and create table node
-            var table = createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment);
-            // If table successfully created?
-            if (table) {
-                // Positions the table in the center of the viewport
-                positionInCenter(table);
-                // Makes table the users current selection
-                figma.currentPage.selection = [table];
-                // This updates the plugin preferences
-                updateClientStorageAsync('preferences', (data) => {
-                    data.columnCount = msg.columnCount;
-                    data.rowCount = msg.rowCount;
-                    data.cellWidth = msg.cellWidth;
-                    data.remember = msg.remember;
-                    data.includeHeader = msg.includeHeader;
-                    data.cellAlignment = msg.cellAlignment;
-                    return data;
-                }).then(() => {
-                    figma.closePlugin();
-                });
-            }
+            createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment).then((table) => {
+                // If table successfully created?
+                if (table) {
+                    // Positions the table in the center of the viewport
+                    positionInCenter(table);
+                    // Makes table the users current selection
+                    figma.currentPage.selection = [table];
+                    // This updates the plugin preferences
+                    updateClientStorageAsync('preferences', (data) => {
+                        data.columnCount = msg.columnCount;
+                        data.rowCount = msg.rowCount;
+                        data.cellWidth = msg.cellWidth;
+                        data.remember = msg.remember;
+                        data.includeHeader = msg.includeHeader;
+                        data.cellAlignment = msg.cellAlignment;
+                        return data;
+                    }).then(() => {
+                        figma.closePlugin();
+                    });
+                }
+            });
         }
         else {
             figma.notify("Plugin limited to max of 50 columns and rows");
@@ -1268,6 +1278,7 @@ function createTable(msg) {
     }
 }
 async function syncComponentsToStorage() {
+    // TODO: Find a way to check the files these components link to exist and if not remove them from storage
     return updateClientStorageAsync('components', (data) => {
         var _a, _b;
         data = data || [];
@@ -1291,7 +1302,6 @@ async function syncComponentsToStorage() {
                 components.componentsExist = false;
                 return components;
             });
-            console.log(getPluginData(figma.root, 'documentId'));
             // Remove any entries which no longer exist
             if (getPluginData(figma.root, 'documentId')) {
                 data = data.filter(item => item.id !== getPluginData(figma.root, 'documentId'));
@@ -1341,7 +1351,7 @@ dist((plugin) => {
     plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('preferences').then((res) => {
             figma.clientStorage.getAsync('components').then((components) => {
-                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, components }));
+                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components }));
             });
         });
         // try {
@@ -1381,8 +1391,20 @@ dist((plugin) => {
     });
     plugin.on('create-components', (msg) => {
         var components = createDefaultComponents();
+        syncComponentsToStorage();
         figma.root.setRelaunchData({ createTable: 'Create a new table' });
         updatePluginData(figma.root, 'components', (data) => {
+            // TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
+            for (let [key, value] of Object.entries(components)) {
+                const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__));
+                const obj = { id: components[key].id, type: components[key].type };
+                for (const [name, prop] of props) {
+                    if (name === "key") {
+                        obj[name] = prop.get.call(components[key]);
+                    }
+                }
+                components[key] = obj;
+            }
             data.current = Object.assign(data.current, components);
             return data;
         });
@@ -1412,5 +1434,23 @@ dist((plugin) => {
     });
     plugin.on('restore-component', (msg) => {
         restoreComponent(msg.component);
+    });
+    plugin.on('set-components', (msg) => {
+        // Update components used by this file
+        updatePluginData(figma.root, 'components', (data) => {
+            data.current = msg.components;
+            data.componentsExist = true;
+            data.componentsRemote = true;
+            return data;
+        });
+        figma.closePlugin('Components set');
+        // I think maybe I don't have to import the components. I can just import them when they are created.
+        // var newPage = figma.createPage()
+        // newPage.name = "Imported Table Components (don't edit)"
+        // // Now I need to create/import the components?
+        // importComponents(getPluginData(figma.root, 'components').current, newPage).then(() => {
+        // 	figma.closePlugin()
+        // })
+        // figma.closePlugin('Components added')
     });
 });

@@ -44,6 +44,11 @@
 			createTablePageActive = false
 		}
 
+		if (data.componentsRemote === true) {
+			welcomePageActive = false
+			createTablePageActive = true
+		}
+
 		if (data.type === "settings") {
 			welcomePageActive = false
 			createTablePageActive = false
@@ -88,23 +93,18 @@
 	function chooseComponents() {
 		welcomePageActive = false
 		chooseComponentsPageActive = true
+	}
+
+	function setComponent(components) {
 		parent.postMessage(
 			{
 				pluginMessage: {
-					type: "choose-components",
+					type: "set-components",
+					components: components,
 				},
 			},
 			"*"
 		)
-	}
-
-	function genRandomId() {
-		function randomId() {
-			const uint32 = window.crypto.getRandomValues(new Uint32Array(1))[0]
-			return uint32.toString(16)
-		}
-
-		parent.postMessage({ pluginMessage: { type: "generate-uuid", uuid: randomId() } }, "*")
 	}
 </script>
 
@@ -162,7 +162,7 @@
 	<div class="container" style="padding: var(--size-200)">
 		<p>Choose components</p>
 		{#each data.components as component}
-			<p>{component.name}</p>
+			<span on:click={() => setComponent(component.set)}><p>{component.name}</p></span>
 		{/each}
 	</div>
 {/if}
