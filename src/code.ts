@@ -757,6 +757,7 @@ async function syncComponentsToStorage() {
 	return updateClientStorageAsync('components', (data) => {
 		data = data || []
 
+
 		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
 
 			updatePluginData(figma.root, 'components', (components) => {
@@ -767,7 +768,7 @@ async function syncComponentsToStorage() {
 			var newValue = {
 				id: getPluginData(figma.root, 'documentId'),
 				name: figma.root.name,
-				components: getPluginData(figma.root, 'components').current
+				set: getPluginData(figma.root, 'components').current
 			}
 
 			// Only add to array if unique
@@ -781,8 +782,11 @@ async function syncComponentsToStorage() {
 				return components
 			})
 
+			console.log(getPluginData(figma.root, 'documentId'))
+
+			// Remove any entries which no longer exist
 			if (getPluginData(figma.root, 'documentId')) {
-				data = data.filter(item => item.id === getPluginData(figma.root, 'documentId'))
+				data = data.filter(item => item.id !== getPluginData(figma.root, 'documentId'))
 			}
 		}
 
@@ -829,49 +833,6 @@ plugma((plugin) => {
 		data = data || randPassword
 		return data
 	})
-
-	// async function syncComponentsToStorage() {
-
-	// 	updatePluginData(figma.root, 'components', (components) => {
-	// 		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
-
-	// 			// Store any components created by user to local storage
-	// 			updateClientStorageAsync('components', (data) => {
-	// 				data = data || []
-
-	// 				var newValue = {
-	// 					id: getPluginData(figma.root, 'documentId'),
-	// 					name: figma.root.name,
-	// 					components: components.current
-	// 				}
-
-	// 				// Only add to array if unique
-	// 				if (!data.some((item) => item.id === newValue.id)) {
-	// 					data.push(newValue)
-	// 				}
-
-	// 				return data
-	// 			})
-
-	// 			components.componentsExist = true
-	// 		}
-	// 		else {
-	// 			// If no cell component found then remove from client storage list
-	// 			if (getPluginData(figma.root, 'documentId')) {
-	// 				updateClientStorageAsync('components', (data) => {
-	// 					data = data || []
-
-	// 					data = data.filter(item => item.id === getPluginData(figma.root, 'documentId'))
-
-	// 					return data
-	// 				})
-	// 			}
-	// 			components.componentsExist = false
-	// 		}
-
-	// 		return components
-	// 	})
-	// }
 
 	// Look for any components in file and update component settings and add to storage
 	syncComponentsToStorage().then((res) => {

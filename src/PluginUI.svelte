@@ -24,7 +24,6 @@
 
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
-		data.components = Object.entries(data.components)
 		valueStore.set(data)
 		valueStore.subscribe((value) => {
 			columnCount = value.columnCount
@@ -163,7 +162,7 @@
 	<div class="container" style="padding: var(--size-200)">
 		<p>Choose components</p>
 		{#each data.components as component}
-			<p>{component[1].cell.id}</p>
+			<p>{component.name}</p>
 		{/each}
 	</div>
 {/if}
