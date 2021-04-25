@@ -827,6 +827,14 @@ async function importComponents(components, page?) {
 	}
 }
 
+function updateNodeComponentsData(node, components) {
+	updatePluginData(node, 'components', (data) => {
+		data = data || {
+			...components
+		}
+	})
+}
+
 plugma((plugin) => {
 
 	plugin.ui = {
@@ -937,24 +945,32 @@ plugma((plugin) => {
 
 	plugin.on('create-components', (msg) => {
 		var components = createDefaultComponents()
+
 		syncComponentsToStorage()
 		figma.root.setRelaunchData({ createTable: 'Create a new table' })
 
-		updatePluginData(figma.root, 'components', (data) => {
-			// TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
-			for (let [key, value] of Object.entries(components)) {
-				const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
-				const obj: any = { id: components[key].id, type: components[key].type }
-				for (const [name, prop] of props) {
-					if (name === "key") {
-						obj[name] = prop.get.call(components[key])
-					}
+
+		// TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
+		// This converts the node to an object with the key property copied over
+		for (let [key, value] of Object.entries(components)) {
+			const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
+			const obj: any = { id: components[key].id, type: components[key].type }
+			for (const [name, prop] of props) {
+				if (name === "key") {
+					obj[name] = prop.get.call(components[key])
 				}
-				components[key] = obj
 			}
+			components[key] = obj
+		}
 
+		// For each component add pluginData
+		// for (let [key, value] of Object.entries(components)) {
+		// 	updateNodeComponentsData(components[key], components)
+		// }
+
+		// Add plugin data to the document
+		updatePluginData(figma.root, 'components', (data) => {
 			data.current = Object.assign(data.current, components)
-
 			return data
 		})
 
