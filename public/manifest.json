@@ -26,6 +26,10 @@
         "separator": true
     },
     {
+      "name": "View Node Data",
+      "command": "viewNodeData"
+    },
+    {
       "name": "Settings",
       "command": "linkComponents"
     }

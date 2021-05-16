@@ -1,8 +1,15 @@
 
-import { getPluginData, setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren} from '@figlets/helpers'
-import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle } from './helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync} from '@figlets/helpers'
+import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData } from './helpers'
 import { createDefaultComponents } from './defaultComponents'
 import plugma from 'plugma'
+
+
+console.log(getPluginData(figma.root, 'components'))
+
+getClientStorageAsync('components').then(res => {
+	console.log(res)
+})
 
 async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
 
@@ -834,6 +841,12 @@ plugma((plugin) => {
 
 	})
 
+	plugin.command('viewNodeData', () => {
+		if (figma.currentPage.selection[0]) {
+			console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'components'))
+		}
+	})
+
 	plugin.command('linkComponents', ({ ui }) => {
 		figma.clientStorage.getAsync('components').then((components) => {
 			ui.show({ type: "settings", components })
@@ -867,33 +880,43 @@ plugma((plugin) => {
 		var components = createDefaultComponents()
 
 		syncComponentsToStorage()
+
 		figma.root.setRelaunchData({ createTable: 'Create a new table' })
 
-
-		// components = copyPaste(components, {}, { include: ['key'] })
-		// TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
-		// This converts the node to an object with the key property copied over
+		// Create new object with only key, id and type
+		var componentsAsObject = {}
 		for (let [key, value] of Object.entries(components)) {
-			const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
-			const obj: any = { id: components[key].id, type: components[key].type }
-			for (const [name, prop] of props) {
-				if (name === "key") {
-					obj[name] = prop.get.call(components[key])
-				}
-			}
-			components[key] = obj
+			componentsAsObject[key] = copyPaste(value, {}, { include: ['key', 'id', 'type'] })
 		}
 
-		// For each component add pluginData
+		// // This converts the node to an object with the key property copied over
+		// var componentsAsObject = {}
+
 		// for (let [key, value] of Object.entries(components)) {
-		// 	updateNodeComponentsData(components[key], components)
+		// 	const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
+		// 	const obj: any = { id: components[key].id, type: components[key].type }
+		// 	for (const [name, prop] of props) {
+		// 		if (name === "key") {
+		// 			obj[name] = prop.get.call(components[key])
+		// 		}
+		// 	}
+		// 	componentsAsObject[key] = obj
 		// }
+
 
 		// Add plugin data to the document
 		updatePluginData(figma.root, 'components', (data) => {
-			data.current = Object.assign(data.current, components)
+			data.current = Object.assign(data.current, componentsAsObject)
 			return data
 		})
+
+		// Add plugin data to each component so that it can be used remotely
+		for (let [key, value] of Object.entries(components)) {
+			updatePluginData(components[key], 'components', (data) => {
+				data = componentsAsObject
+				return data
+			})
+		}
 
 		figma.notify('Default components created')
 	})
@@ -934,7 +957,13 @@ plugma((plugin) => {
 		// Update components used by this file
 		updatePluginData(figma.root, 'components', (data) => {
 
-			data.current = msg.components
+			if (msg.components === 'selected') {
+				data.current = getPluginData(figma.currentPage.selection[0], 'components')
+			}
+			else {
+				data.current = msg.components
+			}
+
 			data.componentsExist = true
 			data.componentsRemote = true
 

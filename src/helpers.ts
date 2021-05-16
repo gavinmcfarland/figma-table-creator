@@ -422,7 +422,14 @@ export function findComponentById(id) {
 }
 
 export function getPluginData(node, key) {
-	return JSON.parse(node.getPluginData(key))
+	var data
+	if (node.getPluginData(key)) {
+		data = JSON.parse(node.getPluginData(key))
+	}
+	else {
+		data = undefined
+	}
+	return data
 }
 
 export function setPluginData(node, key, data) {

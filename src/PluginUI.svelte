@@ -96,6 +96,12 @@
 	}
 
 	function setComponent(components) {
+
+		// If no components passed tell main code to use selected
+		if(!components){
+			components = 'selected'
+		}
+
 		parent.postMessage(
 			{
 				pluginMessage: {
@@ -164,6 +170,8 @@
 		{#each data.components as component}
 			<span on:click={() => setComponent(component.set)}><p>{component.name}</p></span>
 		{/each}
+
+		<div><span on:click={() => setComponent()}><Button>Use Selected</Button></span></div>
 	</div>
 {/if}
 

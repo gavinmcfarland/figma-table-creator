@@ -3,6 +3,9 @@
 /**
  * Helpers which make it easier to update client storage
  */
+async function getClientStorageAsync(key) {
+  return await figma.clientStorage.getAsync(key);
+}
 async function updateClientStorageAsync(key, callback) {
   var data = await figma.clientStorage.getAsync(key);
   data = callback(data);
@@ -107,6 +110,10 @@ function copyPaste(source, target, ...args) {
     obj.type = source.type;
   }
 
+  if (targetIsEmpty) {
+    if (source.key) obj.key = source.key;
+  }
+
   const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__));
 
   for (const [key, value] of props) {
@@ -194,16 +201,6 @@ function copyPaste(source, target, ...args) {
 /**
  * Helpers which automatically parse and stringify when you get, set or update plugin data
  */
-
-/**
- * 
- * @param {BaseNode} node A figma node to get data from
- * @param {string} key  The key under which data is stored 
- * @returns Plugin Data
- */
-function getPluginData(node, key) {
-  return JSON.parse(node.getPluginData(key));
-}
 function updatePluginData(node, key, callback) {
   var data;
 
@@ -345,6 +342,16 @@ function findComponentById(id) {
         figma.root.setPluginData("cellComponentState", "deleted");
         return null;
     }
+}
+function getPluginData(node, key) {
+    var data;
+    if (node.getPluginData(key)) {
+        data = JSON.parse(node.getPluginData(key));
+    }
+    else {
+        data = undefined;
+    }
+    return data;
 }
 
 // Load FONTS
@@ -801,6 +808,10 @@ function plugma(plugin) {
 
 var dist = plugma;
 
+console.log(getPluginData(figma.root, 'components'));
+getClientStorageAsync('components').then(res => {
+    console.log(res);
+});
 async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
     var cell, cellHeader, rowTemplate, tableTemplate;
     if (getPluginData(figma.root, 'components').componentsRemote == true) {
@@ -1340,6 +1351,11 @@ dist((plugin) => {
             });
         });
     });
+    plugin.command('viewNodeData', () => {
+        if (figma.currentPage.selection[0]) {
+            console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'components'));
+        }
+    });
     plugin.command('linkComponents', ({ ui }) => {
         figma.clientStorage.getAsync('components').then((components) => {
             ui.show({ type: "settings", components });
@@ -1366,28 +1382,35 @@ dist((plugin) => {
         var components = createDefaultComponents();
         syncComponentsToStorage();
         figma.root.setRelaunchData({ createTable: 'Create a new table' });
-        // components = copyPaste(components, {}, { include: ['key'] })
-        // TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
-        // This converts the node to an object with the key property copied over
+        // Create new object with only key, id and type
+        var componentsAsObject = {};
         for (let [key, value] of Object.entries(components)) {
-            const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__));
-            const obj = { id: components[key].id, type: components[key].type };
-            for (const [name, prop] of props) {
-                if (name === "key") {
-                    obj[name] = prop.get.call(components[key]);
-                }
-            }
-            components[key] = obj;
+            componentsAsObject[key] = copyPaste(value, {}, { include: ['key', 'id', 'type'] });
         }
-        // For each component add pluginData
+        // // This converts the node to an object with the key property copied over
+        // var componentsAsObject = {}
         // for (let [key, value] of Object.entries(components)) {
-        // 	updateNodeComponentsData(components[key], components)
+        // 	const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
+        // 	const obj: any = { id: components[key].id, type: components[key].type }
+        // 	for (const [name, prop] of props) {
+        // 		if (name === "key") {
+        // 			obj[name] = prop.get.call(components[key])
+        // 		}
+        // 	}
+        // 	componentsAsObject[key] = obj
         // }
         // Add plugin data to the document
         updatePluginData(figma.root, 'components', (data) => {
-            data.current = Object.assign(data.current, components);
+            data.current = Object.assign(data.current, componentsAsObject);
             return data;
         });
+        // Add plugin data to each component so that it can be used remotely
+        for (let [key, value] of Object.entries(components)) {
+            updatePluginData(components[key], 'components', (data) => {
+                data = componentsAsObject;
+                return data;
+            });
+        }
         figma.notify('Default components created');
     });
     plugin.on('create-table', createTable);
@@ -1416,7 +1439,12 @@ dist((plugin) => {
     plugin.on('set-components', (msg) => {
         // Update components used by this file
         updatePluginData(figma.root, 'components', (data) => {
-            data.current = msg.components;
+            if (msg.components === 'selected') {
+                data.current = getPluginData(figma.currentPage.selection[0], 'components');
+            }
+            else {
+                data.current = msg.components;
+            }
             data.componentsExist = true;
             data.componentsRemote = true;
             return data;
