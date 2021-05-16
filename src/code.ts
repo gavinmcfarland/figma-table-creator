@@ -1,45 +1,8 @@
-import { copyPasteProps, pageNode, clone, removeChildren, positionInCenter, compareVersion, loadFonts, changeText, ungroupNode, findComponentById, getPluginData, setPluginData, updatePluginData, detachInstance, updateClientStorageAsync } from './helpers'
+
+import { getPluginData, setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren} from '@figlets/helpers'
+import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle } from './helpers'
 import { createDefaultComponents } from './defaultComponents'
 import plugma from 'plugma'
-// import { nanoid } from 'nanoid'
-import { v4 as uuidv4 } from 'uuid';
-
-
-// figma.clientStorage.setAsync('test2', {
-// 	test: "something"
-// }).then(res => console.log(res))
-
-// figma.clientStorage.getAsync('test2').then((res) => {
-// 	res.test = "something else"
-// 	figma.clientStorage.setAsync('test2', res)
-// })
-
-// figma.clientStorage.getAsync('test2').then((res) => {
-// 	console.log(res)
-// })
-// let pkg = {
-// 	version: "6.1.0"
-// }
-
-// if (figma.root.getPluginData("pluginVersion") === "") {
-// 	// If plugin was used before new auto layout tables were supported
-// 	if (figma.root.getPluginData("cellComponentID")) {
-// 		figma.root.setPluginData("pluginVersion", "5.0.0")
-// 		figma.root.setPluginData("upgradedTables", "false")
-// 	}
-// 	// Else if plugin never used
-// 	else {
-// 		figma.root.setPluginData("pluginVersion", pkg.version)
-// 	}
-
-// }
-
-
-// --------
-
-// TODO: Change preferences to clientStorage
-// TODO: Create seperate store for component settings
-
 
 async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
 
@@ -67,14 +30,11 @@ async function createNewTable(numberColumns, numberRows, cellWidth, includeHeade
 		return
 	}
 
-
-
 	var table = figma.createFrame()
 	var row = figma.createFrame()
 
-	copyPasteProps(rowTemplate, row, { include: ['name'] })
-
-	copyPasteProps(tableTemplate, table, { include: ['name'] })
+	copyPasteStyle(rowTemplate, row, { include: [ 'name' ] })
+	copyPasteStyle(tableTemplate, table, { include: ['name'] })
 
 
 	// Manually set layout mode
@@ -326,19 +286,33 @@ function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentC
 
 
 
-function updateTables() {
+async function updateTables() {
 
-	// Find all tables
-	var pages = figma.root.children
 	var tables
-	var tableTemplateID = getPluginData(figma.root, 'components').current.table.id
-	var tableTemplate = findComponentById(tableTemplateID)
-	// removeChildren(tableTemplate)
+	var discardBucket = figma.createFrame()
+	var pages = figma.root.children
 
+	var previousCellTemplateID = getPluginData(figma.root, 'components').previous.cell?.id
+	var previousCellHeaderTemplateID = getPluginData(figma.root, 'components').previous.cellHeader?.id
 
+	// Get the templates
+	// TODO: If component can't be imported need to show error message
+	var cellTemplate, cellHeaderTemplate, rowTemplate, tableTemplate;
 
-	var rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id)
-	// removeChildren(rowTemplate)
+	if (getPluginData(figma.root, 'components').componentsRemote == true) {
+		var components = getPluginData(figma.root, 'components').current
+
+		cellTemplate = await figma.importComponentByKeyAsync(components.cell.key)
+		cellHeaderTemplate = await figma.importComponentByKeyAsync(components.cellHeader.key)
+		rowTemplate = await figma.importComponentByKeyAsync(components.row.key)
+		tableTemplate = await figma.importComponentByKeyAsync(components.table.key)
+	}
+	else {
+		cellTemplate = findComponentById(getPluginData(figma.root, 'components').current.cell.id)
+		cellHeaderTemplate = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id)
+		rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id)
+		tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id)
+	}
 
 	// If can't find table and row templates use plain frame
 	if (!tableTemplate) {
@@ -349,22 +323,9 @@ function updateTables() {
 		rowTemplate = figma.createFrame()
 	}
 
-	var cellTemplateID = getPluginData(figma.root, 'components').current.cell.id
-	var previousCellTemplateID = getPluginData(figma.root, 'components').prevous.cell.id
-	var cellTemplate = findComponentById(cellTemplateID)
-
-	var cellHeaderTemplateID = getPluginData(figma.root, 'components').current.cellHeader.id
-	var previousCellHeaderTemplateID = getPluginData(figma.root, 'components').prevous.cellHeader.id
-	var cellHeaderTemplate = findComponentById(cellHeaderTemplateID)
-	var discardBucket = figma.createFrame()
-
 	// Look through each page to find tables created with plugin
 	for (let i = 0; i < pages.length; i++) {
 		tables = pages[i].findAll(node => node.getPluginData("isTable") === "true")
-
-
-		// Add && node.id !== tableTemplateID ^^ if don't want it to update linked component
-
 
 		for (let b = 0; b < tables.length; b++) {
 
@@ -373,7 +334,7 @@ function updateTables() {
 			// Don't apply if an instance
 			if (table.type !== "INSTANCE") {
 
-				copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions'] })
+				copyPasteStyle(tableTemplate, table, { include: ['name'] })
 
 				for (let x = 0; x < table.children.length; x++) {
 					var row = table.children[x]
@@ -440,7 +401,7 @@ function updateTables() {
 						}
 
 						if (row.getPluginData("isRow") === "true" && row.type !== "INSTANCE") {
-							copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions'] })
+							copyPasteStyle(rowTemplate, row, { include: ['name'] })
 						}
 					}
 				}
@@ -448,6 +409,9 @@ function updateTables() {
 			}
 		}
 	}
+
+
+
 	discardBucket.remove()
 
 }
@@ -680,39 +644,18 @@ function restoreComponent(component) {
 
 }
 
-if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
-	var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"))
-	if (tableTemplate) {
-		tableTemplate.setRelaunchData({ detachTable: 'Detaches table and rows' })
-	}
-}
-
-
-function checkVersion() {
-	if (compareVersion(figma.root.getPluginData("pluginVersion"), pkg.version) < 0) {
-		// TODO: Change to store version on client storage?
-		figma.root.setPluginData("pluginVersion", pkg.version)
-		console.log(figma.root.getPluginData("pluginVersion"))
-
-		throw 'New Version'
-	}
-}
-
 
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
 
+	console.log(getPluginData(figma.root, 'components').componentsRemote)
 	// Does a check to only create a table if a table cell component is already defined
 	if (findComponentById(getPluginData(figma.root, 'components').current.cell.id) || getPluginData(figma.root, 'components').componentsRemote) {
 
 		updatePluginData(figma.root, 'components', (data) => {
 			data.componentsExist = true
-			data.upgradedTables = figma.root.getPluginData("upgradedTables")
-
 			return data
 		})
-
-
 
 		// Will only let you create a table if less than 50 columns and rows
 		if (msg.columnCount < 51 && msg.rowCount < 51) {
@@ -783,7 +726,8 @@ async function syncComponentsToStorage() {
 			var newValue = {
 				id: getPluginData(figma.root, 'documentId'),
 				name: figma.root.name,
-				set: getPluginData(figma.root, 'components').current
+				set: getPluginData(figma.root, 'components').current,
+				published: 'false'
 			}
 
 			// Only add to array if unique
@@ -880,11 +824,6 @@ plugma((plugin) => {
 		console.log(res)
 	})
 
-
-	// figma.clientStorage.getAsync('components').then((res) => { console.log(res) })
-
-
-
 	plugin.command('createTable', ({ ui, data }) => {
 
 		figma.clientStorage.getAsync('preferences').then((res) => {
@@ -892,25 +831,6 @@ plugma((plugin) => {
 				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components })
 			})
 		})
-
-
-
-		// try {
-		// 	checkVersion()
-		// } catch (e) {
-		// 	figma.showUI(__uiFiles__.versionLog);
-
-		// 	figma.ui.resize(268, 504)
-
-		// 	console.error(e);
-		// 	figma.ui.onmessage = msg => {
-
-		// 		createTableCommands(preferences, msg)
-
-		// 	}
-		// 	break block_1
-		// 	// expected output: "Parameter is not a number!"
-		// }
 
 	})
 
@@ -950,6 +870,7 @@ plugma((plugin) => {
 		figma.root.setRelaunchData({ createTable: 'Create a new table' })
 
 
+		// components = copyPaste(components, {}, { include: ['key'] })
 		// TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
 		// This converts the node to an object with the key property copied over
 		for (let [key, value] of Object.entries(components)) {
@@ -977,9 +898,7 @@ plugma((plugin) => {
 		figma.notify('Default components created')
 	})
 
-	plugin.on('create-table', (msg) => {
-		createTable(msg)
-	})
+	plugin.on('create-table', createTable)
 
 	plugin.on('link-component', (msg) => {
 		linkComponent(msg.template, figma.currentPage.selection)
@@ -988,7 +907,7 @@ plugma((plugin) => {
 	// Updates what?
 	plugin.on('update', (msg) => {
 
-		components = updatePluginData(figma.root, 'components', (data) => {
+		updatePluginData(figma.root, 'components', (data) => {
 			if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
 				data.componentsExist = true
 			}
@@ -1011,6 +930,7 @@ plugma((plugin) => {
 	})
 
 	plugin.on('set-components', (msg) => {
+
 		// Update components used by this file
 		updatePluginData(figma.root, 'components', (data) => {
 
@@ -1022,17 +942,6 @@ plugma((plugin) => {
 		})
 
 		figma.closePlugin('Components set')
-
-		// I think maybe I don't have to import the components. I can just import them when they are created.
-
-		// var newPage = figma.createPage()
-		// newPage.name = "Imported Table Components (don't edit)"
-		// // Now I need to create/import the components?
-		// importComponents(getPluginData(figma.root, 'components').current, newPage).then(() => {
-		// 	figma.closePlugin()
-		// })
-
-		// figma.closePlugin('Components added')
 	})
 
 })

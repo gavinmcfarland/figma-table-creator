@@ -1,4 +1,50 @@
 
+import { copyPaste } from '@figlets/helpers'
+
+export function copyPasteStyle(source, target, options: any = {}) {
+
+	exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
+
+	const styleProps = [
+		'opacity',
+		'blendMode',
+		'effects',
+		'effectStyleId',
+		'backgrounds',
+		'backgroundStyleId',
+		'fills',
+		'strokes',
+		'strokeWeight',
+		'strokeMiterLimit',
+		'strokeAlign',
+		'strokeCap',
+		'strokeJoin',
+		'dashPattern',
+		'fillStyleId',
+		'strokeStyleId',
+		'cornerRadius',
+		'cornerSmoothing',
+		'topLeftRadius',
+		'topRightRadius',
+		'bottomLeftRadius',
+		'bottomRightRadius',
+		'paddingLeft',
+		'paddingRight',
+		'paddingTop',
+		'paddingBottom',
+		'itemSpacing',
+		'clipsContent'
+	]
+
+	if (options.include) {
+		options.include = options.include.concat(styleProps)
+	}
+	else {
+		options.include = styleProps
+	}
+
+	return copyPaste(source, target, options)
+}
 
 /**
  * Copy properties from one node to another while avoiding conflicts. When no target node is provided it returns a new object.

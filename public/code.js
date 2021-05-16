@@ -1,247 +1,288 @@
 'use strict';
 
 /**
- * Copy properties from one node to another while avoiding conflicts. When no target node is provided it returns a new object.
- *
- * For example:
- * ```js
- * const rectangle = figma.createRectangle()
- * const frame = figma.createFrame()
- *
- * copyPaste({ rectangle, frame, exclude: ['fills'] })
- * ```
- *
- * This will copy and paste all properties except for `fills` and readonly properties.
- *
- * @param source - Node being copied from
- * @param target - Node being copied to
- * @param include - Props that should be copied
- * @param exclude - Props that shouldn't be copied
+ * Helpers which make it easier to update client storage
  */
-const nodeProps = [
-    'id',
-    'parent',
-    'name',
-    'removed',
-    'visible',
-    'locked',
-    'children',
-    'constraints',
-    'absoluteTransform',
-    'relativeTransform',
-    'x',
-    'y',
-    'rotation',
-    'width',
-    'height',
-    'constrainProportions',
-    'layoutAlign',
-    'layoutGrow',
-    'opacity',
-    'blendMode',
-    'isMask',
-    'effects',
-    'effectStyleId',
-    'expanded',
-    'backgrounds',
-    'backgroundStyleId',
-    'fills',
-    'strokes',
-    'strokeWeight',
-    'strokeMiterLimit',
-    'strokeAlign',
-    'strokeCap',
-    'strokeJoin',
-    'dashPattern',
-    'fillStyleId',
-    'strokeStyleId',
-    'cornerRadius',
-    'cornerSmoothing',
-    'topLeftRadius',
-    'topRightRadius',
-    'bottomLeftRadius',
-    'bottomRightRadius',
-    'exportSettings',
-    'overflowDirection',
-    'numberOfFixedChildren',
-    'overlayPositionType',
-    'overlayBackground',
-    'overlayBackgroundInteraction',
-    'reactions',
-    'description',
-    'remote',
-    'key',
-    'layoutMode',
-    'primaryAxisSizingMode',
-    'counterAxisSizingMode',
-    'primaryAxisAlignItems',
-    'counterAxisAlignItems',
-    'paddingLeft',
-    'paddingRight',
-    'paddingTop',
-    'paddingBottom',
-    'itemSpacing',
-    // 'horizontalPadding',
-    // 'verticalPadding',
-    'layoutGrids',
-    'gridStyleId',
-    'clipsContent',
-    'guides'
-];
-const readonly = [
-    'id',
-    'parent',
-    'removed',
-    'children',
-    'absoluteTransform',
-    'width',
-    'height',
-    'overlayPositionType',
-    'overlayBackground',
-    'overlayBackgroundInteraction',
-    'reactions',
-    'remote',
-    'key',
-    'type'
-];
-const defaults = [
-    'name',
-    'guides',
-    'description',
-    'remote',
-    'key',
-    'reactions',
-    'x',
-    'y',
-    'exportSettings',
-    'expanded',
-    'isMask',
-    'exportSettings',
-    'overflowDirection',
-    'numberOfFixedChildren',
-    'constraints',
-    'relativeTransform'
-];
-function copyPasteProps(source, target, { include, exclude } = {}) {
-    let allowlist = nodeProps.filter(function (el) {
-        return !defaults.concat(readonly).includes(el);
+async function updateClientStorageAsync(key, callback) {
+  var data = await figma.clientStorage.getAsync(key);
+  data = callback(data);
+  await figma.clientStorage.setAsync(key, data); // What should happen if user doesn't return anything in callback?
+
+  if (!data) {
+    data = null;
+  } // node.setPluginData(key, JSON.stringify(data))
+
+
+  return data;
+}
+
+const eventListeners = [];
+
+figma.ui.onmessage = message => {
+  for (let eventListener of eventListeners) {
+    if (message.action === eventListener.action) eventListener.callback(message.data);
+  }
+};
+
+const nodeProps = ['id', 'parent', 'name', 'removed', 'visible', 'locked', 'children', 'constraints', 'absoluteTransform', 'relativeTransform', 'x', 'y', 'rotation', 'width', 'height', 'constrainProportions', 'layoutAlign', 'layoutGrow', 'opacity', 'blendMode', 'isMask', 'effects', 'effectStyleId', 'expanded', 'backgrounds', 'backgroundStyleId', 'fills', 'strokes', 'strokeWeight', 'strokeMiterLimit', 'strokeAlign', 'strokeCap', 'strokeJoin', 'dashPattern', 'fillStyleId', 'strokeStyleId', 'cornerRadius', 'cornerSmoothing', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius', 'exportSettings', 'overflowDirection', 'numberOfFixedChildren', 'overlayPositionType', 'overlayBackground', 'overlayBackgroundInteraction', 'reactions', 'description', 'remote', 'key', 'layoutMode', 'primaryAxisSizingMode', 'counterAxisSizingMode', 'primaryAxisAlignItems', 'counterAxisAlignItems', 'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom', 'itemSpacing', // 'horizontalPadding',
+// 'verticalPadding',
+'layoutGrids', 'gridStyleId', 'clipsContent', 'guides', 'type'];
+const readOnly = ['id', 'parent', 'removed', 'children', 'absoluteTransform', 'width', 'height', 'overlayPositionType', 'overlayBackground', 'overlayBackgroundInteraction', 'reactions', 'remote', 'key', 'type', 'masterComponent', 'mainComponent'];
+//     const obj = {};
+//     if (mixedProps[prop] && node[prop] === figma.mixed) {
+//         for (let prop of mixedProp[prop]) {
+//             obj[prop] = source[prop]
+//         }
+//     } else {
+//         obj[prop] = node[prop]
+//     }
+// }
+
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options, callback: Callback)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback, options: Options)
+
+/**
+* Allows you to copy and paste props between nodes.
+*
+* @param source - The node you want to copy from
+* @param target - The node or object you want to paste to
+* @param args - Either options or a callback.
+* @returns A node or object with the properties copied over
+*/
+function copyPaste(source, target, ...args) {
+  var targetIsEmpty;
+
+  if (target && Object.keys(target).length === 0 && target.constructor === Object) {
+    targetIsEmpty = true;
+  }
+
+  var options;
+  if (typeof args[0] === 'function') args[0];
+  if (typeof args[1] === 'function') args[1];
+  if (typeof args[0] === 'object' && typeof args[0] !== 'function') options = args[0];
+  if (typeof args[0] === 'object' && typeof args[0] !== 'function') options = args[0];
+  if (!options) options = {};
+  const {
+    include,
+    exclude,
+    withoutRelations,
+    removeConflicts
+  } = options; // const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__))
+
+  let allowlist = nodeProps.filter(function (el) {
+    return !readOnly.includes(el);
+  });
+
+  if (include) {
+    // If include supplied, include copy across these properties and their values if they exist
+    allowlist = include.filter(function (el) {
+      return !readOnly.includes(el);
     });
-    if (include) {
-        allowlist = allowlist.concat(include);
+  }
+
+  if (exclude) {
+    // If exclude supplied then don't copy over the values of these properties
+    allowlist = allowlist.filter(function (el) {
+      return !exclude.concat(readOnly).includes(el);
+    });
+  } // target supplied, don't copy over the values of these properties
+
+
+  if (target && !targetIsEmpty) {
+    allowlist = allowlist.filter(function (el) {
+      return !['id', 'type'].includes(el);
+    });
+  }
+
+  var obj = target;
+
+  if (obj.id === undefined) {
+    obj.id = source.id;
+  }
+
+  if (obj.type === undefined) {
+    obj.type = source.type;
+  }
+
+  const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__));
+
+  for (const [key, value] of props) {
+    if (allowlist.includes(key)) {
+      try {
+        if (typeof obj[key] === 'symbol') {
+          obj[key] = 'Mixed';
+        } else {
+          obj[key] = value.get.call(source);
+        }
+      } catch (err) {
+        obj[key] = undefined;
+      }
+    } // Needs building in
+    // if (callback) {
+    //     callback(obj)
+    // }
+    // else {
+    // }
+
+  } // Only applicable to objects because these properties cannot be set on nodes
+
+
+  if (targetIsEmpty) {
+    if (source.parent && !withoutRelations) {
+      obj.parent = {
+        id: source.parent.id,
+        type: source.parent.type
+      };
     }
-    if (exclude) {
-        allowlist = allowlist.filter(function (el) {
-            return !exclude.includes(el);
+  } // Only applicable to objects because these properties cannot be set on nodes
+
+
+  if (targetIsEmpty) {
+    if (source.type === "FRAME" || source.type === "COMPONENT" || source.type === "COMPONENT_SET" || source.type === "PAGE" || source.type === 'GROUP' || source.type === 'INSTANCE' || source.type === 'DOCUMENT' || source.type === 'BOOLEAN_OPERATION') {
+      if (source.children && !withoutRelations) {
+        obj.children = source.children.map(child => copyPaste(child, {}, {
+          withoutRelations
+        }));
+      }
+    }
+
+    if (source.type === "INSTANCE") {
+      if (source.mainComponent && !withoutRelations) {
+        obj.masterComponent = copyPaste(source.mainComponent, {}, {
+          withoutRelations
         });
+      }
     }
-    const val = source;
-    const type = typeof source;
-    if (type === 'undefined' ||
-        type === 'number' ||
-        type === 'string' ||
-        type === 'boolean' ||
-        type === 'symbol' ||
-        source === null) {
-        return val;
+  }
+
+  if (!removeConflicts) {
+    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
+    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
+    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
+    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
+    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+
+    if (obj.textStyleId) {
+      delete obj.fontName;
+      delete obj.fontSize;
+      delete obj.letterSpacing;
+      delete obj.lineHeight;
+      delete obj.paragraphIndent;
+      delete obj.paragraphSpacing;
+      delete obj.textCase;
+      delete obj.textDecoration;
+    } else {
+      delete obj.textStyleId;
     }
-    else if (type === 'object') {
-        if (val instanceof Array) {
-            return val.map(copyPasteProps);
-        }
-        else if (val instanceof Uint8Array) {
-            return new Uint8Array(val);
-        }
-        else {
-            const o = {};
-            for (const key1 in val) {
-                if (target) {
-                    for (const key2 in target) {
-                        if (allowlist.includes(key2)) {
-                            if (key1 === key2) {
-                                o[key1] = copyPasteProps(val[key1]);
-                            }
-                        }
-                    }
-                }
-                else {
-                    o[key1] = copyPasteProps(val[key1]);
-                }
-            }
-            if (target) {
-                !o.fillStyleId && o.fills ? null : delete o.fills;
-                !o.strokeStyleId && o.strokes ? null : delete o.strokes;
-                !o.backgroundStyleId && o.backgrounds ? null : delete o.backgrounds;
-                if (o.cornerRadius !== figma.mixed) {
-                    delete o.topLeftRadius;
-                    delete o.topRightRadius;
-                    delete o.bottomLeftRadius;
-                    delete o.bottomRightRadius;
-                }
-                else {
-                    delete o.cornerRadius;
-                }
-                return target ? Object.assign(target, o) : o;
-            }
-            else {
-                return o;
-            }
-        }
+
+    if (obj.cornerRadius !== figma.mixed) {
+      delete obj.topLeftRadius;
+      delete obj.topRightRadius;
+      delete obj.bottomLeftRadius;
+      delete obj.bottomRightRadius;
+    } else {
+      delete obj.cornerRadius;
     }
-    throw 'unknown';
+  }
+
+  return obj;
+}
+
+/**
+ * Helpers which automatically parse and stringify when you get, set or update plugin data
+ */
+
+/**
+ * 
+ * @param {BaseNode} node A figma node to get data from
+ * @param {string} key  The key under which data is stored 
+ * @returns Plugin Data
+ */
+function getPluginData(node, key) {
+  return JSON.parse(node.getPluginData(key));
+}
+function updatePluginData(node, key, callback) {
+  var data;
+
+  if (node.getPluginData(key)) {
+    data = JSON.parse(node.getPluginData(key));
+  } else {
+    data = null;
+  }
+
+  data = callback(data); // What should happen if user doesn't return anything in callback?
+
+  if (!data) {
+    data = null;
+  }
+
+  node.setPluginData(key, JSON.stringify(data));
+  return data;
+}
+
+/**
+ * Convinient way to delete children of a node
+ * @param {SceneNode & ChildrenMixin } node A node with children
+ */
+function removeChildren(node) {
+  var length = node.children.length;
+
+  if (length > 0) {
+    for (let i = 0; i < length; i++) {
+      node.children[0].remove();
+    }
+  }
+}
+
+function copyPasteStyle(source, target, options = {}) {
+    const styleProps = [
+        'opacity',
+        'blendMode',
+        'effects',
+        'effectStyleId',
+        'backgrounds',
+        'backgroundStyleId',
+        'fills',
+        'strokes',
+        'strokeWeight',
+        'strokeMiterLimit',
+        'strokeAlign',
+        'strokeCap',
+        'strokeJoin',
+        'dashPattern',
+        'fillStyleId',
+        'strokeStyleId',
+        'cornerRadius',
+        'cornerSmoothing',
+        'topLeftRadius',
+        'topRightRadius',
+        'bottomLeftRadius',
+        'bottomRightRadius',
+        'paddingLeft',
+        'paddingRight',
+        'paddingTop',
+        'paddingBottom',
+        'itemSpacing',
+        'clipsContent'
+    ];
+    if (options.include) {
+        options.include = options.include.concat(styleProps);
+    }
+    else {
+        options.include = styleProps;
+    }
+    return copyPaste(source, target, options);
 }
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
-}
-function removeChildren(node) {
-    var length = node.children.length;
-    if (length > 0) {
-        for (let i = 0; i < length; i++) {
-            node.children[0].remove();
-        }
-        // node.children[0].remove()
-    }
 }
 function positionInCenter(node) {
     // Position newly created table in center of viewport
     node.x = figma.viewport.center.x - (node.width / 2);
     node.y = figma.viewport.center.y - (node.height / 2);
-}
-function compareVersion(v1, v2, options) {
-    var lexicographical = options && options.lexicographical, zeroExtend = options && options.zeroExtend, v1parts = v1.split('.'), v2parts = v2.split('.');
-    function isValidPart(x) {
-        return (lexicographical ? /^\d+[A-Za-z]*$/ : /^\d+$/).test(x);
-    }
-    if (!v1parts.every(isValidPart) || !v2parts.every(isValidPart)) {
-        return NaN;
-    }
-    if (zeroExtend) {
-        while (v1parts.length < v2parts.length)
-            v1parts.push("0");
-        while (v2parts.length < v1parts.length)
-            v2parts.push("0");
-    }
-    if (!lexicographical) {
-        v1parts = v1parts.map(Number);
-        v2parts = v2parts.map(Number);
-    }
-    for (var i = 0; i < v1parts.length; ++i) {
-        if (v2parts.length == i) {
-            return 1;
-        }
-        if (v1parts[i] == v2parts[i]) {
-            continue;
-        }
-        else if (v1parts[i] > v2parts[i]) {
-            return 1;
-        }
-        else {
-            return -1;
-        }
-    }
-    if (v1parts.length != v2parts.length) {
-        return -1;
-    }
-    return 0;
 }
 async function changeText(node, text, weight) {
     if (node.fontName === figma.mixed) {
@@ -304,36 +345,6 @@ function findComponentById(id) {
         figma.root.setPluginData("cellComponentState", "deleted");
         return null;
     }
-}
-function getPluginData(node, key) {
-    return JSON.parse(node.getPluginData(key));
-}
-function updatePluginData(node, key, callback) {
-    var data;
-    if (node.getPluginData(key)) {
-        data = JSON.parse(node.getPluginData(key));
-    }
-    else {
-        data = null;
-    }
-    data = callback(data);
-    // What should happen if user doesn't return anything in callback?
-    if (!data) {
-        data = null;
-    }
-    node.setPluginData(key, JSON.stringify(data));
-    return data;
-}
-async function updateClientStorageAsync(key, callback) {
-    var data = await figma.clientStorage.getAsync(key);
-    data = callback(data);
-    await figma.clientStorage.setAsync(key, data);
-    // What should happen if user doesn't return anything in callback?
-    if (!data) {
-        data = null;
-    }
-    // node.setPluginData(key, JSON.stringify(data))
-    return data;
 }
 
 // Load FONTS
@@ -624,6 +635,7 @@ var scripts = {
 	start: "sirv public"
 };
 var devDependencies = {
+	"@figlets/helpers": "^0.0.0-alpha.6",
 	"@rollup/plugin-commonjs": "^17.0.0",
 	"@rollup/plugin-image": "^2.0.6",
 	"@rollup/plugin-json": "^4.1.0",
@@ -635,7 +647,7 @@ var devDependencies = {
 	nanoid: "^3.1.22",
 	plugma: "0.0.0-alpha0.7",
 	postcss: "^8.2.4",
-	"postcss-nested": "^5.0.3",
+	"postcss-nested": "^4.2.3",
 	rollup: "^2.36.2",
 	"rollup-plugin-html-bundle": "0.0.3",
 	"rollup-plugin-livereload": "^2.0.0",
@@ -789,33 +801,6 @@ function plugma(plugin) {
 
 var dist = plugma;
 
-// figma.clientStorage.setAsync('test2', {
-// 	test: "something"
-// }).then(res => console.log(res))
-// figma.clientStorage.getAsync('test2').then((res) => {
-// 	res.test = "something else"
-// 	figma.clientStorage.setAsync('test2', res)
-// })
-// figma.clientStorage.getAsync('test2').then((res) => {
-// 	console.log(res)
-// })
-// let pkg = {
-// 	version: "6.1.0"
-// }
-// if (figma.root.getPluginData("pluginVersion") === "") {
-// 	// If plugin was used before new auto layout tables were supported
-// 	if (figma.root.getPluginData("cellComponentID")) {
-// 		figma.root.setPluginData("pluginVersion", "5.0.0")
-// 		figma.root.setPluginData("upgradedTables", "false")
-// 	}
-// 	// Else if plugin never used
-// 	else {
-// 		figma.root.setPluginData("pluginVersion", pkg.version)
-// 	}
-// }
-// --------
-// TODO: Change preferences to clientStorage
-// TODO: Create seperate store for component settings
 async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
     var cell, cellHeader, rowTemplate, tableTemplate;
     if (getPluginData(figma.root, 'components').componentsRemote == true) {
@@ -838,8 +823,8 @@ async function createNewTable(numberColumns, numberRows, cellWidth, includeHeade
     }
     var table = figma.createFrame();
     var row = figma.createFrame();
-    copyPasteProps(rowTemplate, row, { include: ['name'] });
-    copyPasteProps(tableTemplate, table, { include: ['name'] });
+    copyPasteStyle(rowTemplate, row, { include: ['name'] });
+    copyPasteStyle(tableTemplate, table, { include: ['name'] });
     // Manually set layout mode
     table.layoutMode = "VERTICAL";
     row.layoutMode = "HORIZONTAL";
@@ -1004,15 +989,29 @@ function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentC
         }
     }
 }
-function updateTables() {
-    // Find all tables
-    var pages = figma.root.children;
+async function updateTables() {
+    var _a, _b;
     var tables;
-    var tableTemplateID = getPluginData(figma.root, 'components').current.table.id;
-    var tableTemplate = findComponentById(tableTemplateID);
-    // removeChildren(tableTemplate)
-    var rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id);
-    // removeChildren(rowTemplate)
+    var discardBucket = figma.createFrame();
+    var pages = figma.root.children;
+    var previousCellTemplateID = (_a = getPluginData(figma.root, 'components').previous.cell) === null || _a === void 0 ? void 0 : _a.id;
+    var previousCellHeaderTemplateID = (_b = getPluginData(figma.root, 'components').previous.cellHeader) === null || _b === void 0 ? void 0 : _b.id;
+    // Get the templates
+    // TODO: If component can't be imported need to show error message
+    var cellTemplate, cellHeaderTemplate, rowTemplate, tableTemplate;
+    if (getPluginData(figma.root, 'components').componentsRemote == true) {
+        var components = getPluginData(figma.root, 'components').current;
+        cellTemplate = await figma.importComponentByKeyAsync(components.cell.key);
+        cellHeaderTemplate = await figma.importComponentByKeyAsync(components.cellHeader.key);
+        rowTemplate = await figma.importComponentByKeyAsync(components.row.key);
+        tableTemplate = await figma.importComponentByKeyAsync(components.table.key);
+    }
+    else {
+        cellTemplate = findComponentById(getPluginData(figma.root, 'components').current.cell.id);
+        cellHeaderTemplate = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id);
+        rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id);
+        tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id);
+    }
     // If can't find table and row templates use plain frame
     if (!tableTemplate) {
         tableTemplate = figma.createFrame();
@@ -1020,22 +1019,14 @@ function updateTables() {
     if (!rowTemplate) {
         rowTemplate = figma.createFrame();
     }
-    var cellTemplateID = getPluginData(figma.root, 'components').current.cell.id;
-    var previousCellTemplateID = getPluginData(figma.root, 'components').prevous.cell.id;
-    var cellTemplate = findComponentById(cellTemplateID);
-    var cellHeaderTemplateID = getPluginData(figma.root, 'components').current.cellHeader.id;
-    var previousCellHeaderTemplateID = getPluginData(figma.root, 'components').prevous.cellHeader.id;
-    var cellHeaderTemplate = findComponentById(cellHeaderTemplateID);
-    var discardBucket = figma.createFrame();
     // Look through each page to find tables created with plugin
     for (let i = 0; i < pages.length; i++) {
         tables = pages[i].findAll(node => node.getPluginData("isTable") === "true");
-        // Add && node.id !== tableTemplateID ^^ if don't want it to update linked component
         for (let b = 0; b < tables.length; b++) {
             var table = tables[b];
             // Don't apply if an instance
             if (table.type !== "INSTANCE") {
-                copyPasteProps(tableTemplate, table, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions'] });
+                copyPasteStyle(tableTemplate, table, { include: ['name'] });
                 for (let x = 0; x < table.children.length; x++) {
                     var row = table.children[x];
                     if (row.children && row.getPluginData("isRow") === "true") {
@@ -1080,7 +1071,7 @@ function updateTables() {
                             }
                         }
                         if (row.getPluginData("isRow") === "true" && row.type !== "INSTANCE") {
-                            copyPasteProps(rowTemplate, row, { include: ['name'], exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions'] });
+                            copyPasteStyle(rowTemplate, row, { include: ['name'] });
                         }
                     }
                 }
@@ -1225,19 +1216,13 @@ function restoreComponent(component) {
         figma.notify("Component not found");
     }
 }
-if (compareVersion(figma.root.getPluginData("pluginVersion"), "6.3.0") < 0) {
-    var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"));
-    if (tableTemplate) {
-        tableTemplate.setRelaunchData({ detachTable: 'Detaches table and rows' });
-    }
-}
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
+    console.log(getPluginData(figma.root, 'components').componentsRemote);
     // Does a check to only create a table if a table cell component is already defined
     if (findComponentById(getPluginData(figma.root, 'components').current.cell.id) || getPluginData(figma.root, 'components').componentsRemote) {
         updatePluginData(figma.root, 'components', (data) => {
             data.componentsExist = true;
-            data.upgradedTables = figma.root.getPluginData("upgradedTables");
             return data;
         });
         // Will only let you create a table if less than 50 columns and rows
@@ -1290,7 +1275,8 @@ async function syncComponentsToStorage() {
             var newValue = {
                 id: getPluginData(figma.root, 'documentId'),
                 name: figma.root.name,
-                set: getPluginData(figma.root, 'components').current
+                set: getPluginData(figma.root, 'components').current,
+                published: 'false'
             };
             // Only add to array if unique
             if (!data.some((item) => item.id === newValue.id)) {
@@ -1347,25 +1333,12 @@ dist((plugin) => {
     syncComponentsToStorage().then((res) => {
         console.log(res);
     });
-    // figma.clientStorage.getAsync('components').then((res) => { console.log(res) })
     plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('preferences').then((res) => {
             figma.clientStorage.getAsync('components').then((components) => {
                 ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components }));
             });
         });
-        // try {
-        // 	checkVersion()
-        // } catch (e) {
-        // 	figma.showUI(__uiFiles__.versionLog);
-        // 	figma.ui.resize(268, 504)
-        // 	console.error(e);
-        // 	figma.ui.onmessage = msg => {
-        // 		createTableCommands(preferences, msg)
-        // 	}
-        // 	break block_1
-        // 	// expected output: "Parameter is not a number!"
-        // }
     });
     plugin.command('linkComponents', ({ ui }) => {
         figma.clientStorage.getAsync('components').then((components) => {
@@ -1393,6 +1366,7 @@ dist((plugin) => {
         var components = createDefaultComponents();
         syncComponentsToStorage();
         figma.root.setRelaunchData({ createTable: 'Create a new table' });
+        // components = copyPaste(components, {}, { include: ['key'] })
         // TODO: Need to copy over key from each component. Need refactor copyPasteProps helper.
         // This converts the node to an object with the key property copied over
         for (let [key, value] of Object.entries(components)) {
@@ -1416,15 +1390,13 @@ dist((plugin) => {
         });
         figma.notify('Default components created');
     });
-    plugin.on('create-table', (msg) => {
-        createTable(msg);
-    });
+    plugin.on('create-table', createTable);
     plugin.on('link-component', (msg) => {
         linkComponent(msg.template, figma.currentPage.selection);
     });
     // Updates what?
     plugin.on('update', (msg) => {
-        components = updatePluginData(figma.root, 'components', (data) => {
+        updatePluginData(figma.root, 'components', (data) => {
             var _a, _b;
             if (findComponentById((_b = (_a = getPluginData(figma.root, 'components').current) === null || _a === void 0 ? void 0 : _a.cell) === null || _b === void 0 ? void 0 : _b.id)) {
                 data.componentsExist = true;
@@ -1450,13 +1422,5 @@ dist((plugin) => {
             return data;
         });
         figma.closePlugin('Components set');
-        // I think maybe I don't have to import the components. I can just import them when they are created.
-        // var newPage = figma.createPage()
-        // newPage.name = "Imported Table Components (don't edit)"
-        // // Now I need to create/import the components?
-        // importComponents(getPluginData(figma.root, 'components').current, newPage).then(() => {
-        // 	figma.closePlugin()
-        // })
-        // figma.closePlugin('Components added')
     });
 });
