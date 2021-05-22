@@ -7,9 +7,9 @@ Table Creator uses a set of components to create tables from. These set of compo
 
 ## Data storage
 
-### User Preferences
+### User Preferences `client`
 
-The user's preferences are stored on the client. This avoids any preferences which may conflict with other users.
+The user's preferences are stored on the `client`. This avoids any preferences which may conflict with other users.
 
 ```js
 preferences: {
@@ -24,39 +24,59 @@ preferences: {
 }
 ```
 
-### Template List
+### Template List `document`
 
-A list of templates are stored on both the client and the document. This is so the user can select a new default template create tables from.
+A list of templates are stored on both the `client` and the `document`. This is so the user can select a new default template create tables from.
 
 ```js
 templates: [
     {
         id: {},
-        name: {},
-        components: {},
+        name: String,
+        components: {
+            cell: { key: String, id: String },
+            headerCell:  { key: String, id: String },
+            row:  { key: String, id: String },
+            table:  { key: String, id: String },
+        },
         file: {
-            name: String
+            name: String,
         }
     }
 ]
 ```
 
-### Template Details
+### Template Details `node`
 
-Each component in a template holds details about the components used to create the table that it is part of. This way when the table is copied to another file it can be used to import the components which are part of the template used to create the table.
+Each component in a template holds details about the current components they are linked to and the previous components they might have been linked to. When a table is copied to another file these details can be used to import the components that are part of the template to create the table.
 
 ```js
 template: {
-    id: {},
-    name: String,
-    components: {
-        cell: { key: String, id: String },
-        headerCell:  { key: String, id: String },
-        row:  { key: String, id: String },
-        table:  { key: String, id: String },
-    },
-    file: {
+    curent: {
+        id: {},
         name: String,
+        components: {
+            cell: { key: String, id: String },
+            headerCell:  { key: String, id: String },
+            row:  { key: String, id: String },
+            table:  { key: String, id: String },
+        },
+        file: {
+            name: String,
+        }
+    },
+    previous: {
+        id: {},
+        name: String,
+        components: {
+            cell: { key: String, id: String },
+            headerCell:  { key: String, id: String },
+            row:  { key: String, id: String },
+            table:  { key: String, id: String },
+        },
+        file: {
+            name: String,
+        }
     }
 }
 ```
