@@ -40,6 +40,7 @@
 	* {
 		box-sizing: border-box;
 		padding: 0;
+		margin: 0;
 	}
 
 	body {
@@ -73,6 +74,10 @@
 		-moz-appearance: textfield;
 	}
 
+	ul {
+		list-style: none;
+	}
+
 	:root {
 		--color-blue: #18a0fb;
 		--color-black-10: rgba(0, 0, 0, 0.1);
@@ -81,6 +86,7 @@
 		--color-black-100: #000;
 
 		--size-0: 0px;
+		--size-25: 2px;
 		--size-50: 4px;
 		--size-75: 6px;
 		--size-100: 8px;
@@ -109,6 +115,7 @@
 		--border-radius-1000: 80px;
 
 		--margin-0: var(--size-0);
+		--margin-25: var(--size-25);
 		--margin-50: var(--size-50);
 		--margin-75: var(--size-75);
 		--margin-100: var(--size-100);

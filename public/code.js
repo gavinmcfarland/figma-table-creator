@@ -1275,7 +1275,7 @@ function createTable(msg) {
 }
 async function syncComponentsToStorage() {
     // TODO: Find a way to check the files these components link to exist and if not remove them from storage
-    return updateClientStorageAsync('components', (data) => {
+    return updateClientStorageAsync('templates', (data) => {
         var _a, _b;
         data = data || [];
         if (findComponentById((_b = (_a = getPluginData(figma.root, 'components').current) === null || _a === void 0 ? void 0 : _a.cell) === null || _b === void 0 ? void 0 : _b.id)) {
@@ -1346,7 +1346,7 @@ dist((plugin) => {
     });
     plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('preferences').then((res) => {
-            figma.clientStorage.getAsync('components').then((components) => {
+            figma.clientStorage.getAsync('templates').then((components) => {
                 ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components }));
             });
         });
@@ -1357,7 +1357,7 @@ dist((plugin) => {
         }
     });
     plugin.command('linkComponents', ({ ui }) => {
-        figma.clientStorage.getAsync('components').then((components) => {
+        figma.clientStorage.getAsync('templates').then((components) => {
             ui.show({ type: "settings", components });
         });
     });
@@ -1387,18 +1387,6 @@ dist((plugin) => {
         for (let [key, value] of Object.entries(components)) {
             componentsAsObject[key] = copyPaste(value, {}, { include: ['key', 'id', 'type'] });
         }
-        // // This converts the node to an object with the key property copied over
-        // var componentsAsObject = {}
-        // for (let [key, value] of Object.entries(components)) {
-        // 	const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
-        // 	const obj: any = { id: components[key].id, type: components[key].type }
-        // 	for (const [name, prop] of props) {
-        // 		if (name === "key") {
-        // 			obj[name] = prop.get.call(components[key])
-        // 		}
-        // 	}
-        // 	componentsAsObject[key] = obj
-        // }
         // Add plugin data to the document
         updatePluginData(figma.root, 'components', (data) => {
             data.current = Object.assign(data.current, componentsAsObject);
@@ -1449,6 +1437,6 @@ dist((plugin) => {
             data.componentsRemote = true;
             return data;
         });
-        figma.closePlugin('Components set');
+        figma.notify('Components set');
     });
 });

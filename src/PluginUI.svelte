@@ -95,7 +95,7 @@
 		chooseComponentsPageActive = true
 	}
 
-	function setComponent(components) {
+	function setComponents(components) {
 
 		// If no components passed tell main code to use selected
 		if(!components){
@@ -117,8 +117,30 @@
 <svelte:window on:message={onLoad} />
 
 {#if createTablePageActive}
-	<div class="container" style="padding: var(--size-200)">
-		<div class="SectionTitle">Table</div>
+	<div class="container" style="padding: var(--size-100) var(--size-200)">
+		<div>
+			<div class="SelectWrapper">
+				<div class="Select" on:click={(event) => {
+					event.currentTarget.classList.toggle("show")
+				}}>
+					<div class="label">
+						<span class="icon" icon="template" /><span class="text-bold">Table</span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
+					</div>
+					<div class="menu">
+						<div class="Title">
+							<p>Choose template</p>
+						</div>
+						<ul class="list">
+					{#each data.components as component}
+						<li on:click={() => setComponents(component.set)}>{component.name}</li>
+					{/each}
+						</ul>
+				</div>
+				</div>
+			</div>
+
+
+		</div>
 		<div class="field-group">
 			<Field id="columnCount" label="Columns" type="number" step="1" min="1" max="50" value={columnCount} />
 			<Field id="rowCount" label="Rows" type="number" step="1" min="1" max="50" value={rowCount} />
@@ -128,7 +150,7 @@
 
 		<Matrix {columnCount} {rowCount} grid={[8, 8]} />
 
-		<div class="SectionTitle">Cell</div>
+		<div class="text-bold SectionTitle">Cell</div>
 		<div style="display: flex; gap: var(--size-200);">
 			<Field id="cellWidth" label="Width" type="number" step="1" min="1" max="1000" value={cellWidth} />
 
@@ -168,10 +190,10 @@
 	<div class="container" style="padding: var(--size-200)">
 		<p>Choose components</p>
 		{#each data.components as component}
-			<span on:click={() => setComponent(component.set)}><p>{component.name}</p></span>
+			<span on:click={() => setComponents(component.set)}><p>{component.name}</p></span>
 		{/each}
 
-		<div><span on:click={() => setComponent()}><Button>Use Selected</Button></span></div>
+		<div><span on:click={() => setComponents()}><Button>Use Selected</Button></span></div>
 	</div>
 {/if}
 
@@ -197,8 +219,12 @@
 	}
 
 	.SectionTitle {
-		font-weight: 600;
 		line-height: var(--size-400);
+	}
+
+	.text-bold {
+		font-weight: 600;
+		color: rgb(51, 51, 51);
 	}
 
 	.RadioButtons {
@@ -250,6 +276,8 @@
 		flex-grow: 0;
 	}
 
+
+
 	/* .RadioButtons:hover::before {
 		content: "";
 		width: calc(100% - 4px);
@@ -274,4 +302,150 @@
 		border-top: 1px solid var(--color-black-10);
 		padding: var(--size-100);
 	}
+
+	.SelectWrapper {
+		padding-top: 2px;
+    	padding-bottom: 2px;
+	}
+
+
+
+	.Select {
+		line-height: 1;
+		/* display: flex; */
+		border: 2px solid transparent;
+		place-items: center;
+		height: 28px;
+		margin-left: calc(
+			var(--fgp-gap_item_column, 0px) + (-1 * var(--margin-100))
+		);
+		margin-right: calc((-1 * var(--margin-100)));
+		padding-inline: calc(var(--padding-100) - 2px);
+		border-radius: var(--border-radius-25);
+		position: relative;
+	}
+
+	.Select:hover {
+		border-color: var(--color-black-10);
+		border-width: 1px;
+		padding-inline: calc(var(--padding-100) - 1px);
+	}
+
+	.Select .label {
+		display: flex; place-items: center;
+	}
+
+	.Select:hover .label {
+		padding-top: 1px;
+	}
+
+	.Select .icon:first-child {
+		display: inline-block;
+		width: 24px;
+		height: 24px;
+		/* background-color: pink; */
+		margin-left: calc((-1 * var(--margin-50)));
+		margin-right: var(--margin-25);
+	}
+
+	.Select .icon::before {
+		content: "";
+		height: 100%;
+		display: block;
+		width: 100%;
+		background-repeat: no-repeat;
+		background-position: center;
+	}
+
+	.Select.show {
+		border-color: var(--color-black-10);
+		border-width: 1px;
+		padding-inline: calc(var(--padding-100) - 1px);
+	}
+
+	.Select.show .label {
+		padding-top: 1px;
+	}
+
+	.Select [icon="template"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.82812 7.99988L2.164 7.664L3.539 6.289L3.87488 5.95312L4.54663 6.62488L4.21075 6.96075L3.17163 7.99988L4.21075 9.039L4.54663 9.37488L3.87488 10.0466L3.539 9.71075L2.164 8.33575L1.82812 7.99988ZM6.62488 11.4531L6.96075 11.789L7.99988 12.8281L9.039 11.789L9.37488 11.4531L10.0466 12.1249L9.71075 12.4608L8.33575 13.8358L7.99988 14.1716L7.664 13.8358L6.289 12.4608L5.95312 12.1249L6.62488 11.4531ZM5.95312 3.87488L6.289 3.539L7.664 2.164L7.99988 1.82812L8.33575 2.164L9.71075 3.539L10.0466 3.87488L9.37488 4.54663L9.039 4.21075L7.99988 3.17163L6.96075 4.21075L6.62488 4.54663L5.95312 3.87488ZM11.4531 9.37488L11.789 9.039L12.8281 7.99988L11.789 6.96075L11.4531 6.62488L12.1249 5.95312L12.4608 6.289L13.8358 7.664L14.1716 7.99988L13.8358 8.33575L12.4608 9.71075L12.1249 10.0466L11.4531 9.37488Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	.Select [icon="chevron-down"] {
+		width: 8px;
+		height: 8px;
+	}
+
+	.Select [icon="chevron-down"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='8' height='8' viewBox='0 0 8 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M3.64648 6.35359L0.646484 3.35359L1.35359 2.64648L4.00004 5.29293L6.64648 2.64648L7.35359 3.35359L4.35359 6.35359L4.00004 6.70714L3.64648 6.35359Z' fill='black' fill-opacity='0.3'/%3E%3C/svg%3E%0A");
+	}
+
+	.Select:hover .label :last-child {
+		margin-left: auto !important;
+	}
+
+	.menu {
+		display: none;
+		position: absolute;
+
+		background: #FFFFFF;
+		/* border: 0.5px solid rgba(0, 0, 0, 0.1); */
+		/* box-shadow: 0px 3px 14px rgba(0, 0, 0, 0.1); */
+		box-shadow: 0 2px 14px rgba(0,0,0,.15), 0 0 0 0.5px rgba(0,0,0,.2);
+		border-radius: 2px;
+		/* top: 0; */
+		padding: var(--size-200);
+		left: 4px;
+		right: 4px;
+		width: auto;
+		margin-top: 2px;
+	}
+
+	.menu > * {
+		display: block;
+		padding: var(--margin-100) var(--margin-200);
+		margin-inline: calc(-1 * var(--margin-200));
+
+		place-items: center;
+	}
+
+	.menu > :first-child {
+		margin-top: calc(-1 * var(--margin-200));
+	}
+
+	.menu > :last-child {
+		margin-bottom: calc(-1 * var(--margin-200));
+	}
+
+	.menu ul {
+		padding: 0;
+		/* margin: 0; */
+		max-height: calc(4.5 * var(--size-400));
+		overflow: scroll;
+	}
+
+	.menu ul > * {
+		display: flex;
+		padding: var(--margin-100) var(--margin-200);
+		min-height: 32px;
+		place-items: center;
+	}
+
+	.show .menu {
+		display: block;
+	}
+
+	.Title {
+		padding: var(--margin-100) var(--margin-200);
+		border-bottom: 1px solid var(--color-black-10);
+		min-height: 40px;
+		display: flex;
+		place-items: center;
+	}
+
+	.Title > p {
+		margin: 0;
+	}
+
+
 </style>

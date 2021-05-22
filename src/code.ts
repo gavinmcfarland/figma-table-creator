@@ -719,7 +719,7 @@ async function syncComponentsToStorage() {
 
 	// TODO: Find a way to check the files these components link to exist and if not remove them from storage
 
-	return updateClientStorageAsync('components', (data) => {
+	return updateClientStorageAsync('templates', (data) => {
 		data = data || []
 
 
@@ -834,7 +834,7 @@ plugma((plugin) => {
 	plugin.command('createTable', ({ ui, data }) => {
 
 		figma.clientStorage.getAsync('preferences').then((res) => {
-			figma.clientStorage.getAsync('components').then((components) => {
+			figma.clientStorage.getAsync('templates').then((components) => {
 				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components })
 			})
 		})
@@ -848,7 +848,7 @@ plugma((plugin) => {
 	})
 
 	plugin.command('linkComponents', ({ ui }) => {
-		figma.clientStorage.getAsync('components').then((components) => {
+		figma.clientStorage.getAsync('templates').then((components) => {
 			ui.show({ type: "settings", components })
 		})
 	})
@@ -888,21 +888,6 @@ plugma((plugin) => {
 		for (let [key, value] of Object.entries(components)) {
 			componentsAsObject[key] = copyPaste(value, {}, { include: ['key', 'id', 'type'] })
 		}
-
-		// // This converts the node to an object with the key property copied over
-		// var componentsAsObject = {}
-
-		// for (let [key, value] of Object.entries(components)) {
-		// 	const props = Object.entries(Object.getOwnPropertyDescriptors(components[key].__proto__))
-		// 	const obj: any = { id: components[key].id, type: components[key].type }
-		// 	for (const [name, prop] of props) {
-		// 		if (name === "key") {
-		// 			obj[name] = prop.get.call(components[key])
-		// 		}
-		// 	}
-		// 	componentsAsObject[key] = obj
-		// }
-
 
 		// Add plugin data to the document
 		updatePluginData(figma.root, 'components', (data) => {
@@ -970,7 +955,7 @@ plugma((plugin) => {
 			return data
 		})
 
-		figma.closePlugin('Components set')
+		figma.notify('Components set')
 	})
 
 })
