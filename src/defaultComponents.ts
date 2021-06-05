@@ -1,4 +1,5 @@
 import { ungroupNode } from "./helpers"
+import { setPluginData, updatePluginData } from '@figlets/helpers'
 
 // Load FONTS
 async function loadFonts() {
@@ -275,6 +276,13 @@ export function createDefaultComponents() {
 	component_4_75.description = ""
 
 	component_4_75.setPluginData("isTable", "true")
+	setPluginData(component_4_75, "template", {
+		name: component_4_75.name,
+		component: {
+			key: component_4_75.key,
+			id: component_4_75.id
+		}
+	})
 
 	tempContainer.appendChild(component_4_75)
 	obj.table = component_4_75

@@ -3,7 +3,7 @@
 
 ## Table creation
 
-Table Creator uses a set of components to create tables from. These set of components are refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
+Table Creator uses a component create tables from. This component is refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
 
 ## Data storage
 
@@ -48,35 +48,15 @@ templates: [
 
 ### Template Details `node`
 
-Each component in a template holds details about the current components they are linked to and the previous components they might have been linked to. When a table is copied to another file these details can be used to import the components that are part of the template to create the table.
+Each table contains a reference to the template used to create it. When a table is copied to another file these details can be used to import the component that's used to create the table.
 
 ```js
 template: {
-    curent: {
-        id: {},
-        name: String,
-        components: {
-            cell: { key: String, id: String },
-            headerCell:  { key: String, id: String },
-            row:  { key: String, id: String },
-            table:  { key: String, id: String },
-        },
-        file: {
-            name: String,
-        }
-    },
-    previous: {
-        id: {},
-        name: String,
-        components: {
-            cell: { key: String, id: String },
-            headerCell:  { key: String, id: String },
-            row:  { key: String, id: String },
-            table:  { key: String, id: String },
-        },
-        file: {
-            name: String,
-        }
+    file: String,
+    name: String,
+    component: {
+        id: String,
+        key: String,
     }
 }
 ```

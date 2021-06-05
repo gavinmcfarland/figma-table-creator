@@ -26,8 +26,25 @@
         "separator": true
     },
     {
-      "name": "View Node Data",
-      "command": "viewNodeData"
+      "name": "Create Table Instance",
+      "command": "createTableInstance"
+    },
+    {
+        "name": "Mark as",
+        "menu": [
+            {
+                "name": "Table",
+                "command": "markTable"
+            },
+            {
+                "name": "Cell",
+                "command": "markTableData"
+            },
+            {
+                "name": "Row",
+                "command": "markTableRow"
+            }
+        ]
     },
     {
       "name": "Settings",

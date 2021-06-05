@@ -201,6 +201,16 @@ function copyPaste(source, target, ...args) {
 /**
  * Helpers which automatically parse and stringify when you get, set or update plugin data
  */
+/**
+ * 
+ * @param {BaseNode} node  A figma node to set data on
+ * @param {String} key A key to store data under
+ * @param {any} data Data to be stoed
+ */
+
+function setPluginData(node, key, data) {
+  node.setPluginData(key, JSON.stringify(data));
+}
 function updatePluginData(node, key, callback) {
   var data;
 
@@ -598,6 +608,13 @@ function createDefaultComponents() {
     component_4_75.counterAxisSizingMode = "AUTO";
     component_4_75.description = "";
     component_4_75.setPluginData("isTable", "true");
+    setPluginData(component_4_75, "template", {
+        name: component_4_75.name,
+        component: {
+            key: component_4_75.key,
+            id: component_4_75.id
+        }
+    });
     tempContainer.appendChild(component_4_75);
     obj.table = component_4_75;
     // Create INSTANCE
@@ -812,6 +829,77 @@ console.log(getPluginData(figma.root, 'components'));
 getClientStorageAsync('components').then(res => {
     console.log(res);
 });
+async function createTableInstance(template, preferences) {
+    // Find table component
+    var component = figma.getNodeById(template.component.id);
+    var table = component.createInstance().detachInstance();
+    // Find templates and hoist them so that don't get deleted when removing other children of table
+    var rowTemplate = table.findOne(node => node.getPluginData('isRow')).detachInstance();
+    figma.currentPage.appendChild(rowTemplate);
+    var cellTemplate = rowTemplate.findOne(node => node.getPluginData('isCell'));
+    var cellComponent = rowTemplate.findOne(node => node.getPluginData('isCell')).mainComponent;
+    figma.currentPage.appendChild(cellTemplate);
+    var headerCellComponent = cellTemplate.mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
+    // if (headerCellTemplate) figma.currentPage.appendChild(headerCellTemplate)
+    table.findAll(node => {
+        if (node.getPluginData('isRow'))
+            node.remove();
+    });
+    rowTemplate.findAll(node => {
+        if (node.getPluginData('isCell'))
+            node.remove();
+    });
+    // Adds children back to template
+    table.insertChild(0, rowTemplate);
+    rowTemplate.insertChild(0, cellTemplate);
+    if (preferences.usingLocalComponent) {
+        // Turn first row (rowTemplate) into component
+        var rowTemplateComponent = figma.createComponent();
+        copyPaste(rowTemplate, rowTemplateComponent);
+        rowTemplateComponent.insertChild(0, cellTemplate);
+        var oldRowTemplate = rowTemplate;
+        rowTemplate = rowTemplateComponent;
+        table.appendChild(rowTemplate);
+        oldRowTemplate.remove();
+    }
+    for (var i = 1; i < preferences.columnCount; i++) {
+        var duplicateCell = cellTemplate.clone();
+        duplicateCell.primaryAxisAlignItems = preferences.cellAlignment;
+        rowTemplate.appendChild(duplicateCell);
+    }
+    for (var i = 1; i < preferences.rowCount; i++) {
+        var duplicateRow;
+        if (rowTemplate.type === "COMPONENT") {
+            duplicateRow = rowTemplate.createInstance();
+        }
+        else {
+            duplicateRow = rowTemplate.clone();
+        }
+        table.appendChild(duplicateRow);
+    }
+    if (preferences.includeHeader && headerCellComponent) {
+        for (var i = 0; i < rowTemplate.children.length; i++) {
+            var child = rowTemplate.children[i];
+            child.swapComponent(headerCellComponent);
+        }
+    }
+    else if (preferences.includeHeader && !headerCellComponent) {
+        figma.notify("No Header Cell component found");
+        return;
+    }
+    if (preferences.usingLocalComponent) {
+        for (let i = 0; i < table.children.length; i++) {
+            var row = table.children[i];
+            if (i > 0) {
+                for (let i = 0; i < row.children.length; i++) {
+                    var cell = row.children[i];
+                    cell.mainComponent = cellComponent;
+                }
+            }
+        }
+    }
+    return table;
+}
 async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
     var cell, cellHeader, rowTemplate, tableTemplate;
     if (getPluginData(figma.root, 'components').componentsRemote == true) {
@@ -1350,6 +1438,50 @@ dist((plugin) => {
                 ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components }));
             });
         });
+    });
+    plugin.command('createTableInstance', () => {
+        var selection = figma.currentPage.selection;
+        var preferences = {
+            rowCount: 4,
+            columnCount: 4,
+            cellWidth: 100,
+            includeHeader: false,
+            usingLocalComponent: true,
+            cellAlignment: "MAX"
+        };
+        createTableInstance(getPluginData(selection[0], 'template'), preferences).then(() => {
+            figma.closePlugin("Table created");
+        });
+    });
+    plugin.command('markTable', () => {
+        var selection = figma.currentPage.selection;
+        if (selection.length === 1) {
+            setPluginData(selection[0], "isTable", true);
+            if (selection[0].type === "COMPONENT") {
+                setPluginData(selection[0], "template", {
+                    name: selection[0].name,
+                    component: {
+                        key: selection[0].key,
+                        id: selection[0].id
+                    }
+                });
+            }
+        }
+        figma.closePlugin();
+    });
+    plugin.command('markTableData', () => {
+        var selection = figma.currentPage.selection;
+        if (selection.length === 1) {
+            setPluginData(selection[0], "isCell", true);
+        }
+        figma.closePlugin();
+    });
+    plugin.command('markTableRow', () => {
+        var selection = figma.currentPage.selection;
+        if (selection.length === 1) {
+            setPluginData(selection[0], "isRow", true);
+        }
+        figma.closePlugin();
     });
     plugin.command('viewNodeData', () => {
         if (figma.currentPage.selection[0]) {
