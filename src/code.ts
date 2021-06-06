@@ -5,11 +5,14 @@ import { createDefaultComponents } from './defaultComponents'
 import plugma from 'plugma'
 
 
-console.log(getPluginData(figma.root, 'components'))
+// getClientStorageAsync('components').then(res => {
+// 	console.log(res)
+// })
 
-getClientStorageAsync('components').then(res => {
-	console.log(res)
-})
+function genRandomId() {
+	var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
+	return randPassword
+}
 
 async function createTableInstance(template, preferences) {
 
@@ -697,7 +700,7 @@ function linkComponent(template, selection) {
 			}
 
 			// Save component ids which are used to create tables to preferences
-			updateClientStorageAsync('preferences', (data) => {
+			updateClientStorageAsync('userPreferences', (data) => {
 				data.components[template] = selection[0].id
 
 				return data
@@ -742,7 +745,7 @@ function restoreComponent(component) {
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
 
-	console.log(getPluginData(figma.root, 'components').componentsRemote)
+
 	// Does a check to only create a table if a table cell component is already defined
 	if (findComponentById(getPluginData(figma.root, 'components').current.cell.id) || getPluginData(figma.root, 'components').componentsRemote) {
 
@@ -755,7 +758,7 @@ function createTable(msg) {
 		if (msg.columnCount < 51 && msg.rowCount < 51) {
 
 			// Will input from user and create table node
-			createNewTable(msg.columnCount, msg.rowCount, msg.cellWidth, msg.includeHeader, msg.columnResizing, msg.cellAlignment).then((table) => {
+			createTableInstance(getPluginData(figma.currentPage.selection[0], 'template'), msg).then((table) => {
 				// If table successfully created?
 				if (table) {
 
@@ -873,6 +876,46 @@ function updateNodeComponentsData(node, components) {
 	})
 }
 
+function addTemplate() {
+	// Add file to list of files used by the document
+	updatePluginData(figma.root, 'files', (data) => {
+
+		data = data || []
+
+		// First get a list of files currently stored on the document
+
+		// If new file then add to the list
+		var newValue = {
+			id: getPluginData(figma.root, 'fileId'),
+			name: figma.root.name,
+			templates: []
+		}
+
+		// Only add file to array if unique
+		if (!data.some((item) => item.id === newValue.id)) {
+			data.push(newValue)
+		}
+
+		// Add template to file in list
+		data.find((file) => {
+			if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
+				var newTemplateEntry = {
+					id: getPluginData(figma.currentPage.selection[0], 'template').id,
+					name: getPluginData(figma.currentPage.selection[0], 'template').name,
+					component: getPluginData(figma.currentPage.selection[0], 'template').component
+				}
+
+				// Only add new template if unique
+				if (!file.templates.some((template) => template.id === newTemplateEntry.id)) {
+					file.templates.push(newTemplateEntry)
+				}
+			}
+		})
+
+		return data
+	})
+}
+
 plugma((plugin) => {
 
 	plugin.ui = {
@@ -892,7 +935,7 @@ plugma((plugin) => {
 	})
 
 	// Set default preferences
-	updateClientStorageAsync('preferences', (data) => {
+	updateClientStorageAsync('userPreferences', (data) => {
 		data = data || {
 			columnCount: 4,
 			rowCount: 4,
@@ -907,9 +950,8 @@ plugma((plugin) => {
 	})
 
 	// Set random id on  document
-	updatePluginData(figma.root, 'documentId', (data) => {
-		var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
-		data = data || randPassword
+	updatePluginData(figma.root, 'fileId', (data) => {
+		data = data || genRandomId()
 		return data
 	})
 
@@ -920,7 +962,7 @@ plugma((plugin) => {
 
 	plugin.command('createTable', ({ ui, data }) => {
 
-		figma.clientStorage.getAsync('preferences').then((res) => {
+		figma.clientStorage.getAsync('userPreferences').then((res) => {
 			figma.clientStorage.getAsync('templates').then((components) => {
 				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components })
 			})
@@ -930,15 +972,6 @@ plugma((plugin) => {
 
 	plugin.command('createTableInstance', () => {
 		var selection = figma.currentPage.selection
-
-		var preferences = {
-			rowCount: 4,
-			columnCount: 4,
-			cellWidth: 100,
-			includeHeader: false,
-			usingLocalComponent: true,
-			cellAlignment: "MAX"
-		}
 
 		createTableInstance(getPluginData(selection[0], 'template'), preferences).then(() => {
 			figma.closePlugin("Table created")
@@ -953,15 +986,26 @@ plugma((plugin) => {
 			setPluginData(selection[0], "isTable", true)
 
 			if (selection[0].type === "COMPONENT") {
-				setPluginData(selection[0], "template", {
-					name: selection[0].name,
-					component: {
-						key: selection[0].key,
-						id: selection[0].id
+				updatePluginData(selection[0], "template", (data) => {
+					data = data || {
+						file: {
+							id: getPluginData(figma.root, 'fileId'),
+							name: figma.root.name
+						},
+						name: selection[0].name,
+						id: genRandomId(),
+						component: {
+							key: selection[0].key,
+							id: selection[0].id
+						}
 					}
+
+					return data
 				})
 			}
 		}
+
+		addTemplate()
 
 		figma.closePlugin()
 	})
@@ -977,6 +1021,7 @@ plugma((plugin) => {
 	})
 
 	plugin.command('markTableRow', () => {
+
 		var selection = figma.currentPage.selection
 
 		if (selection.length === 1) {
@@ -1104,3 +1149,6 @@ plugma((plugin) => {
 	})
 
 })
+
+
+console.log(getPluginData(figma.root, 'files'))
