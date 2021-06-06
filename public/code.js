@@ -3,6 +3,9 @@
 /**
  * Helpers which make it easier to update client storage
  */
+async function getClientStorageAsync(key) {
+  return await figma.clientStorage.getAsync(key);
+}
 async function updateClientStorageAsync(key, callback) {
   var data = await figma.clientStorage.getAsync(key);
   data = callback(data);
@@ -1149,16 +1152,12 @@ function restoreComponent(component) {
 }
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
-    // Does a check to only create a table if a table cell component is already defined
-    if (findComponentById(getPluginData(figma.root, 'components').current.cell.id) || getPluginData(figma.root, 'components').componentsRemote) {
-        updatePluginData(figma.root, 'components', (data) => {
-            data.componentsExist = true;
-            return data;
-        });
+    getClientStorageAsync('userPreferences').then((res) => {
+        console.log(res.defaultTemplate);
         // Will only let you create a table if less than 50 columns and rows
         if (msg.columnCount < 51 && msg.rowCount < 51) {
             // Will input from user and create table node
-            createTableInstance(getPluginData(figma.currentPage.selection[0], 'template'), msg).then((table) => {
+            createTableInstance(res.defaultTemplate, msg).then((table) => {
                 // If table successfully created?
                 if (table) {
                     // Positions the table in the center of the viewport
@@ -1183,14 +1182,7 @@ function createTable(msg) {
         else {
             figma.notify("Plugin limited to max of 50 columns and rows");
         }
-    }
-    else {
-        updatePluginData(figma.root, 'components', (data) => {
-            data.componentsExist = false;
-            return data;
-        });
-        figma.notify("Cannot find Cell component");
-    }
+    });
 }
 async function syncComponentsToStorage() {
     // TODO: Find a way to check the files these components link to exist and if not remove them from storage
@@ -1297,7 +1289,7 @@ dist((plugin) => {
     plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('userPreferences').then((res) => {
             figma.clientStorage.getAsync('templates').then((components) => {
-                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components }));
+                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components, files: getPluginData(figma.root, 'files') }));
             });
         });
     });
@@ -1328,8 +1320,8 @@ dist((plugin) => {
                     return data;
                 });
             }
+            addTemplate();
         }
-        addTemplate();
         figma.closePlugin();
     });
     plugin.command('markTableData', () => {
@@ -1433,6 +1425,13 @@ dist((plugin) => {
             return data;
         });
         figma.notify('Components set');
+    });
+    plugin.on('set-default-template', (msg) => {
+        updateClientStorageAsync('userPreferences', (data) => {
+            data.defaultTemplate = msg.template;
+            return data;
+        });
+        figma.notify(`${msg.template.name} set to default`);
     });
 });
 console.log(getPluginData(figma.root, 'files'));

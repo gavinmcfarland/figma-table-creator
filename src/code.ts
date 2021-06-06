@@ -745,64 +745,51 @@ function restoreComponent(component) {
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
 
+	getClientStorageAsync('userPreferences').then((res) => {
 
-	// Does a check to only create a table if a table cell component is already defined
-	if (findComponentById(getPluginData(figma.root, 'components').current.cell.id) || getPluginData(figma.root, 'components').componentsRemote) {
+			console.log(res.defaultTemplate)
 
-		updatePluginData(figma.root, 'components', (data) => {
-			data.componentsExist = true
-			return data
-		})
+			// Will only let you create a table if less than 50 columns and rows
+			if (msg.columnCount < 51 && msg.rowCount < 51) {
 
-		// Will only let you create a table if less than 50 columns and rows
-		if (msg.columnCount < 51 && msg.rowCount < 51) {
+				// Will input from user and create table node
+				createTableInstance(res.defaultTemplate, msg).then((table) => {
+					// If table successfully created?
+					if (table) {
 
-			// Will input from user and create table node
-			createTableInstance(getPluginData(figma.currentPage.selection[0], 'template'), msg).then((table) => {
-				// If table successfully created?
-				if (table) {
+						// Positions the table in the center of the viewport
+						positionInCenter(table)
 
-					// Positions the table in the center of the viewport
-					positionInCenter(table)
+						// Makes table the users current selection
+						figma.currentPage.selection = [table];
 
-					// Makes table the users current selection
-					figma.currentPage.selection = [table];
+						// This updates the plugin preferences
+						updateClientStorageAsync('preferences', (data) => {
+							data.columnCount = msg.columnCount
+							data.rowCount = msg.rowCount
+							data.cellWidth = msg.cellWidth
+							data.remember = msg.remember
+							data.includeHeader = msg.includeHeader
+							data.cellAlignment = msg.cellAlignment
 
-					// This updates the plugin preferences
-					updateClientStorageAsync('preferences', (data) => {
-						data.columnCount = msg.columnCount
-						data.rowCount = msg.rowCount
-						data.cellWidth = msg.cellWidth
-						data.remember = msg.remember
-						data.includeHeader = msg.includeHeader
-						data.cellAlignment = msg.cellAlignment
+							return data
+						}).then(() => {
+							figma.closePlugin();
+						})
 
-						return data
-					}).then(() => {
-						figma.closePlugin();
-					})
-
-				}
-			});
+					}
+				});
 
 
 
 
 
 
-		}
-		else {
-			figma.notify("Plugin limited to max of 50 columns and rows")
-		}
-	}
-	else {
-		updatePluginData(figma.root, 'components', (data) => {
-			data.componentsExist = false
-
-			return data
-		})
-		figma.notify("Cannot find Cell component")
-	}
+			}
+			else {
+				figma.notify("Plugin limited to max of 50 columns and rows")
+			}
+	})
 }
 
 async function syncComponentsToStorage() {
@@ -963,8 +950,9 @@ plugma((plugin) => {
 	plugin.command('createTable', ({ ui, data }) => {
 
 		figma.clientStorage.getAsync('userPreferences').then((res) => {
+
 			figma.clientStorage.getAsync('templates').then((components) => {
-				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components })
+				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components, files: getPluginData(figma.root, 'files') })
 			})
 		})
 
@@ -1003,9 +991,9 @@ plugma((plugin) => {
 					return data
 				})
 			}
-		}
 
-		addTemplate()
+			addTemplate()
+		}
 
 		figma.closePlugin()
 	})
@@ -1146,6 +1134,16 @@ plugma((plugin) => {
 		})
 
 		figma.notify('Components set')
+	})
+
+	plugin.on('set-default-template', (msg) => {
+
+		updateClientStorageAsync('userPreferences', (data) => {
+			data.defaultTemplate = msg.template
+			return data
+		})
+
+		figma.notify(`${msg.template.name} set to default`)
 	})
 
 })

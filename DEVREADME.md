@@ -29,6 +29,7 @@ getPluginData(figma.root, 'files')
         name: String,
         templates: [
             {
+                id: String,
                 name: String,
                 component: {
                     id: String,
@@ -57,6 +58,7 @@ getPluginData(node, 'template')
         id: String,
         name: String
     },
+    id: String,
     name: String,
     component: {
         id: String,

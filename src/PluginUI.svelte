@@ -112,6 +112,21 @@
 			"*"
 		)
 	}
+
+	function setDefaultTemplate(template) {
+
+		// If no components passed tell main code to use selected
+
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "set-default-template",
+					template: template,
+				},
+			},
+			"*"
+		)
+	}
 </script>
 
 <svelte:window on:message={onLoad} />
@@ -130,11 +145,20 @@
 						<div class="Title">
 							<p>Choose template</p>
 						</div>
+						<div>
 						<ul class="list">
-					{#each data.components as component}
-						<li on:click={() => setComponents(component.set)}>{component.name}</li>
+					{#each data.files as file}
+						<!-- <li on:click={() => setComponents(component.set)}>{file.name}</li> -->
+						<li><span>{file.name}</span>
+							<ul>
+								{#each file.templates as template}
+								<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
+								{/each}
+							</ul>
+						</li>
 					{/each}
 						</ul>
+						</div>
 				</div>
 				</div>
 			</div>
@@ -429,6 +453,11 @@
 		padding: var(--margin-100) var(--margin-200);
 		min-height: 32px;
 		place-items: center;
+		flex-wrap: wrap;
+	}
+
+	.menu ul > * > * {
+		flex-basis: 100%;
 	}
 
 	.show .menu {
