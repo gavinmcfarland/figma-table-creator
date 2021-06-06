@@ -747,8 +747,6 @@ function createTable(msg) {
 
 	getClientStorageAsync('userPreferences').then((res) => {
 
-			console.log(res.defaultTemplate)
-
 			// Will only let you create a table if less than 50 columns and rows
 			if (msg.columnCount < 51 && msg.rowCount < 51) {
 
@@ -967,6 +965,18 @@ plugma((plugin) => {
 
 	})
 
+	plugin.command('addTemplate', () => {
+		var selection = figma.currentPage.selection
+
+		if (selection.length === 1) {
+			if (getPluginData(selection[0], 'isTable')) {
+				addTemplate()
+			}
+		}
+
+		figma.closePlugin()
+	})
+
 	plugin.command('markTable', () => {
 		var selection = figma.currentPage.selection
 
@@ -992,7 +1002,7 @@ plugma((plugin) => {
 				})
 			}
 
-			addTemplate()
+			// addTemplate()
 		}
 
 		figma.closePlugin()
@@ -1144,6 +1154,18 @@ plugma((plugin) => {
 		})
 
 		figma.notify(`${msg.template.name} set to default`)
+	})
+
+	plugin.on('add-template', (msg) => {
+		var selection = figma.currentPage.selection
+
+		if (selection.length === 1) {
+			if (getPluginData(selection[0], 'isTable')) {
+				addTemplate()
+			}
+		}
+
+		figma.notify(`Template added`)
 	})
 
 })

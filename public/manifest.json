@@ -26,8 +26,8 @@
         "separator": true
     },
     {
-      "name": "Create Table Instance",
-      "command": "createTableInstance"
+      "name": "Add Template",
+      "command": "addTemplate"
     },
     {
         "name": "Mark as",

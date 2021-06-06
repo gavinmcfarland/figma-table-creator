@@ -18,7 +18,7 @@
 
 <div>
 	<button {id} class="Button {classes}">
-		{#if icon}<span class="icon" />{/if}<slot />
+		{#if icon}<span class="icon" icon={icon} />{/if}<slot />
 	</button>
 </div>
 
@@ -49,6 +49,5 @@
 		display: inline-block;
 		width: 24px;
 		height: 24px;
-		background-color: pink;
 	}
 </style>
