@@ -1164,7 +1164,7 @@ function createTable(msg) {
                     // Makes table the users current selection
                     figma.currentPage.selection = [table];
                     // This updates the plugin preferences
-                    updateClientStorageAsync('preferences', (data) => {
+                    updateClientStorageAsync('userPreferences', (data) => {
                         data.columnCount = msg.columnCount;
                         data.rowCount = msg.rowCount;
                         data.cellWidth = msg.cellWidth;
@@ -1183,71 +1183,90 @@ function createTable(msg) {
         }
     });
 }
-async function syncComponentsToStorage() {
-    // TODO: Find a way to check the files these components link to exist and if not remove them from storage
-    return updateClientStorageAsync('templates', (data) => {
-        var _a, _b;
-        data = data || [];
-        if (findComponentById((_b = (_a = getPluginData(figma.root, 'components').current) === null || _a === void 0 ? void 0 : _a.cell) === null || _b === void 0 ? void 0 : _b.id)) {
-            updatePluginData(figma.root, 'components', (components) => {
-                components.componentsExist = true;
-                return components;
+function importTemplate(nodes) {
+    // TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local.
+    function addNewTemplate(templates) {
+        // Add template to file in list
+        var newTemplateEntry = {
+            id: getPluginData(nodes[0], 'template').id,
+            name: getPluginData(nodes[0], 'template').name,
+            component: getPluginData(nodes[0], 'template').component
+        };
+        // Only add new template if unique
+        if (!templates.some((template) => template.id === newTemplateEntry.id)) {
+            templates.push(newTemplateEntry);
+        }
+        return templates;
+    }
+    // Add file to list of files used by the document
+    for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        if (node.type === "COMPONENT") {
+            updatePluginData(figma.root, 'localTemplates', (data) => {
+                data = data || [];
+                data = addNewTemplate(data);
+                return data;
             });
-            var newValue = {
-                id: getPluginData(figma.root, 'documentId'),
-                name: figma.root.name,
-                set: getPluginData(figma.root, 'components').current,
-                published: 'false'
-            };
-            // Only add to array if unique
-            if (!data.some((item) => item.id === newValue.id)) {
-                data.push(newValue);
-            }
         }
         else {
-            updatePluginData(figma.root, 'components', (components) => {
-                components.componentsExist = false;
-                return components;
-            });
-            // Remove any entries which no longer exist
-            if (getPluginData(figma.root, 'documentId')) {
-                data = data.filter(item => item.id !== getPluginData(figma.root, 'documentId'));
-            }
-        }
-        return data;
-    });
-}
-function addTemplate() {
-    // Add file to list of files used by the document
-    updatePluginData(figma.root, 'files', (data) => {
-        data = data || [];
-        // First get a list of files currently stored on the document
-        // If new file then add to the list
-        var newValue = {
-            id: getPluginData(figma.root, 'fileId'),
-            name: figma.root.name,
-            templates: []
-        };
-        // Only add file to array if unique
-        if (!data.some((item) => item.id === newValue.id)) {
-            data.push(newValue);
-        }
-        // Add template to file in list
-        data.find((file) => {
-            if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
-                var newTemplateEntry = {
-                    id: getPluginData(figma.currentPage.selection[0], 'template').id,
-                    name: getPluginData(figma.currentPage.selection[0], 'template').name,
-                    component: getPluginData(figma.currentPage.selection[0], 'template').component
+            updatePluginData(figma.root, 'remoteFiles', (data) => {
+                data = data || [];
+                // First get a list of files currently stored on the document
+                // If new file then add to the list
+                var newValue = {
+                    id: getPluginData(figma.root, 'fileId'),
+                    name: figma.root.name,
+                    templates: []
                 };
-                // Only add new template if unique
-                if (!file.templates.some((template) => template.id === newTemplateEntry.id)) {
-                    file.templates.push(newTemplateEntry);
+                // Only add file to array if unique
+                if (!data.some((item) => item.id === newValue.id)) {
+                    data.push(newValue);
                 }
-            }
+                data.find((file) => {
+                    if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
+                        addNewTemplate(file.templates);
+                    }
+                });
+                return data;
+            });
+        }
+    }
+}
+function markNode(node, element) {
+    const capitalize = (s) => {
+        if (typeof s !== 'string')
+            return '';
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+    setPluginData(node, `is${capitalize(element)}`, true);
+    if (node.type === "COMPONENT") {
+        updatePluginData(node, "template", (data) => {
+            data = data || {
+                file: {
+                    id: getPluginData(figma.root, 'fileId'),
+                    name: figma.root.name
+                },
+                name: node.name,
+                id: genRandomId(),
+                component: {
+                    key: node.key,
+                    id: node.id
+                }
+            };
+            return data;
         });
+    }
+}
+async function setDefaultTemplate(template) {
+    await updateClientStorageAsync('userPreferences', (data) => {
+        console.log(template);
+        data.defaultTemplate = template;
         return data;
     });
+    // FIXME: Investigate why template is undefined sometimes
+    if (template === null || template === void 0 ? void 0 : template.name) {
+        figma.notify(`${template.name} set as default`);
+    }
 }
 dist((plugin) => {
     plugin.ui = {
@@ -1282,13 +1301,13 @@ dist((plugin) => {
         return data;
     });
     // Look for any components in file and update component settings and add to storage
-    syncComponentsToStorage().then((res) => {
-        console.log(res);
-    });
+    // syncComponentsToStorage().then((res) => {
+    // 	console.log(res)
+    // })
     plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('userPreferences').then((res) => {
             figma.clientStorage.getAsync('templates').then((components) => {
-                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components, files: getPluginData(figma.root, 'files') }));
+                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components, remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates') }));
             });
         });
     });
@@ -1298,38 +1317,17 @@ dist((plugin) => {
             figma.closePlugin("Table created");
         });
     });
-    plugin.command('addTemplate', () => {
+    plugin.command('importTemplate', () => {
         var selection = figma.currentPage.selection;
         if (selection.length === 1) {
             if (getPluginData(selection[0], 'isTable')) {
-                addTemplate();
+                importTemplate(selection);
             }
         }
         figma.closePlugin();
     });
     plugin.command('markTable', () => {
-        var selection = figma.currentPage.selection;
-        if (selection.length === 1) {
-            setPluginData(selection[0], "isTable", true);
-            if (selection[0].type === "COMPONENT") {
-                updatePluginData(selection[0], "template", (data) => {
-                    data = data || {
-                        file: {
-                            id: getPluginData(figma.root, 'fileId'),
-                            name: figma.root.name
-                        },
-                        name: selection[0].name,
-                        id: genRandomId(),
-                        component: {
-                            key: selection[0].key,
-                            id: selection[0].id
-                        }
-                    };
-                    return data;
-                });
-            }
-            // addTemplate()
-        }
+        markNode(figma.currentPage.selection[0], 'table');
         figma.closePlugin();
     });
     plugin.command('markTableData', () => {
@@ -1373,28 +1371,13 @@ dist((plugin) => {
     plugin.on('update-tables', (msg) => {
         updateTables();
     });
-    plugin.on('create-components', (msg) => {
+    plugin.on('new-template', (msg) => {
         var components = createDefaultComponents();
-        syncComponentsToStorage();
-        figma.root.setRelaunchData({ createTable: 'Create a new table' });
-        // Create new object with only key, id and type
-        var componentsAsObject = {};
-        for (let [key, value] of Object.entries(components)) {
-            componentsAsObject[key] = copyPaste(value, {}, { include: ['key', 'id', 'type'] });
-        }
-        // Add plugin data to the document
-        updatePluginData(figma.root, 'components', (data) => {
-            data.current = Object.assign(data.current, componentsAsObject);
-            return data;
+        markNode(components.table, 'table');
+        importTemplate([components.table]);
+        setDefaultTemplate(getPluginData(components.table, 'template')).then((res) => {
+            figma.notify('New template created');
         });
-        // Add plugin data to each component so that it can be used remotely
-        for (let [key, value] of Object.entries(components)) {
-            updatePluginData(components[key], 'components', (data) => {
-                data = componentsAsObject;
-                return data;
-            });
-        }
-        figma.notify('Default components created');
     });
     plugin.on('create-table', createTable);
     plugin.on('link-component', (msg) => {
@@ -1435,20 +1418,19 @@ dist((plugin) => {
         figma.notify('Components set');
     });
     plugin.on('set-default-template', (msg) => {
-        updateClientStorageAsync('userPreferences', (data) => {
-            data.defaultTemplate = msg.template;
-            return data;
-        });
-        figma.notify(`${msg.template.name} set to default`);
+        setDefaultTemplate(msg.template);
     });
-    plugin.on('add-template', (msg) => {
-        var selection = figma.currentPage.selection;
-        if (selection.length === 1) {
-            if (getPluginData(selection[0], 'isTable')) {
-                addTemplate();
+    plugin.on('import-template', (msg) => {
+        if (figma.currentPage.selection.length === 1) {
+            if (getPluginData(figma.currentPage.selection[0], 'isTable')) {
+                importTemplate(figma.currentPage.selection);
             }
         }
         figma.notify(`Template added`);
     });
 });
-console.log(getPluginData(figma.root, 'files'));
+console.log(getPluginData(figma.root, 'remoteFiles'));
+console.log(getPluginData(figma.root, 'localTemplates'));
+getClientStorageAsync('userPreferences').then(res => {
+    console.log(res.defaultTemplate);
+});

@@ -39,12 +39,12 @@
 			settingsPageActive = false
 		}
 
-		if (data.componentsExist === false) {
+		if (!data.remoteFiles || !data.localTemplates) {
 			welcomePageActive = true
 			createTablePageActive = false
 		}
 
-		if (data.componentsRemote === true) {
+		if (data.remoteFiles || data.localTemplates) {
 			welcomePageActive = false
 			createTablePageActive = true
 		}
@@ -76,14 +76,14 @@
 		)
 	}
 
-	function createComponents() {
+	function newTemplate() {
 		welcomePageActive = false
 		createTablePageActive = true
-		console.log("components created")
+		console.log("Template created")
 		parent.postMessage(
 			{
 				pluginMessage: {
-					type: "create-components",
+					type: "new-template",
 				},
 			},
 			"*"
@@ -128,12 +128,12 @@
 		)
 	}
 
-	function addTemplate() {
+	function importTemplate() {
 
 		parent.postMessage(
 			{
 				pluginMessage: {
-					type: "add-template"
+					type: "import-template"
 				},
 			},
 			"*"
@@ -158,8 +158,9 @@
 							<p>Choose template</p>
 						</div>
 						<div>
-							<ul class="list">
-						{#each data.files as file}
+							{#if data.remoteFiles}
+							<ul class="remote-files">
+						{#each data.remoteFiles as file}
 							<!-- <li on:click={() => setComponents(component.set)}>{file.name}</li> -->
 							<li><span>{file.name}</span>
 								<ul>
@@ -170,10 +171,19 @@
 							</li>
 						{/each}
 							</ul>
+							{/if}
+							{#if data.localTemplates}
+								<span>Local Templates</span>
+								<ul class="local-templates">
+								{#each data.localTemplates as template}
+									<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
+								{/each}
+								</ul>
+							{/if}
 						</div>
 					</div>
 				</div>
-				<span style="margin-left: auto;" class="ButtonIcon icon" icon="plus" on:click={() => addTemplate()}></span>
+				<span style="margin-left: auto;" class="ButtonIcon icon" icon="plus" on:click={() => importTemplate()}></span>
 			</div>
 
 
@@ -213,13 +223,12 @@
 {#if welcomePageActive}
 	<div class="container" style="padding: var(--size-200)">
 		<span class="table-creator-icon" width="172" height="148" />
-		<h2>Get Started</h2>
+		<h2>Welcome</h2>
 		<p>
-			This plugin uses components to create tables from. This allows you to style and integrate them with your design system. These components will be created in a page called<br />
-			Table Creator.
+			Table Creator uses components to create tables from. These components are refered to as a templates. Templates allow you to create custom-styled tables which can be edited and resized, while still being able to manage as part of your design system. To get started create a new default template, or import an existing template from another file.<br />
 		</p>
-		<span on:click={createComponents}><Button>Create Components</Button></span>
-		<span on:click={chooseComponents}><Button>Link Existing Components</Button></span>
+		<span on:click={newTemplate}><Button>New Template</Button></span>
+		<span on:click={chooseComponents}><Button>Import Template</Button></span>
 	</div>
 {/if}
 
@@ -432,7 +441,6 @@
 	.menu {
 		display: none;
 		position: absolute;
-
 		background: #FFFFFF;
 		/* border: 0.5px solid rgba(0, 0, 0, 0.1); */
 		/* box-shadow: 0px 3px 14px rgba(0, 0, 0, 0.1); */
@@ -443,6 +451,7 @@
 		left: 4px;
 		right: 4px;
 		width: auto;
+		min-width: 200px;
 		margin-top: 2px;
 	}
 

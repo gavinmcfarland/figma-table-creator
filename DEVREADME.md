@@ -13,13 +13,33 @@ Table Creator uses a component create tables from. This component is refered to 
 getPluginData(figma.root, 'fileId')
 ```
 
+### Local Templates
 
-### Files
+A list of templates used by the plugin locally.
+
+```js
+getPluginData(figma.root, 'localTemplates')
+```
+
+```js
+[
+    {
+        id: String,
+        name: String,
+        component: {
+            id: String,
+            key: String,
+        }
+    }
+]
+```
+
+### Remote Files
 
 A list of files stored on the `document` used by the plugin. This is so the user can select a new default template to create tables from.
 
 ```js
-getPluginData(figma.root, 'files')
+getPluginData(figma.root, 'remoteFiles')
 ```
 
 ```js

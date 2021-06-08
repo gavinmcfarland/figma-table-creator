@@ -26,8 +26,12 @@
         "separator": true
     },
     {
-      "name": "Add Template",
-      "command": "addTemplate"
+      "name": "New Template",
+      "command": "newTemplate"
+    },
+    {
+      "name": "Import Template",
+      "command": "importTemplate"
     },
     {
         "name": "Mark as",
