@@ -8,3 +8,4 @@
 6. Redesign start screen and logic for first running plugin
 7. Do checks on all functions/commands for when different number of nodes are selected
 8. Fix first time opening plugin DONE
+9. Highlight current default template in UI

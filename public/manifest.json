@@ -34,18 +34,21 @@
       "command": "importTemplate"
     },
     {
-        "name": "Mark as",
+        "separator": true
+    },
+    {
+        "name": "Mark Node",
         "menu": [
             {
-                "name": "Table",
+                "name": "As Table",
                 "command": "markTable"
             },
             {
-                "name": "Cell",
+                "name": "As Cell",
                 "command": "markTableData"
             },
             {
-                "name": "Row",
+                "name": "As Row",
                 "command": "markTableRow"
             }
         ]

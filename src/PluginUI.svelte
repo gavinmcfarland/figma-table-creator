@@ -3,6 +3,7 @@
 	import { onMount } from "svelte"
 	import Field from "./Field.svelte"
 	import Button from "./Button.svelte"
+	import Dropdown from "./Dropdown.svelte"
 	import Checkbox from "./Checkbox.svelte"
 	import RadioButton from "./RadioButton.svelte"
 	import Matrix from "./Matrix.svelte"
@@ -139,6 +140,7 @@
 			"*"
 		)
 	}
+
 </script>
 
 <svelte:window on:message={onLoad} />
@@ -146,45 +148,52 @@
 {#if createTablePageActive}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div>
-			<div class="SelectWrapper">
-				<div class="Select" on:click={(event) => {
-					event.currentTarget.classList.toggle("show")
-				}}>
-					<div class="label">
-						<span class="icon" icon="template" /><span class="text-bold">Table</span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
-					</div>
-					<div class="menu">
-						<div class="Title">
-							<p>Choose template</p>
-						</div>
-						<div>
+			<Dropdown icon="template">
+				<slot slot="label">Table</slot>
+
+				<slot slot="content">
+					<div class="Title">
+
+						<p>Choose template</p>
+
+						<Dropdown>
+							<slot slot="label">Local templates</slot>
+							<slot slot="content">
 							{#if data.remoteFiles}
-							<ul class="remote-files">
-						{#each data.remoteFiles as file}
-							<!-- <li on:click={() => setComponents(component.set)}>{file.name}</li> -->
-							<li><span>{file.name}</span>
-								<ul>
-									{#each file.templates as template}
-									<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
-									{/each}
-								</ul>
-							</li>
-						{/each}
-							</ul>
-							{/if}
-							{#if data.localTemplates}
-								<span>Local Templates</span>
-								<ul class="local-templates">
-								{#each data.localTemplates as template}
-									<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
-								{/each}
-								</ul>
-							{/if}
-						</div>
+										{#each data.remoteFiles as file}<span>{file.name}</span>{/each}
+									{/if}
+									{#if data.localTemplates}
+										<span>Local templates</span>
+									{/if}
+							</slot>
+						</Dropdown>
+
 					</div>
-				</div>
-				<span style="margin-left: auto;" class="ButtonIcon icon" icon="plus" on:click={() => importTemplate()}></span>
-			</div>
+					<div>
+						{#if data.remoteFiles}
+						<ul class="remote-files">
+					{#each data.remoteFiles as file}
+						<!-- <li on:click={() => setComponents(component.set)}>{file.name}</li> -->
+						<li><span>{file.name}</span>
+							<ul>
+								{#each file.templates as template}
+								<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
+								{/each}
+							</ul>
+						</li>
+					{/each}
+						</ul>
+						{/if}
+						{#if data.localTemplates}
+							<ul class="local-templates">
+							{#each data.localTemplates as template}
+								<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
+							{/each}
+							</ul>
+						{/if}
+					</div>
+				</slot>
+			</Dropdown>
 
 
 		</div>
@@ -413,7 +422,7 @@
 		padding-inline: calc(var(--padding-100) - 1px);
 	}
 
-	.Select.show .label {
+	.Select.show > .label {
 		padding-top: 1px;
 	}
 
@@ -434,9 +443,9 @@
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M7.5 7.5V2.5H8.5V7.5H13.5V8.5H8.5V13.5H7.5V8.5H2.5V7.5H7.5Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
-	.Select:hover .label :last-child {
+	/* .Select:hover > .label :last-child {
 		margin-left: auto !important;
-	}
+	} */
 
 	.menu {
 		display: none;
@@ -451,7 +460,7 @@
 		left: 4px;
 		right: 4px;
 		width: auto;
-		min-width: 200px;
+		min-width: 242px;
 		margin-top: 2px;
 	}
 
@@ -490,7 +499,7 @@
 		flex-basis: 100%;
 	}
 
-	.show .menu {
+	.show > .menu {
 		display: block;
 	}
 
