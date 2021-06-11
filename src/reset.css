@@ -80,6 +80,7 @@
 
 	:root {
 		--color-blue: #18a0fb;
+		--color-selection-a: #DAEBF7;
 		--color-black-10: rgba(0, 0, 0, 0.1);
 		--color-black-30: rgba(0, 0, 0, 0.3);
 		--color-black-80: rgba(0, 0, 0, 0.8);

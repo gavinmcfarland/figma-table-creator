@@ -9,3 +9,9 @@
 7. Do checks on all functions/commands for when different number of nodes are selected
 8. Fix first time opening plugin DONE
 9. Highlight current default template in UI
+10. Fix styling of dropdown component so whole select bit is hoverable
+11. Updated selection in UI when another table selected
+12. Wipe template data when importing component?
+13. Close menu when new template selected DONE
+14. Create styling for local templates menu
+15. Only apply bold text to titles (not all selects)

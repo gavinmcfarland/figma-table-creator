@@ -23,39 +23,16 @@
 	let settingsPageActive = false
 	let chooseComponentsPageActive = false
 
-	async function onLoad(event) {
-		data = await event.data.pluginMessage
-		valueStore.set(data)
-		valueStore.subscribe((value) => {
-			columnCount = value.columnCount
-			rowCount = value.rowCount
-			cellWidth = value.cellWidth
-			includeHeader = value.includeHeader
-			cellAlignment = value.cellAlignment
-		})
 
-		if (data.type === "create-table") {
-			welcomePageActive = false
-			createTablePageActive = true
-			settingsPageActive = false
+	function updateSelectedTemplate(data) {
+		// Look for selected table in local templates
+		for (var i in data.localTemplates) {
+			if (data.defaultTemplate.component.key === data.localTemplates[i].component.key) {
+				data.localTemplates[i].selected = true
+			}
 		}
 
-		if (!data.remoteFiles || !data.localTemplates) {
-			welcomePageActive = true
-			createTablePageActive = false
-		}
-
-		if (data.remoteFiles || data.localTemplates) {
-			welcomePageActive = false
-			createTablePageActive = true
-		}
-
-		if (data.type === "settings") {
-			welcomePageActive = false
-			createTablePageActive = false
-			settingsPageActive = true
-		}
-		return data
+		// TODO: Look for selected table in remote files
 	}
 
 	function createTable() {
@@ -96,27 +73,10 @@
 		chooseComponentsPageActive = true
 	}
 
-	function setComponents(components) {
+	function setDefaultTemplate(template, data) {
 
-		// If no components passed tell main code to use selected
-		if(!components){
-			components = 'selected'
-		}
-
-		parent.postMessage(
-			{
-				pluginMessage: {
-					type: "set-components",
-					components: components,
-				},
-			},
-			"*"
-		)
-	}
-
-	function setDefaultTemplate(template) {
-
-		// If no components passed tell main code to use selected
+		// Not sure how to get it to update UI
+		updateSelectedTemplate(data)
 
 		parent.postMessage(
 			{
@@ -141,6 +101,44 @@
 		)
 	}
 
+	async function onLoad(event) {
+		data = await event.data.pluginMessage
+		valueStore.set(data)
+		valueStore.subscribe((value) => {
+			columnCount = value.columnCount
+			rowCount = value.rowCount
+			cellWidth = value.cellWidth
+			includeHeader = value.includeHeader
+			cellAlignment = value.cellAlignment
+		})
+
+		if (data.type === "create-table") {
+			welcomePageActive = false
+			createTablePageActive = true
+			settingsPageActive = false
+		}
+
+		if (!data.remoteFiles || !data.localTemplates) {
+			welcomePageActive = true
+			createTablePageActive = false
+		}
+
+		if (data.remoteFiles || data.localTemplates) {
+			welcomePageActive = false
+			createTablePageActive = true
+		}
+
+		if (data.type === "settings") {
+			welcomePageActive = false
+			createTablePageActive = false
+			settingsPageActive = true
+		}
+
+		updateSelectedTemplate(data)
+
+		return data
+	}
+
 </script>
 
 <svelte:window on:message={onLoad} />
@@ -148,8 +146,9 @@
 {#if createTablePageActive}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div>
-			<Dropdown icon="template">
-				<slot slot="label">Table</slot>
+			<div class="SelectWrapper">
+				<Dropdown icon="template">
+				<slot slot="label">{data.defaultTemplate.name}</slot>
 
 				<slot slot="content">
 					<div class="Title">
@@ -177,7 +176,7 @@
 						<li><span>{file.name}</span>
 							<ul>
 								{#each file.templates as template}
-								<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
+								<li on:click={() => setDefaultTemplate(template, data)}>{template.name}</li>
 								{/each}
 							</ul>
 						</li>
@@ -187,15 +186,21 @@
 						{#if data.localTemplates}
 							<ul class="local-templates">
 							{#each data.localTemplates as template}
-								<li on:click={() => setDefaultTemplate(template)}>{template.name}</li>
+								<li class="{template.selected ? 'selected' : ''}" on:click={(event) => {
+									setDefaultTemplate(template, data)
+
+									// Hide menu when template set
+									event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+
+									}}>{template.name}</li>
 							{/each}
 							</ul>
 						{/if}
 					</div>
 				</slot>
 			</Dropdown>
-
-
+				<span style="margin-left: auto;" class="ButtonIcon icon" icon="plus" on:click={() => importTemplate()}></span>
+			</div>
 		</div>
 		<div class="field-group">
 			<Field id="columnCount" label="Columns" type="number" step="1" min="1" max="50" value={columnCount} />
@@ -366,34 +371,7 @@
 
 
 
-	.Select {
-		line-height: 1;
-		/* display: flex; */
-		border: 2px solid transparent;
-		place-items: center;
-		height: 28px;
-		margin-left: calc(
-			var(--fgp-gap_item_column, 0px) + (-1 * var(--margin-100))
-		);
-		margin-right: calc((-1 * var(--margin-100)));
-		padding-inline: calc(var(--padding-100) - 2px);
-		border-radius: var(--border-radius-25);
-		position: relative;
-	}
 
-	.Select:hover {
-		border-color: var(--color-black-10);
-		border-width: 1px;
-		padding-inline: calc(var(--padding-100) - 1px);
-	}
-
-	.Select .label {
-		display: flex; place-items: center;
-	}
-
-	.Select:hover .label {
-		padding-top: 1px;
-	}
 
 	.icon {
 		display: inline-block;
@@ -411,20 +389,7 @@
 		background-position: center;
 	}
 
-	.Select .icon:first-child {
-		margin-left: calc((-1 * var(--margin-50)));
-		margin-right: var(--margin-25);
-	}
 
-	.Select.show {
-		border-color: var(--color-black-10);
-		border-width: 1px;
-		padding-inline: calc(var(--padding-100) - 1px);
-	}
-
-	.Select.show > .label {
-		padding-top: 1px;
-	}
 
 	[icon="template"]::before {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.82812 7.99988L2.164 7.664L3.539 6.289L3.87488 5.95312L4.54663 6.62488L4.21075 6.96075L3.17163 7.99988L4.21075 9.039L4.54663 9.37488L3.87488 10.0466L3.539 9.71075L2.164 8.33575L1.82812 7.99988ZM6.62488 11.4531L6.96075 11.789L7.99988 12.8281L9.039 11.789L9.37488 11.4531L10.0466 12.1249L9.71075 12.4608L8.33575 13.8358L7.99988 14.1716L7.664 13.8358L6.289 12.4608L5.95312 12.1249L6.62488 11.4531ZM5.95312 3.87488L6.289 3.539L7.664 2.164L7.99988 1.82812L8.33575 2.164L9.71075 3.539L10.0466 3.87488L9.37488 4.54663L9.039 4.21075L7.99988 3.17163L6.96075 4.21075L6.62488 4.54663L5.95312 3.87488ZM11.4531 9.37488L11.789 9.039L12.8281 7.99988L11.789 6.96075L11.4531 6.62488L12.1249 5.95312L12.4608 6.289L13.8358 7.664L14.1716 7.99988L13.8358 8.33575L12.4608 9.71075L12.1249 10.0466L11.4531 9.37488Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
@@ -457,8 +422,8 @@
 		border-radius: 2px;
 		/* top: 0; */
 		padding: var(--size-200);
-		left: 4px;
-		right: 4px;
+		left: 12px;
+		right: 12px;
 		width: auto;
 		min-width: 242px;
 		margin-top: 2px;
@@ -483,8 +448,8 @@
 	.menu ul {
 		padding: 0;
 		/* margin: 0; */
-		max-height: calc(4.5 * var(--size-400));
-		overflow: scroll;
+		/* max-height: calc(4.5 * var(--size-400)); */
+		/* overflow: scroll; */
 	}
 
 	.menu ul > * {
@@ -499,8 +464,13 @@
 		flex-basis: 100%;
 	}
 
-	.show > .menu {
-		display: block;
+	.menu li {
+		margin-left: calc(-1 * var(--margin-200));
+    	margin-right: calc(-1 * var(--margin-200));
+	}
+
+	.menu .selected {
+		background-color: var(--color-selection-a);
 	}
 
 	.Title {
@@ -509,6 +479,15 @@
 		min-height: 40px;
 		display: flex;
 		place-items: center;
+	}
+
+	.Title > * {
+		flex-grow: 1;
+	}
+
+	.Title > :last-child {
+		margin-left: auto;
+		flex-grow: 0;
 	}
 
 	.Title > p {
