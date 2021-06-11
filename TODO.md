@@ -14,4 +14,4 @@
 12. Wipe template data when importing component?
 13. Close menu when new template selected DONE
 14. Create styling for local templates menu
-15. Only apply bold text to titles (not all selects)
+15. Only apply bold text to titles (not all selects) DONE

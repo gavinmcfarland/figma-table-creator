@@ -47,7 +47,7 @@
 			showModal = false;
 		});
 }}>
-		{#if icon}<span class="icon" icon={icon} />{/if}<span class="text-bold"><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
+		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
 	</div>
 	<div class="menu">
 		<slot name="content" />

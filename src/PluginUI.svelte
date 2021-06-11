@@ -145,7 +145,7 @@
 
 {#if createTablePageActive}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
-		<div>
+		<div class=section-title>
 			<div class="SelectWrapper">
 				<Dropdown icon="template">
 				<slot slot="label">{data.defaultTemplate.name}</slot>
@@ -153,17 +153,19 @@
 				<slot slot="content">
 					<div class="Title">
 
-						<p>Choose template</p>
+						<p style="font-weight: 600">Choose template</p>
 
 						<Dropdown>
 							<slot slot="label">Local templates</slot>
 							<slot slot="content">
 							{#if data.remoteFiles}
-										{#each data.remoteFiles as file}<span>{file.name}</span>{/each}
-									{/if}
-									{#if data.localTemplates}
-										<span>Local templates</span>
-									{/if}
+								{#each data.remoteFiles as file}
+									<span>{file.name}</span>
+								{/each}
+							{/if}
+							{#if data.localTemplates}
+								<span>Local templates</span>
+							{/if}
 							</slot>
 						</Dropdown>
 
@@ -280,6 +282,10 @@
 
 	.SectionTitle {
 		line-height: var(--size-400);
+	}
+
+	.section-title > .SelectWrapper > .Select > .label {
+		font-weight: 600;
 	}
 
 	.text-bold {
@@ -469,9 +475,16 @@
     	margin-right: calc(-1 * var(--margin-200));
 	}
 
-	.menu .selected {
+
+	.menu li:hover {
+		background-color: var(--color-hover-fill)
+	}
+
+	.menu li.selected {
 		background-color: var(--color-selection-a);
 	}
+
+
 
 	.Title {
 		padding: var(--margin-100) var(--margin-200);
