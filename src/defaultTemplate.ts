@@ -11,7 +11,7 @@ async function loadFonts() {
 	])
 }
 
-export function createDefaultComponents() {
+export function createDefaultTemplate() {
 	const obj: any = {}
 
 	var tempContainer = figma.createFrame()
@@ -275,14 +275,14 @@ export function createDefaultComponents() {
 	component_4_75.counterAxisSizingMode = "AUTO"
 	component_4_75.description = ""
 
-	component_4_75.setPluginData("isTable", "true")
-	setPluginData(component_4_75, "template", {
-		name: component_4_75.name,
-		component: {
-			key: component_4_75.key,
-			id: component_4_75.id
-		}
-	})
+	// component_4_75.setPluginData("isTable", "true")
+	// setPluginData(component_4_75, "template", {
+	// 	name: component_4_75.name,
+	// 	component: {
+	// 		key: component_4_75.key,
+	// 		id: component_4_75.id
+	// 	}
+	// })
 
 	tempContainer.appendChild(component_4_75)
 	obj.table = component_4_75

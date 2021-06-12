@@ -359,7 +359,7 @@ async function loadFonts() {
         })
     ]);
 }
-function createDefaultComponents() {
+function createDefaultTemplate() {
     const obj = {};
     var tempContainer = figma.createFrame();
     tempContainer.fills = [];
@@ -593,14 +593,14 @@ function createDefaultComponents() {
     component_4_75.layoutMode = "VERTICAL";
     component_4_75.counterAxisSizingMode = "AUTO";
     component_4_75.description = "";
-    component_4_75.setPluginData("isTable", "true");
-    setPluginData(component_4_75, "template", {
-        name: component_4_75.name,
-        component: {
-            key: component_4_75.key,
-            id: component_4_75.id
-        }
-    });
+    // component_4_75.setPluginData("isTable", "true")
+    // setPluginData(component_4_75, "template", {
+    // 	name: component_4_75.name,
+    // 	component: {
+    // 		key: component_4_75.key,
+    // 		id: component_4_75.id
+    // 	}
+    // })
     tempContainer.appendChild(component_4_75);
     obj.table = component_4_75;
     // Create INSTANCE
@@ -1093,7 +1093,6 @@ function selectRow() {
     }
 }
 function linkComponent(template, selection) {
-    console.log(template);
     if (selection.length === 1) {
         if (selection[0].type !== "COMPONENT") {
             figma.notify("Please make sure node is a component");
@@ -1156,7 +1155,7 @@ function createTable(msg) {
         // Will only let you create a table if less than 50 columns and rows
         if (msg.columnCount < 51 && msg.rowCount < 51) {
             // Will input from user and create table node
-            createTableInstance(res.defaultTemplate, msg).then((table) => {
+            createTableInstance(getPluginData(figma.root, 'defaultTemplate'), msg).then((table) => {
                 // If table successfully created?
                 if (table) {
                     // Positions the table in the center of the viewport
@@ -1184,7 +1183,7 @@ function createTable(msg) {
     });
 }
 function importTemplate(nodes) {
-    // TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local.
+    // TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
     function addNewTemplate(templates) {
         // Add template to file in list
         var newTemplateEntry = {
@@ -1213,26 +1212,35 @@ function importTemplate(nodes) {
                 data = data || [];
                 // First get a list of files currently stored on the document
                 // If new file then add to the list
+                // Use when adding from same file
+                // var newValue = {
+                // 	id: getPluginData(figma.root, 'fileId'),
+                // 	name: figma.root.name,
+                // 	templates: []
+                // }
+                // Use when importing from another file
                 var newValue = {
-                    id: getPluginData(figma.root, 'fileId'),
-                    name: figma.root.name,
+                    id: getPluginData(figma.currentPage.selection[0], 'template').file.id,
+                    name: getPluginData(figma.currentPage.selection[0], 'template').file.name,
                     templates: []
                 };
                 // Only add file to array if unique
                 if (!data.some((item) => item.id === newValue.id)) {
                     data.push(newValue);
                 }
-                data.find((file) => {
+                for (var i = 0; i < data.length; i++) {
+                    var file = data[i];
                     if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
-                        addNewTemplate(file.templates);
+                        file.templates = addNewTemplate(file.templates);
                     }
-                });
+                }
                 return data;
             });
         }
     }
 }
 function markNode(node, element) {
+    // Should this be split into markNode and setTemplate?
     const capitalize = (s) => {
         if (typeof s !== 'string')
             return '';
@@ -1257,16 +1265,24 @@ function markNode(node, element) {
         });
     }
 }
-async function setDefaultTemplate(template) {
-    await updateClientStorageAsync('userPreferences', (data) => {
-        console.log(template);
-        data.defaultTemplate = template;
+function setDefaultTemplate(template) {
+    var defaultTemplate = updatePluginData(figma.root, 'defaultTemplate', (data) => {
+        data = data || template;
         return data;
     });
+    // await updateClientStorageAsync('userPreferences', (data) => {
+    // 	console.log(template)
+    // 	data.defaultTemplate = template
+    // 	return data
+    // })
     // FIXME: Investigate why template is undefined sometimes
     if (template === null || template === void 0 ? void 0 : template.name) {
         figma.notify(`${template.name} set as default`);
     }
+    // FIXME: Consider combining into it's own function?
+    figma.clientStorage.getAsync('userPreferences').then((res) => {
+        figma.ui.postMessage(Object.assign(Object.assign({}, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
+    });
 }
 dist((plugin) => {
     plugin.ui = {
@@ -1306,17 +1322,15 @@ dist((plugin) => {
     // })
     plugin.command('createTable', ({ ui, data }) => {
         figma.clientStorage.getAsync('userPreferences').then((res) => {
-            figma.clientStorage.getAsync('templates').then((components) => {
-                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components, remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates') }));
-            });
+            ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
         });
     });
-    plugin.command('createTableInstance', () => {
-        var selection = figma.currentPage.selection;
-        createTableInstance(getPluginData(selection[0], 'template'), preferences).then(() => {
-            figma.closePlugin("Table created");
-        });
-    });
+    // plugin.command('createTableInstance', () => {
+    // 	var selection = figma.currentPage.selection
+    // 	createTableInstance(getPluginData(selection[0], 'template'), preferences).then(() => {
+    // 		figma.closePlugin("Table created")
+    // 	})
+    // })
     plugin.command('importTemplate', () => {
         var selection = figma.currentPage.selection;
         if (selection.length === 1) {
@@ -1345,9 +1359,8 @@ dist((plugin) => {
         figma.closePlugin();
     });
     plugin.command('viewNodeData', () => {
-        if (figma.currentPage.selection[0]) {
-            console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'components'));
-        }
+        console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'template'));
+        figma.closePlugin();
     });
     plugin.command('linkComponents', ({ ui }) => {
         figma.clientStorage.getAsync('templates').then((components) => {
@@ -1364,20 +1377,19 @@ dist((plugin) => {
     });
     // Listen for events from UI
     plugin.on('to-create-table', (msg) => {
-        figma.clientStorage.getAsync('preferences').then((res) => {
-            plugin.ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist }));
+        figma.clientStorage.getAsync('userPreferences').then((res) => {
+            plugin.ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
         });
     });
     plugin.on('update-tables', (msg) => {
         updateTables();
     });
     plugin.on('new-template', (msg) => {
-        var components = createDefaultComponents();
+        var components = createDefaultTemplate();
         markNode(components.table, 'table');
         importTemplate([components.table]);
-        setDefaultTemplate(getPluginData(components.table, 'template')).then((res) => {
-            figma.notify('New template created');
-        });
+        setDefaultTemplate(getPluginData(components.table, 'template'));
+        figma.notify('New template created');
     });
     plugin.on('create-table', createTable);
     plugin.on('link-component', (msg) => {
@@ -1429,8 +1441,9 @@ dist((plugin) => {
         figma.notify(`Template added`);
     });
 });
-console.log(getPluginData(figma.root, 'remoteFiles'));
-console.log(getPluginData(figma.root, 'localTemplates'));
-getClientStorageAsync('userPreferences').then(res => {
-    console.log(res.defaultTemplate);
-});
+console.log('fileId ->', getPluginData(figma.root, 'fileId'));
+console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'));
+console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'));
+// getClientStorageAsync('userPreferences').then(res => {
+// 	console.log(res)
+// })

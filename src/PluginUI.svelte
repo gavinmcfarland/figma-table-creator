@@ -89,6 +89,26 @@
 		)
 	}
 
+	function updateSelectedFile(file, data) {
+
+		// Look for selected table in local templates
+		// for (var i in data.localTemplates) {
+		// 	if (data.defaultTemplate.component.key === data.localTemplates[i].component.key) {
+		// 		data.localTemplates[i].selected = true
+		// 	}
+		// }
+
+		for (var i in data.remoteFiles) {
+			if (data.remoteFiles[i].id === file.id) {
+				data.remoteFiles[i].selected = true
+			}
+		}
+
+
+		// TODO: Look for selected table in remote files
+
+	}
+
 	function importTemplate() {
 
 		parent.postMessage(
@@ -103,6 +123,7 @@
 
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
+
 		valueStore.set(data)
 		valueStore.subscribe((value) => {
 			columnCount = value.columnCount
@@ -148,56 +169,86 @@
 		<div class=section-title>
 			<div class="SelectWrapper">
 				<Dropdown icon="template">
-				<slot slot="label">{data.defaultTemplate.name}</slot>
+				<slot slot="label">{data.defaultTemplate?.name}</slot>
 
 				<slot slot="content">
-					<div class="Title">
+					<div class="menu">
+						<div class="Title">
 
-						<p style="font-weight: 600">Choose template</p>
+							<p style="font-weight: 600">Choose template</p>
 
-						<Dropdown>
-							<slot slot="label">Local templates</slot>
-							<slot slot="content">
-							{#if data.remoteFiles}
-								{#each data.remoteFiles as file}
-									<span>{file.name}</span>
-								{/each}
+							<Dropdown>
+								<slot slot="label">
+									{#if data.defaultTemplate?.file.id === data.fileId}
+										Local templates
+									{:else}
+										{data.defaultTemplate?.file.name}
+									{/if}
+								</slot>
+								<slot slot="content">
+									<div class="tooltip">
+										<!-- {#if data.defaultTemplate?.file.id === data.fileId} -->
+											{#if data.localTemplates}
+												<div>
+													<input checked type="radio" id="localTemplates" name="files">
+													<label on:click={(event) => {
+														// updateSelectedFile(data.localTemplates, data)
+														event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+													}} for="localTemplates">Local templates</label>
+												</div>
+											{/if}
+										<!-- {:else} -->
+											{#if data.remoteFiles}
+												{#each data.remoteFiles as file}
+													<!-- {#if data.defaultTemplate?.file.id === file.id} -->
+														<div>
+															<input type="radio" id={file.id} name="files">
+															<label on:click={(event) => {
+																// updateSelectedFile(file, data)
+																event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+																}} for={file.id}>{file.name}</label>
+														</div>
+													<!-- {/if} -->
+												{/each}
+											{/if}
+										<!-- {/if} -->
+
+									</div>
+								</slot>
+							</Dropdown>
+
+						</div>
+						<div>
+							{#if data.defaultTemplate?.file.id === data.fileId}
+								{#if data.localTemplates}
+									<ul class="local-templates">
+									{#each data.localTemplates as template}
+										<li class="{template.selected ? 'selected' : ''}" on:click={(event) => {
+											setDefaultTemplate(template, data)
+
+											// Hide menu when template set
+											event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+
+											}}>{template.name}</li>
+									{/each}
+									</ul>
+								{/if}
+							{:else}
+								{#if data.remoteFiles}
+									<div>
+										{#each data.remoteFiles as file}
+											{#if data.defaultTemplate?.file.id === file.id}
+												<ul class="remote-file">
+														{#each file.templates as template}
+														<li on:click={() => setDefaultTemplate(template, data)}>{template.name}</li>
+														{/each}
+												</ul>
+											{/if}
+										{/each}
+									</div>
+								{/if}
 							{/if}
-							{#if data.localTemplates}
-								<span>Local templates</span>
-							{/if}
-							</slot>
-						</Dropdown>
-
-					</div>
-					<div>
-						{#if data.remoteFiles}
-						<ul class="remote-files">
-					{#each data.remoteFiles as file}
-						<!-- <li on:click={() => setComponents(component.set)}>{file.name}</li> -->
-						<li><span>{file.name}</span>
-							<ul>
-								{#each file.templates as template}
-								<li on:click={() => setDefaultTemplate(template, data)}>{template.name}</li>
-								{/each}
-							</ul>
-						</li>
-					{/each}
-						</ul>
-						{/if}
-						{#if data.localTemplates}
-							<ul class="local-templates">
-							{#each data.localTemplates as template}
-								<li class="{template.selected ? 'selected' : ''}" on:click={(event) => {
-									setDefaultTemplate(template, data)
-
-									// Hide menu when template set
-									event.currentTarget.parentElement.closest(".Select").classList.remove("show")
-
-									}}>{template.name}</li>
-							{/each}
-							</ul>
-						{/if}
+						</div>
 					</div>
 				</slot>
 			</Dropdown>
@@ -516,6 +567,82 @@
 
 	.ButtonIcon:hover {
 		background-color: var(--color-black-10);
+	}
+
+
+
+	.tooltip {
+		display: none;
+		color: #FFF;
+		padding: 8px 0;
+		position: absolute;
+		top: 3px;
+		right: -2px;
+		z-index: 100;
+		width: 160px;
+		background: #222222;
+		box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.15), 0px 5px 17px rgba(0, 0, 0, 0.2);
+		border-radius: 2px;
+	}
+
+	.tooltip input[type="checkbox"] {
+		position: absolute;
+		opacity: 0;
+		cursor: pointer;
+		height: 0;
+		width: 0;
+	}
+
+	.tooltip label {
+		line-height: 24px;
+		padding-left: 32px;
+		padding-right: 16px;
+		position: relative;
+		display: block;
+	}
+
+	.tooltip label:hover {
+		background-color: var(--blue);
+	}
+
+	.tooltip input[type="radio"]:checked+label::before {
+		display: block;
+		content: "";
+		top: 4px;
+		position: absolute;
+		left: 8px;
+		width: 16px;
+		height: 16px;
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M13.2072 5.20718L7.70718 10.7072L7.00008 11.4143L6.29297 10.7072L3.29297 7.70718L4.70718 6.29297L7.00008 8.58586L11.793 3.79297L13.2072 5.20718Z' fill='white'/%3E%3C/svg%3E%0A");
+	}
+
+	.tooltip .triangle {
+		width: 12px;
+		height: 12px;
+		background-color: #222222;
+		transform: rotate(45deg);
+		position: absolute;
+		top: -3px;
+		right: 10px;
+	}
+
+	.tooltop input[type="radio"]:checked+label::before {
+		display: block;
+		content: "";
+		top: 4px;
+		position: absolute;
+		left: 8px;
+		width: 16px;
+		height: 16px;
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M13.2072 5.20718L7.70718 10.7072L7.00008 11.4143L6.29297 10.7072L3.29297 7.70718L4.70718 6.29297L7.00008 8.58586L11.793 3.79297L13.2072 5.20718Z' fill='white'/%3E%3C/svg%3E%0A");
+	}
+
+	.tooltip .selected {
+		background-color: var(--color-blue);
+	}
+
+	.tooltip div:hover {
+		background-color: var(--color-blue);
 	}
 
 

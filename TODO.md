@@ -15,3 +15,9 @@
 13. Close menu when new template selected DONE
 14. Create styling for local templates menu
 15. Only apply bold text to titles (not all selects) DONE
+16. Change to only one list with preversed one for local file?
+17. Check why template is not being added to array for remote templates DONE
+18. Show current file selected in menu DONE
+19. Default template needs to stored on document and not user preferences
+20. Find a way to send update to UI when document data updated DONE
+21. Find a way to update data with async in Svelte

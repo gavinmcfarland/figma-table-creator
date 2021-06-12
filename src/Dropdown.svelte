@@ -49,9 +49,7 @@
 }}>
 		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
 	</div>
-	<div class="menu">
-		<slot name="content" />
-	</div>
+	<slot name="content" />
 
 
 </div>
@@ -96,4 +94,7 @@
 		display: block;
 	}
 
+	.show > .tooltip {
+		display: block;
+	}
 </style>

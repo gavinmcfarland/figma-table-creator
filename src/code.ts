@@ -1,7 +1,7 @@
 
 import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync} from '@figlets/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData } from './helpers'
-import { createDefaultComponents } from './defaultComponents'
+import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
 
 
@@ -664,8 +664,6 @@ function detachTable(selection) {
 
 function linkComponent(template, selection) {
 
-	console.log(template)
-
 	if (selection.length === 1) {
 		if (selection[0].type !== "COMPONENT") {
 			figma.notify("Please make sure node is a component")
@@ -748,10 +746,10 @@ function createTable(msg) {
 	getClientStorageAsync('userPreferences').then((res) => {
 
 			// Will only let you create a table if less than 50 columns and rows
-			if (msg.columnCount < 51 && msg.rowCount < 51) {
+		if (msg.columnCount < 51 && msg.rowCount < 51) {
 
 				// Will input from user and create table node
-				createTableInstance(res.defaultTemplate, msg).then((table) => {
+				createTableInstance(getPluginData(figma.root, 'defaultTemplate'), msg).then((table) => {
 					// If table successfully created?
 					if (table) {
 
@@ -841,7 +839,7 @@ async function importComponents(components, page?) {
 	// page.appendChild(frame)
 	for (let [key, value] of Object.entries(components)) {
 		var component = components[key]
-		console.log(component.key)
+
 
 		await figma.importComponentByKeyAsync(component.key).then((component) => {
 			// console.log(component)
@@ -863,7 +861,7 @@ function updateNodeComponentsData(node, components) {
 
 function importTemplate(nodes) {
 
-	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local.
+	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
 
 	function addNewTemplate(templates) {
 		// Add template to file in list
@@ -904,9 +902,17 @@ function importTemplate(nodes) {
 				// First get a list of files currently stored on the document
 
 				// If new file then add to the list
+				// Use when adding from same file
+				// var newValue = {
+				// 	id: getPluginData(figma.root, 'fileId'),
+				// 	name: figma.root.name,
+				// 	templates: []
+				// }
+
+				// Use when importing from another file
 				var newValue = {
-					id: getPluginData(figma.root, 'fileId'),
-					name: figma.root.name,
+					id: getPluginData(figma.currentPage.selection[0], 'template').file.id,
+					name: getPluginData(figma.currentPage.selection[0], 'template').file.name,
 					templates: []
 				}
 
@@ -915,11 +921,14 @@ function importTemplate(nodes) {
 					data.push(newValue)
 				}
 
-				data.find((file) => {
+				for (var i = 0; i < data.length; i++) {
+					var file = data[i]
+
 					if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
-						addNewTemplate(file.templates)
+						file.templates = addNewTemplate(file.templates)
 					}
-				})
+
+				}
 
 				return data
 			})
@@ -928,6 +937,8 @@ function importTemplate(nodes) {
 }
 
 function markNode(node, element) {
+
+	// Should this be split into markNode and setTemplate?
 
 	const capitalize = (s) => {
 		if (typeof s !== 'string') return ''
@@ -956,17 +967,28 @@ function markNode(node, element) {
 	}
 }
 
-async function setDefaultTemplate(template) {
-	await updateClientStorageAsync('userPreferences', (data) => {
-		console.log(template)
-		data.defaultTemplate = template
+function setDefaultTemplate(template) {
+	var defaultTemplate = updatePluginData(figma.root, 'defaultTemplate', (data) => {
+		data = data || template
 		return data
 	})
+
+	// await updateClientStorageAsync('userPreferences', (data) => {
+	// 	console.log(template)
+	// 	data.defaultTemplate = template
+	// 	return data
+	// })
 
 	// FIXME: Investigate why template is undefined sometimes
 	if (template?.name) {
 		figma.notify(`${template.name} set as default`)
 	}
+
+	// FIXME: Consider combining into it's own function?
+	figma.clientStorage.getAsync('userPreferences').then((res) => {
+		figma.ui.postMessage({ ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
+	})
+
 }
 
 plugma((plugin) => {
@@ -1016,22 +1038,19 @@ plugma((plugin) => {
 	plugin.command('createTable', ({ ui, data }) => {
 
 		figma.clientStorage.getAsync('userPreferences').then((res) => {
-
-			figma.clientStorage.getAsync('templates').then((components) => {
-				ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist, componentsRemote: getPluginData(figma.root, 'components').componentsRemote, components, remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates') })
-			})
+			ui.show({ type: "create-table", ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
 		})
 
 	})
 
-	plugin.command('createTableInstance', () => {
-		var selection = figma.currentPage.selection
+	// plugin.command('createTableInstance', () => {
+	// 	var selection = figma.currentPage.selection
 
-		createTableInstance(getPluginData(selection[0], 'template'), preferences).then(() => {
-			figma.closePlugin("Table created")
-		})
+	// 	createTableInstance(getPluginData(selection[0], 'template'), preferences).then(() => {
+	// 		figma.closePlugin("Table created")
+	// 	})
 
-	})
+	// })
 
 	plugin.command('importTemplate', () => {
 		var selection = figma.currentPage.selection
@@ -1072,9 +1091,8 @@ plugma((plugin) => {
 	})
 
 	plugin.command('viewNodeData', () => {
-		if (figma.currentPage.selection[0]) {
-			console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'components'))
-		}
+		console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'template'))
+		figma.closePlugin()
 	})
 
 	plugin.command('linkComponents', ({ ui }) => {
@@ -1097,8 +1115,8 @@ plugma((plugin) => {
 	// Listen for events from UI
 
 	plugin.on('to-create-table', (msg) => {
-		figma.clientStorage.getAsync('preferences').then((res) => {
-			plugin.ui.show({ type: "create-table", ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist })
+		figma.clientStorage.getAsync('userPreferences').then((res) => {
+			plugin.ui.show({ type: "create-table", ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
 		})
 	})
 
@@ -1107,15 +1125,16 @@ plugma((plugin) => {
 	})
 
 	plugin.on('new-template', (msg) => {
-		var components = createDefaultComponents()
+		var components = createDefaultTemplate()
 
 		markNode(components.table, 'table')
 
 		importTemplate([components.table])
 
-		setDefaultTemplate(getPluginData(components.table, 'template')).then((res) => {
-			figma.notify('New template created')
-		})
+		setDefaultTemplate(getPluginData(components.table, 'template'))
+
+		figma.notify('New template created')
+
 
 	})
 
@@ -1189,9 +1208,12 @@ plugma((plugin) => {
 })
 
 
-console.log(getPluginData(figma.root, 'remoteFiles'))
-console.log(getPluginData(figma.root, 'localTemplates'))
+console.log('fileId ->', getPluginData(figma.root, 'fileId'))
+console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
+console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'))
 
-getClientStorageAsync('userPreferences').then(res => {
-	console.log(res.defaultTemplate)
-})
+// getClientStorageAsync('userPreferences').then(res => {
+// 	console.log(res)
+// })
+
+
