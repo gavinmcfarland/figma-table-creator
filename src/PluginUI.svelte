@@ -211,6 +211,9 @@
 													}} for="localTemplates">Local templates</label>
 												</div>
 											{/if}
+											{#if data.localTemplates && data.remoteFiles}
+												<span class="tooltip-divider"></span>
+											{/if}
 											{#if data.remoteFiles}
 												{#each data.remoteFiles as file}
 														<div>
@@ -653,6 +656,12 @@
 
 	.tooltip div:hover {
 		background-color: var(--color-blue);
+	}
+
+	.tooltip-divider {
+		display: block;
+		margin-block: 8px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
 
