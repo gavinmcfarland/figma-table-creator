@@ -1,5 +1,6 @@
 <script>
 	export let icon
+	export let showMenu = false;
 
 	function clickOutside(element, callbackFunction) {
 		function onClick(event) {
@@ -20,31 +21,30 @@
 		}
 	}
 
-	let showModal = false;
+
 </script>
 
 <div class="Select" use:clickOutside={(event, element) => {
 			console.log('clicked outside');
-			if (showModal === true) {
-				console.log(element)
+			if (showMenu === true) {
 				element.classList.remove("show");
-				showModal = false;
+				showMenu = false;
 			}
 			}}>
 	<div class="label" on:click={(event) => {
 		var parentElement = event.currentTarget.parentElement
 
-		if (showModal === false) {
+		if (showMenu === false) {
 			parentElement.classList.add("show")
-			showModal = true;
+			showMenu = true;
 		} else {
 			parentElement.classList.remove("show")
-			showModal = false;
+			showMenu = false;
 		}
 
 		window.addEventListener("blur", () => {
-			// parentElement.classList.remove("show")
-			showModal = false;
+			parentElement.classList.remove("show")
+			showMenu = false;
 		});
 }}>
 		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />

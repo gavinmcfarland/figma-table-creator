@@ -16,6 +16,8 @@ function genRandomId() {
 
 async function createTableInstance(template, preferences) {
 
+	// FIXME: Check for imported components
+
 	// Find table component
 	var component = figma.getNodeById(template.component.id)
 
@@ -743,6 +745,8 @@ function restoreComponent(component) {
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
 
+	console.log(getPluginData(figma.root, 'defaultTemplate'))
+
 	getClientStorageAsync('userPreferences').then((res) => {
 
 			// Will only let you create a table if less than 50 columns and rows
@@ -868,7 +872,8 @@ function importTemplate(nodes) {
 		var newTemplateEntry = {
 			id: getPluginData(nodes[0], 'template').id,
 			name: getPluginData(nodes[0], 'template').name,
-			component: getPluginData(nodes[0], 'template').component
+			component: getPluginData(nodes[0], 'template').component,
+			file: getPluginData(nodes[0], 'template').file
 		}
 
 		// Only add new template if unique
@@ -948,30 +953,23 @@ function markNode(node, element) {
 	setPluginData(node, `is${capitalize(element)}`, true)
 
 	if (node.type === "COMPONENT") {
-		updatePluginData(node, "template", (data) => {
-			data = data || {
-				file: {
-					id: getPluginData(figma.root, 'fileId'),
-					name: figma.root.name
-				},
-				name: node.name,
-				id: genRandomId(),
-				component: {
-					key: node.key,
-					id: node.id
-				}
+		setPluginData(node, "template", {
+			file: {
+				id: getPluginData(figma.root, 'fileId'),
+				name: figma.root.name
+			},
+			name: node.name,
+			id: genRandomId(),
+			component: {
+				key: node.key,
+				id: node.id
 			}
-
-			return data
 		})
 	}
 }
 
 function setDefaultTemplate(template) {
-	var defaultTemplate = updatePluginData(figma.root, 'defaultTemplate', (data) => {
-		data = data || template
-		return data
-	})
+	setPluginData(figma.root, 'defaultTemplate', template)
 
 	// await updateClientStorageAsync('userPreferences', (data) => {
 	// 	console.log(template)
@@ -1193,6 +1191,12 @@ plugma((plugin) => {
 	plugin.on('set-default-template', (msg) => {
 
 		setDefaultTemplate(msg.template)
+
+		// // FIXME: Consider combining into it's own function?
+		// figma.clientStorage.getAsync('userPreferences').then((res) => {
+		// 	figma.ui.postMessage({ ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
+		// })
+
 	})
 
 	plugin.on('import-template', (msg) => {

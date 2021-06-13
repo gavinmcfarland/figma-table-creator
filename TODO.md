@@ -21,3 +21,6 @@
 19. Default template needs to stored on document and not user preferences
 20. Find a way to send update to UI when document data updated DONE
 21. Find a way to update data with async in Svelte
+22. Fix selected template in UI DONE
+23. Find out why can't open menu after selecting new default template -> It's because menu is closed but doesn't change state of dropdown.
+24. Find a way to switch file

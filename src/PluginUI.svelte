@@ -24,16 +24,29 @@
 	let chooseComponentsPageActive = false
 
 
-	function updateSelectedTemplate(data) {
+	function updateSelectedTemplate(data, template) {
 		// Look for selected table in local templates
+		template = template || data.defaultTemplate
+
+		console.log("selectedTemplate", template)
 		for (var i in data.localTemplates) {
-			if (data.defaultTemplate.component.key === data.localTemplates[i].component.key) {
+			if (template.component.key === data.localTemplates[i].component.key) {
 				data.localTemplates[i].selected = true
 			}
 		}
 
 		// TODO: Look for selected table in remote files
+
+		return data
 	}
+
+	// function isSelected(data, template) {
+	// 	for (var i in data.localTemplates) {
+	// 		if (data.defaultTemplate.component.key === template.component.key) {
+	// 			return true
+	// 		}
+	// 	}
+	// }
 
 	function createTable() {
 		console.log("table created")
@@ -76,7 +89,7 @@
 	function setDefaultTemplate(template, data) {
 
 		// Not sure how to get it to update UI
-		updateSelectedTemplate(data)
+		data = updateSelectedTemplate(template, data)
 
 		parent.postMessage(
 			{
@@ -164,6 +177,8 @@
 
 <svelte:window on:message={onLoad} />
 
+<!-- {console.log(data)} -->
+
 {#if createTablePageActive}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div class=section-title>
@@ -179,15 +194,14 @@
 
 							<Dropdown>
 								<slot slot="label">
-									{#if data.defaultTemplate?.file.id === data.fileId}
+									{#if data.defaultTemplate?.file?.id === data.fileId}
 										Local templates
 									{:else}
-										{data.defaultTemplate?.file.name}
+										{data.defaultTemplate?.file?.name}
 									{/if}
 								</slot>
 								<slot slot="content">
 									<div class="tooltip">
-										<!-- {#if data.defaultTemplate?.file.id === data.fileId} -->
 											{#if data.localTemplates}
 												<div>
 													<input checked type="radio" id="localTemplates" name="files">
@@ -197,10 +211,8 @@
 													}} for="localTemplates">Local templates</label>
 												</div>
 											{/if}
-										<!-- {:else} -->
 											{#if data.remoteFiles}
 												{#each data.remoteFiles as file}
-													<!-- {#if data.defaultTemplate?.file.id === file.id} -->
 														<div>
 															<input type="radio" id={file.id} name="files">
 															<label on:click={(event) => {
@@ -208,10 +220,8 @@
 																event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																}} for={file.id}>{file.name}</label>
 														</div>
-													<!-- {/if} -->
 												{/each}
 											{/if}
-										<!-- {/if} -->
 
 									</div>
 								</slot>
@@ -219,7 +229,7 @@
 
 						</div>
 						<div>
-							{#if data.defaultTemplate?.file.id === data.fileId}
+							{#if data.defaultTemplate?.file?.id === data.fileId}
 								{#if data.localTemplates}
 									<ul class="local-templates">
 									{#each data.localTemplates as template}
@@ -237,7 +247,7 @@
 								{#if data.remoteFiles}
 									<div>
 										{#each data.remoteFiles as file}
-											{#if data.defaultTemplate?.file.id === file.id}
+											{#if data.defaultTemplate?.file?.id === file.id}
 												<ul class="remote-file">
 														{#each file.templates as template}
 														<li on:click={() => setDefaultTemplate(template, data)}>{template.name}</li>
