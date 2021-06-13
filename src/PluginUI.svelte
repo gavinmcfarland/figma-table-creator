@@ -22,6 +22,7 @@
 	let createTablePageActive = false
 	let settingsPageActive = false
 	let chooseComponentsPageActive = false
+	let selectedFile
 
 
 	function updateSelectedTemplate(data, template) {
@@ -102,24 +103,29 @@
 		)
 	}
 
-	function updateSelectedFile(file, data) {
+	function updateSelectedFile(data, file) {
 
-		// Look for selected table in local templates
-		// for (var i in data.localTemplates) {
-		// 	if (data.defaultTemplate.component.key === data.localTemplates[i].component.key) {
-		// 		data.localTemplates[i].selected = true
-		// 	}
-		// }
+		// file = file || data.defaultTemplate.file
 
-		for (var i in data.remoteFiles) {
-			if (data.remoteFiles[i].id === file.id) {
-				data.remoteFiles[i].selected = true
+		if (file) {
+			selectedFile = file
+		}
+		else {
+			if (data.defaultTemplate.file.id === data.fileId) {
+				selectedFile = data.defaultTemplate.file
+				selectedFile.name = "Local templates"
+			}
+			else {
+				for (var i in data.remoteFiles) {
+					if (data.remoteFiles[i].id === data.defaultTemplate.file.id) {
+						// data.remoteFiles[i].selected = true
+						selectedFile = data.remoteFiles[i]
+					}
+				}
 			}
 		}
 
-
-		// TODO: Look for selected table in remote files
-
+		return data
 	}
 
 	function importTemplate() {
@@ -170,6 +176,8 @@
 
 		updateSelectedTemplate(data)
 
+		updateSelectedFile(data)
+
 		return data
 	}
 
@@ -194,11 +202,12 @@
 
 							<Dropdown>
 								<slot slot="label">
-									{#if data.defaultTemplate?.file?.id === data.fileId}
+									{selectedFile.name}
+									<!-- {#if data.defaultTemplate?.file?.id === data.fileId}
 										Local templates
 									{:else}
 										{data.defaultTemplate?.file?.name}
-									{/if}
+									{/if} -->
 								</slot>
 								<slot slot="content">
 									<div class="tooltip">
@@ -206,7 +215,7 @@
 												<div>
 													<input checked type="radio" id="localTemplates" name="files">
 													<label on:click={(event) => {
-														// updateSelectedFile(data.localTemplates, data)
+														updateSelectedFile(data, {name: 'Local templates', id: data.fileId})
 														event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 													}} for="localTemplates">Local templates</label>
 												</div>
@@ -219,7 +228,7 @@
 														<div>
 															<input type="radio" id={file.id} name="files">
 															<label on:click={(event) => {
-																// updateSelectedFile(file, data)
+																updateSelectedFile(data, file)
 																event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																}} for={file.id}>{file.name}</label>
 														</div>
@@ -232,7 +241,7 @@
 
 						</div>
 						<div>
-							{#if data.defaultTemplate?.file?.id === data.fileId}
+							{#if selectedFile?.id === data.fileId}
 								{#if data.localTemplates}
 									<ul class="local-templates">
 									{#each data.localTemplates as template}
@@ -250,7 +259,7 @@
 								{#if data.remoteFiles}
 									<div>
 										{#each data.remoteFiles as file}
-											{#if data.defaultTemplate?.file?.id === file.id}
+											{#if selectedFile?.id === file.id}
 												<ul class="remote-file">
 														{#each file.templates as template}
 														<li on:click={() => setDefaultTemplate(template, data)}>{template.name}</li>
