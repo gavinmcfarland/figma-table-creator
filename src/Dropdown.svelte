@@ -1,8 +1,20 @@
+<script context="module">
+	const dropdowns={}
+
+	export function getDropdown(id=''){
+		return dropdowns[id]
+	}
+</script>
+
 <script>
+	import {onDestroy} from 'svelte'
+
 	export let icon
 	export let showMenu = false;
+	export let id = ''
 
 	function clickOutside(element, callbackFunction) {
+
 		function onClick(event) {
 			if (!element.contains(event.target)) {
 				callbackFunction(event, element);
@@ -21,30 +33,41 @@
 		}
 	}
 
+	function close() {
+		showMenu = false
+
+		console.log('close ->', showMenu)
+	}
+
+	function open() {
+		showMenu = true
+
+		console.log('open ->', showMenu)
+	}
+
+	dropdowns[id]={open, close}
+
+	onDestroy(()=>{
+		delete dropdowns[id]
+	})
+
 
 </script>
 
-<div class="Select" use:clickOutside={(event, element) => {
-			console.log('clicked outside');
-			if (showMenu === true) {
-				element.classList.remove("show");
-				showMenu = false;
-			}
-			}}>
+<div class="Select {showMenu ? 'show' : ''}" use:clickOutside={(event, element) => {
+	close()
+}}>
 	<div class="label" on:click={(event) => {
-		var parentElement = event.currentTarget.parentElement
-
 		if (showMenu === false) {
-			parentElement.classList.add("show")
-			showMenu = true;
-		} else {
-			parentElement.classList.remove("show")
-			showMenu = false;
+			open()
+		}
+		else {
+			close()
 		}
 
 		window.addEventListener("blur", () => {
-			parentElement.classList.remove("show")
-			showMenu = false;
+			// parentElement.classList.remove("show")
+			close()
 		});
 }}>
 		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
@@ -70,6 +93,7 @@
 		position: relative;
 		display: flex; place-items: center;
 		min-height: 30px;
+		cursor: default;
 	}
 
 	.Select:hover > .label {

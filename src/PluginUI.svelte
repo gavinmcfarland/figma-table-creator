@@ -3,7 +3,7 @@
 	import { onMount } from "svelte"
 	import Field from "./Field.svelte"
 	import Button from "./Button.svelte"
-	import Dropdown from "./Dropdown.svelte"
+	import Dropdown, {getDropdown} from "./Dropdown.svelte"
 	import Checkbox from "./Checkbox.svelte"
 	import RadioButton from "./RadioButton.svelte"
 	import Matrix from "./Matrix.svelte"
@@ -33,6 +33,18 @@
 		for (var i in data.localTemplates) {
 			if (template.component.key === data.localTemplates[i].component.key) {
 				data.localTemplates[i].selected = true
+			}
+		}
+
+		// for (let i = 0; i < data.remoteFiles.length; i++) {
+
+		// }
+		for (let i in data.remoteFiles) {
+			var file = data.remoteFiles[i]
+			for (let b in file.templates) {
+				if (template.component.key === file.templates[b].component.key) {
+					file.templates[b].selected = true
+				}
 			}
 		}
 
@@ -191,7 +203,7 @@
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div class=section-title>
 			<div class="SelectWrapper">
-				<Dropdown icon="template">
+				<Dropdown icon="template" id="menu">
 				<slot slot="label">{data.defaultTemplate?.name}</slot>
 
 				<slot slot="content">
@@ -200,7 +212,7 @@
 
 							<p style="font-weight: 600">Choose template</p>
 
-							<Dropdown>
+							<Dropdown id="tooltip">
 								<slot slot="label">
 									{selectedFile.name}
 									<!-- {#if data.defaultTemplate?.file?.id === data.fileId}
@@ -213,10 +225,11 @@
 									<div class="tooltip">
 											{#if data.localTemplates}
 												<div>
-													<input checked type="radio" id="localTemplates" name="files">
+													<input checked="{selectedFile?.id === data.fileId ? true : false}" type="radio" id="localTemplates" name="files">
 													<label on:click={(event) => {
 														updateSelectedFile(data, {name: 'Local templates', id: data.fileId})
-														event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+														getDropdown('tooltip').close()
 													}} for="localTemplates">Local templates</label>
 												</div>
 											{/if}
@@ -226,10 +239,11 @@
 											{#if data.remoteFiles}
 												{#each data.remoteFiles as file}
 														<div>
-															<input type="radio" id={file.id} name="files">
+															<input checked="{selectedFile?.id === file.id ? true : false}" type="radio" id={file.id} name="files">
 															<label on:click={(event) => {
 																updateSelectedFile(data, file)
-																event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+																getDropdown('tooltip').close()
+																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																}} for={file.id}>{file.name}</label>
 														</div>
 												{/each}
@@ -249,8 +263,8 @@
 											setDefaultTemplate(template, data)
 
 											// Hide menu when template set
-											event.currentTarget.parentElement.closest(".Select").classList.remove("show")
-
+											// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+											getDropdown('menu').close()
 											}}>{template.name}</li>
 									{/each}
 									</ul>
@@ -262,7 +276,12 @@
 											{#if selectedFile?.id === file.id}
 												<ul class="remote-file">
 														{#each file.templates as template}
-														<li on:click={() => setDefaultTemplate(template, data)}>{template.name}</li>
+														<li class="{template.selected ? 'selected' : ''}" on:click={(event) => {
+															setDefaultTemplate(template, data)
+															// Hide menu when template set
+															// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+															getDropdown('menu').close()
+															}}>{template.name}</li>
 														{/each}
 												</ul>
 											{/if}
