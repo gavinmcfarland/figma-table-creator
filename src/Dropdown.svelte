@@ -65,10 +65,10 @@
 			close()
 		}
 
-		window.addEventListener("blur", () => {
-			// parentElement.classList.remove("show")
-			close()
-		});
+		// window.addEventListener("blur", () => {
+		// 	// parentElement.classList.remove("show")
+		// 	close()
+		// });
 }}>
 		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
 	</div>
@@ -103,7 +103,7 @@
 		padding-inline: calc(var(--padding-100) - 1px);
 	}
 
-	.Select .icon:first-child {
+	.Select > .label > .icon:first-child {
 		margin-left: calc((-1 * var(--margin-50)));
 		margin-right: var(--margin-25);
 	}

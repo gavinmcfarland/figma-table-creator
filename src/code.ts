@@ -17,20 +17,47 @@ function genRandomId() {
 async function createTableInstance(template, preferences) {
 
 	// FIXME: Check for imported components
+	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
 
 	// Find table component
 	var component = figma.getNodeById(template.component.id)
 
+	var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
+
+	if (preferences.includeHeader && !headerCellComponent) {
+		figma.notify("No Header Cell component found")
+
+		// FIXME: Check for header cell sooner so table creation doesn't start
+		return
+	}
+
+
 	var table = component.createInstance().detachInstance()
 
+
 	// Find templates and hoist them so that don't get deleted when removing other children of table
-	var rowTemplate = table.findOne(node => node.getPluginData('isRow')).detachInstance();
+	var rowTemplate = table.findOne(node => node.getPluginData('isRow'))
+
+	if (rowTemplate.type === "INSTANCE") {
+		rowTemplate = rowTemplate.detachInstance();
+	}
+
+
 	figma.currentPage.appendChild(rowTemplate)
 	var cellTemplate = rowTemplate.findOne(node => node.getPluginData('isCell'));
-	var cellComponent = rowTemplate.findOne(node => node.getPluginData('isCell')).mainComponent;
+
+
+	// FIXME: Add check to see if cell node is instance?
+
+	var cellComponent = rowTemplate.findOne(node => node.getPluginData('isCell'));
+
+	if (cellComponent.type === "INSTANCE") {
+		cellComponent = cellComponent.mainComponent
+	}
+
+
 	figma.currentPage.appendChild(cellTemplate)
 
-	var headerCellComponent = cellTemplate.mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
 	// if (headerCellTemplate) figma.currentPage.appendChild(headerCellTemplate)
 
 	table.findAll(node => {
@@ -80,10 +107,6 @@ async function createTableInstance(template, preferences) {
 			var child = rowTemplate.children[i]
 			child.swapComponent(headerCellComponent)
 		}
-	}
-	else if (preferences.includeHeader && !headerCellComponent) {
-		figma.notify("No Header Cell component found")
-		return
 	}
 
 	if (preferences.usingLocalComponent) {
@@ -866,6 +889,7 @@ function updateNodeComponentsData(node, components) {
 function importTemplate(nodes) {
 
 	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
+	// TODO: Check if already imported by checking id in list?
 
 	function addNewTemplate(templates) {
 		// Add template to file in list
@@ -891,6 +915,8 @@ function importTemplate(nodes) {
 		var node = nodes[i]
 
 		if (node.type === "COMPONENT") {
+			markNode(node, 'table')
+
 			updatePluginData(figma.root, 'localTemplates', (data) => {
 				data = data || []
 
@@ -898,6 +924,8 @@ function importTemplate(nodes) {
 
 				return data
 			})
+
+			figma.notify(`Imported ${node.name}`)
 		}
 		else {
 			updatePluginData(figma.root, 'remoteFiles', (data) => {
@@ -937,6 +965,8 @@ function importTemplate(nodes) {
 
 				return data
 			})
+
+			figma.notify(`Imported ${node.name}`)
 		}
 	}
 }
@@ -1125,7 +1155,7 @@ plugma((plugin) => {
 	plugin.on('new-template', (msg) => {
 		var components = createDefaultTemplate()
 
-		markNode(components.table, 'table')
+		// markNode(components.table, 'table')
 
 		importTemplate([components.table])
 
