@@ -408,133 +408,39 @@ function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentC
 
 
 
-async function updateTables() {
+async function updateTableInstances(template) {
 
-	var tables
-	var discardBucket = figma.createFrame()
-	var pages = figma.root.children
+	var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
 
-	var previousCellTemplateID = getPluginData(figma.root, 'components').previous.cell?.id
-	var previousCellHeaderTemplateID = getPluginData(figma.root, 'components').previous.cellHeader?.id
+	var tableTemplate = figma.getNodeById(template.component.id)
+	var rowTemplate = tableTemplate.findOne(node => node.getPluginData('isRow'))
 
-	// Get the templates
-	// TODO: If component can't be imported need to show error message
-	var cellTemplate, cellHeaderTemplate, rowTemplate, tableTemplate;
+	for (let b = 0; b < tables.length; b++) {
 
-	if (getPluginData(figma.root, 'components').componentsRemote == true) {
-		var components = getPluginData(figma.root, 'components').current
+		var table = tables[b]
 
-		cellTemplate = await figma.importComponentByKeyAsync(components.cell.key)
-		cellHeaderTemplate = await figma.importComponentByKeyAsync(components.cellHeader.key)
-		rowTemplate = await figma.importComponentByKeyAsync(components.row.key)
-		tableTemplate = await figma.importComponentByKeyAsync(components.table.key)
-	}
-	else {
-		cellTemplate = findComponentById(getPluginData(figma.root, 'components').current.cell.id)
-		cellHeaderTemplate = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id)
-		rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id)
-		tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id)
-	}
+		// Don't apply if an instance
+		if (table.type !== "INSTANCE") {
 
-	// If can't find table and row templates use plain frame
-	if (!tableTemplate) {
-		tableTemplate = figma.createFrame()
-	}
+			copyPasteStyle(tableTemplate, table, { include: ['name'] })
 
-	if (!rowTemplate) {
-		rowTemplate = figma.createFrame()
-	}
+			for (let x = 0; x < table.children.length; x++) {
+				var row = table.children[x]
 
-	// Look through each page to find tables created with plugin
-	for (let i = 0; i < pages.length; i++) {
-		tables = pages[i].findAll(node => node.getPluginData("isTable") === "true")
-
-		for (let b = 0; b < tables.length; b++) {
-
-			var table = tables[b]
-
-			// Don't apply if an instance
-			if (table.type !== "INSTANCE") {
-
-				copyPasteStyle(tableTemplate, table, { include: ['name'] })
-
-				for (let x = 0; x < table.children.length; x++) {
-					var row = table.children[x]
-
-					if (row.children && row.getPluginData("isRow") === "true") {
-
-						for (let k = 0; k < row.children.length; k++) {
-							var cell = row.children[k]
-
-							var width = cell.width
-							var height = cell.height
-							var newInstance = cell.clone()
-							discardBucket.appendChild(newInstance)
-
-							// Checks that main component has not been swapped by user
-							if (cell.mainComponent.id === previousCellTemplateID) {
-
-								overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children)
-
-								cell.mainComponent = cellTemplate
-
-								// We should not set width or layout properties of cells inside row instances
-								if (row.type === "INSTANCE") {
-
-								}
-								else {
-									cell.resize(width, height)
-									cell.layoutAlign = cellTemplate.layoutAlign
-									cell.layoutGrow = cellTemplate.layoutGrow
-								}
-
-								// Bug where plugin preferences is lost when instance swapped
-								cell.setPluginData("instanceBug", "true")
-								cell.setPluginData("isCell", "")
-								cell.setPluginData("isCell", "true")
-
-								overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children)
-
-							}
-
-							if (cell.mainComponent.id === previousCellHeaderTemplateID) {
-
-								overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children)
-
-								cell.mainComponent = cellHeaderTemplate
-
-								// We should not set width or layout properties of cells inside row instances
-								if (row.type === "INSTANCE") {
-
-								}
-								else {
-									cell.resize(width, height)
-									cell.layoutAlign = cellHeaderTemplate.layoutAlign
-									cell.layoutGrow = cellHeaderTemplate.layoutGrow
-								}
-
-								// Bug where plugin preferences is lost when instance swapped
-								cell.setPluginData("instanceBug", "true")
-								cell.setPluginData("isCellHeader", "")
-								cell.setPluginData("isCellHeader", "true")
-
-								overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children)
-							}
-						}
-
-						if (row.getPluginData("isRow") === "true" && row.type !== "INSTANCE") {
-							copyPasteStyle(rowTemplate, row, { include: ['name'] })
-						}
-					}
+				if (getPluginData(row, "isRow") === true && row.type !== "INSTANCE") {
+					copyPasteStyle(rowTemplate, row, { include: ['name'] })
 				}
 
+				// // Only need to loop through cells if has been changed by user
+				// if (row.children && getPluginData(row, "isRow") === true) {
+				// 	for (let k = 0; k < row.children.length; k++) {
+				// 		var cell = row.children[k]
+				// 	}
+				// }
 			}
+
 		}
 	}
-
-
-
-	discardBucket.remove()
 
 }
 
@@ -815,6 +721,41 @@ function createTable(msg) {
 	})
 }
 
+function syncTemplateData() {
+	var templateNodes = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === "COMPONENT")
+
+	for (let templateNode of templateNodes) {
+		updateTemplate(templateNode)
+	}
+}
+
+async function syncRemoteFiles() {
+	updatePluginData(figma.root, 'remoteFiles', (files) => {
+		if (files) {
+			for (var i = 0; i < files.length; i++) {
+				var file = files[i]
+
+				for (let template of file.templates) {
+
+					figma.importComponentByKeyAsync(template.component.key).then((component) => {
+						console.log('component', component)
+						var remoteTemplate = getPluginData(component, 'template')
+						template = remoteTemplate
+						file.name = template.file.name
+
+					}).catch(() => {
+						figma.notify("Please check component is published")
+					})
+				}
+			}
+
+			// FIXME: Doesn't work because not inside async finished before files are returned
+			return files
+		}
+	})
+
+}
+
 async function syncComponentsToStorage() {
 
 	// TODO: Find a way to check the files these components link to exist and if not remove them from storage
@@ -886,28 +827,29 @@ function updateNodeComponentsData(node, components) {
 	})
 }
 
+function addNewTemplate(templates) {
+	// Add template to file in list
+	var newTemplateEntry = {
+		id: getPluginData(nodes[0], 'template').id,
+		name: getPluginData(nodes[0], 'template').name,
+		component: getPluginData(nodes[0], 'template').component,
+		file: getPluginData(nodes[0], 'template').file
+	}
+
+	// Only add new template if unique
+	if (!templates.some((template) => template.id === newTemplateEntry.id)) {
+
+		templates.push(newTemplateEntry)
+	}
+
+	return templates
+}
+
 function importTemplate(nodes) {
 
 	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
 	// TODO: Check if already imported by checking id in list?
 
-	function addNewTemplate(templates) {
-		// Add template to file in list
-		var newTemplateEntry = {
-			id: getPluginData(nodes[0], 'template').id,
-			name: getPluginData(nodes[0], 'template').name,
-			component: getPluginData(nodes[0], 'template').component,
-			file: getPluginData(nodes[0], 'template').file
-		}
-
-		// Only add new template if unique
-		if (!templates.some((template) => template.id === newTemplateEntry.id)) {
-
-			templates.push(newTemplateEntry)
-		}
-
-		return templates
-	}
 
 	// Add file to list of files used by the document
 
@@ -982,6 +924,13 @@ function markNode(node, element) {
 
 	setPluginData(node, `is${capitalize(element)}`, true)
 
+	if (element === 'table') {
+		setTemplate(node)
+	}
+}
+
+function setTemplate(node) {
+
 	if (node.type === "COMPONENT") {
 		setPluginData(node, "template", {
 			file: {
@@ -994,6 +943,19 @@ function markNode(node, element) {
 				key: node.key,
 				id: node.id
 			}
+		})
+	}
+}
+
+function updateTemplate(node) {
+
+	if (node.type === "COMPONENT") {
+		updatePluginData(node, "template", (data) => {
+			if (data) {
+				data.file.name = figma.root.name
+				data.name = node.name
+			}
+			return data
 		})
 	}
 }
@@ -1148,8 +1110,10 @@ plugma((plugin) => {
 		})
 	})
 
-	plugin.on('update-tables', (msg) => {
-		updateTables()
+	plugin.on('update-table-instances', (msg) => {
+		updateTableInstances(msg.template).then(() => {
+			figma.notify('Tables updated', { timeout: 1500})
+		})
 	})
 
 	plugin.on('new-template', (msg) => {
@@ -1241,10 +1205,13 @@ plugma((plugin) => {
 
 })
 
+syncTemplateData()
+syncRemoteFiles()
 
 console.log('fileId ->', getPluginData(figma.root, 'fileId'))
 console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
 console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'))
+
 
 // getClientStorageAsync('userPreferences').then(res => {
 // 	console.log(res)

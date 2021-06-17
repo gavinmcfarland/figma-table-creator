@@ -153,16 +153,15 @@
 	}
 
 	function updateTableInstances(template) {
-		console.log("Update instances")
-		// parent.postMessage(
-		// 	{
-		// 		pluginMessage: {
-		// 			type: "update-table-instances",
-		// 			template: template
-		// 		}
-		// 	},
-		// 	"*"
-		// )
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "update-table-instances",
+					template: template
+				}
+			},
+			"*"
+		)
 	}
 
 	async function onLoad(event) {

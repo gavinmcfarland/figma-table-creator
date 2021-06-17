@@ -277,32 +277,6 @@ function positionInCenter(node) {
     node.x = figma.viewport.center.x - (node.width / 2);
     node.y = figma.viewport.center.y - (node.height / 2);
 }
-async function changeText(node, text, weight) {
-    if (node.fontName === figma.mixed) {
-        await figma.loadFontAsync(node.getRangeFontName(0, 1));
-    }
-    else {
-        await figma.loadFontAsync({
-            family: node.fontName.family,
-            style: weight || node.fontName.style
-        });
-    }
-    if (weight) {
-        node.fontName = {
-            family: node.fontName.family,
-            style: weight
-        };
-    }
-    if (text) {
-        node.characters = text;
-    }
-    if (text === "") {
-        // Fixes issue where spaces are ignored and node has zero width
-        node.resize(10, node.height);
-    }
-    node.textAutoResize = "HEIGHT";
-    node.layoutAlign = "STRETCH";
-}
 function ungroupNode(node, parent) {
     // Avoid children changing while looping
     let children = node.children;
@@ -899,130 +873,29 @@ async function createTableInstance(template, preferences) {
     }
     return table;
 }
-// Must pass in both the source/target and their matching main components
-function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
-    for (let a = 0; a < targetChildren.length; a++) {
-        for (let b = 0; b < sourceChildren.length; b++) {
-            // If layer has children then run function again
-            if (sourceComponentChildren[a].children && targetComponentChildren[a].children && targetChildren[a].children && sourceChildren[a].children) {
-                overrideChildrenChars(sourceComponentChildren[a].children, targetComponentChildren[b].children, sourceChildren[b].children, targetChildren[b].children);
-            }
-            // If layer is a text node then check if the main components share the same name
-            else if (sourceChildren[a].type === "TEXT") {
-                if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
-                    changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
+async function updateTableInstances(template) {
+    var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
+    var tableTemplate = figma.getNodeById(template.component.id);
+    var rowTemplate = tableTemplate.findOne(node => node.getPluginData('isRow'));
+    for (let b = 0; b < tables.length; b++) {
+        var table = tables[b];
+        // Don't apply if an instance
+        if (table.type !== "INSTANCE") {
+            copyPasteStyle(tableTemplate, table, { include: ['name'] });
+            for (let x = 0; x < table.children.length; x++) {
+                var row = table.children[x];
+                if (getPluginData(row, "isRow") === true && row.type !== "INSTANCE") {
+                    copyPasteStyle(rowTemplate, row, { include: ['name'] });
                 }
+                // // Only need to loop through cells if has been changed by user
+                // if (row.children && getPluginData(row, "isRow") === true) {
+                // 	for (let k = 0; k < row.children.length; k++) {
+                // 		var cell = row.children[k]
+                // 	}
+                // }
             }
         }
     }
-}
-function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
-    for (let a = 0; a < sourceChildren.length; a++) {
-        if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
-            targetChildren[a].name = sourceChildren[a].name;
-        }
-        // If layer has children then run function again
-        if (targetChildren[a].children && sourceChildren[a].children) {
-            overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children);
-        }
-        // If layer is a text node then check if the main components share the same name
-        else if (sourceChildren[a].type === "TEXT") {
-            // if (sourceChildren[a].name === targetChildren[b].name) {
-            changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
-            // }
-        }
-    }
-}
-async function updateTables() {
-    var _a, _b;
-    var tables;
-    var discardBucket = figma.createFrame();
-    var pages = figma.root.children;
-    var previousCellTemplateID = (_a = getPluginData(figma.root, 'components').previous.cell) === null || _a === void 0 ? void 0 : _a.id;
-    var previousCellHeaderTemplateID = (_b = getPluginData(figma.root, 'components').previous.cellHeader) === null || _b === void 0 ? void 0 : _b.id;
-    // Get the templates
-    // TODO: If component can't be imported need to show error message
-    var cellTemplate, cellHeaderTemplate, rowTemplate, tableTemplate;
-    if (getPluginData(figma.root, 'components').componentsRemote == true) {
-        var components = getPluginData(figma.root, 'components').current;
-        cellTemplate = await figma.importComponentByKeyAsync(components.cell.key);
-        cellHeaderTemplate = await figma.importComponentByKeyAsync(components.cellHeader.key);
-        rowTemplate = await figma.importComponentByKeyAsync(components.row.key);
-        tableTemplate = await figma.importComponentByKeyAsync(components.table.key);
-    }
-    else {
-        cellTemplate = findComponentById(getPluginData(figma.root, 'components').current.cell.id);
-        cellHeaderTemplate = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id);
-        rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id);
-        tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id);
-    }
-    // If can't find table and row templates use plain frame
-    if (!tableTemplate) {
-        tableTemplate = figma.createFrame();
-    }
-    if (!rowTemplate) {
-        rowTemplate = figma.createFrame();
-    }
-    // Look through each page to find tables created with plugin
-    for (let i = 0; i < pages.length; i++) {
-        tables = pages[i].findAll(node => node.getPluginData("isTable") === "true");
-        for (let b = 0; b < tables.length; b++) {
-            var table = tables[b];
-            // Don't apply if an instance
-            if (table.type !== "INSTANCE") {
-                copyPasteStyle(tableTemplate, table, { include: ['name'] });
-                for (let x = 0; x < table.children.length; x++) {
-                    var row = table.children[x];
-                    if (row.children && row.getPluginData("isRow") === "true") {
-                        for (let k = 0; k < row.children.length; k++) {
-                            var cell = row.children[k];
-                            var width = cell.width;
-                            var height = cell.height;
-                            var newInstance = cell.clone();
-                            discardBucket.appendChild(newInstance);
-                            // Checks that main component has not been swapped by user
-                            if (cell.mainComponent.id === previousCellTemplateID) {
-                                overrideChildrenChars(cell.mainComponent.children, cellTemplate.children, cell.children, newInstance.children);
-                                cell.mainComponent = cellTemplate;
-                                // We should not set width or layout properties of cells inside row instances
-                                if (row.type === "INSTANCE") ;
-                                else {
-                                    cell.resize(width, height);
-                                    cell.layoutAlign = cellTemplate.layoutAlign;
-                                    cell.layoutGrow = cellTemplate.layoutGrow;
-                                }
-                                // Bug where plugin preferences is lost when instance swapped
-                                cell.setPluginData("instanceBug", "true");
-                                cell.setPluginData("isCell", "");
-                                cell.setPluginData("isCell", "true");
-                                overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
-                            }
-                            if (cell.mainComponent.id === previousCellHeaderTemplateID) {
-                                overrideChildrenChars(cell.mainComponent.children, cellHeaderTemplate.children, cell.children, newInstance.children);
-                                cell.mainComponent = cellHeaderTemplate;
-                                // We should not set width or layout properties of cells inside row instances
-                                if (row.type === "INSTANCE") ;
-                                else {
-                                    cell.resize(width, height);
-                                    cell.layoutAlign = cellHeaderTemplate.layoutAlign;
-                                    cell.layoutGrow = cellHeaderTemplate.layoutGrow;
-                                }
-                                // Bug where plugin preferences is lost when instance swapped
-                                cell.setPluginData("instanceBug", "true");
-                                cell.setPluginData("isCellHeader", "");
-                                cell.setPluginData("isCellHeader", "true");
-                                overrideChildrenChars2(newInstance.children, cell.children, newInstance.mainComponent.children, cell.mainComponent.children);
-                            }
-                        }
-                        if (row.getPluginData("isRow") === "true" && row.type !== "INSTANCE") {
-                            copyPasteStyle(rowTemplate, row, { include: ['name'] });
-                        }
-                    }
-                }
-            }
-        }
-    }
-    discardBucket.remove();
 }
 function addNewNodeToSelection(page, node) {
     page.selection = node;
@@ -1193,23 +1066,50 @@ function createTable(msg) {
         }
     });
 }
+function syncTemplateData() {
+    var templateNodes = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === "COMPONENT");
+    for (let templateNode of templateNodes) {
+        updateTemplate(templateNode);
+    }
+}
+async function syncRemoteFiles() {
+    updatePluginData(figma.root, 'remoteFiles', (files) => {
+        if (files) {
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                for (let template of file.templates) {
+                    figma.importComponentByKeyAsync(template.component.key).then((component) => {
+                        console.log('component', component);
+                        var remoteTemplate = getPluginData(component, 'template');
+                        template = remoteTemplate;
+                        file.name = template.file.name;
+                    }).catch(() => {
+                        figma.notify("Please check component is published");
+                    });
+                }
+            }
+            // FIXME: Doesn't work because not inside async finished before files are returned
+            return files;
+        }
+    });
+}
+function addNewTemplate(templates) {
+    // Add template to file in list
+    var newTemplateEntry = {
+        id: getPluginData(nodes[0], 'template').id,
+        name: getPluginData(nodes[0], 'template').name,
+        component: getPluginData(nodes[0], 'template').component,
+        file: getPluginData(nodes[0], 'template').file
+    };
+    // Only add new template if unique
+    if (!templates.some((template) => template.id === newTemplateEntry.id)) {
+        templates.push(newTemplateEntry);
+    }
+    return templates;
+}
 function importTemplate(nodes) {
     // TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
     // TODO: Check if already imported by checking id in list?
-    function addNewTemplate(templates) {
-        // Add template to file in list
-        var newTemplateEntry = {
-            id: getPluginData(nodes[0], 'template').id,
-            name: getPluginData(nodes[0], 'template').name,
-            component: getPluginData(nodes[0], 'template').component,
-            file: getPluginData(nodes[0], 'template').file
-        };
-        // Only add new template if unique
-        if (!templates.some((template) => template.id === newTemplateEntry.id)) {
-            templates.push(newTemplateEntry);
-        }
-        return templates;
-    }
     // Add file to list of files used by the document
     for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
@@ -1263,6 +1163,11 @@ function markNode(node, element) {
         return s.charAt(0).toUpperCase() + s.slice(1);
     };
     setPluginData(node, `is${capitalize(element)}`, true);
+    if (element === 'table') {
+        setTemplate(node);
+    }
+}
+function setTemplate(node) {
     if (node.type === "COMPONENT") {
         setPluginData(node, "template", {
             file: {
@@ -1275,6 +1180,17 @@ function markNode(node, element) {
                 key: node.key,
                 id: node.id
             }
+        });
+    }
+}
+function updateTemplate(node) {
+    if (node.type === "COMPONENT") {
+        updatePluginData(node, "template", (data) => {
+            if (data) {
+                data.file.name = figma.root.name;
+                data.name = node.name;
+            }
+            return data;
         });
     }
 }
@@ -1391,8 +1307,10 @@ dist((plugin) => {
             plugin.ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
         });
     });
-    plugin.on('update-tables', (msg) => {
-        updateTables();
+    plugin.on('update-table-instances', (msg) => {
+        updateTableInstances(msg.template).then(() => {
+            figma.notify('Tables updated', { timeout: 1500 });
+        });
     });
     plugin.on('new-template', (msg) => {
         var components = createDefaultTemplate();
@@ -1455,6 +1373,8 @@ dist((plugin) => {
         figma.notify(`Template added`);
     });
 });
+syncTemplateData();
+syncRemoteFiles();
 console.log('fileId ->', getPluginData(figma.root, 'fileId'));
 console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'));
 console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'));
