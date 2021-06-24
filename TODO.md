@@ -28,9 +28,11 @@
 27. Check remote files for selected template
 
 
-1. Enable some sort of method for syncing and updating template info
-    1. Go through localTemplates and remoteFiles list
+1. Enable some sort of method for syncing and updating template info DONE
+    1. Go through localTemplates and remoteFiles
     2. Lookup component
     3. Get component name, and file name
     4. Update in lists
 2. Check properly for template component when searching
+3. Add UI option to switch to creating table using local component
+4. Add relaunchData for detaching table and selecting column rows

@@ -729,28 +729,47 @@ function syncTemplateData() {
 	}
 }
 
-async function syncRemoteFiles() {
+async function syncRemoteFilesAndLocalTemplates() {
+
+	// First update file names by looking up first component of each file
 	updatePluginData(figma.root, 'remoteFiles', (files) => {
 		if (files) {
 			for (var i = 0; i < files.length; i++) {
 				var file = files[i]
 
-				for (let template of file.templates) {
+				figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
+					console.log('component', component)
+					var remoteTemplate = getPluginData(component, 'template')
 
-					figma.importComponentByKeyAsync(template.component.key).then((component) => {
-						console.log('component', component)
-						var remoteTemplate = getPluginData(component, 'template')
-						template = remoteTemplate
-						file.name = template.file.name
-
-					}).catch(() => {
-						figma.notify("Please check component is published")
+					updatePluginData(figma.root, 'remoteFiles', (files) => {
+						files.map((file) => {
+							if (file.id === remoteTemplate.file.id) {
+								file.name = remoteTemplate.file.name
+							}
+						})
+						return files
 					})
-				}
+
+				}).catch(() => {
+					figma.notify("Please check component is published")
+				})
+
 			}
 
-			// FIXME: Doesn't work because not inside async finished before files are returned
+			// FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
 			return files
+		}
+	})
+
+	updatePluginData(figma.root, 'localTemplates', (templates) => {
+		if (templates) {
+			console.log(templates)
+			for (var i = 0; i < templates.length; i++) {
+				templates[i] = getPluginData(figma.getNodeById(templates[i].component.id), 'template')
+			}
+
+			// FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
+			return templates
 		}
 	})
 
@@ -827,13 +846,13 @@ function updateNodeComponentsData(node, components) {
 	})
 }
 
-function addNewTemplate(templates) {
+function addNewTemplate(node, templates) {
 	// Add template to file in list
 	var newTemplateEntry = {
-		id: getPluginData(nodes[0], 'template').id,
-		name: getPluginData(nodes[0], 'template').name,
-		component: getPluginData(nodes[0], 'template').component,
-		file: getPluginData(nodes[0], 'template').file
+		id: getPluginData(node, 'template').id,
+		name: getPluginData(node, 'template').name,
+		component: getPluginData(node, 'template').component,
+		file: getPluginData(node, 'template').file
 	}
 
 	// Only add new template if unique
@@ -862,7 +881,7 @@ function importTemplate(nodes) {
 			updatePluginData(figma.root, 'localTemplates', (data) => {
 				data = data || []
 
-				data = addNewTemplate(data)
+				data = addNewTemplate(node, data)
 
 				return data
 			})
@@ -900,7 +919,7 @@ function importTemplate(nodes) {
 					var file = data[i]
 
 					if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
-						file.templates = addNewTemplate(file.templates)
+						file.templates = addNewTemplate(figma.currentPage.selection[0], file.templates)
 					}
 
 				}
@@ -947,6 +966,7 @@ function setTemplate(node) {
 	}
 }
 
+// Updates file name and component name for template data (currently only works with local template data)
 function updateTemplate(node) {
 
 	if (node.type === "COMPONENT") {
@@ -955,6 +975,7 @@ function updateTemplate(node) {
 				data.file.name = figma.root.name
 				data.name = node.name
 			}
+			console.log(data)
 			return data
 		})
 	}
@@ -980,6 +1001,10 @@ function setDefaultTemplate(template) {
 	})
 
 }
+
+syncTemplateData()
+// TODO: Sync default template: find default template and pull in latest name
+syncRemoteFilesAndLocalTemplates()
 
 plugma((plugin) => {
 
@@ -1089,6 +1114,14 @@ plugma((plugin) => {
 		figma.clientStorage.getAsync('templates').then((components) => {
 			ui.show({ type: "settings", components })
 		})
+	})
+
+	plugin.command('newTemplate', () => {
+		var components = createDefaultTemplate()
+
+		importTemplate([components.table])
+
+		figma.notify('New template created')
 	})
 
 	plugin.command('selectColumn', () => {
@@ -1205,12 +1238,9 @@ plugma((plugin) => {
 
 })
 
-syncTemplateData()
-syncRemoteFiles()
-
-console.log('fileId ->', getPluginData(figma.root, 'fileId'))
-console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
-console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'))
+// console.log('fileId ->', getPluginData(figma.root, 'fileId'))
+// console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
+// console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'))
 
 
 // getClientStorageAsync('userPreferences').then(res => {
