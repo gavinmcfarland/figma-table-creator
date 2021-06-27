@@ -381,6 +381,7 @@ function createDefaultTemplate() {
     component_4_48.description = "";
     component_4_48.setPluginData("isCell", "true");
     obj.cell = component_4_48;
+    obj.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     // Create FRAME
     var frame_4_49 = figma.createFrame();
     frame_4_49.resizeWithoutConstraints(100.0000000000, 0.01);
@@ -455,6 +456,7 @@ function createDefaultTemplate() {
     component_4_53.description = "";
     component_4_53.setPluginData("isCellHeader", "true");
     obj.cellHeader = component_4_53;
+    obj.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     // Create INSTANCE
     var instance_4_54 = component_4_48.createInstance();
     instance_4_54.name = "Table/Cell";
@@ -577,6 +579,7 @@ function createDefaultTemplate() {
     // })
     tempContainer.appendChild(component_4_75);
     obj.table = component_4_75;
+    obj.table.setRelaunchData({ detachTable: 'Detaches table and rows' });
     // Create INSTANCE
     var instance_4_76 = component_4_61.createInstance();
     instance_4_76.relativeTransform = [[1, 0, 0], [0, 1, 0]];
@@ -829,7 +832,7 @@ async function createTableInstance(template, preferences) {
     // Adds children back to template
     table.insertChild(0, rowTemplate);
     rowTemplate.insertChild(0, cellTemplate);
-    if (preferences.usingLocalComponent) {
+    if (preferences.columnResizing) {
         // Turn first row (rowTemplate) into component
         var rowTemplateComponent = figma.createComponent();
         copyPaste(rowTemplate, rowTemplateComponent);
@@ -860,7 +863,7 @@ async function createTableInstance(template, preferences) {
             child.swapComponent(headerCellComponent);
         }
     }
-    if (preferences.usingLocalComponent) {
+    if (preferences.columnResizing) {
         for (let i = 0; i < table.children.length; i++) {
             var row = table.children[i];
             if (i > 0) {
@@ -1034,7 +1037,6 @@ function restoreComponent(component) {
 }
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
-    console.log(getPluginData(figma.root, 'defaultTemplate'));
     getClientStorageAsync('userPreferences').then((res) => {
         // Will only let you create a table if less than 50 columns and rows
         if (msg.columnCount < 51 && msg.rowCount < 51) {
@@ -1042,12 +1044,14 @@ function createTable(msg) {
             createTableInstance(getPluginData(figma.root, 'defaultTemplate'), msg).then((table) => {
                 // If table successfully created?
                 if (table) {
+                    table.setRelaunchData({});
                     // Positions the table in the center of the viewport
                     positionInCenter(table);
                     // Makes table the users current selection
                     figma.currentPage.selection = [table];
                     // This updates the plugin preferences
                     updateClientStorageAsync('userPreferences', (data) => {
+                        data.columnResizing = msg.columnResizing;
                         data.columnCount = msg.columnCount;
                         data.rowCount = msg.rowCount;
                         data.cellWidth = msg.cellWidth;
@@ -1079,7 +1083,7 @@ async function syncRemoteFilesAndLocalTemplates() {
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
                 figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
-                    console.log('component', component);
+                    // console.log('component', component)
                     var remoteTemplate = getPluginData(component, 'template');
                     updatePluginData(figma.root, 'remoteFiles', (files) => {
                         files.map((file) => {
@@ -1099,7 +1103,7 @@ async function syncRemoteFilesAndLocalTemplates() {
     });
     updatePluginData(figma.root, 'localTemplates', (templates) => {
         if (templates) {
-            console.log(templates);
+            // console.log(templates)
             for (var i = 0; i < templates.length; i++) {
                 templates[i] = getPluginData(figma.getNodeById(templates[i].component.id), 'template');
             }
@@ -1206,7 +1210,6 @@ function updateTemplate(node) {
                 data.file.name = figma.root.name;
                 data.name = node.name;
             }
-            console.log(data);
             return data;
         });
     }

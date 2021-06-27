@@ -12,6 +12,8 @@
 	export let icon
 	export let showMenu = false;
 	export let id = ''
+	export let style
+	export let fill
 
 	function clickOutside(element, callbackFunction) {
 
@@ -54,10 +56,11 @@
 
 </script>
 
-<div class="Select {showMenu ? 'show' : ''}" use:clickOutside={(event, element) => {
+<div style={style} class="Select {showMenu ? 'show' : ''} {fill ? 'fill' : ''}" use:clickOutside={(event, element) => {
 	close()
 }}>
-	<div class="label" on:click={(event) => {
+	{#if $$slots.hitThing}
+	<div on:click={(event) => {
 		if (showMenu === false) {
 			open()
 		}
@@ -69,9 +72,26 @@
 		// 	// parentElement.classList.remove("show")
 		// 	close()
 		// });
-}}>
-		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label" /></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
-	</div>
+}}><slot name="hitThing" /></div>
+	{/if}
+	{#if $$slots.label}
+		<div class="label" on:click={(event) => {
+			if (showMenu === false) {
+				open()
+			}
+			else {
+				close()
+			}
+
+			// window.addEventListener("blur", () => {
+			// 	// parentElement.classList.remove("show")
+			// 	close()
+			// });
+	}}>
+			{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label"> </slot></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
+
+		</div>
+	{/if}
 	<slot name="content" />
 
 
@@ -116,6 +136,22 @@
 
 	.show > .menu {
 		display: block;
+	}
+
+	.Select.fill {
+		flex-grow: 1;
+	}
+
+	.Select.fill > .label {
+		margin-right: 0;
+	}
+
+	.Select.fill:hover > .label > [icon="chevron-down"] {
+		margin-left: auto !important;
+	}
+
+	.Select.fill.show > .label > [icon="chevron-down"] {
+		margin-left: auto !important;
 	}
 
 	.show > .tooltip {

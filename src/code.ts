@@ -72,7 +72,7 @@ async function createTableInstance(template, preferences) {
 	table.insertChild(0, rowTemplate)
 	rowTemplate.insertChild(0, cellTemplate)
 
-	if (preferences.usingLocalComponent) {
+	if (preferences.columnResizing) {
 		// Turn first row (rowTemplate) into component
 		var rowTemplateComponent = figma.createComponent()
 		copyPaste(rowTemplate, rowTemplateComponent)
@@ -109,7 +109,8 @@ async function createTableInstance(template, preferences) {
 		}
 	}
 
-	if (preferences.usingLocalComponent) {
+
+	if (preferences.columnResizing) {
 		for (let i = 0; i < table.children.length; i++) {
 			var row = table.children[i]
 
@@ -674,8 +675,6 @@ function restoreComponent(component) {
 // Takes input like rowCount and columnCount to create table and sets plugin preferences to root.
 function createTable(msg) {
 
-	console.log(getPluginData(figma.root, 'defaultTemplate'))
-
 	getClientStorageAsync('userPreferences').then((res) => {
 
 			// Will only let you create a table if less than 50 columns and rows
@@ -685,6 +684,7 @@ function createTable(msg) {
 				createTableInstance(getPluginData(figma.root, 'defaultTemplate'), msg).then((table) => {
 					// If table successfully created?
 					if (table) {
+						table.setRelaunchData({})
 
 						// Positions the table in the center of the viewport
 						positionInCenter(table)
@@ -694,6 +694,7 @@ function createTable(msg) {
 
 						// This updates the plugin preferences
 						updateClientStorageAsync('userPreferences', (data) => {
+							data.columnResizing = msg.columnResizing
 							data.columnCount = msg.columnCount
 							data.rowCount = msg.rowCount
 							data.cellWidth = msg.cellWidth
@@ -738,7 +739,7 @@ async function syncRemoteFilesAndLocalTemplates() {
 				var file = files[i]
 
 				figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
-					console.log('component', component)
+					// console.log('component', component)
 					var remoteTemplate = getPluginData(component, 'template')
 
 					updatePluginData(figma.root, 'remoteFiles', (files) => {
@@ -763,7 +764,7 @@ async function syncRemoteFilesAndLocalTemplates() {
 
 	updatePluginData(figma.root, 'localTemplates', (templates) => {
 		if (templates) {
-			console.log(templates)
+			// console.log(templates)
 			for (var i = 0; i < templates.length; i++) {
 				templates[i] = getPluginData(figma.getNodeById(templates[i].component.id), 'template')
 			}
@@ -975,7 +976,6 @@ function updateTemplate(node) {
 				data.file.name = figma.root.name
 				data.name = node.name
 			}
-			console.log(data)
 			return data
 		})
 	}

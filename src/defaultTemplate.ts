@@ -67,6 +67,7 @@ export function createDefaultTemplate() {
 	component_4_48.setPluginData("isCell", "true")
 
 	obj.cell = component_4_48
+	obj.cell.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
 
 	// Create FRAME
 	var frame_4_49 = figma.createFrame()
@@ -151,6 +152,7 @@ export function createDefaultTemplate() {
 	component_4_53.setPluginData("isCellHeader", "true")
 
 	obj.cellHeader = component_4_53
+	obj.cellHeader.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
 
 	// Create INSTANCE
 	var instance_4_54 = component_4_48.createInstance()
@@ -286,6 +288,7 @@ export function createDefaultTemplate() {
 
 	tempContainer.appendChild(component_4_75)
 	obj.table = component_4_75
+	obj.table.setRelaunchData({ detachTable: 'Detaches table and rows' })
 
 	// Create INSTANCE
 	var instance_4_76 = component_4_61.createInstance()
