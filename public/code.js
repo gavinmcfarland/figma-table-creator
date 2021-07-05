@@ -689,6 +689,7 @@ function createDefaultTemplate() {
     obj.componentSet_1_20.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     obj.component_1_13.setPluginData("isCellHeader", "true");
     obj.component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    obj.component_1_21.setPluginData("isRow", "true");
     obj.component_1_35.setRelaunchData({ detachTable: 'Detaches table and rows' });
     obj.table = component_1_35;
     return obj;
