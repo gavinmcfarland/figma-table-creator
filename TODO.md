@@ -33,9 +33,15 @@
     2. Lookup component
     3. Get component name, and file name
     4. Update in lists
-2. Check properly for template component when searching
-3. Add UI option to switch to creating table using local component
+3. Add UI option to switch to creating table using local component DONE
 4. Add relaunchData for detaching table and selecting column rows DONE
-5. Develope script to migrate users of old plugin to new version
-6. Update settings page
-7. Fix copy and paste of corner radius
+
+
+
+1. Check properly for template component when searching DONE?
+2. Update settings page / Add ability to swap templates
+3. Fix copy and paste of corner radius
+4. Set as default when import template DONE
+5. Create component if template from same file DONE
+6. Develope script to migrate users of old plugin to new version
+7. Add onboarding screens

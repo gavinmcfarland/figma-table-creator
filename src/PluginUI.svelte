@@ -121,7 +121,7 @@
 			selectedFile = file
 		}
 		else {
-			if (data.defaultTemplate.file.id === data.fileId) {
+			if (data.defaultTemplate?.file.id === data.fileId) {
 				selectedFile = data.defaultTemplate.file
 				selectedFile.name = "Local templates"
 			}
@@ -217,7 +217,7 @@
 
 <!-- {console.log(data)} -->
 
-{#if createTablePageActive}
+{#if createTablePageActive && data.defaultTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div class=section-title>
 			<div class="SelectWrapper">
@@ -272,7 +272,7 @@
 								</Dropdown>
 
 							</div>
-							<div>
+							<div class="menu__content">
 								{#if selectedFile?.id === data.fileId}
 									{#if data.localTemplates}
 										<ul class="local-templates">
@@ -297,9 +297,9 @@
 										<div>
 											{#each data.remoteFiles as file}
 												{#if selectedFile?.id === file.id}
-													<ul class="item remote-file">
+													<ul class="remote-file">
 															{#each file.templates as template}
-															<li class="{template.selected ? 'selected' : ''}" on:click={(event) => {
+															<li class="item {template.selected ? 'selected' : ''}" on:click={(event) => {
 
 																// Only trigger if clicking on the element itself
 																if(event.target !== event.currentTarget) return;
@@ -578,6 +578,13 @@
 		width: auto;
 		min-width: 242px;
 		margin-top: 1px;
+
+	}
+
+	.menu__content {
+		min-height: calc(4.5 * var(--size-400));
+		max-height: calc(4.5 * var(--size-400));
+		overflow-y: auto;
 	}
 
 	.menu > * {
@@ -772,7 +779,7 @@
 		border-radius: 2px;
 	}
 
-	.item:hover .refresh {
+	.item:hover > .refresh {
 		display: block;
 	}
 

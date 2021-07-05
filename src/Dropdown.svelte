@@ -68,10 +68,10 @@
 			close()
 		}
 
-		// window.addEventListener("blur", () => {
-		// 	// parentElement.classList.remove("show")
-		// 	close()
-		// });
+		window.addEventListener("blur", () => {
+			// parentElement.classList.remove("show")
+			close()
+		});
 }}><slot name="hitThing" /></div>
 	{/if}
 	{#if $$slots.label}
@@ -83,10 +83,10 @@
 				close()
 			}
 
-			// window.addEventListener("blur", () => {
-			// 	// parentElement.classList.remove("show")
-			// 	close()
-			// });
+			window.addEventListener("blur", () => {
+				// parentElement.classList.remove("show")
+				close()
+			});
 	}}>
 			{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label"> </slot></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
 
@@ -136,6 +136,16 @@
 
 	.show > .menu {
 		display: block;
+	}
+
+	.Select:not(.fill) > .label {
+		max-width: 120px;
+	}
+
+	.Select:not(.fill) > .label > span {
+		white-space: nowrap;
+    	overflow: hidden;
+    	text-overflow: ellipsis;
 	}
 
 	.Select.fill {

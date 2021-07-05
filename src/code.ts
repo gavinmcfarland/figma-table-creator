@@ -1,17 +1,45 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync} from '@figlets/helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup} from '@figlets/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData } from './helpers'
 import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
 
 
-// getClientStorageAsync('components').then(res => {
-// 	console.log(res)
-// })
+function convertToComponent(node) {
+	const component = figma.createComponent()
+	if (node.type === "INSTANCE") {
+		node = node.detachInstance()
+	}
+	component.resizeWithoutConstraints(node.width, node.height)
+	for (const child of node.children) {
+		component.appendChild(child)
+	}
+	copyPaste(node, component)
+
+	node.remove()
+
+	return component
+}
 
 function genRandomId() {
 	var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
 	return randPassword
+}
+
+async function lookForComponent(template) {
+	// Import component first?
+	// If fails, then look for it by id? What if same id is confused with local component?
+	// Needs to know if component is remote?
+
+	var component;
+	try {
+		component = await figma.importComponentByKeyAsync(template.component.key)
+	}
+	catch {
+		component = findComponentById(template.component.id)
+	}
+
+	return component
 }
 
 async function createTableInstance(template, preferences) {
@@ -20,7 +48,9 @@ async function createTableInstance(template, preferences) {
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
 
 	// Find table component
-	var component = figma.getNodeById(template.component.id)
+
+	var component = await lookForComponent(template)
+		// findComponentById(template.component.id)
 
 	var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
 
@@ -411,9 +441,14 @@ function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentC
 
 async function updateTableInstances(template) {
 
+	// Template file name not up to date for some reason
+
 	var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
 
-	var tableTemplate = figma.getNodeById(template.component.id)
+
+
+	var tableTemplate = await lookForComponent(template)
+
 	var rowTemplate = tableTemplate.findOne(node => node.getPluginData('isRow'))
 
 	for (let b = 0; b < tables.length; b++) {
@@ -422,7 +457,7 @@ async function updateTableInstances(template) {
 
 		// Don't apply if an instance
 		if (table.type !== "INSTANCE") {
-
+			console.log("tableTemplate", tableTemplate)
 			copyPasteStyle(tableTemplate, table, { include: ['name'] })
 
 			for (let x = 0; x < table.children.length; x++) {
@@ -730,6 +765,22 @@ function syncTemplateData() {
 	}
 }
 
+async function syncDefaultTemplate() {
+	var defaultTemplate = getPluginData(figma.root, 'defaultTemplate')
+
+	var defaultComponent = await lookForComponent(defaultTemplate)
+
+	updatePluginData(figma.root, 'defaultTemplate', (data) => {
+
+		if (defaultComponent) {
+			// data.defaultTemplate.file.name = figma.root.name
+			data.name = defaultComponent.name
+		}
+
+		return data
+	})
+}
+
 async function syncRemoteFilesAndLocalTemplates() {
 
 	// First update file names by looking up first component of each file
@@ -739,7 +790,7 @@ async function syncRemoteFilesAndLocalTemplates() {
 				var file = files[i]
 
 				figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
-					// console.log('component', component)
+
 					var remoteTemplate = getPluginData(component, 'template')
 
 					updatePluginData(figma.root, 'remoteFiles', (files) => {
@@ -752,6 +803,7 @@ async function syncRemoteFilesAndLocalTemplates() {
 					})
 
 				}).catch(() => {
+					// FIXME: Do I need to do something here if component is deleted?
 					figma.notify("Please check component is published")
 				})
 
@@ -766,7 +818,16 @@ async function syncRemoteFilesAndLocalTemplates() {
 		if (templates) {
 			// console.log(templates)
 			for (var i = 0; i < templates.length; i++) {
-				templates[i] = getPluginData(figma.getNodeById(templates[i].component.id), 'template')
+				// FIXME: What happens if template can't be found? TODO: Template should be removed from list
+				var componentId = templates[i].component.id
+				var component = findComponentById(componentId)
+				if (component) {
+					templates[i] = getPluginData(component, 'template')
+				}
+				else {
+					templates.splice(i, 1);
+				}
+
 			}
 
 			// FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
@@ -867,7 +928,7 @@ function addNewTemplate(node, templates) {
 
 function importTemplate(nodes) {
 
-	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported form file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
+	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported from file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
 	// TODO: Check if already imported by checking id in list?
 
 
@@ -876,7 +937,14 @@ function importTemplate(nodes) {
 	for (var i = 0; i < nodes.length; i++) {
 		var node = nodes[i]
 
-		if (node.type === "COMPONENT") {
+		var isLocalButNotComponent = getPluginData(node, 'template')?.file?.id === getPluginData(figma.root, 'fileId') && node.type !== "COMPONENT"
+
+		if (node.type === "COMPONENT" || isLocalButNotComponent) {
+
+			if (isLocalButNotComponent) {
+				node = convertToComponent(node)
+			}
+
 			markNode(node, 'table')
 
 			updatePluginData(figma.root, 'localTemplates', (data) => {
@@ -890,6 +958,7 @@ function importTemplate(nodes) {
 			figma.notify(`Imported ${node.name}`)
 		}
 		else {
+
 			updatePluginData(figma.root, 'remoteFiles', (data) => {
 
 				data = data || []
@@ -930,6 +999,8 @@ function importTemplate(nodes) {
 
 			figma.notify(`Imported ${node.name}`)
 		}
+
+		setDefaultTemplate(getPluginData(node, 'template'))
 	}
 }
 
@@ -1002,9 +1073,13 @@ function setDefaultTemplate(template) {
 
 }
 
-syncTemplateData()
-// TODO: Sync default template: find default template and pull in latest name
-syncRemoteFilesAndLocalTemplates()
+// setTimeout(() => {
+	syncTemplateData()
+	syncDefaultTemplate()
+
+	// TODO: Sync default template: find default template and pull in latest name
+	syncRemoteFilesAndLocalTemplates()
+// }, 1)
 
 plugma((plugin) => {
 
@@ -1121,7 +1196,14 @@ plugma((plugin) => {
 
 		importTemplate([components.table])
 
-		figma.notify('New template created')
+		var tempGroup = figma.group(Object.values(components), figma.currentPage)
+		positionInCenter(tempGroup)
+
+		ungroup(tempGroup, figma.currentPage)
+
+		// figma.currentPage.selection = ungroup(tempGroup, figma.currentPage)
+
+		figma.closePlugin('New template created')
 	})
 
 	plugin.command('selectColumn', () => {
