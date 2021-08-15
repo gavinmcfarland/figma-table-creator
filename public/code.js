@@ -100,17 +100,17 @@ function copyPaste(source, target, ...args) {
     });
   }
 
-  var obj = {};
+  var obj = target;
+
+  if (obj.id === undefined) {
+    obj.id = source.id;
+  }
+
+  if (obj.type === undefined) {
+    obj.type = source.type;
+  }
 
   if (targetIsEmpty) {
-    if (obj.id === undefined) {
-      obj.id = source.id;
-    }
-
-    if (obj.type === undefined) {
-      obj.type = source.type;
-    }
-
     if (source.key) obj.key = source.key;
   }
 
@@ -134,36 +134,6 @@ function copyPaste(source, target, ...args) {
     // else {
     // }
 
-  }
-
-  if (!removeConflicts) {
-    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
-    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
-    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
-    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
-    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
-
-    if (obj.textStyleId) {
-      delete obj.fontName;
-      delete obj.fontSize;
-      delete obj.letterSpacing;
-      delete obj.lineHeight;
-      delete obj.paragraphIndent;
-      delete obj.paragraphSpacing;
-      delete obj.textCase;
-      delete obj.textDecoration;
-    } else {
-      delete obj.textStyleId;
-    }
-
-    if (obj.cornerRadius !== figma.mixed) {
-      delete obj.topLeftRadius;
-      delete obj.topRightRadius;
-      delete obj.bottomLeftRadius;
-      delete obj.bottomRightRadius;
-    } else {
-      delete obj.cornerRadius;
-    }
   } // Only applicable to objects because these properties cannot be set on nodes
 
 
@@ -195,7 +165,36 @@ function copyPaste(source, target, ...args) {
     }
   }
 
-  Object.assign(target, obj);
+  if (!removeConflicts) {
+    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
+    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
+    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
+    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
+    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+
+    if (obj.textStyleId) {
+      delete obj.fontName;
+      delete obj.fontSize;
+      delete obj.letterSpacing;
+      delete obj.lineHeight;
+      delete obj.paragraphIndent;
+      delete obj.paragraphSpacing;
+      delete obj.textCase;
+      delete obj.textDecoration;
+    } else {
+      delete obj.textStyleId;
+    }
+
+    if (obj.cornerRadius !== figma.mixed) {
+      delete obj.topLeftRadius;
+      delete obj.topRightRadius;
+      delete obj.bottomLeftRadius;
+      delete obj.bottomRightRadius;
+    } else {
+      delete obj.cornerRadius;
+    }
+  }
+
   return obj;
 }
 
@@ -244,13 +243,9 @@ function ungroup(node, parent) {
   for (let i = 0; i < children.length; i++) {
     parent.appendChild(children[i]);
     selection.push(children[i]);
-  } // Doesn't need removing if it's a group node
-
-
-  if (node.type !== "GROUP") {
-    node.remove();
   }
 
+  node.remove();
   return selection;
 }
 
@@ -685,8 +680,9 @@ function createDefaultTemplate() {
     component_28_2393.remove();
     // Remove tooltip component from canvas
     component_15_3841.remove();
-    obj.componentSet_1_20.setPluginData("isCell", "true");
-    obj.componentSet_1_20.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    obj.component_1_5.setPluginData("isCell", "true");
+    obj.component_1_5.name = "isCell";
+    obj.component_1_5.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     obj.component_1_13.setPluginData("isCellHeader", "true");
     obj.component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     obj.component_1_21.setPluginData("isRow", "true");
@@ -904,6 +900,8 @@ async function createTableInstance(template, preferences) {
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
     // Find table component
     var component = await lookForComponent(template);
+    console.log(component);
+    console.log(component.findOne(node => node.getPluginData('isCell')));
     // findComponentById(template.component.id)
     var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
     if (preferences.includeHeader && !headerCellComponent) {

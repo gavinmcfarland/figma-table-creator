@@ -50,6 +50,8 @@ async function createTableInstance(template, preferences) {
 	// Find table component
 
 	var component = await lookForComponent(template)
+	console.log(component)
+	console.log(component.findOne(node => node.getPluginData('isCell')))
 		// findComponentById(template.component.id)
 
 	var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
