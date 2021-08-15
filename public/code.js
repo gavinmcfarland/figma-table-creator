@@ -245,7 +245,10 @@ function ungroup(node, parent) {
     selection.push(children[i]);
   }
 
-  node.remove();
+	// Doesn't need removing if it's a group node
+	if (node.type !== "GROUP") {
+		node.remove();
+	}
   return selection;
 }
 
@@ -1451,11 +1454,11 @@ dist((plugin) => {
     });
     plugin.command('newTemplate', () => {
         var components = createDefaultTemplate();
+        // markNode(components.table, 'table')
         importTemplate([components.table]);
         var tempGroup = figma.group(Object.values(components), figma.currentPage);
         positionInCenter(tempGroup);
-        ungroup(tempGroup, figma.currentPage);
-        // figma.currentPage.selection = ungroup(tempGroup, figma.currentPage)
+        figma.currentPage.selection = ungroup(tempGroup, figma.currentPage);
         figma.closePlugin('New template created');
     });
     plugin.command('selectColumn', () => {
@@ -1481,7 +1484,7 @@ dist((plugin) => {
         var components = createDefaultTemplate();
         // markNode(components.table, 'table')
         importTemplate([components.table]);
-        setDefaultTemplate(getPluginData(components.table, 'template'));
+        // setDefaultTemplate(getPluginData(components.table, 'template'))
         figma.notify('New template created');
     });
     plugin.on('create-table', createTable);

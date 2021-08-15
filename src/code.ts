@@ -1196,14 +1196,14 @@ plugma((plugin) => {
 	plugin.command('newTemplate', () => {
 		var components = createDefaultTemplate()
 
+		// markNode(components.table, 'table')
+
 		importTemplate([components.table])
 
 		var tempGroup = figma.group(Object.values(components), figma.currentPage)
 		positionInCenter(tempGroup)
 
-		ungroup(tempGroup, figma.currentPage)
-
-		// figma.currentPage.selection = ungroup(tempGroup, figma.currentPage)
+		figma.currentPage.selection = ungroup(tempGroup, figma.currentPage)
 
 		figma.closePlugin('New template created')
 	})
@@ -1240,7 +1240,7 @@ plugma((plugin) => {
 
 		importTemplate([components.table])
 
-		setDefaultTemplate(getPluginData(components.table, 'template'))
+		// setDefaultTemplate(getPluginData(components.table, 'template'))
 
 		figma.notify('New template created')
 
