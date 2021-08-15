@@ -188,12 +188,13 @@
 			settingsPageActive = false
 		}
 
-		if (!data.remoteFiles || !data.localTemplates) {
+
+		if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
 			welcomePageActive = true
 			createTablePageActive = false
 		}
 
-		if (data.remoteFiles || data.localTemplates) {
+		if ((Array.isArray(data.remoteFiles) && data.remoteFiles.length ) || (Array.isArray(data.localTemplates) && data.localTemplates.length)) {
 			welcomePageActive = false
 			createTablePageActive = true
 		}

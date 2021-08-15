@@ -100,17 +100,17 @@ function copyPaste(source, target, ...args) {
     });
   }
 
-  var obj = target;
-
-  if (obj.id === undefined) {
-    obj.id = source.id;
-  }
-
-  if (obj.type === undefined) {
-    obj.type = source.type;
-  }
+  var obj = {};
 
   if (targetIsEmpty) {
+    if (obj.id === undefined) {
+      obj.id = source.id;
+    }
+
+    if (obj.type === undefined) {
+      obj.type = source.type;
+    }
+
     if (source.key) obj.key = source.key;
   }
 
@@ -134,6 +134,36 @@ function copyPaste(source, target, ...args) {
     // else {
     // }
 
+  }
+
+  if (!removeConflicts) {
+    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
+    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
+    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
+    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
+    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+
+    if (obj.textStyleId) {
+      delete obj.fontName;
+      delete obj.fontSize;
+      delete obj.letterSpacing;
+      delete obj.lineHeight;
+      delete obj.paragraphIndent;
+      delete obj.paragraphSpacing;
+      delete obj.textCase;
+      delete obj.textDecoration;
+    } else {
+      delete obj.textStyleId;
+    }
+
+    if (obj.cornerRadius !== figma.mixed) {
+      delete obj.topLeftRadius;
+      delete obj.topRightRadius;
+      delete obj.bottomLeftRadius;
+      delete obj.bottomRightRadius;
+    } else {
+      delete obj.cornerRadius;
+    }
   } // Only applicable to objects because these properties cannot be set on nodes
 
 
@@ -165,36 +195,7 @@ function copyPaste(source, target, ...args) {
     }
   }
 
-  if (!removeConflicts) {
-    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
-    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
-    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
-    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
-    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
-
-    if (obj.textStyleId) {
-      delete obj.fontName;
-      delete obj.fontSize;
-      delete obj.letterSpacing;
-      delete obj.lineHeight;
-      delete obj.paragraphIndent;
-      delete obj.paragraphSpacing;
-      delete obj.textCase;
-      delete obj.textDecoration;
-    } else {
-      delete obj.textStyleId;
-    }
-
-    if (obj.cornerRadius !== figma.mixed) {
-      delete obj.topLeftRadius;
-      delete obj.topRightRadius;
-      delete obj.bottomLeftRadius;
-      delete obj.bottomRightRadius;
-    } else {
-      delete obj.cornerRadius;
-    }
-  }
-
+  Object.assign(target, obj);
   return obj;
 }
 
@@ -243,12 +244,13 @@ function ungroup(node, parent) {
   for (let i = 0; i < children.length; i++) {
     parent.appendChild(children[i]);
     selection.push(children[i]);
+  } // Doesn't need removing if it's a group node
+
+
+  if (node.type !== "GROUP") {
+    node.remove();
   }
 
-	// Doesn't need removing if it's a group node
-	if (node.type !== "GROUP") {
-		node.remove();
-	}
   return selection;
 }
 
@@ -702,7 +704,7 @@ var scripts = {
 	start: "sirv public"
 };
 var devDependencies = {
-	"@figlets/helpers": "^0.0.0-alpha.7",
+	"@figlets/helpers": "^0.0.0-alpha.9",
 	"@rollup/plugin-commonjs": "^17.0.0",
 	"@rollup/plugin-image": "^2.0.6",
 	"@rollup/plugin-json": "^4.1.0",
