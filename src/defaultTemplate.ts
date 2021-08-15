@@ -382,7 +382,6 @@ export function createDefaultTemplate() {
 	component_15_3841.remove()
 
 	obj.component_1_5.setPluginData("isCell", "true")
-	obj.component_1_5.name = "isCell"
 	obj.component_1_5.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
 	obj.component_1_13.setPluginData("isCellHeader", "true")
 	obj.component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })

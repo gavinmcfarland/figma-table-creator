@@ -50,4 +50,10 @@
 		width: 24px;
 		height: 24px;
 	}
+
+	.secondary {
+		background-color: var(--color-white);
+		color: var(--color-black-100);
+		border: 1px solid var(--color-black-100);
+	}
 </style>
