@@ -12,3 +12,6 @@
 9. Fix autolayout problems
 10. Add option to delete template from UI
 11. When no local templates but remote templates set default template to remote
+12. Add some form of carosel to UI https://github.com/beyonk-adventures/svelte-carousel/blob/master/src/Carousel.svelte
+13. How to speed up table creation
+14. Add error if table template can't be found when creating table

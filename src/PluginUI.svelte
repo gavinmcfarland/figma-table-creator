@@ -24,6 +24,25 @@
 	let chooseComponentsPageActive = false
 	let selectedFile
 
+	let welcomeSlides = [
+		false,
+		false,
+		false,
+		false,
+		false
+	]
+
+	function setActiveSlide(number) {
+		// Reset slides
+		welcomeSlides = welcomeSlides.map(x => x = false)
+
+		if (number => 0) {
+			welcomeSlides[number] = true
+		}
+
+
+	}
+
 
 	function updateSelectedTemplate(data, template) {
 		// Look for selected table in local templates
@@ -182,6 +201,15 @@
 			columnResizing = value.columnResizing
 		})
 
+		if (data.pluginAlreadyRun) {
+			setActiveSlide(4)
+		}
+		else {
+			setActiveSlide(0)
+		}
+
+		console.log(welcomeSlides)
+
 		if (data.type === "create-table") {
 			welcomePageActive = false
 			createTablePageActive = true
@@ -204,6 +232,8 @@
 			createTablePageActive = false
 			settingsPageActive = true
 		}
+
+		console.log(welcomeSlides)
 
 		updateSelectedTemplate(data)
 
@@ -373,16 +403,76 @@
 {/if}
 
 {#if welcomePageActive}
-	<div class="container" style="padding: var(--size-200)">
+	{#if welcomeSlides[0]}
+
+	<!-- <div class="container" style="padding: var(--size-200)">
 		<span class="table-creator-icon" width="172" height="148" />
 		<div class="svg1" style="margin: 0 auto"></div>
 		<h6>Welcome</h6>
 		<p>
 			Table Creator lets you create custom-styled tables from templates that are easy to resize, edit and use with your design system.<br />
 		</p>
-		<span on:click={newTemplate}><Button classes="secondary">New Template</Button></span>
-		<span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span>
+		<span on:click={() => setActiveSlide(1)}><Button classes="secondary">Next</Button></span>
+	</div> -->
+
+	<!-- if existing user -->
+	<div class="container" style="padding: var(--size-200)">
+		<span class="table-creator-icon" width="172" height="148" />
+		<div class="svg1" style="margin: 0 auto"></div>
+		<h6>What's new</h6>
+		<p>
+			Table Creator has been rebuilt from the ground up with some new features.
+		</p>
+		<span on:click={() => setActiveSlide(1)}><Button classes="secondary">Next</Button></span>
 	</div>
+
+
+	{/if}
+	{#if welcomeSlides[1]}
+	<div class="container" style="padding: var(--size-200)">
+		<span class="table-creator-icon" width="172" height="148" />
+		<div class="svg1" style="margin: 0 auto"></div>
+		<h6>Templates</h6>
+		<p>
+			A template is a component which the plugin uses to create tables from. Once a table is created, it's appearance can be updated from the plugin.
+		</p>
+		<span on:click={() => setActiveSlide(2)}><Button classes="secondary">Next</Button></span>
+	</div>
+	{/if}
+	{#if welcomeSlides[2]}
+	<div class="container" style="padding: var(--size-200)">
+		<span class="table-creator-icon" width="172" height="148" />
+		<div class="svg1" style="margin: 0 auto"></div>
+		<h6>Multiple templates</h6>
+		<p>
+			Manage multiple table designs by using different templates. Create as many templates as you need.<br />
+		</p>
+		<span on:click={() => setActiveSlide(3)}><Button classes="secondary">Next</Button></span>
+	</div>
+	{/if}
+	{#if welcomeSlides[3]}
+	<div class="container" style="padding: var(--size-200)">
+		<span class="table-creator-icon" width="172" height="148" />
+		<div class="svg1" style="margin: 0 auto"></div>
+		<h6>Importing templates</h6>
+		<p>
+			You can use templates across different files. First publish the template. Copy an instance to the file you want, and import it from the plugin menu. The plugin will now reference the template in the remote file.
+		</p>
+		<span on:click={() => setActiveSlide(4)}><Button classes="secondary">Next</Button></span>
+	</div>
+	{/if}
+	{#if welcomeSlides[4]}
+	<div class="container" style="padding: var(--size-200)">
+		<span class="table-creator-icon" width="172" height="148" />
+		<div class="svg1" style="margin: 0 auto"></div>
+		<h6>Get started</h6>
+		<p>
+			Begin by creating a new template which you can customise, or import an existing one from the plugin menu.<br />
+		</p>
+		<span on:click={newTemplate}><Button classes="secondary">New Template</Button></span>
+		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
+	</div>
+	{/if}
 {/if}
 
 {#if chooseComponentsPageActive}

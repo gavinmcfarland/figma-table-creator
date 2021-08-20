@@ -82,6 +82,10 @@
 		margin-block: var(--size-100);
 	}
 
+	button {
+		margin-top: var(--size-200);
+	}
+
 	:root {
 		--color-blue: #18a0fb;
 		--color-selection-a: #DAEBF7;

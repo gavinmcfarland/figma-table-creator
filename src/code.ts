@@ -4,7 +4,20 @@ import { clone, positionInCenter, compareVersion, changeText, findComponentById,
 import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
 
+// setPluginData(figma.root, "pluginVersion", "")
 
+function pluginAlreadyRun() {
+
+	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
+	var newPluginVersion = "7.0.0"
+	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
+		// setPluginData(figma.root, "pluginVersion", "7.0.0")
+		return true
+	}
+	return false
+}
+
+// Move to helpers
 function convertToComponent(node) {
 	const component = figma.createComponent()
 	if (node.type === "INSTANCE") {
@@ -21,6 +34,7 @@ function convertToComponent(node) {
 	return component
 }
 
+// Move to helpers
 function genRandomId() {
 	var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
 	return randPassword
@@ -1130,7 +1144,7 @@ plugma((plugin) => {
 	plugin.command('createTable', ({ ui, data }) => {
 
 		figma.clientStorage.getAsync('userPreferences').then((res) => {
-			ui.show({ type: "create-table", ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
+			ui.show({ type: "create-table", ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun() })
 		})
 
 	})
