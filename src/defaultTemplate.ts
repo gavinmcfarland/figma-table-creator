@@ -223,7 +223,7 @@ export function createDefaultTemplate() {
 	// Create COMPONENT
 	var component_1_35 = figma.createComponent()
 	component_1_35.resize(200.0000000000, 102.0299987793)
-	component_1_35.name = "Template"
+	component_1_35.name = "Table 1"
 	component_1_35.relativeTransform = [[1, 0, 8735], [0, 1, 4447]]
 	component_1_35.x = 8735
 	component_1_35.y = 4447

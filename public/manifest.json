@@ -58,6 +58,10 @@
       "command": "viewNodeData"
     },
     {
+      "name": "Remove Remote Files",
+      "command": "removeRemoteFiles"
+    },
+    {
       "name": "Settings",
       "command": "linkComponents"
     }

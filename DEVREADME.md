@@ -87,7 +87,38 @@ getPluginData(node, 'template')
 }
 ```
 
-### User Preferences `client`
+## Client Storage
+
+### Recent Files
+
+A list of files which the plugin has been run on.
+
+```js
+getClientStorageAsync('recentFiles')
+```
+
+```js
+[
+    {
+        id: String,
+        name: String,
+        templates: [
+            {
+                id: String,
+                name: String,
+                component: {
+                    id: String,
+                    key: String,
+                }
+            }
+        ]
+    }
+    
+]
+```
+
+
+### User Preferences
 
 The user's preferences are stored on the `client`. This avoids any preferences which may conflict with other users.
 

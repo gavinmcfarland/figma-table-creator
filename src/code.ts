@@ -1177,11 +1177,9 @@ syncDefaultTemplate()
 	// TODO: Sync default template: find default template and pull in latest name
 syncRemoteFiles()
 
-getClientStorageAsync("recentFiles").then((recentFiles) => {
-	console.log("recentFiles", recentFiles)
-})
-
 // }, 1)
+
+console.log()
 
 plugma((plugin) => {
 
@@ -1316,6 +1314,17 @@ plugma((plugin) => {
 	plugin.command('selectRow', () => {
 		selectRow()
 		figma.closePlugin();
+	})
+
+	plugin.command('removeRemoteFiles', () => {
+		setPluginData(figma.root, "remoteFiles", "")
+		updateClientStorageAsync("recentFiles", (recentFiles) => {
+			console.log(recentFiles)
+			setPluginData(figma.root, "remoteFiles", "")
+			return undefined
+		}).then(() => {
+			figma.closePlugin("Remote files removed");
+		})
 	})
 
 
