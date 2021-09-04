@@ -6,6 +6,9 @@
 async function getClientStorageAsync(key) {
   return await figma.clientStorage.getAsync(key);
 }
+function setClientStorageAsync(key, data) {
+  return figma.clientStorage.setAsync(key, data);
+}
 async function updateClientStorageAsync(key, callback) {
   var data = await figma.clientStorage.getAsync(key);
   data = callback(data);
@@ -870,15 +873,18 @@ function plugma(plugin) {
 var dist = plugma;
 
 // setPluginData(figma.root, "pluginVersion", "")
-function pluginAlreadyRun() {
-    var oldPluginVersion = getPluginData(figma.root, "pluginVersion");
-    var newPluginVersion = "7.0.0";
-    if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
-        // setPluginData(figma.root, "pluginVersion", "7.0.0")
-        return true;
-    }
-    return false;
-}
+// setClientStorageAsync("pluginAlreadyRun", false)
+// async function pluginAlreadyRun() {
+// 	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
+// 	var newPluginVersion = "7.0.0"
+// 	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
+// 		// setPluginData(figma.root, "pluginVersion", "7.0.0")
+// 		return true
+// 	}
+// 	if (pluginAlreadyRun) {
+// 		return false
+// 	}
+// }
 // Move to helpers
 function convertToComponent(node) {
     const component = figma.createComponent();
@@ -1115,7 +1121,7 @@ function linkComponent(template, selection) {
             var oldTemplate = findComponentById(getPluginData(figma.root, 'components').current[template].id);
             // Check if a previous template has been set first
             if (oldTemplate) {
-                updatePluginData(figma.root, 'components', (data) => { data.previous[template] = oldTemplate.id; });
+                // updatePluginData(figma.root, 'components', (data) => { data.previous[template] = oldTemplate.id })
                 oldTemplate.setPluginData("isTable", "");
                 oldTemplate.setPluginData("isRow", "");
                 oldTemplate.setPluginData("isCell", "");
@@ -1214,15 +1220,18 @@ function createTable(msg) {
 async function syncRecentFiles() {
     updateClientStorageAsync("recentFiles", (recentFiles) => {
         recentFiles = recentFiles || [];
-        var localTemplates = getPluginData(figma.root, "localTemplates");
-        var newFile = {
-            id: getPluginData(figma.root, 'fileId'),
-            name: figma.root.name,
-            templates: localTemplates
-        };
-        // Only add file to array if unique
-        if (!recentFiles.some((item) => item.id === newFile.id)) {
-            recentFiles.push(newFile);
+        if (recentFiles) {
+            var localTemplates = getPluginData(figma.root, "localTemplates");
+            console.log("localTemplates", localTemplates);
+            var newFile = {
+                id: getPluginData(figma.root, 'fileId'),
+                name: figma.root.name,
+                templates: localTemplates
+            };
+            // Only add file to array if unique
+            if (!recentFiles.some((item) => item.id === newFile.id)) {
+                recentFiles.push(newFile);
+            }
         }
         return recentFiles;
     });
@@ -1252,28 +1261,31 @@ async function syncRemoteFiles() {
     // TODO: Get remoteFiles from client storage
     // TODO: Add each file to list of document remoteFiles
     var recentFiles = await getClientStorageAsync("recentFiles");
-    updatePluginData(figma.root, 'remoteFiles', (files) => {
-        files = files || [];
+    console.log(recentFiles);
+    updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+        remoteFiles = remoteFiles || [];
         // Merge recentFiles into remoteFiles
-        var ids = new Set(files.map(d => d.id));
-        var merged = [...files, ...recentFiles.filter(d => !ids.has(d.id))];
-        // Exclude current file
-        merged = merged.filter(d => {
-            return !(d.id === getPluginData(figma.root, "fileId"));
-        });
-        files = merged;
-        if (files) {
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
+        if (remoteFiles && recentFiles) {
+            var ids = new Set(remoteFiles.map(d => d.id));
+            var merged = [...remoteFiles, ...recentFiles.filter(d => !ids.has(d.id))];
+            // Exclude current file
+            merged = merged.filter(d => {
+                return !(d.id === getPluginData(figma.root, "fileId"));
+            });
+            remoteFiles = merged;
+        }
+        if (remoteFiles) {
+            for (var i = 0; i < remoteFiles.length; i++) {
+                var file = remoteFiles[i];
                 figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
                     var remoteTemplate = getPluginData(component, 'template');
-                    updatePluginData(figma.root, 'remoteFiles', (files) => {
-                        files.map((file) => {
+                    updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+                        remoteFiles.map((file) => {
                             if (file.id === remoteTemplate.file.id) {
                                 file.name = remoteTemplate.file.name;
                             }
                         });
-                        return files;
+                        return remoteFiles;
                     });
                 }).catch(() => {
                     // FIXME: Do I need to do something here if component is deleted?
@@ -1282,7 +1294,7 @@ async function syncRemoteFiles() {
                 });
             }
             // FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
-            return files;
+            return remoteFiles;
         }
     });
 }
@@ -1438,7 +1450,6 @@ syncDefaultTemplate();
 // TODO: Sync default template: find default template and pull in latest name
 syncRemoteFiles();
 // }, 1)
-console.log();
 dist((plugin) => {
     plugin.ui = {
         html: __uiFiles__.main,
@@ -1476,8 +1487,10 @@ dist((plugin) => {
     // 	console.log(res)
     // })
     plugin.command('createTable', ({ ui, data }) => {
-        figma.clientStorage.getAsync('userPreferences').then((res) => {
-            ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun() }));
+        getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
+            figma.clientStorage.getAsync('userPreferences').then((res) => {
+                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun }));
+            });
         });
     });
     // plugin.command('createTableInstance', () => {
@@ -1542,7 +1555,7 @@ dist((plugin) => {
     plugin.command('removeRemoteFiles', () => {
         setPluginData(figma.root, "remoteFiles", "");
         updateClientStorageAsync("recentFiles", (recentFiles) => {
-            console.log(recentFiles);
+            console.log("Recent files removed", recentFiles);
             setPluginData(figma.root, "remoteFiles", "");
             return undefined;
         }).then(() => {
@@ -1566,6 +1579,7 @@ dist((plugin) => {
         importTemplate([components.table]);
         // setDefaultTemplate(getPluginData(components.table, 'template'))
         figma.notify('New template created');
+        setClientStorageAsync("pluginAlreadyRun", true);
     });
     plugin.on('create-table', createTable);
     plugin.on('link-component', (msg) => {

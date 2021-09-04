@@ -201,14 +201,14 @@
 			columnResizing = value.columnResizing
 		})
 
+		console.log(data.pluginAlreadyRun)
+
 		if (data.pluginAlreadyRun) {
 			setActiveSlide(4)
 		}
 		else {
 			setActiveSlide(0)
 		}
-
-		console.log(welcomeSlides)
 
 		if (data.type === "create-table") {
 			welcomePageActive = false
@@ -232,8 +232,6 @@
 			createTablePageActive = false
 			settingsPageActive = true
 		}
-
-		console.log(welcomeSlides)
 
 		updateSelectedTemplate(data)
 
@@ -481,7 +479,7 @@
 		<div class="content">
 		<h6>Get started</h6>
 		<p>
-			Begin by creating a new template which you can customise, or import an existing one from the plugin menu.<br />
+			A new template will be created in a page called Table Creator. This will be used to create tables from.
 		</p>
 		<span on:click={newTemplate}><Button classes="secondary">New Template</Button></span>
 	</div>

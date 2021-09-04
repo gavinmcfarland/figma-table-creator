@@ -37,14 +37,10 @@
 
 	function close() {
 		showMenu = false
-
-		console.log('close ->', showMenu)
 	}
 
 	function open() {
 		showMenu = true
-
-		console.log('open ->', showMenu)
 	}
 
 	dropdowns[id]={open, close}

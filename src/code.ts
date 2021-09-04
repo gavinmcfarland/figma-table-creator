@@ -6,16 +6,23 @@ import plugma from 'plugma'
 
 // setPluginData(figma.root, "pluginVersion", "")
 
-function pluginAlreadyRun() {
+// setClientStorageAsync("pluginAlreadyRun", false)
 
-	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
-	var newPluginVersion = "7.0.0"
-	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
-		// setPluginData(figma.root, "pluginVersion", "7.0.0")
-		return true
-	}
-	return false
-}
+// async function pluginAlreadyRun() {
+
+
+// 	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
+// 	var newPluginVersion = "7.0.0"
+// 	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
+// 		// setPluginData(figma.root, "pluginVersion", "7.0.0")
+// 		return true
+// 	}
+
+// 	if (pluginAlreadyRun) {
+// 		return false
+// 	}
+
+// }
 
 // Move to helpers
 function convertToComponent(node) {
@@ -663,7 +670,7 @@ function linkComponent(template, selection) {
 
 			// Check if a previous template has been set first
 			if (oldTemplate) {
-				updatePluginData(figma.root, 'components', (data) => { data.previous[template] = oldTemplate.id })
+				// updatePluginData(figma.root, 'components', (data) => { data.previous[template] = oldTemplate.id })
 				oldTemplate.setPluginData("isTable", "")
 				oldTemplate.setPluginData("isRow", "")
 				oldTemplate.setPluginData("isCell", "")
@@ -807,16 +814,19 @@ async function syncRecentFiles() {
 	updateClientStorageAsync("recentFiles", (recentFiles) => {
 		recentFiles = recentFiles || []
 
-		var localTemplates = getPluginData(figma.root, "localTemplates")
-		var newFile = {
-			id: getPluginData(figma.root, 'fileId'),
-			name: figma.root.name,
-			templates: localTemplates
-		}
+		if (recentFiles) {
+			var localTemplates = getPluginData(figma.root, "localTemplates")
+			console.log("localTemplates", localTemplates)
+			var newFile = {
+				id: getPluginData(figma.root, 'fileId'),
+				name: figma.root.name,
+				templates: localTemplates
+			}
 
-		// Only add file to array if unique
-		if (!recentFiles.some((item) => item.id === newFile.id)) {
-			recentFiles.push(newFile)
+			// Only add file to array if unique
+			if (!recentFiles.some((item) => item.id === newFile.id)) {
+				recentFiles.push(newFile)
+			}
 		}
 
 		return recentFiles
@@ -858,39 +868,43 @@ async function syncRemoteFiles() {
 
 	var recentFiles = await getClientStorageAsync("recentFiles")
 
-	updatePluginData(figma.root, 'remoteFiles', (files) => {
+	console.log(recentFiles)
 
-		files = files || []
+	updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+
+		remoteFiles = remoteFiles || []
 
 		// Merge recentFiles into remoteFiles
+		if (remoteFiles && recentFiles) {
+			var ids = new Set(remoteFiles.map(d => d.id));
+			var merged = [...remoteFiles, ...recentFiles.filter(d => !ids.has(d.id))];
 
-		var ids = new Set(files.map(d => d.id));
-		var merged = [...files, ...recentFiles.filter(d => !ids.has(d.id))];
+			// Exclude current file
+			merged = merged.filter(d => {
+				return !(d.id === getPluginData(figma.root, "fileId"))
+			})
 
-		// Exclude current file
-		merged = merged.filter(d => {
-			return !(d.id === getPluginData(figma.root, "fileId"))
-		})
-
-		files = merged
-
-		if (files) {
+			remoteFiles = merged
+		}
 
 
-			for (var i = 0; i < files.length; i++) {
-				var file = files[i]
+		if (remoteFiles) {
+
+
+			for (var i = 0; i < remoteFiles.length; i++) {
+				var file = remoteFiles[i]
 
 				figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
 
 					var remoteTemplate = getPluginData(component, 'template')
 
-					updatePluginData(figma.root, 'remoteFiles', (files) => {
-						files.map((file) => {
+					updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+						remoteFiles.map((file) => {
 							if (file.id === remoteTemplate.file.id) {
 								file.name = remoteTemplate.file.name
 							}
 						})
-						return files
+						return remoteFiles
 					})
 
 				}).catch(() => {
@@ -902,7 +916,7 @@ async function syncRemoteFiles() {
 			}
 
 			// FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
-			return files
+			return remoteFiles
 		}
 	})
 
@@ -1179,8 +1193,6 @@ syncRemoteFiles()
 
 // }, 1)
 
-console.log()
-
 plugma((plugin) => {
 
 	plugin.ui = {
@@ -1226,9 +1238,10 @@ plugma((plugin) => {
 	// })
 
 	plugin.command('createTable', ({ ui, data }) => {
-
-		figma.clientStorage.getAsync('userPreferences').then((res) => {
-			ui.show({ type: "create-table", ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun() })
+		getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
+			figma.clientStorage.getAsync('userPreferences').then((res) => {
+				ui.show({ type: "create-table", ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun })
+			})
 		})
 
 	})
@@ -1319,7 +1332,7 @@ plugma((plugin) => {
 	plugin.command('removeRemoteFiles', () => {
 		setPluginData(figma.root, "remoteFiles", "")
 		updateClientStorageAsync("recentFiles", (recentFiles) => {
-			console.log(recentFiles)
+			console.log("Recent files removed", recentFiles)
 			setPluginData(figma.root, "remoteFiles", "")
 			return undefined
 		}).then(() => {
@@ -1353,6 +1366,7 @@ plugma((plugin) => {
 
 		figma.notify('New template created')
 
+		setClientStorageAsync("pluginAlreadyRun", true)
 
 	})
 
