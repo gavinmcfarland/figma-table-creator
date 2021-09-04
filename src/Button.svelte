@@ -5,6 +5,7 @@
 	export let classes = ""
 	export let label = ""
 	export let icon
+	export let iconRight
 
 	const contextHandleInput = getContext("handleInput")
 
@@ -18,14 +19,13 @@
 
 <div>
 	<button {id} class="Button {classes}">
-		{#if icon}<span class="icon" icon={icon} />{/if}<slot />
+		<div class="gap">
+		{#if icon}<span class="icon" icon={icon} />{/if}<span><slot /></span>{#if iconRight}<span class="icon" icon={iconRight} />{/if}
+		</div>
 	</button>
 </div>
 
 <style>
-	div {
-		padding-block: 1px;
-	}
 	.Button,
 	button {
 		line-height: 26px;
@@ -36,12 +36,20 @@
 		border-radius: var(--border-radius-75);
 		font-weight: 500;
 		letter-spacing: 0.055px;
+		overflow: hidden;
 	}
 
 	.Button {
 		border-radius: var(--border-radius-50);
 		background-color: var(--color-blue);
 		display: flex;
+		place-items: center;
+	}
+
+	.gap {
+		gap: var(--size-50);
+		display: flex;
+		padding-block: 2px !important;
 		place-items: center;
 	}
 

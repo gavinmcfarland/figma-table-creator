@@ -15,3 +15,7 @@
 12. Add some form of carosel to UI https://github.com/beyonk-adventures/svelte-carousel/blob/master/src/Carousel.svelte
 13. How to speed up table creation
 14. Add error if table template can't be found when creating table
+15. Add an import info screen (only shows once?)
+16. Customise shortcut depending on platform `window.navigator.platform`
+
+1. Style welcome pages. Add artwork images and position to bottom of the frame

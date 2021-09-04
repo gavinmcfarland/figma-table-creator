@@ -1,5 +1,5 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup} from '@figlets/helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync} from '@figlets/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData } from './helpers'
 import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
@@ -773,6 +773,57 @@ function createTable(msg) {
 	})
 }
 
+
+
+// function addTemplateToFiles(template, files) {
+
+// 	var newFile = {
+// 		id: template.file.id,
+// 		name: template.file.name,
+// 		templates: [template]
+// 	}
+
+// 	// Only add file to array if unique
+// 	if (!files.some((item) => item.id === newFile.id)) {
+// 		files.push(newFile)
+// 	}
+
+// 	// for (var i = 0; i < recentFiles.length; i++) {
+// 	// 	var file = recentFiles[i]
+
+// 	// 	if (file.id === getPluginData(template.file.id) {
+// 	// 		file.templates = addNewTemplate(figma.currentPage.selection[0], file.templates)
+// 	// 	}
+
+// 	// }
+
+// 	return files
+// }
+
+// setClientStorageAsync("recentFiles", undefined)
+
+// Merge document localTemplate and merge to clientStorage as recentFiles
+async function syncRecentFiles() {
+	updateClientStorageAsync("recentFiles", (recentFiles) => {
+		recentFiles = recentFiles || []
+
+		var localTemplates = getPluginData(figma.root, "localTemplates")
+		var newFile = {
+			id: getPluginData(figma.root, 'fileId'),
+			name: figma.root.name,
+			templates: localTemplates
+		}
+
+		// Only add file to array if unique
+		if (!recentFiles.some((item) => item.id === newFile.id)) {
+			recentFiles.push(newFile)
+		}
+
+		return recentFiles
+	})
+}
+
+// This makes sure the node data
 function syncTemplateData() {
 	var templateNodes = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === "COMPONENT")
 
@@ -781,6 +832,7 @@ function syncTemplateData() {
 	}
 }
 
+// This makes sure the default/chosen template is up to date
 async function syncDefaultTemplate() {
 	var defaultTemplate = getPluginData(figma.root, 'defaultTemplate')
 
@@ -797,11 +849,34 @@ async function syncDefaultTemplate() {
 	})
 }
 
-async function syncRemoteFilesAndLocalTemplates() {
+// This makes sure the list of local and remote templates are up to date
+async function syncRemoteFiles() {
 
 	// First update file names by looking up first component of each file
+	// TODO: Get remoteFiles from client storage
+	// TODO: Add each file to list of document remoteFiles
+
+	var recentFiles = await getClientStorageAsync("recentFiles")
+
 	updatePluginData(figma.root, 'remoteFiles', (files) => {
+
+		files = files || []
+
+		// Merge recentFiles into remoteFiles
+
+		var ids = new Set(files.map(d => d.id));
+		var merged = [...files, ...recentFiles.filter(d => !ids.has(d.id))];
+
+		// Exclude current file
+		merged = merged.filter(d => {
+			return !(d.id === getPluginData(figma.root, "fileId"))
+		})
+
+		files = merged
+
 		if (files) {
+
+
 			for (var i = 0; i < files.length; i++) {
 				var file = files[i]
 
@@ -820,7 +895,8 @@ async function syncRemoteFilesAndLocalTemplates() {
 
 				}).catch(() => {
 					// FIXME: Do I need to do something here if component is deleted?
-					figma.notify("Please check component is published")
+					// FIXME: Is this the wrong time to check if component is published?
+					// figma.notify("Please check component is published")
 				})
 
 			}
@@ -830,6 +906,9 @@ async function syncRemoteFilesAndLocalTemplates() {
 		}
 	})
 
+}
+
+function syncLocalTemplates() {
 	updatePluginData(figma.root, 'localTemplates', (templates) => {
 		if (templates) {
 			// console.log(templates)
@@ -850,7 +929,6 @@ async function syncRemoteFilesAndLocalTemplates() {
 			return templates
 		}
 	})
-
 }
 
 async function syncComponentsToStorage() {
@@ -1090,11 +1168,19 @@ function setDefaultTemplate(template) {
 }
 
 // setTimeout(() => {
-	syncTemplateData()
-	syncDefaultTemplate()
+syncLocalTemplates()
+syncRecentFiles()
+
+syncTemplateData()
+syncDefaultTemplate()
 
 	// TODO: Sync default template: find default template and pull in latest name
-	syncRemoteFilesAndLocalTemplates()
+syncRemoteFiles()
+
+getClientStorageAsync("recentFiles").then((recentFiles) => {
+	console.log("recentFiles", recentFiles)
+})
+
 // }, 1)
 
 plugma((plugin) => {
