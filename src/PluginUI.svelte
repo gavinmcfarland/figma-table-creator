@@ -515,13 +515,21 @@
 		<div class="svg6" style="margin: 0 -16px"></div>
 		</div>
 		<div class="content">
-		<h6>Get started</h6>
-		<p>
-			A new template will be created in a page called Table Creator. This will be used to create tables from.
-		</p>
+		{#if data.recentFiles}
+			<h6>Get started</h6>
+		{:else}
+			<h6>Get started</h6>
+		{/if}
+		{#if data.recentFiles}
+			<p>Create a new template or choose an existing template from a remote file.</p>
+		{:else}
+			<p>Begin by creating a new template to create tables from.</p>
+		{/if}
+
+
 		<div class="buttons">
 			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
-			{#if data.remoteFiles}
+			{#if data.recentFiles}
 				<span on:click={() => existingTemplate()}><Button classes="secondary">Existing Template</Button></span>
 			{/if}
 		</div>

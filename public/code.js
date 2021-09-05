@@ -1265,9 +1265,11 @@ async function syncRemoteFiles() {
     var recentFiles = await getClientStorageAsync("recentFiles");
     console.log("recentFiles", recentFiles);
     updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-        remoteFiles = remoteFiles || [];
+        remoteFiles = remoteFiles || undefined;
         // Merge recentFiles into remoteFiles
-        if (remoteFiles && recentFiles) {
+        if (recentFiles) {
+            if (!remoteFiles)
+                remoteFiles = [];
             var ids = new Set(remoteFiles.map(d => d.id));
             var merged = [...remoteFiles, ...recentFiles.filter(d => !ids.has(d.id))];
             // Exclude current file
@@ -1493,9 +1495,15 @@ dist((plugin) => {
     // 	console.log(res)
     // })
     plugin.command('createTable', ({ ui, data }) => {
-        getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
-            figma.clientStorage.getAsync('userPreferences').then((res) => {
-                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun }));
+        getClientStorageAsync("recentFiles").then((recentFiles) => {
+            // Exclude current file
+            recentFiles = recentFiles.filter(d => {
+                return !(d.id === getPluginData(figma.root, "fileId"));
+            });
+            getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
+                figma.clientStorage.getAsync('userPreferences').then((res) => {
+                    ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: (Array.isArray(recentFiles) && recentFiles.length > 0) }));
+                });
             });
         });
     });
@@ -1548,7 +1556,10 @@ dist((plugin) => {
         var tempGroup = figma.group(Object.values(components), figma.currentPage);
         positionInCenter(tempGroup);
         figma.currentPage.selection = ungroup(tempGroup, figma.currentPage);
-        figma.closePlugin('New template created');
+        setPluginData(figma.root, "usingRemoteTemplate", false);
+        syncRecentFiles().then(() => {
+            figma.closePlugin('New template created');
+        });
     });
     plugin.command('selectColumn', () => {
         selectColumn();
@@ -1586,6 +1597,8 @@ dist((plugin) => {
         importTemplate([components.table]);
         // setDefaultTemplate(getPluginData(components.table, 'template'))
         figma.notify('New template created');
+        // Shouldn't be set, but lets do it just for good measure
+        setPluginData(figma.root, "usingRemoteTemplate", false);
         setClientStorageAsync("pluginAlreadyRun", true);
         syncRecentFiles();
     });
