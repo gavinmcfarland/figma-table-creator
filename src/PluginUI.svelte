@@ -111,9 +111,31 @@
 		)
 	}
 
-	function chooseComponents() {
+	function usingRemoteTemplate(boolean) {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "using-remote-template",
+					usingRemoteTemplate: boolean
+				},
+			},
+			"*"
+		)
+	}
+
+	function existingTemplate() {
 		welcomePageActive = false
-		chooseComponentsPageActive = true
+		createTablePageActive = true
+		usingRemoteTemplate(true)
+
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "existing-template"
+				},
+			},
+			"*"
+		)
 	}
 
 	function setDefaultTemplate(template, data) {
@@ -214,17 +236,22 @@
 			welcomePageActive = false
 			createTablePageActive = true
 			settingsPageActive = false
-		}
 
+			if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
+				welcomePageActive = true
+				createTablePageActive = false
+			}
 
-		if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
-			welcomePageActive = true
-			createTablePageActive = false
-		}
+			if ((Array.isArray(data.localTemplates) && data.localTemplates.length)) {
+				welcomePageActive = false
+				createTablePageActive = true
+			}
 
-		if ((Array.isArray(data.remoteFiles) && data.remoteFiles.length ) || (Array.isArray(data.localTemplates) && data.localTemplates.length)) {
-			welcomePageActive = false
-			createTablePageActive = true
+			if (data.usingRemoteTemplate) {
+				welcomePageActive = false
+				createTablePageActive = true
+			}
+
 		}
 
 		if (data.type === "settings") {
@@ -232,6 +259,8 @@
 			createTablePageActive = false
 			settingsPageActive = true
 		}
+
+
 
 		updateSelectedTemplate(data)
 
@@ -311,6 +340,7 @@
 												// Only trigger if clicking on the element itself
 												if(event.target !== event.currentTarget) return;
 
+												usingRemoteTemplate(false)
 												setDefaultTemplate(template, data)
 												// Hide menu when template set
 												// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
@@ -332,7 +362,7 @@
 
 																// Only trigger if clicking on the element itself
 																if(event.target !== event.currentTarget) return;
-
+																usingRemoteTemplate(true)
 																setDefaultTemplate(template, data)
 																// Hide menu when template set
 																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
@@ -423,7 +453,9 @@
 			<p>
 				Table Creator has been rebuilt from the ground up with some new features.
 			</p>
+			<div class="buttons">
 			<span on:click={() => setActiveSlide(1)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+			</div>
 		</div>
 	</div>
 
@@ -439,7 +471,9 @@
 		<p>
 			A template is a single component which the plugin uses to create tables from. Once a table is created, it's appearance can be updated from the plugin.
 		</p>
+		<div class="buttons">
 		<span on:click={() => setActiveSlide(2)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		</div>
 		</div>
 	</div>
 	{/if}
@@ -453,7 +487,9 @@
 		<p>
 			Manage multiple table designs by creating different templates. Choose the template you want by selecting it from the dropdown when creating a table.<br />
 		</p>
-		<span on:click={() => setActiveSlide(3)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		<div class="buttons">
+			<span on:click={() => setActiveSlide(3)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		</div>
 		</div>
 	</div>
 	{/if}
@@ -467,7 +503,9 @@
 		<p>
 			Use templates across different files. First make sure it’s published in the remote file, then in the other file select it from the dropdown when creating a table.
 		</p>
-		<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		<div class="buttons">
+			<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		</div>
 		</div>
 	</div>
 	{/if}
@@ -481,7 +519,12 @@
 		<p>
 			A new template will be created in a page called Table Creator. This will be used to create tables from.
 		</p>
-		<span on:click={newTemplate}><Button classes="secondary">New Template</Button></span>
+		<div class="buttons">
+			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
+			{#if data.remoteFiles}
+				<span on:click={() => existingTemplate()}><Button classes="secondary">Existing Template</Button></span>
+			{/if}
+		</div>
 	</div>
 		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
 	</div>
@@ -513,6 +556,10 @@
 
 	.content .Button {
 		margin-left: auto;
+
+	}
+
+	.buttons {
 		margin-top: var(--size-300);
 	}
 

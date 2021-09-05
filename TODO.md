@@ -18,4 +18,6 @@
 15. Add an import info screen (only shows once?)
 16. Customise shortcut depending on platform `window.navigator.platform`
 
-1. Style welcome pages. Add artwork images and position to bottom of the frame
+1. Style welcome pages. Add artwork images and position to bottom of the frame (DONE)
+2. Find out why clicking existing template doesn't work
+3. Fix remoteFiles being an empty array

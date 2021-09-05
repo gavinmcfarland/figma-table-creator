@@ -872,6 +872,8 @@ function plugma(plugin) {
 
 var dist = plugma;
 
+// reset
+// setPluginData(figma.root, "usingRemoteTemplate", "")
 // setPluginData(figma.root, "pluginVersion", "")
 // setClientStorageAsync("pluginAlreadyRun", false)
 // async function pluginAlreadyRun() {
@@ -1218,11 +1220,11 @@ function createTable(msg) {
 // setClientStorageAsync("recentFiles", undefined)
 // Merge document localTemplate and merge to clientStorage as recentFiles
 async function syncRecentFiles() {
-    updateClientStorageAsync("recentFiles", (recentFiles) => {
+    return updateClientStorageAsync("recentFiles", (recentFiles) => {
         recentFiles = recentFiles || [];
-        if (recentFiles) {
-            var localTemplates = getPluginData(figma.root, "localTemplates");
-            console.log("localTemplates", localTemplates);
+        var localTemplates = getPluginData(figma.root, "localTemplates");
+        console.log("localTemplates", localTemplates);
+        if ((Array.isArray(localTemplates) && localTemplates.length > 0) && recentFiles) {
             var newFile = {
                 id: getPluginData(figma.root, 'fileId'),
                 name: figma.root.name,
@@ -1261,7 +1263,7 @@ async function syncRemoteFiles() {
     // TODO: Get remoteFiles from client storage
     // TODO: Add each file to list of document remoteFiles
     var recentFiles = await getClientStorageAsync("recentFiles");
-    console.log(recentFiles);
+    console.log("recentFiles", recentFiles);
     updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
         remoteFiles = remoteFiles || [];
         // Merge recentFiles into remoteFiles
@@ -1300,6 +1302,7 @@ async function syncRemoteFiles() {
 }
 function syncLocalTemplates() {
     updatePluginData(figma.root, 'localTemplates', (templates) => {
+        templates = templates || undefined;
         if (templates) {
             // console.log(templates)
             for (var i = 0; i < templates.length; i++) {
@@ -1313,9 +1316,9 @@ function syncLocalTemplates() {
                     templates.splice(i, 1);
                 }
             }
-            // FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
-            return templates;
         }
+        // FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
+        return templates;
     });
 }
 function addNewTemplate(node, templates) {
@@ -1428,6 +1431,8 @@ function updateTemplate(node) {
 }
 function setDefaultTemplate(template) {
     setPluginData(figma.root, 'defaultTemplate', template);
+    // TODO: If template is remote then set flag to say user is using remote/existing template
+    // setPluginData(figma.root, "usingRemoteTemplate", true)
     // await updateClientStorageAsync('userPreferences', (data) => {
     // 	console.log(template)
     // 	data.defaultTemplate = template
@@ -1444,11 +1449,12 @@ function setDefaultTemplate(template) {
 }
 // setTimeout(() => {
 syncLocalTemplates();
-syncRecentFiles();
-syncTemplateData();
-syncDefaultTemplate();
-// TODO: Sync default template: find default template and pull in latest name
-syncRemoteFiles();
+syncRecentFiles().then(() => {
+    syncTemplateData();
+    syncDefaultTemplate();
+    // TODO: Sync default template: find default template and pull in latest name
+    syncRemoteFiles();
+});
 // }, 1)
 dist((plugin) => {
     plugin.ui = {
@@ -1489,7 +1495,7 @@ dist((plugin) => {
     plugin.command('createTable', ({ ui, data }) => {
         getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
             figma.clientStorage.getAsync('userPreferences').then((res) => {
-                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun }));
+                ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun }));
             });
         });
     });
@@ -1552,7 +1558,8 @@ dist((plugin) => {
         selectRow();
         figma.closePlugin();
     });
-    plugin.command('removeRemoteFiles', () => {
+    plugin.command('resetRemoteData', () => {
+        setPluginData(figma.root, "usingRemoteTemplate", "");
         setPluginData(figma.root, "remoteFiles", "");
         updateClientStorageAsync("recentFiles", (recentFiles) => {
             console.log("Recent files removed", recentFiles);
@@ -1580,6 +1587,13 @@ dist((plugin) => {
         // setDefaultTemplate(getPluginData(components.table, 'template'))
         figma.notify('New template created');
         setClientStorageAsync("pluginAlreadyRun", true);
+        syncRecentFiles();
+    });
+    plugin.on('existing-template', (msg) => {
+        figma.notify('Using remote template');
+    });
+    plugin.on('using-remote-template', (msg) => {
+        setPluginData(figma.root, "usingRemoteTemplate", msg.usingRemoteTemplate);
     });
     plugin.on('create-table', createTable);
     plugin.on('link-component', (msg) => {

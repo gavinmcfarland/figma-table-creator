@@ -58,8 +58,8 @@
       "command": "viewNodeData"
     },
     {
-      "name": "Remove Remote Files",
-      "command": "removeRemoteFiles"
+      "name": "Reset Remote Data",
+      "command": "resetRemoteData"
     },
     {
       "name": "Settings",
