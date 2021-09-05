@@ -46,6 +46,7 @@
 
 	function updateSelectedTemplate(data, template) {
 		// Look for selected table in local templates
+		// If template not provided use defaultTemplate
 		template = template || data.defaultTemplate
 
 		for (var i in data.localTemplates) {
@@ -140,8 +141,10 @@
 
 	function setDefaultTemplate(template, data) {
 
-		// Not sure how to get it to update UI
-		data = updateSelectedTemplate(template, data)
+		if (data) {
+			// Not sure how to get it to update UI
+			data = updateSelectedTemplate(template, data)
+		}
 
 		parent.postMessage(
 			{
@@ -530,7 +533,10 @@
 		<div class="buttons">
 			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
 			{#if data.recentFiles}
-				<span on:click={() => existingTemplate()}><Button classes="secondary">Existing Template</Button></span>
+				<span on:click={() => {
+					existingTemplate()
+					setDefaultTemplate(data.remoteFiles[0].templates[0], data)
+					}}><Button classes="secondary">Existing Template</Button></span>
 			{/if}
 		</div>
 	</div>

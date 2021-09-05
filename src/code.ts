@@ -79,6 +79,10 @@ async function createTableInstance(template, preferences) {
 	// Find table component
 
 	var component = await lookForComponent(template)
+
+	if (!component) {
+		figma.notify("Check template component is published")
+	}
 	// console.log(component)
 	// console.log(component.findOne(node => node.getPluginData('isCell')))
 		// findComponentById(template.component.id)
@@ -932,6 +936,7 @@ async function syncRemoteFiles() {
 }
 
 function syncLocalTemplates() {
+	// Doesn't set templates, only updates them
 	updatePluginData(figma.root, 'localTemplates', (templates) => {
 		templates = templates || undefined
 		if (templates) {
@@ -1065,6 +1070,7 @@ function importTemplate(nodes) {
 			markNode(node, 'table')
 
 			updatePluginData(figma.root, 'localTemplates', (data) => {
+
 				data = data || []
 
 				data = addNewTemplate(node, data)
@@ -1217,15 +1223,15 @@ plugma((plugin) => {
 		height: 504
 	}
 
-	updatePluginData(figma.root, 'components', (data) => {
-		data = data || {
-			componentsExist: false,
-			current: {},
-			previous: {}
-		}
+	// updatePluginData(figma.root, 'components', (data) => {
+	// 	data = data || {
+	// 		componentsExist: false,
+	// 		current: {},
+	// 		previous: {}
+	// 	}
 
-		return data
-	})
+	// 	return data
+	// })
 
 	// Set default preferences
 	updateClientStorageAsync('userPreferences', (data) => {
@@ -1439,16 +1445,16 @@ plugma((plugin) => {
 	// Updates what?
 	plugin.on('update', (msg) => {
 
-		updatePluginData(figma.root, 'components', (data) => {
-			if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
-				data.componentsExist = true
-			}
-			else {
-				data.componentsExist = false
-			}
+		// updatePluginData(figma.root, 'components', (data) => {
+		// 	if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
+		// 		data.componentsExist = true
+		// 	}
+		// 	else {
+		// 		data.componentsExist = false
+		// 	}
 
-			return data
-		})
+		// 	return data
+		// })
 
 		figma.clientStorage.getAsync('preferences').then((res) => {
 			figma.ui.postMessage({ ...res, componentsExist: getPluginData(figma.root, 'components').componentsExist });
@@ -1461,26 +1467,26 @@ plugma((plugin) => {
 		restoreComponent(msg.component)
 	})
 
-	plugin.on('set-components', (msg) => {
+	// plugin.on('set-components', (msg) => {
 
-		// Update components used by this file
-		updatePluginData(figma.root, 'components', (data) => {
+	// 	// Update components used by this file
+	// 	updatePluginData(figma.root, 'components', (data) => {
 
-			if (msg.components === 'selected') {
-				data.current = getPluginData(figma.currentPage.selection[0], 'components')
-			}
-			else {
-				data.current = msg.components
-			}
+	// 		if (msg.components === 'selected') {
+	// 			data.current = getPluginData(figma.currentPage.selection[0], 'components')
+	// 		}
+	// 		else {
+	// 			data.current = msg.components
+	// 		}
 
-			data.componentsExist = true
-			data.componentsRemote = true
+	// 		data.componentsExist = true
+	// 		data.componentsRemote = true
 
-			return data
-		})
+	// 		return data
+	// 	})
 
-		figma.notify('Components set')
-	})
+	// 	figma.notify('Components set')
+	// })
 
 	plugin.on('set-default-template', (msg) => {
 

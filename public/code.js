@@ -927,6 +927,9 @@ async function createTableInstance(template, preferences) {
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
     // Find table component
     var component = await lookForComponent(template);
+    if (!component) {
+        figma.notify("Check template component is published");
+    }
     // console.log(component)
     // console.log(component.findOne(node => node.getPluginData('isCell')))
     // findComponentById(template.component.id)
@@ -1306,6 +1309,7 @@ async function syncRemoteFiles() {
     });
 }
 function syncLocalTemplates() {
+    // Doesn't set templates, only updates them
     updatePluginData(figma.root, 'localTemplates', (templates) => {
         templates = templates || undefined;
         if (templates) {
@@ -1467,14 +1471,14 @@ dist((plugin) => {
         width: 268,
         height: 504
     };
-    updatePluginData(figma.root, 'components', (data) => {
-        data = data || {
-            componentsExist: false,
-            current: {},
-            previous: {}
-        };
-        return data;
-    });
+    // updatePluginData(figma.root, 'components', (data) => {
+    // 	data = data || {
+    // 		componentsExist: false,
+    // 		current: {},
+    // 		previous: {}
+    // 	}
+    // 	return data
+    // })
     // Set default preferences
     updateClientStorageAsync('userPreferences', (data) => {
         data = data || {
@@ -1625,16 +1629,15 @@ dist((plugin) => {
     });
     // Updates what?
     plugin.on('update', (msg) => {
-        updatePluginData(figma.root, 'components', (data) => {
-            var _a, _b;
-            if (findComponentById((_b = (_a = getPluginData(figma.root, 'components').current) === null || _a === void 0 ? void 0 : _a.cell) === null || _b === void 0 ? void 0 : _b.id)) {
-                data.componentsExist = true;
-            }
-            else {
-                data.componentsExist = false;
-            }
-            return data;
-        });
+        // updatePluginData(figma.root, 'components', (data) => {
+        // 	if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
+        // 		data.componentsExist = true
+        // 	}
+        // 	else {
+        // 		data.componentsExist = false
+        // 	}
+        // 	return data
+        // })
         figma.clientStorage.getAsync('preferences').then((res) => {
             figma.ui.postMessage(Object.assign(Object.assign({}, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist }));
         });
@@ -1642,21 +1645,21 @@ dist((plugin) => {
     plugin.on('restore-component', (msg) => {
         restoreComponent(msg.component);
     });
-    plugin.on('set-components', (msg) => {
-        // Update components used by this file
-        updatePluginData(figma.root, 'components', (data) => {
-            if (msg.components === 'selected') {
-                data.current = getPluginData(figma.currentPage.selection[0], 'components');
-            }
-            else {
-                data.current = msg.components;
-            }
-            data.componentsExist = true;
-            data.componentsRemote = true;
-            return data;
-        });
-        figma.notify('Components set');
-    });
+    // plugin.on('set-components', (msg) => {
+    // 	// Update components used by this file
+    // 	updatePluginData(figma.root, 'components', (data) => {
+    // 		if (msg.components === 'selected') {
+    // 			data.current = getPluginData(figma.currentPage.selection[0], 'components')
+    // 		}
+    // 		else {
+    // 			data.current = msg.components
+    // 		}
+    // 		data.componentsExist = true
+    // 		data.componentsRemote = true
+    // 		return data
+    // 	})
+    // 	figma.notify('Components set')
+    // })
     plugin.on('set-default-template', (msg) => {
         setDefaultTemplate(msg.template);
         // // FIXME: Consider combining into it's own function?
