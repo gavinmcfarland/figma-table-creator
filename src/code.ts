@@ -949,48 +949,48 @@ function syncLocalTemplates() {
 	})
 }
 
-async function syncComponentsToStorage() {
+// async function syncComponentsToStorage() {
 
-	// TODO: Find a way to check the files these components link to exist and if not remove them from storage
+// 	// TODO: Find a way to check the files these components link to exist and if not remove them from storage
 
-	return updateClientStorageAsync('templates', (data) => {
-		data = data || []
+// 	return updateClientStorageAsync('templates', (data) => {
+// 		data = data || []
 
 
-		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
+// 		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
 
-			updatePluginData(figma.root, 'components', (components) => {
-				components.componentsExist = true
-				return components
-			})
+// 			updatePluginData(figma.root, 'components', (components) => {
+// 				components.componentsExist = true
+// 				return components
+// 			})
 
-			var newValue = {
-				id: getPluginData(figma.root, 'documentId'),
-				name: figma.root.name,
-				set: getPluginData(figma.root, 'components').current,
-				published: 'false'
-			}
+// 			var newValue = {
+// 				id: getPluginData(figma.root, 'documentId'),
+// 				name: figma.root.name,
+// 				set: getPluginData(figma.root, 'components').current,
+// 				published: 'false'
+// 			}
 
-			// Only add to array if unique
-			if (!data.some((item) => item.id === newValue.id)) {
-				data.push(newValue)
-			}
-		}
-		else {
-			updatePluginData(figma.root, 'components', (components) => {
-				components.componentsExist = false
-				return components
-			})
+// 			// Only add to array if unique
+// 			if (!data.some((item) => item.id === newValue.id)) {
+// 				data.push(newValue)
+// 			}
+// 		}
+// 		else {
+// 			updatePluginData(figma.root, 'components', (components) => {
+// 				components.componentsExist = false
+// 				return components
+// 			})
 
-			// Remove any entries which no longer exist
-			if (getPluginData(figma.root, 'documentId')) {
-				data = data.filter(item => item.id !== getPluginData(figma.root, 'documentId'))
-			}
-		}
+// 			// Remove any entries which no longer exist
+// 			if (getPluginData(figma.root, 'documentId')) {
+// 				data = data.filter(item => item.id !== getPluginData(figma.root, 'documentId'))
+// 			}
+// 		}
 
-		return data
-	})
-}
+// 		return data
+// 	})
+// }
 
 async function importComponents(components, page?) {
 
@@ -1251,10 +1251,14 @@ plugma((plugin) => {
 	plugin.command('createTable', ({ ui, data }) => {
 		getClientStorageAsync("recentFiles").then((recentFiles) => {
 
-			// Exclude current file
-			recentFiles = recentFiles.filter(d => {
-				return !(d.id === getPluginData(figma.root, "fileId"))
-			})
+			if (recentFiles) {
+				// Exclude current file
+				recentFiles = recentFiles.filter(d => {
+					return !(d.id === getPluginData(figma.root, "fileId"))
+				})
+				recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0)
+			}
+
 
 			getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
 				figma.clientStorage.getAsync('userPreferences').then((res) => {
@@ -1268,7 +1272,7 @@ plugma((plugin) => {
 							localTemplates: getPluginData(figma.root, 'localTemplates'),
 							fileId: getPluginData(figma.root, 'fileId'),
 							pluginAlreadyRun: pluginAlreadyRun,
-							recentFiles: (Array.isArray(recentFiles) && recentFiles.length > 0)
+							recentFiles: recentFiles
 						})
 				})
 			})

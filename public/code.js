@@ -1496,13 +1496,16 @@ dist((plugin) => {
     // })
     plugin.command('createTable', ({ ui, data }) => {
         getClientStorageAsync("recentFiles").then((recentFiles) => {
-            // Exclude current file
-            recentFiles = recentFiles.filter(d => {
-                return !(d.id === getPluginData(figma.root, "fileId"));
-            });
+            if (recentFiles) {
+                // Exclude current file
+                recentFiles = recentFiles.filter(d => {
+                    return !(d.id === getPluginData(figma.root, "fileId"));
+                });
+                recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0);
+            }
             getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
                 figma.clientStorage.getAsync('userPreferences').then((res) => {
-                    ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: (Array.isArray(recentFiles) && recentFiles.length > 0) }));
+                    ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
                 });
             });
         });
