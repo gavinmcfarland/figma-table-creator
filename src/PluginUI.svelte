@@ -223,7 +223,7 @@
 			columnResizing = value.columnResizing
 		})
 
-		console.log(data.pluginAlreadyRun)
+		// console.log(data.pluginAlreadyRun)
 
 		if (data.pluginAlreadyRun) {
 			setActiveSlide(4)

@@ -911,11 +911,14 @@ async function lookForComponent(template) {
     // If fails, then look for it by id? What if same id is confused with local component?
     // Needs to know if component is remote?
     var component;
+    var localComponent = findComponentById(template.component.id);
     try {
-        component = await figma.importComponentByKeyAsync(template.component.key);
+        if (localComponent && localComponent.key === template.component.key) {
+            component = localComponent;
+        }
     }
     catch (_a) {
-        component = findComponentById(template.component.id);
+        component = await figma.importComponentByKeyAsync(template.component.key);
     }
     return component;
 }
@@ -924,8 +927,8 @@ async function createTableInstance(template, preferences) {
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
     // Find table component
     var component = await lookForComponent(template);
-    console.log(component);
-    console.log(component.findOne(node => node.getPluginData('isCell')));
+    // console.log(component)
+    // console.log(component.findOne(node => node.getPluginData('isCell')))
     // findComponentById(template.component.id)
     var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
     if (preferences.includeHeader && !headerCellComponent) {
@@ -1223,7 +1226,7 @@ async function syncRecentFiles() {
     return updateClientStorageAsync("recentFiles", (recentFiles) => {
         recentFiles = recentFiles || [];
         var localTemplates = getPluginData(figma.root, "localTemplates");
-        console.log("localTemplates", localTemplates);
+        // console.log("localTemplates", localTemplates)
         if ((Array.isArray(localTemplates) && localTemplates.length > 0) && recentFiles) {
             var newFile = {
                 id: getPluginData(figma.root, 'fileId'),
@@ -1263,7 +1266,7 @@ async function syncRemoteFiles() {
     // TODO: Get remoteFiles from client storage
     // TODO: Add each file to list of document remoteFiles
     var recentFiles = await getClientStorageAsync("recentFiles");
-    console.log("recentFiles", recentFiles);
+    // console.log("recentFiles", recentFiles)
     updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
         remoteFiles = remoteFiles || undefined;
         // Merge recentFiles into remoteFiles
@@ -1580,7 +1583,12 @@ dist((plugin) => {
             setPluginData(figma.root, "remoteFiles", "");
             return undefined;
         }).then(() => {
-            figma.closePlugin("Remote files removed");
+            figma.closePlugin("Remote files reset");
+        });
+    });
+    plugin.command('resetUserPreferences', () => {
+        setClientStorageAsync("userPreferences", undefined).then(() => {
+            figma.closePlugin("User preferences reset");
         });
     });
     // Listen for events from UI

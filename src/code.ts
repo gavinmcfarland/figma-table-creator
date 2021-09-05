@@ -56,11 +56,16 @@ async function lookForComponent(template) {
 	// Needs to know if component is remote?
 
 	var component;
+
+	var localComponent = findComponentById(template.component.id)
+
 	try {
-		component = await figma.importComponentByKeyAsync(template.component.key)
+		if (localComponent && localComponent.key === template.component.key) {
+			component = localComponent
+		}
 	}
 	catch {
-		component = findComponentById(template.component.id)
+		component = await figma.importComponentByKeyAsync(template.component.key)
 	}
 
 	return component
@@ -74,8 +79,8 @@ async function createTableInstance(template, preferences) {
 	// Find table component
 
 	var component = await lookForComponent(template)
-	console.log(component)
-	console.log(component.findOne(node => node.getPluginData('isCell')))
+	// console.log(component)
+	// console.log(component.findOne(node => node.getPluginData('isCell')))
 		// findComponentById(template.component.id)
 
 	var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
@@ -818,7 +823,7 @@ async function syncRecentFiles() {
 		recentFiles = recentFiles || []
 
 		var localTemplates = getPluginData(figma.root, "localTemplates")
-		console.log("localTemplates", localTemplates)
+		// console.log("localTemplates", localTemplates)
 		if ((Array.isArray(localTemplates) && localTemplates.length > 0) && recentFiles) {
 			var newFile = {
 				id: getPluginData(figma.root, 'fileId'),
@@ -871,7 +876,7 @@ async function syncRemoteFiles() {
 
 	var recentFiles = await getClientStorageAsync("recentFiles")
 
-	console.log("recentFiles", recentFiles)
+	// console.log("recentFiles", recentFiles)
 
 	updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
 
@@ -1375,7 +1380,13 @@ plugma((plugin) => {
 			setPluginData(figma.root, "remoteFiles", "")
 			return undefined
 		}).then(() => {
-			figma.closePlugin("Remote files removed");
+			figma.closePlugin("Remote files reset");
+		})
+	})
+
+	plugin.command('resetUserPreferences', () => {
+		setClientStorageAsync("userPreferences", undefined).then(() => {
+			figma.closePlugin("User preferences reset");
 		})
 	})
 

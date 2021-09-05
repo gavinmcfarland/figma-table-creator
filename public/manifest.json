@@ -62,6 +62,10 @@
       "command": "resetRemoteData"
     },
     {
+      "name": "Reset User Preferences",
+      "command": "resetUserPreferences"
+    },
+    {
       "name": "Settings",
       "command": "linkComponents"
     }
