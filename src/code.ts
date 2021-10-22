@@ -28,6 +28,12 @@ import plugma from 'plugma'
 // }
 
 // Move to helpers
+
+const capitalize = (s) => {
+	if (typeof s !== 'string') return ''
+	return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
 function convertToComponent(node) {
 	const component = figma.createComponent()
 	if (node.type === "INSTANCE") {
@@ -72,6 +78,14 @@ async function lookForComponent(template) {
 }
 
 async function createTableInstance(template, preferences) {
+
+	var templateNode = await lookForComponent(template)
+
+	if (!templateNode) {
+		figma.notify("Check template component is published")
+	}
+
+	let parts = findTemplateParts(templateNode)
 
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -192,291 +206,9 @@ async function createTableInstance(template, preferences) {
 	return table
 }
 
-async function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
-
-	var cell, cellHeader, rowTemplate, tableTemplate;
-
-	if (getPluginData(figma.root, 'components').componentsRemote == true) {
-		var components = getPluginData(figma.root, 'components').current
-
-		cell = await figma.importComponentByKeyAsync(components.cell.key)
-		cellHeader = await figma.importComponentByKeyAsync(components.cellHeader.key)
-		rowTemplate = await figma.importComponentByKeyAsync(components.row.key)
-		tableTemplate = await figma.importComponentByKeyAsync(components.table.key)
-	}
-	else {
-		cell = findComponentById(getPluginData(figma.root, 'components').current.cell.id)
-		cellHeader = findComponentById(getPluginData(figma.root, 'components').current.cellHeader.id)
-		rowTemplate = findComponentById(getPluginData(figma.root, 'components').current.row.id)
-		tableTemplate = findComponentById(getPluginData(figma.root, 'components').current.table.id)
-	}
-
-
-	if (!cellHeader && includeHeader) {
-		// throw "No Header Cell component found";
-		figma.notify("No Header Cell component found")
-		return
-	}
-
-	var table = figma.createFrame()
-	var row = figma.createFrame()
-
-	copyPasteStyle(rowTemplate, row, { include: [ 'name' ] })
-	copyPasteStyle(tableTemplate, table, { include: ['name'] })
-
-
-	// Manually set layout mode
-	table.layoutMode = "VERTICAL"
-	row.layoutMode = "HORIZONTAL"
-
-
-
-	// Duplicated Cells and Rows
-	var firstRow
-
-	if (usingLocalComponent) {
-		if (rowTemplate) {
-			firstRow = rowTemplate.clone()
-		}
-		else {
-			firstRow = figma.createComponent()
-			firstRow.layoutMode = "HORIZONTAL"
-			firstRow.counterAxisSizingMode = "AUTO"
-			firstRow.layoutAlign = "STRETCH"
-		}
-
-
-		// Remove children (we only need the container)
-		removeChildren(firstRow)
-
-		firstRow.setPluginData("isRow", "true")
-
-		firstRow.name = row.name
-		firstRow.layoutMode = "HORIZONTAL"
-		firstRow.primaryAxisSizingMode = "FIXED"
-		firstRow.layoutAlign = "STRETCH"
-		firstRow.counterAxisAlignItems = cellAlignment
-	}
-	else {
-		firstRow = row
-		firstRow.setPluginData("isRow", "true")
-		firstRow.layoutAlign = "STRETCH"
-		firstRow.primaryAxisSizingMode = "FIXED"
-	}
-
-
-	var rowHeader
-
-	if (includeHeader) {
-		rowHeader = firstRow.clone()
-		rowHeader.layoutAlign = "STRETCH"
-		rowHeader.primaryAxisSizingMode = "FIXED"
-
-		for (var i = 0; i < numberColumns; i++) {
-
-			// Duplicate cell for each column and append to row
-			var duplicatedCellHeader = cellHeader.createInstance()
-
-
-			duplicatedCellHeader.setPluginData("isCellHeader", "true")
-			duplicatedCellHeader.layoutAlign = cellHeader.layoutAlign
-			duplicatedCellHeader.layoutGrow = cellHeader.layoutGrow
-
-			duplicatedCellHeader.resizeWithoutConstraints(cellWidth, duplicatedCellHeader.height)
-
-			duplicatedCellHeader.primaryAxisAlignItems = cellAlignment
-
-
-			if (duplicatedCellHeader.children.length === 1) {
-				duplicatedCellHeader.children[0].primaryAxisAlignItems = cellAlignment
-			}
-
-
-			rowHeader.appendChild(duplicatedCellHeader)
-
-
-		}
-
-		table.appendChild(rowHeader)
-
-
-	}
-
-
-
-	for (var i = 0; i < numberColumns; i++) {
-
-		var duplicatedCell = cell.createInstance()
-
-		duplicatedCell.setPluginData("isCell", "true")
-		// Bug: layoutAlign is not inherited when creating an instance
-
-		duplicatedCell.layoutAlign = cell.layoutAlign
-		duplicatedCell.layoutGrow = cell.layoutGrow
-
-
-
-		duplicatedCell.primaryAxisSizingMode = "FIXED"
-
-
-		duplicatedCell.primaryAxisAlignItems = cellAlignment
-
-
-		duplicatedCell.resizeWithoutConstraints(cellWidth, duplicatedCell.height)
-
-
-		if (duplicatedCell.children.length === 1) {
-			duplicatedCell.children[0].primaryAxisAlignItems = cellAlignment
-		}
-
-
-		firstRow.appendChild(duplicatedCell)
-	}
-
-	// Duplicate row for each row and append to table
-	// Easier to append cloned row and then duplicate, than remove later, hence numberRows - 1
-	if (!usingLocalComponent || !includeHeader) {
-		table.appendChild(firstRow)
-	}
-
-
-	for (let i = 0; i < numberRows - 1; i++) {
-		var duplicatedRow
-		if (usingLocalComponent) {
-			if (includeHeader) {
-				duplicatedRow = rowHeader.createInstance()
-				duplicatedRow.layoutAlign = "STRETCH"
-				duplicatedRow.primaryAxisSizingMode = "FIXED"
-				// duplicatedRow.setPluginData("isRowInstance", "true")
-
-				for (let b = 0; b < duplicatedRow.children.length; b++) {
-					// Save original layout align of component before it gets swapped
-
-
-
-
-					duplicatedRow.children[b].mainComponent = cell
-					// duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
-					duplicatedRow.children[b].setPluginData("isCell", "true") // Check
-
-					// When main component is changed set back to what original component was
-					duplicatedRow.children[b].layoutAlign = cell.layoutAlign
-					duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
-
-
-					duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment
-
-					if (duplicatedRow.children[b].children.length === 1) {
-						duplicatedRow.children[b].children[0].primaryAxisAlignItems = cellAlignment
-					}
-					// }
-				}
-
-				firstRow.remove()
-			}
-			else {
-
-				duplicatedRow = firstRow.createInstance()
-				duplicatedRow.layoutAlign = "STRETCH"
-				duplicatedRow.primaryAxisSizingMode = "FIXED"
-
-				// Bug: You need to swap the instances because otherwise figma API calculates the height incorrectly
-				for (let b = 0; b < duplicatedRow.children.length; b++) {
-
-					duplicatedRow.children[b].mainComponent = cell
-					// duplicatedRow.children[b].primaryAxisSizingMode = "FIXED"
-					duplicatedRow.children[b].setPluginData("isCell", "true") // Check
-
-					// When main component is changed set back to what original main component was
-					// duplicatedRow.children[b].layoutAlign = sizing
-
-
-					duplicatedRow.children[b].primaryAxisAlignItems = cellAlignment
-					if (duplicatedRow.children[b].children.length === 1) {
-						duplicatedRow.children[b].children[0].primaryAxisAlignItems = cellAlignment
-					}
-					// }
-				}
-			}
-
-		}
-		else {
-			duplicatedRow = row.clone()
-			duplicatedRow.layoutAlign = "STRETCH"
-			duplicatedRow.primaryAxisSizingMode = "FIXED"
-		}
-
-		table.appendChild(duplicatedRow)
-
-	}
-
-
-	if (includeHeader || usingLocalComponent) {
-		row.remove()
-	}
-
-	// Resize table
-
-	var padding = tableTemplate.paddingLeft + tableTemplate.paddingRight + rowTemplate.paddingLeft + rowTemplate.paddingRight + (rowTemplate.itemSpacing * (numberColumns - 1))
-
-	table.resize(cellWidth * numberColumns + padding, table.height)
-	table.counterAxisSizingMode = "AUTO"
-
-	// TODO: Needs to be added to components linked by user also
-	table.setPluginData("isTable", "true")
-
-	return table
-}
-
-// Must pass in both the source/target and their matching main components
-function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
-	for (let a = 0; a < targetChildren.length; a++) {
-		for (let b = 0; b < sourceChildren.length; b++) {
-
-			// If layer has children then run function again
-			if (sourceComponentChildren[a].children && targetComponentChildren[a].children && targetChildren[a].children && sourceChildren[a].children) {
-				overrideChildrenChars(sourceComponentChildren[a].children, targetComponentChildren[b].children, sourceChildren[b].children, targetChildren[b].children)
-			}
-
-			// If layer is a text node then check if the main components share the same name
-			else if (sourceChildren[a].type === "TEXT") {
-				if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
-					changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
-				}
-			}
-		}
-	}
-}
-
-function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren?, targetComponentChildren?) {
-	for (let a = 0; a < sourceChildren.length; a++) {
-		if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
-			targetChildren[a].name = sourceChildren[a].name
-		}
-		// If layer has children then run function again
-		if (targetChildren[a].children && sourceChildren[a].children) {
-
-			overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children)
-		}
-
-		// If layer is a text node then check if the main components share the same name
-		else if (sourceChildren[a].type === "TEXT") {
-			// if (sourceChildren[a].name === targetChildren[b].name) {
-
-			changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
-			// }
-		}
-
-	}
-}
-
-
-
-
-
 async function updateTableInstances(template) {
 
-	// Template file name not up to date for some reason
+	// FIXME: Template file name not up to date for some reason
 
 	var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
 
@@ -515,12 +247,6 @@ async function updateTableInstances(template) {
 
 }
 
-
-
-function addNewNodeToSelection(page, node) {
-	page.selection = node
-}
-
 function selectParallelCells() {
 	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
 	var regex = RegExp(/\[ignore\]/, 'g');
@@ -547,7 +273,7 @@ function selectParallelCells() {
 
 	}
 
-	addNewNodeToSelection(figma.currentPage, newSelection)
+	figma.currentPage.selection = newSelection
 
 }
 
@@ -585,8 +311,7 @@ function selectAdjacentCells() {
 		}
 
 	}
-
-	addNewNodeToSelection(figma.currentPage, newSelection)
+	figma.currentPage.selection = newSelection
 
 }
 
@@ -792,35 +517,6 @@ function createTable(msg) {
 	})
 }
 
-
-
-// function addTemplateToFiles(template, files) {
-
-// 	var newFile = {
-// 		id: template.file.id,
-// 		name: template.file.name,
-// 		templates: [template]
-// 	}
-
-// 	// Only add file to array if unique
-// 	if (!files.some((item) => item.id === newFile.id)) {
-// 		files.push(newFile)
-// 	}
-
-// 	// for (var i = 0; i < recentFiles.length; i++) {
-// 	// 	var file = recentFiles[i]
-
-// 	// 	if (file.id === getPluginData(template.file.id) {
-// 	// 		file.templates = addNewTemplate(figma.currentPage.selection[0], file.templates)
-// 	// 	}
-
-// 	// }
-
-// 	return files
-// }
-
-// setClientStorageAsync("recentFiles", undefined)
-
 // Merge document localTemplate and merge to clientStorage as recentFiles
 async function syncRecentFiles() {
 	return updateClientStorageAsync("recentFiles", (recentFiles) => {
@@ -959,49 +655,6 @@ function syncLocalTemplates() {
 	})
 }
 
-// async function syncComponentsToStorage() {
-
-// 	// TODO: Find a way to check the files these components link to exist and if not remove them from storage
-
-// 	return updateClientStorageAsync('templates', (data) => {
-// 		data = data || []
-
-
-// 		if (findComponentById(getPluginData(figma.root, 'components').current?.cell?.id)) {
-
-// 			updatePluginData(figma.root, 'components', (components) => {
-// 				components.componentsExist = true
-// 				return components
-// 			})
-
-// 			var newValue = {
-// 				id: getPluginData(figma.root, 'documentId'),
-// 				name: figma.root.name,
-// 				set: getPluginData(figma.root, 'components').current,
-// 				published: 'false'
-// 			}
-
-// 			// Only add to array if unique
-// 			if (!data.some((item) => item.id === newValue.id)) {
-// 				data.push(newValue)
-// 			}
-// 		}
-// 		else {
-// 			updatePluginData(figma.root, 'components', (components) => {
-// 				components.componentsExist = false
-// 				return components
-// 			})
-
-// 			// Remove any entries which no longer exist
-// 			if (getPluginData(figma.root, 'documentId')) {
-// 				data = data.filter(item => item.id !== getPluginData(figma.root, 'documentId'))
-// 			}
-// 		}
-
-// 		return data
-// 	})
-// }
-
 async function importComponents(components, page?) {
 
 	// // Loop through each component and import them
@@ -1046,6 +699,30 @@ function addNewTemplate(node, templates) {
 	}
 
 	return templates
+}
+
+function findTemplateParts(templateNode) {
+	// find nodes with certain pluginData
+	let elements = [
+		"table",
+		"tr",
+		"td",
+		"th"
+	]
+	let results = {}
+	for (let i = 0; i < elements.length; i++) {
+		let elementName = elements[i]
+		let part = templateNode.findOne(node => {
+			let elementSemantics = getPluginData(node, `elementSemantics}`)
+			if (elementSemantics.is === elementName) {
+				return true
+			}
+		})
+
+		results[elementName] = part
+	}
+
+	return results
 }
 
 function importTemplate(nodes) {
@@ -1131,12 +808,9 @@ function markNode(node, element) {
 
 	// Should this be split into markNode and setTemplate?
 
-	const capitalize = (s) => {
-		if (typeof s !== 'string') return ''
-		return s.charAt(0).toUpperCase() + s.slice(1)
-	}
-
-	setPluginData(node, `is${capitalize(element)}`, true)
+	setPluginData(node, `elementSemantics`, {
+		is: element
+	})
 
 	if (element === 'table') {
 		setTemplate(node)
@@ -1223,16 +897,6 @@ plugma((plugin) => {
 		height: 504
 	}
 
-	// updatePluginData(figma.root, 'components', (data) => {
-	// 	data = data || {
-	// 		componentsExist: false,
-	// 		current: {},
-	// 		previous: {}
-	// 	}
-
-	// 	return data
-	// })
-
 	// Set default preferences
 	updateClientStorageAsync('userPreferences', (data) => {
 		data = data || {
@@ -1253,11 +917,6 @@ plugma((plugin) => {
 		data = data || genRandomId()
 		return data
 	})
-
-	// Look for any components in file and update component settings and add to storage
-	// syncComponentsToStorage().then((res) => {
-	// 	console.log(res)
-	// })
 
 	plugin.command('createTable', ({ ui, data }) => {
 		getClientStorageAsync("recentFiles").then((recentFiles) => {
@@ -1467,35 +1126,9 @@ plugma((plugin) => {
 		restoreComponent(msg.component)
 	})
 
-	// plugin.on('set-components', (msg) => {
-
-	// 	// Update components used by this file
-	// 	updatePluginData(figma.root, 'components', (data) => {
-
-	// 		if (msg.components === 'selected') {
-	// 			data.current = getPluginData(figma.currentPage.selection[0], 'components')
-	// 		}
-	// 		else {
-	// 			data.current = msg.components
-	// 		}
-
-	// 		data.componentsExist = true
-	// 		data.componentsRemote = true
-
-	// 		return data
-	// 	})
-
-	// 	figma.notify('Components set')
-	// })
-
 	plugin.on('set-default-template', (msg) => {
 
 		setDefaultTemplate(msg.template)
-
-		// // FIXME: Consider combining into it's own function?
-		// figma.clientStorage.getAsync('userPreferences').then((res) => {
-		// 	figma.ui.postMessage({ ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
-		// })
 
 	})
 
@@ -1514,6 +1147,7 @@ plugma((plugin) => {
 // console.log('fileId ->', getPluginData(figma.root, 'fileId'))
 // console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
 // console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'))
+console.log('defaultTemplate ->', getPluginData(figma.root, 'defaultTemplate'))
 
 
 // getClientStorageAsync('userPreferences').then(res => {

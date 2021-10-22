@@ -13,6 +13,52 @@ Table Creator uses a component create tables from. This component is refered to 
 getPluginData(figma.root, 'fileId')
 ```
 
+### Deafult Template
+
+The currently selected template used by the plugin.
+
+```js
+getPluginData(figma.root, 'defaultTemplate')
+```
+
+```js
+{
+    id: "OhpMUnOGG4",
+    name: "Table 1",
+    component: {
+        id: "1:31"
+        key: "2b3dc4866208404c549c73ea0d26f1ad12e8af00"
+    },
+    file: {
+        id: "tv1E89ceMN",
+        name: "Untitled"
+    }
+}
+```
+
+### Previous Template
+
+The previous template the user used with the plugin.
+
+```js
+getPluginData(figma.root, 'previousTemplate')
+```
+
+```js
+{
+    id: "OhpMUnOGG4",
+    name: "Table 1",
+    component: {
+        id: "1:31"
+        key: "2b3dc4866208404c549c73ea0d26f1ad12e8af00",
+    },
+    file: {
+        id: "tv1E89ceMN",
+        name: "Untitled"
+    }
+}
+```
+
 ### Local Templates
 
 A list of templates used by the plugin locally.
