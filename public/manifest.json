@@ -54,6 +54,10 @@
         ]
     },
     {
+      "name": "Toggle Column Resizing",
+      "command": "toggleColumnResizing"
+    },
+    {
       "name": "View Node Data",
       "command": "viewNodeData"
     },

@@ -83,6 +83,7 @@ export function createDefaultTemplate() {
 	var instance_102_493 = component_1_351.createInstance()
 	instance_102_493.relativeTransform = [[1, 0, 0], [0, 1, 0]]
 	instance_102_493.expanded = true
+	instance_102_493.y = -250
 	frame_101_114.appendChild(instance_102_493)
 
 	// Swap COMPONENT

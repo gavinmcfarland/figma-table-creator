@@ -77,133 +77,157 @@ async function lookForComponent(template) {
 	return component
 }
 
-async function createTableInstance(template, preferences) {
+async function toggleColumnResizing(selection) {
+	function getTableSettings(table) {
+		let rowCount = 0
+		let columnCount = 0
 
-	var templateNode = await lookForComponent(template)
+		for (let i = 0; i < table.children.length; i++) {
+			var node = table.children[i]
+			console.log
+			if (getPluginData(node, "elementSemantics")?.is === "tr") {
+				rowCount++
+			}
+		}
 
-	if (!templateNode) {
-		figma.notify("Check template component is published")
+		let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
+
+		let firstCell = firstRow.findOne((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+
+
+		for (let i = 0; i < firstRow.children.length; i++) {
+			var node = firstRow.children[i]
+			var cellType = getPluginData(node, "elementSemantics")?.is
+			if (cellType === "td" || cellType === "th") {
+				columnCount++
+			}
+		}
+
+		return {
+			columnCount,
+			rowCount,
+			columnResizing: firstRow.type === "COMPONENT" ? true : false,
+			includeHeader: getPluginData(firstCell, "elementSemantics")?.is === "th" ? true : false,
+			cellAlignment: "MIN"
+		}
 	}
 
-	let parts = findTemplateParts(templateNode)
+	for (let i = 0; i < selection.length; i++) {
+		var oldTable = selection[i]
+
+		let settings = getTableSettings(oldTable)
+
+		settings.columnResizing = !settings.columnResizing
+
+		// FIXME: Should use current node as the template
+		let newTable = await createTableInstance(oldTable, settings)
+
+		// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
+
+		// Loop new table and replace with cells from old table
+
+		oldTable.remove()
+	}
+}
+
+async function createTableInstance(templateNode, preferences?) {
+
+	// FIXME: Get it to work with parts which are not components as well
+
+	let part = findTemplateParts(templateNode)
+
+	console.log(part)
 
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
 
-	// Find table component
-
-	var component = await lookForComponent(template)
-
-	if (!component) {
-		figma.notify("Check template component is published")
-	}
-	// console.log(component)
-	// console.log(component.findOne(node => node.getPluginData('isCell')))
-		// findComponentById(template.component.id)
-
-	var headerCellComponent = component.findOne(node => node.getPluginData('isCell')).mainComponent.parent.findOne(node => node.getPluginData('isCellHeader'));
-
-	if (preferences.includeHeader && !headerCellComponent) {
+	// Let user know if a cell header can't be found
+	if (preferences.includeHeader && !part.th ) {
 		figma.notify("No Header Cell component found")
 
 		// FIXME: Check for header cell sooner so table creation doesn't start
 		return
 	}
 
+	var tableInstance = part.table.createInstance().detachInstance()
 
-	var table = component.createInstance().detachInstance()
+	// Remove children which are trs
+	tableInstance.findAll((node) => {
+		if (getPluginData(node, "elementSemantics")?.is === "tr") {
+			node.remove()
+		}
+	})
 
-
-	// Find templates and hoist them so that don't get deleted when removing other children of table
-	var rowTemplate = table.findOne(node => node.getPluginData('isRow'))
-
-	if (rowTemplate.type === "INSTANCE") {
-		rowTemplate = rowTemplate.detachInstance();
-	}
-
-
-	figma.currentPage.appendChild(rowTemplate)
-	var cellTemplate = rowTemplate.findOne(node => node.getPluginData('isCell'));
-
-
-	// FIXME: Add check to see if cell node is instance?
-
-	var cellComponent = rowTemplate.findOne(node => node.getPluginData('isCell'));
-
-	if (cellComponent.type === "INSTANCE") {
-		cellComponent = cellComponent.mainComponent
-	}
-
-
-	figma.currentPage.appendChild(cellTemplate)
-
-	// if (headerCellTemplate) figma.currentPage.appendChild(headerCellTemplate)
-
-	table.findAll(node => {
-		if (node.getPluginData('isRow')) node.remove()
-	});
-
-	rowTemplate.findAll(node => {
-		if (node.getPluginData('isCell')) node.remove()
-	});
-
-	// Adds children back to template
-	table.insertChild(0, rowTemplate)
-	rowTemplate.insertChild(0, cellTemplate)
+	// Create first row
+	var firstRow;
 
 	if (preferences.columnResizing) {
-		// Turn first row (rowTemplate) into component
-		var rowTemplateComponent = figma.createComponent()
-		copyPaste(rowTemplate, rowTemplateComponent)
-		rowTemplateComponent.insertChild(0, cellTemplate)
-		var oldRowTemplate = rowTemplate
-		rowTemplate = rowTemplateComponent
-		table.appendChild(rowTemplate)
-		oldRowTemplate.remove()
+		firstRow = part.tr.clone()
+	}
+	else {
+		firstRow = part.tr.createInstance().detachInstance()
 	}
 
-	for (var i = 1; i < preferences.columnCount; i++) {
-		var duplicateCell = cellTemplate.clone()
+	tableInstance.appendChild(firstRow)
+
+	// Remove children which are tds
+	firstRow.findAll((node) => {
+		if (getPluginData(node, "elementSemantics")?.is === "td") {
+			node.remove()
+		}
+	})
+
+	// Create columns in first row
+
+	for (let i = 0; i < preferences.columnCount; i++) {
+		var duplicateCell = part.td.createInstance()
+		// Figma doesn't automatically inherit this property
+		duplicateCell.layoutAlign = part.td.layoutAlign
 		duplicateCell.primaryAxisAlignItems = preferences.cellAlignment
-		rowTemplate.appendChild(duplicateCell)
+		firstRow.appendChild(duplicateCell)
 	}
+
+	// Create rest of rows
 
 	for (var i = 1; i < preferences.rowCount; i++) {
 		var duplicateRow;
 
-		if (rowTemplate.type === "COMPONENT") {
-			duplicateRow = rowTemplate.createInstance()
+		if (firstRow.type === "COMPONENT") {
+			duplicateRow = firstRow.createInstance()
 		}
 		else {
-			duplicateRow = rowTemplate.clone()
+			duplicateRow = firstRow.clone()
 		}
 
-		table.appendChild(duplicateRow)
+		tableInstance.appendChild(duplicateRow)
 	}
 
-	if (preferences.includeHeader && headerCellComponent) {
-		for (var i = 0; i < rowTemplate.children.length; i++) {
-			var child = rowTemplate.children[i]
-			child.swapComponent(headerCellComponent)
+	// Swap first row to use header cell
+	if (preferences.includeHeader && part.th) {
+		for (var i = 0; i < firstRow.children.length; i++) {
+			var child = firstRow.children[i]
+			child.swapComponent(part.th)
 		}
 	}
 
+	// If using columnResizing and header swap non headers to default cells
 
-	if (preferences.columnResizing) {
-		for (let i = 0; i < table.children.length; i++) {
-			var row = table.children[i]
+	if (preferences.columnResizing && preferences.includeHeader) {
+		for (let i = 0; i < tableInstance.children.length; i++) {
+			var row = tableInstance.children[i]
 
+			// Don't swap the first one
 			if (i > 0) {
 				for (let i = 0; i < row.children.length; i++) {
 					var cell = row.children[i]
-
-					cell.mainComponent = cellComponent
+					// cell.swapComponent(part.th)
+					cell.mainComponent = part.td
 				}
 			}
 		}
 	}
 
-	return table
+	return tableInstance
 }
 
 async function updateTableInstances(template) {
@@ -475,8 +499,11 @@ function createTable(msg) {
 			// Will only let you create a table if less than 50 columns and rows
 		if (msg.columnCount < 51 && msg.rowCount < 51) {
 
+			var template = getPluginData(figma.root, 'defaultTemplate')
+
+			lookForComponent(template).then((templateNode) => {
 				// Will input from user and create table node
-				createTableInstance(getPluginData(figma.root, 'defaultTemplate'), msg).then((table) => {
+				createTableInstance(templateNode, msg).then((table) => {
 					// If table successfully created?
 					if (table) {
 						table.setRelaunchData({})
@@ -504,6 +531,9 @@ function createTable(msg) {
 
 					}
 				});
+			}).catch((error) => {
+				figma.notify("Check template component is published")
+			})
 
 
 
@@ -704,22 +734,36 @@ function addNewTemplate(node, templates) {
 function findTemplateParts(templateNode) {
 	// find nodes with certain pluginData
 	let elements = [
-		"table",
 		"tr",
 		"td",
 		"th"
 	]
 	let results = {}
+
+	if (getPluginData(templateNode, 'elementSemantics').is === "table") {
+		results["table"] = templateNode
+	}
+
+	// Loop though element definitions and find them in the template
 	for (let i = 0; i < elements.length; i++) {
 		let elementName = elements[i]
 		let part = templateNode.findOne(node => {
-			let elementSemantics = getPluginData(node, `elementSemantics}`)
-			if (elementSemantics.is === elementName) {
+
+			let elementSemantics = getPluginData(node, 'elementSemantics')
+
+			if (elementSemantics?.is === elementName) {
 				return true
 			}
 		})
 
 		results[elementName] = part
+	}
+
+	// For instances assign the mainComponent as the part
+	for (let [key, value] of Object.entries(results)) {
+		if (value.type === "INSTANCE") {
+			results[key] = value.mainComponent
+		}
 	}
 
 	return results
@@ -1053,6 +1097,13 @@ plugma((plugin) => {
 		setClientStorageAsync("userPreferences", undefined).then(() => {
 			figma.closePlugin("User preferences reset");
 		})
+	})
+
+	plugin.command('toggleColumnResizing', () => {
+		toggleColumnResizing(figma.currentPage.selection).then(() => {
+			figma.closePlugin()
+		})
+
 	})
 
 
