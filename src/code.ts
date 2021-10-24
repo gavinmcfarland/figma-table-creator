@@ -1,5 +1,5 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync} from '@figlets/helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex} from '@figlets/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData } from './helpers'
 import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
@@ -29,25 +29,10 @@ import plugma from 'plugma'
 
 // Move to helpers
 
+
 const capitalize = (s) => {
 	if (typeof s !== 'string') return ''
 	return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-function convertToComponent(node) {
-	const component = figma.createComponent()
-	if (node.type === "INSTANCE") {
-		node = node.detachInstance()
-	}
-	component.resizeWithoutConstraints(node.width, node.height)
-	for (const child of node.children) {
-		component.appendChild(child)
-	}
-	copyPaste(node, component)
-
-	node.remove()
-
-	return component
 }
 
 // Move to helpers
@@ -149,7 +134,7 @@ async function createTableInstance(templateNode, preferences?) {
 		return
 	}
 
-	var tableInstance = part.table.createInstance().detachInstance()
+	var tableInstance = convertToFrame(part.table.clone())
 
 	// Remove children which are trs
 	tableInstance.findAll((node) => {
@@ -160,19 +145,26 @@ async function createTableInstance(templateNode, preferences?) {
 
 	// Create first row
 	var firstRow;
+	var rowIndex = getNodeIndex(part.tr)
+
+
 
 	if (preferences.columnResizing) {
-		firstRow = part.tr.clone()
+		// First row should be a component
+		firstRow = convertToComponent(part.tr.clone())
 	}
 	else {
-		firstRow = part.tr.createInstance().detachInstance()
+		// First row should be a frame
+		firstRow = convertToFrame(part.tr.clone())
 	}
 
-	tableInstance.appendChild(firstRow)
+	tableInstance.insertChild(rowIndex, firstRow)
 
 	// Remove children which are tds
 	firstRow.findAll((node) => {
-		if (getPluginData(node, "elementSemantics")?.is === "td") {
+		console.log(node)
+		if (getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th") {
+
 			node.remove()
 		}
 	})
@@ -180,7 +172,7 @@ async function createTableInstance(templateNode, preferences?) {
 	// Create columns in first row
 
 	for (let i = 0; i < preferences.columnCount; i++) {
-		var duplicateCell = part.td.createInstance()
+		var duplicateCell = part.td.clone()
 		// Figma doesn't automatically inherit this property
 		duplicateCell.layoutAlign = part.td.layoutAlign
 		duplicateCell.primaryAxisAlignItems = preferences.cellAlignment
@@ -199,14 +191,15 @@ async function createTableInstance(templateNode, preferences?) {
 			duplicateRow = firstRow.clone()
 		}
 
-		tableInstance.appendChild(duplicateRow)
+		tableInstance.insertChild(rowIndex + 1, duplicateRow)
 	}
 
 	// Swap first row to use header cell
 	if (preferences.includeHeader && part.th) {
 		for (var i = 0; i < firstRow.children.length; i++) {
 			var child = firstRow.children[i]
-			child.swapComponent(part.th)
+			// FIXME: Check if instance or main component
+			child.swapComponent(part.th.mainComponent)
 		}
 	}
 
@@ -221,7 +214,8 @@ async function createTableInstance(templateNode, preferences?) {
 				for (let i = 0; i < row.children.length; i++) {
 					var cell = row.children[i]
 					// cell.swapComponent(part.th)
-					cell.mainComponent = part.td
+					// FIXME: Check if instance or main component
+					cell.mainComponent = part.td.mainComponent
 				}
 			}
 		}
@@ -759,12 +753,12 @@ function findTemplateParts(templateNode) {
 		results[elementName] = part
 	}
 
-	// For instances assign the mainComponent as the part
-	for (let [key, value] of Object.entries(results)) {
-		if (value.type === "INSTANCE") {
-			results[key] = value.mainComponent
-		}
-	}
+	// // For instances assign the mainComponent as the part
+	// for (let [key, value] of Object.entries(results)) {
+	// 	if (value.type === "INSTANCE") {
+	// 		results[key] = value.mainComponent
+	// 	}
+	// }
 
 	return results
 }
