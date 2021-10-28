@@ -72,6 +72,44 @@ export function removeChildren(node) {
 
 }
 
+export function isInsideComponent(node: SceneNode): boolean {
+	const parent = node.parent
+
+	// Sometimes parent is null
+	if (parent) {
+		if (parent && parent.type === 'COMPONENT') {
+			return true
+		} else if (parent && parent.type === 'PAGE') {
+			return false
+		} else {
+			return isInsideComponent(parent as SceneNode)
+		}
+	}
+	else {
+		return false
+	}
+
+}
+
+export function getParentComponent(node: SceneNode) {
+	const parent = node.parent
+
+	// Sometimes parent is null
+	if (parent) {
+		if (parent && parent.type === 'COMPONENT') {
+			return parent
+		} else if (parent && parent.type === 'PAGE') {
+			return false
+		} else {
+			return getParentComponent(parent as SceneNode)
+		}
+	}
+	else {
+		return false
+	}
+
+}
+
 export function positionInCenter(node) {
 	// Position newly created table in center of viewport
 	node.x = figma.viewport.center.x - (node.width / 2)
@@ -165,6 +203,7 @@ export async function loadFonts(node, style?, family?) {
 			style: style || node.fontName.style
 		})
 	])
+	return node
 }
 
 export function ungroupNode(node, parent) {

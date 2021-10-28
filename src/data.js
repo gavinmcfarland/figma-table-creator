@@ -1,6 +1,14 @@
 import { writable } from "svelte/store";
 
 export let valueStore = writable({
+	selectedFile: "",
+
+	pageState: {
+		welcomePageActive: false,
+		createTablePageActive: true,
+		templateSettingsPageActive: false
+	},
+
 	rememberSettings: true,
 	columnResizing: true,
 

@@ -12,13 +12,14 @@ function setClientStorageAsync(key, data) {
 async function updateClientStorageAsync(key, callback) {
     var data = await figma.clientStorage.getAsync(key);
     data = callback(data);
-    await figma.clientStorage.setAsync(key, data);
     // What should happen if user doesn't return anything in callback?
     if (!data) {
         data = null;
     }
-    // node.setPluginData(key, JSON.stringify(data))
-    return data;
+    else {
+        figma.clientStorage.setAsync(key, data);
+        return data;
+    }
 }
 
 const eventListeners = [];
@@ -131,6 +132,8 @@ const readOnly = [
 * @param args - Either options or a callback.
 * @returns A node or object with the properties copied over
 */
+// FIXME: When an empty objet is provided, copy over all properties including width and height
+// FIXME: Don't require a setter in order to copy property. Should be able to copy from an object literal for example.
 function copyPaste(source, target, ...args) {
     var targetIsEmpty;
     if (target && Object.keys(target).length === 0 && target.constructor === Object) {
@@ -256,43 +259,37 @@ function copyPaste(source, target, ...args) {
 }
 
 /**
- * Returns the index of a node
- * @param {SceneNode} node A node
- * @returns The index of the node
- */
-function getNodeIndex(node) {
-    return node.parent.children.indexOf(node);
-}
-
-/**
  * Converts an instance, component, or rectangle to a frame
  * @param {SceneNode} node The node you want to convert to a frame
  * @returns Returns the new node as a frame
  */
 function convertToFrame(node) {
-    let nodeIndex = getNodeIndex(node);
-    let parent = node.parent;
     if (node.type === "INSTANCE") {
         return node.detachInstance();
     }
     if (node.type === "COMPONENT") {
         let parent = node.parent;
         // This method preserves plugin data and relaunch data
+        console.log("hello");
         let frame = node.createInstance().detachInstance();
         parent.appendChild(frame);
         copyPaste(node, frame, { include: ['x', 'y'] });
-        parent.insertChild(nodeIndex, frame);
+        // Treat like native method
+        figma.currentPage.appendChild(frame);
         node.remove();
         return frame;
     }
-    if (node.type === "RECTANGLE") {
+    if (node.type === "RECTANGLE" || node.type === "GROUP") {
         let frame = figma.createFrame();
         // FIXME: Add this into copyPaste helper
         frame.resizeWithoutConstraints(node.width, node.height);
         copyPaste(node, frame);
-        parent.insertChild(nodeIndex, frame);
         node.remove();
         return frame;
+    }
+    if (node.type === "FRAME") {
+        // Don't do anything to it if it's a frame
+        return node;
     }
 }
 
@@ -320,14 +317,11 @@ function moveChildren(source, target) {
 // FIXME: Typescript says detachInstance() doesn't exist on SceneNode & ChildrenMixin 
 function convertToComponent(node) {
     const component = figma.createComponent();
-    let parent = node.parent;
-    let nodeIndex = getNodeIndex(node);
     node = convertToFrame(node);
     // FIXME: Add this into copyPaste helper
     component.resizeWithoutConstraints(node.width, node.height);
     copyPaste(node, component);
     moveChildren(node, component);
-    parent.insertChild(nodeIndex, component);
     node.remove();
     return component;
 }
@@ -377,11 +371,151 @@ function ungroup(node, parent) {
     return selection;
 }
 
+/**
+ * Returns the index of a node
+ * @param {SceneNode} node A node
+ * @returns The index of the node
+ */
+function getNodeIndex(node) {
+    return node.parent.children.indexOf(node);
+}
+
+const nodeToObject = (node, withoutRelations, removeConflicts) => {
+    const props = Object.entries(Object.getOwnPropertyDescriptors(node.__proto__));
+    const blacklist = ['parent', 'children', 'removed', 'masterComponent', 'horizontalPadding', 'verticalPadding'];
+    const obj = { id: node.id, type: node.type };
+    for (const [name, prop] of props) {
+        if (prop.get && !blacklist.includes(name)) {
+            try {
+                if (typeof obj[name] === 'symbol') {
+                    obj[name] = 'Mixed';
+                }
+                else {
+                    obj[name] = prop.get.call(node);
+                }
+            }
+            catch (err) {
+                obj[name] = undefined;
+            }
+        }
+    }
+    if (node.parent && !withoutRelations) {
+        obj.parent = { id: node.parent.id, type: node.parent.type };
+    }
+    if (node.children && !withoutRelations) {
+        obj.children = node.children.map((child) => nodeToObject(child, withoutRelations));
+    }
+    if (node.masterComponent && !withoutRelations) {
+        obj.masterComponent = nodeToObject(node.masterComponent, withoutRelations);
+    }
+    if (!removeConflicts) {
+        !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
+        !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
+        !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
+        !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
+        !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+        if (obj.textStyleId) {
+            delete obj.fontName;
+            delete obj.fontSize;
+            delete obj.letterSpacing;
+            delete obj.lineHeight;
+            delete obj.paragraphIndent;
+            delete obj.paragraphSpacing;
+            delete obj.textCase;
+            delete obj.textDecoration;
+        }
+        else {
+            delete obj.textStyleId;
+        }
+        if (obj.cornerRadius !== figma.mixed) {
+            delete obj.topLeftRadius;
+            delete obj.topRightRadius;
+            delete obj.bottomLeftRadius;
+            delete obj.bottomRightRadius;
+        }
+        else {
+            delete obj.cornerRadius;
+        }
+    }
+    return obj;
+};
+
+function isFunction(functionToCheck) {
+    return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
+}
+// TODO: Add option to ignore width and height?
+// TODO: Could do with refactoring
+/**
+ * Replace any node with another node
+ * @param {SceneNode} target The node you want to replace
+ * @param {SceneNode | Callback} source What you want to replace the node with
+ * @returns Returns the new node as a component
+ */
+function replace(target, source) {
+    console.log(target.id);
+    let isSelection = false;
+    let targetCopy;
+    let clonedSelection = [];
+    let nodeIndex;
+    let parent;
+    // If it's a selection we need to create a dummy node that represents the whole of the selection to base the properties off
+    if (Array.isArray(target)) {
+        nodeIndex = getNodeIndex(target[0]);
+        parent = target[0].parent;
+        // Clone the target so the actual target doesn't move
+        for (let i = 0; i < target.length; i++) {
+            let clone = target[i].clone();
+            clonedSelection.push(clone);
+        }
+        // parent.insertChild(clone, nodeIndex)
+        targetCopy = figma.group(clonedSelection, parent, nodeIndex);
+        // I think this needs to happen because when you create a clone it doesn't get inserted into the same location as the original node?
+        targetCopy.x = target[0].x;
+        targetCopy.y = target[0].y;
+        isSelection = true;
+        nodeIndex = getNodeIndex(targetCopy);
+        parent = targetCopy.parent;
+    }
+    else {
+        targetCopy = nodeToObject(target);
+        nodeIndex = getNodeIndex(target);
+        parent = target.parent;
+    }
+    let targetWidth = targetCopy.width;
+    let targetHeight = targetCopy.height;
+    let result;
+    if (isFunction(source)) {
+        result = source(target);
+    }
+    else {
+        result = source;
+    }
+    if (result) {
+        // FIXME: Add this into copyPaste helper
+        result.resizeWithoutConstraints(targetWidth, targetHeight);
+        copyPaste(targetCopy, result, { include: ['x', 'y', 'constraints'] });
+        // copyPaste not working properly so have to manually copy x and y
+        result.x = targetCopy.x;
+        result.y = targetCopy.y;
+        console.log(parent);
+        parent.insertChild(nodeIndex, result);
+        if (isSelection) {
+            targetCopy.remove();
+            // clonedSelection gets removed when this node gets removed
+        }
+        if (figma.getNodeById(target.id)) {
+            target.remove();
+        }
+        return result;
+    }
+}
+
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
 var copyPaste_1 = copyPaste;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
+var replace_1 = replace;
 var setClientStorageAsync_1 = setClientStorageAsync;
 var setPluginData_1 = setPluginData;
 var ungroup_1 = ungroup;
@@ -431,10 +565,72 @@ function copyPasteStyle(source, target, options = {}) {
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
 }
+function isInsideComponent(node) {
+    const parent = node.parent;
+    // Sometimes parent is null
+    if (parent) {
+        if (parent && parent.type === 'COMPONENT') {
+            return true;
+        }
+        else if (parent && parent.type === 'PAGE') {
+            return false;
+        }
+        else {
+            return isInsideComponent(parent);
+        }
+    }
+    else {
+        return false;
+    }
+}
+function getParentComponent(node) {
+    const parent = node.parent;
+    // Sometimes parent is null
+    if (parent) {
+        if (parent && parent.type === 'COMPONENT') {
+            return parent;
+        }
+        else if (parent && parent.type === 'PAGE') {
+            return false;
+        }
+        else {
+            return getParentComponent(parent);
+        }
+    }
+    else {
+        return false;
+    }
+}
 function positionInCenter(node) {
     // Position newly created table in center of viewport
     node.x = figma.viewport.center.x - (node.width / 2);
     node.y = figma.viewport.center.y - (node.height / 2);
+}
+async function changeText(node, text, weight) {
+    if (node.fontName === figma.mixed) {
+        await figma.loadFontAsync(node.getRangeFontName(0, 1));
+    }
+    else {
+        await figma.loadFontAsync({
+            family: node.fontName.family,
+            style: weight || node.fontName.style
+        });
+    }
+    if (weight) {
+        node.fontName = {
+            family: node.fontName.family,
+            style: weight
+        };
+    }
+    if (text) {
+        node.characters = text;
+    }
+    if (text === "") {
+        // Fixes issue where spaces are ignored and node has zero width
+        node.resize(10, node.height);
+    }
+    node.textAutoResize = "HEIGHT";
+    node.layoutAlign = "STRETCH";
 }
 function findComponentById(id) {
     // var pages = figma.root.children
@@ -471,6 +667,49 @@ function getPluginData(node, key) {
         data = undefined;
     }
     return data;
+}
+
+// TODO: Is it easier to ask the user to import and select their own components?
+// 1. Hi, I'm tablo. My creator made me so I could help you upgrade to the shiny new version of Table Creator.
+// 2. I notice you don't have a table or row component. Unfortunately you won't be able to continue using this plugin, only kidding. I just need to create some
+// 1. The way table create works is slightly different now. Instead of relying on a single cell component to create tables from. Table Creator now use a table component as a template. As part of this upgrade I'm going to hopefully successfully upgrade your existing components to work with the new version of Table Creator. Unfortunately because of the way plugins work without this making this upgrade you won't be able to continue using the plugin. You can either follow this upgrade, or start from scratch and try and link your old components.
+// 2. First I'll look to see if I can find a table component. If you don't have one I'll create one for you. This will be used as the main template that new tables are created from.
+// 3. Next I'll look to see if you have a row component. If you don't
+function upgradeFrom6to7() {
+    function findUsersExisitingComponents() {
+        return {
+            table: findComponentById(figma.root.getPluginData("tableComponentID")),
+            tr: findComponentById(figma.root.getPluginData("rowComponentID")),
+            td: findComponentById(figma.root.getPluginData("cellComponentID")),
+            th: findComponentById(figma.root.getPluginData("cellHeaderComponentID"))
+        };
+    }
+    const usersExistingComponents = findUsersExisitingComponents();
+    let newComponents = Object.assign({}, usersExistingComponents);
+    if (usersExistingComponents.td) {
+        if (!usersExistingComponents.table) {
+            newComponents.table = figma.createComponent();
+            // Leave a not to let user know how it works now
+        }
+        else {
+            newComponents.table = usersExistingComponents.table;
+        }
+        if (!usersExistingComponents.tr) {
+            newComponents.tr = figma.createComponent();
+            // Add auto layout
+            // Add cells to row component
+            newComponents.tr.appendChild(newComponents.td.createInstance());
+            newComponents.tr.appendChild(newComponents.td.createInstance());
+            // Add row instance to table component
+        }
+        else {
+            newComponents.tr = usersExistingComponents.tr;
+        }
+    }
+    // Need to set templateData on the users existing components
+    // If they don't have a table template then I need to create one
+    // Import user's old template component as a new template
+    // Tidy up data on the users template by removing old pluginData
 }
 
 // Load FONTS
@@ -1166,6 +1405,7 @@ var scripts = {
 };
 var devDependencies = {
 	"@figlets/helpers": "^0.0.0-alpha.9",
+	"@figma/plugin-typings": "^1.37.0",
 	"@rollup/plugin-commonjs": "^17.0.0",
 	"@rollup/plugin-image": "^2.0.6",
 	"@rollup/plugin-json": "^4.1.0",
@@ -1199,6 +1439,7 @@ var dependencies = {
 	"postcss-logical": "^4.0.2",
 	"sirv-cli": "^1.0.10",
 	stylup: "0.0.0-alpha.3",
+	tweeno: "^1.1.3",
 	uniqid: "^5.3.0",
 	uuid: "^8.3.2"
 };
@@ -1331,6 +1572,781 @@ function plugma(plugin) {
 
 var dist = plugma;
 
+/* istanbul ignore next */
+var Easing = {
+    Linear: {
+        None: function(k) {
+            return k;
+        }
+    },
+    Quadratic: {
+        In: function(k) {
+            return k * k;
+        },
+        Out: function(k) {
+            return k * (2 - k);
+        },
+        InOut: function(k) {
+            if((k *= 2) < 1) return 0.5 * k * k;
+            return -0.5 * (--k * (k - 2) - 1);
+        }
+    },
+    Cubic: {
+        In: function(k) {
+            return k * k * k;
+        },
+        Out: function(k) {
+            return --k * k * k + 1;
+        },
+        InOut: function(k) {
+            if((k *= 2) < 1) return 0.5 * k * k * k;
+            return 0.5 * ((k -= 2) * k * k + 2);
+        }
+    },
+    Quartic: {
+        In: function(k) {
+            return k * k * k * k;
+        },
+        Out: function(k) {
+            return 1 - (--k * k * k * k);
+        },
+        InOut: function(k) {
+            if((k *= 2) < 1) return 0.5 * k * k * k * k;
+            return -0.5 * ((k -= 2) * k * k * k - 2);
+        }
+    },
+    Quintic: {
+        In: function(k) {
+            return k * k * k * k * k;
+        },
+        Out: function(k) {
+            return --k * k * k * k * k + 1;
+        },
+        InOut: function(k) {
+            if((k *= 2) < 1) return 0.5 * k * k * k * k * k;
+            return 0.5 * ((k -= 2) * k * k * k * k + 2);
+        }
+    },
+    Sinusoidal: {
+        In: function(k) {
+            return 1 - Math.cos(k * Math.PI / 2);
+        },
+        Out: function(k) {
+            return Math.sin(k * Math.PI / 2);
+        },
+        InOut: function(k) {
+            return 0.5 * (1 - Math.cos(Math.PI * k));
+        }
+    },
+    Exponential: {
+        In: function(k) {
+            return k === 0 ? 0 : Math.pow(1024, k - 1);
+        },
+        Out: function(k) {
+            return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
+        },
+        InOut: function(k) {
+            if(k === 0) return 0;
+            if(k === 1) return 1;
+            if((k *= 2) < 1) return 0.5 * Math.pow(1024, k - 1);
+            return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
+        }
+    },
+    Circular: {
+        In: function(k) {
+            return 1 - Math.sqrt(1 - k * k);
+        },
+        Out: function(k) {
+            return Math.sqrt(1 - (--k * k));
+        },
+        InOut: function(k) {
+            if((k *= 2) < 1) return -0.5 * (Math.sqrt(1 - k * k) - 1);
+            return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+        }
+    },
+    Elastic: {
+        In: function(k) {
+            var s, a = 0.1,
+                p = 0.4;
+            if(k === 0) return 0;
+            if(k === 1) return 1;
+            if(!a || a < 1) {
+                a = 1;
+                s = p / 4;
+            } else s = p * Math.asin(1 / a) / (2 * Math.PI);
+            return -(a * Math.pow(2, 10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p));
+        },
+        Out: function(k) {
+            var s, a = 0.1,
+                p = 0.4;
+            if(k === 0) return 0;
+            if(k === 1) return 1;
+            if(!a || a < 1) {
+                a = 1;
+                s = p / 4;
+            } else s = p * Math.asin(1 / a) / (2 * Math.PI);
+            return(a * Math.pow(2, -10 * k) * Math.sin((k - s) * (2 * Math.PI) / p) + 1);
+        },
+        InOut: function(k) {
+            var s, a = 0.1,
+                p = 0.4;
+            if(k === 0) return 0;
+            if(k === 1) return 1;
+            if(!a || a < 1) {
+                a = 1;
+                s = p / 4;
+            } else s = p * Math.asin(1 / a) / (2 * Math.PI);
+            if((k *= 2) < 1) return -0.5 * (a * Math.pow(2, 10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p));
+            return a * Math.pow(2, -10 * (k -= 1)) * Math.sin((k - s) * (2 * Math.PI) / p) * 0.5 + 1;
+        }
+    },
+    Back: {
+        In: function(k) {
+            var s = 1.70158;
+            return k * k * ((s + 1) * k - s);
+        },
+        Out: function(k) {
+            var s = 1.70158;
+            return --k * k * ((s + 1) * k + s) + 1;
+        },
+        InOut: function(k) {
+            var s = 1.70158 * 1.525;
+            if((k *= 2) < 1) return 0.5 * (k * k * ((s + 1) * k - s));
+            return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+        }
+    },
+    Bounce: {
+        In: function(k) {
+            return 1 - Easing.Bounce.Out(1 - k);
+        },
+        Out: function(k) {
+            if(k < (1 / 2.75)) {
+                return 7.5625 * k * k;
+            } else if(k < (2 / 2.75)) {
+                return 7.5625 * (k -= (1.5 / 2.75)) * k + 0.75;
+            } else if(k < (2.5 / 2.75)) {
+                return 7.5625 * (k -= (2.25 / 2.75)) * k + 0.9375;
+            } else {
+                return 7.5625 * (k -= (2.625 / 2.75)) * k + 0.984375;
+            }
+        },
+        InOut: function(k) {
+            if(k < 0.5) return Easing.Bounce.In(k * 2) * 0.5;
+            return Easing.Bounce.Out(k * 2 - 1) * 0.5 + 0.5;
+        }
+    }
+};
+var easing = Easing;
+
+/* istanbul ignore next */
+var Utils = {
+    Linear: function(p0, p1, t) {
+        return (p1 - p0) * t + p0;
+    },
+    Bernstein: function(n, i) {
+        var fc = Utils.Factorial;
+        return fc(n) / fc(i) / fc(n - i);
+    },
+    Factorial: (function() {
+        var a = [1];
+        return function(n) {
+            var s = 1,
+                i;
+            if(a[n]) return a[n];
+            for(i = n; i > 1; i--) s *= i;
+                a[n] = s;
+            return a[n];
+        };
+    })(),
+    CatmullRom: function(p0, p1, p2, p3, t) {
+        var v0 = (p2 - p0) * 0.5,
+            v1 = (p3 - p1) * 0.5,
+            t2 = t * t,
+            t3 = t * t2;
+        return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (-3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
+    }
+};
+/* istanbul ignore next */
+var interpolation = {
+    Linear: function(v, k) {
+        var m = v.length - 1,
+            f = m * k,
+            i = Math.floor(f),
+            fn = Utils.Linear;
+        if(k < 0) return fn(v[0], v[1], f);
+        if(k > 1) return fn(v[m], v[m - 1], m - f);
+        return fn(v[i], v[i + 1 > m ? m : i + 1], f - i);
+    },
+    Bezier: function(v, k) {
+        var b = 0,
+            n = v.length - 1,
+            pw = Math.pow,
+            bn = Utils.Bernstein,
+            i;
+        for(i = 0; i <= n; i++) {
+            b += pw(1 - k, n - i) * pw(k, i) * v[i] * bn(n, i);
+        }
+        return b;
+    },
+    CatmullRom: function(v, k) {
+        var m = v.length - 1,
+            f = m * k,
+            i = Math.floor(f),
+            fn = Utils.CatmullRom;
+        if(v[0] === v[m]) {
+            if(k < 0) i = Math.floor(f = m * (1 + k));
+            return fn(v[(i - 1 + m) % m], v[i], v[(i + 1) % m], v[(i + 2) % m], f - i);
+        } else {
+            if(k < 0) return v[0] - (fn(v[0], v[0], v[1], v[1], -f) - v[0]);
+            if(k > 1) return v[m] - (fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m]);
+            return fn(v[i ? i - 1 : 0], v[i], v[m < i + 1 ? m : i + 1], v[m < i + 2 ? m : i + 2], f - i);
+        }
+    }
+};
+
+/**
+    settings = {
+        from: false,
+        to: null,
+        duration: null,
+        repeat: false,
+        delay: 0,
+        easing: false,
+        yoyo: false, // requires repeat to be 1 or greater, reverses animation every other repeat
+        interpolation: false,
+        onStart: false,
+        onYoYo: false,
+        onRepeat: false,
+        onUpdate: false,
+        onComplete: false,
+        filters: false
+    };
+    **/
+var Tween = function(object, settings) {
+    settings = settings || {};
+    this._object = object;
+    this._valuesStart = {};
+
+    this._valuesStartRepeat = {};
+    this._startTime = null;
+    this._onStartCallbackFired = false;
+    this._onCompleteCallbackFired = false;
+    // if true this tween will be removed from any animation list it is part of
+    this.remove = false;
+
+    this._isPlaying = false;
+    this._reversed = false;
+
+    this.filters = settings.filters || {};
+
+    this.duration = settings.duration || 1000;
+    this.repeat = settings.repeat || 0;
+    this.repeatDelay = settings.repeatDelay || 0;
+    this.delay = settings.delay || 0;
+    this.from = settings.from || false;
+    this.to = settings.to || {};
+    this.yoyo = settings.yoyo || false;
+
+    this.easing = settings.easing || easing.Linear.None;
+    this.interpolation = settings.interpolation || interpolation.Linear;
+
+    this.chained = settings.chained || [];
+
+    this.onStart = settings.onStart || false;
+    this.onUpdate = settings.onUpdate || false;
+    this.onComplete = settings.onComplete || false;
+    this.onRepeat = settings.onRepeat || false;
+    this.onYoYo = settings.onYoYo || false;
+    this.window = false;
+};
+
+Tween.prototype.start = function(time) {
+    this._isPlaying = true;
+    var property;
+    // Set all starting values present on the target object
+    for(var field in this._object) {
+        // if a from object was set, apply those properties to the target object
+        if(this.from && typeof this.from[field] !== 'undefined') {
+            this._object[field] = this.from[field];
+        }
+    }
+    this._onStartCallbackFired = false;
+    this._onCompleteCallbackFired = false;
+
+    if(typeof time !== 'undefined') {
+        this._startTime = time;
+    } else {
+        // allows for unit testing
+        var window = this.window || window;
+        if(
+            typeof window !== 'undefined' &&
+            typeof window.performance !== 'undefined' &&
+            typeof window.performance.now !== 'undefined'
+        ) {
+            this._startTime = window.performance.now();
+        } else {
+            this._startTime = Date.now();
+        }
+    }
+    this._startTime += this.delay;
+
+    for(property in this.to) {
+        var toProperty = this.to[property],
+            filter = this.filters[property];
+
+        // check if an Array was provided as property value
+        if(toProperty instanceof Array) {
+            if(toProperty.length === 0) {
+                continue;
+            }
+            // create a local copy of the Array with the start value at the front
+            toProperty = [this._object[property]].concat(toProperty);
+        }
+
+        // if this property has a filter
+        if(filter) {
+            filter.start(this._object[property], toProperty);
+        }
+
+        this.to[property] = toProperty;
+        this._valuesStart[property] = this._object[property];
+        this._valuesStartRepeat[property] = this._valuesStart[property] || 0;
+    }
+    return this;
+};
+
+Tween.prototype.update = function(time) {
+    if(!this._isPlaying) {
+        return true;
+    }
+    var property;
+    if(time < this._startTime) {
+        return true;
+    }
+    if(this._onStartCallbackFired === false) {
+        if(this.onStart) {
+            this.onStart(this._object, this, 0, 0);
+        }
+        this._onStartCallbackFired = true;
+    }
+
+    var elapsed = (time - this._startTime) / this.duration;
+    elapsed = elapsed > 1 ? 1 : elapsed;
+
+    var easedProgress = this.easing(elapsed);
+
+    for(property in this.to) {
+
+        var start = this._valuesStart[property] || 0,
+            end = this.to[property],
+            filter = typeof this.filters[property] !== 'undefined' ? this.filters[property] : false,
+            newValue;
+
+        // protect against non numeric properties.
+        if(typeof end === "number") {
+            newValue = start + (end - start) * easedProgress;
+        }
+        // handle filtered end values
+        else if(filter) {
+            newValue = filter.getUpdatedValue(easedProgress, this.interpolation);
+        }
+        // handle interpolated end values
+        else if(end instanceof Array) {
+            newValue = this.interpolation(end, easedProgress);
+        }
+
+        if(typeof newValue !== 'undefined') {
+            this._object[property] = newValue;
+        }
+    }
+
+    if(this.onUpdate) {
+        this.onUpdate(this._object, this, easedProgress, elapsed);
+    }
+
+    if(elapsed == 1) {
+        if(this.repeat > 0) {
+            if(isFinite(this.repeat)) {
+                this.repeat--;
+            }
+            // reassign starting values, restart by making startTime = now
+            for(property in this._valuesStartRepeat) {
+                if(this.yoyo) {
+                    var tmp = this._valuesStartRepeat[property];
+                    this._valuesStartRepeat[property] = this.to[property];
+                    this.to[property] = tmp;
+                    this._reversed = !this._reversed;
+                    if(this.onYoYo){
+                        this.onYoYo(this._object, this, 1, 1);
+                    }
+                }
+                this._valuesStart[property] = this._valuesStartRepeat[property];
+                if(this.filters[property]) {
+                    this.filters[property].start(this._valuesStart[property], this.to[property]);
+                }
+            }
+            this._startTime = time + this.repeatDelay;
+            if(this.onRepeat){
+                this.onRepeat(this._object, this, 1, 1);
+            }
+            return true;
+        } else {
+            if(this._onCompleteCallbackFired === false) {
+                if(this.onComplete) {
+                    this.onComplete(this._object, this, 1, 1);
+                }
+                this._onCompleteCallbackFired = true;
+            }
+            return false;
+        }
+    }
+    return true;
+};
+
+Tween.prototype.getDuration = function() {
+    var repeatDelay = 0;
+    if(this.repeat){
+        repeatDelay = this.repeatDelay;
+    }
+
+    return this.delay + (repeatDelay + this.duration) * (this.repeat || 1);
+};
+
+var tween = Tween;
+
+var Filter = function(settings) {
+    settings = settings || {};
+    this.format = settings.format || this.format;
+
+    this.placeholder = settings.placeholder || this.placeholder;
+    // prevent reference
+    this.placeholderTypes = settings.placeholderTypes || [].concat(this.placeholderTypes);
+    this._formatArray = this.format.split(this.placeholder);
+};
+
+Filter.prototype._formatArray = null;
+
+Filter.prototype.format = 'rgba(%,%,%,%)';
+Filter.prototype.placeholder = '%';
+Filter.prototype.placeholderTypes = ['int', 'int', 'int', 'float'];
+
+Filter.prototype.to = null;
+Filter.prototype.from = null;
+
+Filter.prototype.stringToArray = function(string) {
+    var array = string.match(/[+-]?[\d]+(\.[\d]+)?/g);
+    return array.map(parseFloat);
+};
+
+Filter.prototype.validateArrayLength = function(length, string, param) {
+    param = param || '';
+    string = string || '';
+
+    if(param) {
+        param = ' set to the "' + param + '" param';
+    }
+    if(string) {
+        string = ' of string "' + string + '"';
+    }
+
+    var placeholderCount = this._formatArray.length - 1;
+    if(length < placeholderCount) {
+        throw new Error('value array length' + ' ( ' + length + ' )' + string + param + ' is less than the number of format placeholders ' + '( ' + placeholderCount + ' ) in ' + this.format);
+    } else if(length > placeholderCount) {
+        throw new Error('value array length' + ' ( ' + length + ' )' + string + param + ' is greater than the number of format placeholders ' + '( ' + placeholderCount + ' ) in ' + this.format);
+    }
+};
+
+Filter.prototype.arrayToString = function(array) {
+    var formatArray = this._formatArray,
+        len = formatArray.length,
+        out = [],
+        i;
+
+    for(i = 0; i < len; i++) {
+        if(this.placeholderTypes[i] === 'int'){
+            array[i] = Math.round(array[i]);
+        }
+
+        out.push(formatArray[i]);
+        out.push(array[i]);
+    }
+    return out.join('');
+};
+
+
+Filter.prototype.start = function(from, to) {
+    this.from = from;
+    this.to = to;
+    this.arrayFrom = this.stringToArray(from);
+    this.validateArrayLength(this.arrayFrom.length, from, 'arrayFrom');
+    var arrayTo;
+    // interpolated end value
+    if(to instanceof Array) {
+        arrayTo = [];
+        // create a local copy of the Array with the start value at the front
+        to = [from].concat(to);
+        var len = to.length,
+            i;
+
+        for(i = 0; i < len; i++) {
+            var arrItem = this.stringToArray(to[i]);
+            this.validateArrayLength(arrItem.length, to[i], 'arrayTo');
+            arrayTo[i] = arrItem;
+        }
+        this.arrayToIndexedInterpolated = this.getIndexedInterpolationData(arrayTo);
+    }
+    // assume string
+    else {
+        arrayTo = this.stringToArray(to);
+        this.validateArrayLength(arrayTo.length, to, 'arrayTo');
+    }
+    this.arrayTo = arrayTo;
+};
+
+// indexed interpolation data
+/**
+            ex: [rbga(1,2,3,1), rgba(10,20,30,1), rgba(15,25,35,1)]
+
+            output: interpolatedArrayData = [
+                [1, 10, 15, 1],
+                [2, 20, 25, 1],
+                [3, 30, 35, 1]
+            ]
+
+**/
+Filter.prototype.getIndexedInterpolationData = function(toArray) {
+    var interpolatedArrayData = [],
+        ilen = toArray.length,
+        i, j;
+
+    for(i = 0; i < ilen; i++) {
+        var interpolationStep = toArray[i],
+            jLen = interpolationStep.length;
+
+        for(j = 0; j < jLen; j++) {
+            if(typeof interpolatedArrayData[j] === 'undefined') {
+                interpolatedArrayData[j] = [];
+            }
+            interpolatedArrayData[j].push(interpolationStep[j]);
+        }
+    }
+
+    return interpolatedArrayData;
+};
+
+Filter.prototype.getUpdatedValue = function(easedProgress, interpolation) {
+    var end = this.arrayTo,
+        newInterpolatedArray = [],
+        out, i, len;
+
+    //check if interpolated array
+    if(end[0] instanceof Array) {
+        var interpolatedArray = this.arrayToIndexedInterpolated;
+        /**
+        convert from
+            interpolatedArray = [
+                [1, 10, 15],
+                [2, 20, 25],
+                [3, 30, 35]
+            ]
+            to interpolated array
+            [1.5, 2.5, 3.5, 1]
+        **/
+        len = interpolatedArray.length;
+        for(i = 0; i < len; i++) {
+
+
+            newInterpolatedArray[i] = interpolation(interpolatedArray[i], easedProgress);
+        }
+        out = this.arrayToString(newInterpolatedArray);
+        return out;
+    }
+
+    var endArr = [];
+
+    len = end.length;
+    for(i = 0; i < len; i++) {
+        var startVal = this.arrayFrom[i],
+            endVal = end[i];
+        endArr.push(startVal + (endVal - startVal) * easedProgress);
+    }
+    out = this.arrayToString(endArr);
+    return out;
+};
+
+var filter = Filter;
+
+var Queue = function(tweens) {
+    this.tweens = tweens || [];
+    this.window = false;
+};
+Queue.prototype.window = null;
+Queue.prototype.tweens = null;
+
+Queue.prototype.add = function(tween) {
+    this.tweens.push(tween);
+    return this;
+};
+
+Queue.prototype.remove = function(tween) {
+    var i = this.tweens.indexOf(tween);
+    if(i !== -1) {
+        this.tweens.splice(i, 1);
+    }
+    return this;
+};
+
+Queue.prototype.update = function(time) {
+    if(this.tweens.length === 0) {
+        return false;
+    }
+    var i = 0;
+    if(time === undefined) {
+        // allows for unit testing
+        var window = this.window || window;
+
+        if(
+            typeof window !== 'undefined' &&
+            typeof window.performance !== 'undefined' &&
+            typeof window.performance.now !== 'undefined'
+        ) {
+            time = window.performance.now();
+        } else {
+            time = Date.now();
+        }
+    }
+    while(i < this.tweens.length) {
+        var tween = this.tweens[i],
+            update = tween.update(time);
+        if(tween.remove || !update) {
+            this.tweens.splice(i, 1);
+            // if end of tween without removing manually
+            if(!tween.remove && tween.chained){
+                var len = tween.chained.length;
+                for (i = 0; i < len; i++) {
+                    var chainedTween = tween.chained[i];
+                    // add and start any chained tweens
+                    this.add(chainedTween);
+                    chainedTween.start(time);
+                }
+            }
+        } else {
+            i++;
+        }
+    }
+    return true;
+};
+
+Queue.prototype.start = function(time) {
+    for(var i = this.tweens.length - 1; i >= 0; i--) {
+        this.tweens[i].start(time);
+    }
+    return this;
+};
+
+var queue = Queue;
+
+var tweeno = {
+    Tween: tween,
+    Filter: filter,
+    Queue: queue,
+    Interpolation: interpolation,
+    Easing: easing
+};
+
+console.clear();
+function animateIntoView(selection, duration, easing) {
+    // Get current coordiantes
+    let origCoords = Object.assign(Object.assign({}, figma.viewport.center), { z: figma.viewport.zoom });
+    // Get to be coordiantes
+    figma.viewport.scrollAndZoomIntoView(selection);
+    let newCoords = Object.assign(Object.assign({}, Object.assign({}, figma.viewport.center)), { z: figma.viewport.zoom });
+    // Reset back to current coordinates
+    figma.viewport.center = {
+        x: origCoords.x,
+        y: origCoords.y
+    };
+    figma.viewport.zoom = origCoords.z;
+    var settings = {
+        // set when starting tween
+        from: origCoords,
+        // state to tween to
+        to: newCoords,
+        // 2 seconds
+        duration: duration || 1000,
+        // repeat 2 times
+        repeat: 0,
+        // do it smoothly
+        easing: easing || tweeno.Easing.Cubic.Out,
+    };
+    var target = Object.assign(Object.assign({}, origCoords), { update: function () {
+            figma.viewport.center = { x: this.x, y: this.y };
+            figma.viewport.zoom = this.z;
+            // console.log(Math.round(this.x), Math.round(this.y))
+        } });
+    var queue = new tweeno.Queue(), tween = new tweeno.Tween(target, settings);
+    // add the tween to the queue
+    queue.add(tween);
+    // start the queue
+    queue.start();
+    let loop = setInterval(() => {
+        if (queue.tweens.length === 0) {
+            clearInterval(loop);
+        }
+        else {
+            queue.update();
+            // update the target object state
+            target.update();
+        }
+    }, 1);
+}
+// start the update loop
+// animate();
+// reset
+// setPluginData(figma.root, "usingRemoteTemplate", "")
+// setPluginData(figma.root, "pluginVersion", "")
+// setClientStorageAsync("pluginAlreadyRun", false)
+// async function pluginAlreadyRun() {
+// 	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
+// 	var newPluginVersion = "7.0.0"
+// 	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
+// 		// setPluginData(figma.root, "pluginVersion", "7.0.0")
+// 		return true
+// 	}
+// 	if (pluginAlreadyRun) {
+// 		return false
+// 	}
+// }
+upgradeFrom6to7();
+async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
+    for (let a = 0; a < sourceChildren.length; a++) {
+        if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
+            targetChildren[a].name = sourceChildren[a].name;
+        }
+        // If layer has children then run function again
+        if (targetChildren[a].children && sourceChildren[a].children) {
+            overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children);
+        }
+        // If layer is a text node then check if the main components share the same name
+        else if (sourceChildren[a].type === "TEXT") {
+            // if (sourceChildren[a].name === targetChildren[b].name) {
+            await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
+            // loadFonts(targetChildren[a]).then(() => {
+            // 	targetChildren[a].characters = sourceChildren[a].characters
+            // 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
+            // })
+            // }
+        }
+    }
+}
+async function swapInstance(target, source) {
+    // await overrideChildrenChars(source.mainComponent.children, source.mainComponent.children, source.children, target.children)
+    // replace(newTableCell, oldTableCell.clone())
+    target.swapComponent(source.mainComponent);
+    await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children);
+}
+let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Turn column resizing on and off' };
 // Move to helpers
 function genRandomId() {
     var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
@@ -1352,44 +2368,91 @@ async function lookForComponent(template) {
     }
     return component;
 }
-async function toggleColumnResizing(selection) {
-    function getTableSettings(table) {
-        var _a, _b, _c;
-        let rowCount = 0;
-        let columnCount = 0;
-        for (let i = 0; i < table.children.length; i++) {
-            var node = table.children[i];
-            if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
-                rowCount++;
-            }
+function getTableSettings(table) {
+    var _a, _b, _c;
+    let rowCount = 0;
+    let columnCount = 0;
+    for (let i = 0; i < table.children.length; i++) {
+        var node = table.children[i];
+        if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+            rowCount++;
         }
-        let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
-        let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
-        for (let i = 0; i < firstRow.children.length; i++) {
-            var node = firstRow.children[i];
-            var cellType = (_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is;
-            if (cellType === "td" || cellType === "th") {
-                columnCount++;
-            }
-        }
-        return {
-            columnCount,
-            rowCount,
-            columnResizing: firstRow.type === "COMPONENT" ? true : false,
-            includeHeader: ((_c = getPluginData(firstCell, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th" ? true : false,
-            cellAlignment: "MIN"
-        };
     }
+    let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
+    console.log(firstRow);
+    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+    for (let i = 0; i < firstRow.children.length; i++) {
+        var node = firstRow.children[i];
+        var cellType = (_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is;
+        if (cellType === "td" || cellType === "th") {
+            columnCount++;
+        }
+    }
+    return {
+        columnCount,
+        rowCount,
+        columnResizing: firstRow.type === "COMPONENT" ? true : false,
+        includeHeader: ((_c = getPluginData(firstCell, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th" ? true : false,
+        cellAlignment: "MIN"
+    };
+}
+async function toggleColumnResizing(selection) {
+    var _a, _b, _c;
     for (let i = 0; i < selection.length; i++) {
         var oldTable = selection[i];
         let settings = getTableSettings(oldTable);
-        settings.columnResizing = !settings.columnResizing;
-        // FIXME: Should use current node as the template
+        if (settings.columnResizing) {
+            detachTable(selection);
+        }
+        else {
+            settings.columnResizing = !settings.columnResizing;
+            let newTable = await createTableInstance(oldTable, settings);
+            // copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
+            // Loop new table and replace with cells from old table
+            let rowLength = oldTable.children.length;
+            for (let a = 0; a < rowLength; a++) {
+                let nodeA = oldTable.children[a];
+                if (((_a = getPluginData(nodeA, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+                    let columnLength = nodeA.children.length;
+                    for (let b = 0; b < columnLength; b++) {
+                        let nodeB = nodeA.children[b];
+                        if (((_b = getPluginData(nodeB, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "td" || ((_c = getPluginData(nodeB, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th") {
+                            let newTableCell = newTable.children[a].children[b];
+                            let oldTableCell = nodeB;
+                            await swapInstance(oldTableCell, newTableCell);
+                            newTableCell.resize(oldTableCell.width, oldTableCell.height);
+                        }
+                    }
+                }
+            }
+            figma.currentPage.selection = [newTable];
+            oldTable.remove();
+        }
+    }
+}
+async function spawnTable(selection, userSettings) {
+    let newSelection = [];
+    for (let i = 0; i < selection.length; i++) {
+        var oldTable = selection[i];
+        let settings = Object.assign(getTableSettings(oldTable), userSettings);
         let newTable = await createTableInstance(oldTable, settings);
+        newSelection.push(newTable);
         // copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
         // Loop new table and replace with cells from old table
-        oldTable.remove();
+        // oldTable.remove()
     }
+    let tempGroupArray = [];
+    for (let i = 0; i < figma.currentPage.selection.length; i++) {
+        let tempClone = figma.currentPage.selection[i].clone();
+        tempGroupArray.push(tempClone);
+    }
+    let tempGroup = figma.group(tempGroupArray, figma.currentPage.selection[0].parent);
+    for (let i = 0; i < newSelection.length; i++) {
+        let node = newSelection[i];
+        node.x = node.x + tempGroup.width + 80;
+    }
+    figma.currentPage.selection = newSelection;
+    tempGroup.remove();
 }
 async function createTableInstance(templateNode, preferences) {
     // FIXME: Get it to work with parts which are not components as well
@@ -1404,6 +2467,7 @@ async function createTableInstance(templateNode, preferences) {
         return;
     }
     var tableInstance = convertToFrame_1(part.table.clone());
+    setPluginData_1(tableInstance, "elementSemantics", { is: "table" });
     // Remove children which are trs
     tableInstance.findAll((node) => {
         var _a;
@@ -1417,10 +2481,12 @@ async function createTableInstance(templateNode, preferences) {
     if (preferences.columnResizing) {
         // First row should be a component
         firstRow = convertToComponent_1(part.tr.clone());
+        setPluginData_1(firstRow, "elementSemantics", { is: "tr" });
     }
     else {
         // First row should be a frame
         firstRow = convertToFrame_1(part.tr.clone());
+        setPluginData_1(firstRow, "elementSemantics", { is: "tr" });
     }
     tableInstance.insertChild(rowIndex, firstRow);
     // Remove children which are tds
@@ -1433,7 +2499,19 @@ async function createTableInstance(templateNode, preferences) {
     });
     // Create columns in first row
     for (let i = 0; i < preferences.columnCount; i++) {
-        var duplicateCell = part.td.clone();
+        var duplicateCell;
+        if (part.td.type === "COMPONENT") {
+            duplicateCell = part.td.clone();
+        }
+        if (part.td.type === "INSTANCE") {
+            duplicateCell = part.td.mainComponent.createInstance();
+        }
+        if (preferences.cellWidth) {
+            // let origLayoutAlign = duplicateCell.layoutAlign
+            duplicateCell.resizeWithoutConstraints(preferences.cellWidth, duplicateCell.height);
+            // duplicateCell.layoutAlign = origLayoutAlign
+        }
+        setPluginData_1(duplicateCell, "elementSemantics", { is: "td" });
         // Figma doesn't automatically inherit this property
         duplicateCell.layoutAlign = part.td.layoutAlign;
         duplicateCell.primaryAxisAlignItems = preferences.cellAlignment;
@@ -1448,6 +2526,16 @@ async function createTableInstance(templateNode, preferences) {
         else {
             duplicateRow = firstRow.clone();
         }
+        // If using columnResizing and header swap non headers to default cells
+        if (preferences.columnResizing && preferences.includeHeader) {
+            for (let i = 0; i < duplicateRow.children.length; i++) {
+                var cell = duplicateRow.children[i];
+                // cell.swapComponent(part.th)
+                // FIXME: Check if instance or main component
+                cell.mainComponent = part.td.mainComponent;
+                setPluginData_1(cell, "elementSemantics", { is: "td" });
+            }
+        }
         tableInstance.insertChild(rowIndex + 1, duplicateRow);
     }
     // Swap first row to use header cell
@@ -1456,40 +2544,29 @@ async function createTableInstance(templateNode, preferences) {
             var child = firstRow.children[i];
             // FIXME: Check if instance or main component
             child.swapComponent(part.th.mainComponent);
+            setPluginData_1(child, "elementSemantics", { is: "th" });
+            // child.mainComponent = part.th.mainComponent
         }
     }
-    // If using columnResizing and header swap non headers to default cells
-    if (preferences.columnResizing && preferences.includeHeader) {
-        for (let i = 0; i < tableInstance.children.length; i++) {
-            var row = tableInstance.children[i];
-            // Don't swap the first one
-            if (i > 0) {
-                for (let i = 0; i < row.children.length; i++) {
-                    var cell = row.children[i];
-                    // cell.swapComponent(part.th)
-                    // FIXME: Check if instance or main component
-                    cell.mainComponent = part.td.mainComponent;
-                }
-            }
-        }
-    }
+    tableInstance.setRelaunchData(defaultRelaunchData);
     return tableInstance;
 }
 async function updateTableInstances(template) {
     // FIXME: Template file name not up to date for some reason
+    var _a;
     var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
     var tableTemplate = await lookForComponent(template);
-    var rowTemplate = tableTemplate.findOne(node => node.getPluginData('isRow'));
+    var rowTemplate = tableTemplate.findOne(node => { var _a; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
     for (let b = 0; b < tables.length; b++) {
         var table = tables[b];
         // Don't apply if an instance
         if (table.type !== "INSTANCE") {
             console.log("tableTemplate", tableTemplate);
-            copyPasteStyle(tableTemplate, table, { include: ['name'] });
+            copyPasteStyle(tableTemplate, table, { exclude: ['name'] });
             for (let x = 0; x < table.children.length; x++) {
                 var row = table.children[x];
-                if (getPluginData(row, "isRow") === true && row.type !== "INSTANCE") {
-                    copyPasteStyle(rowTemplate, row, { include: ['name'] });
+                if (((_a = getPluginData(row, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr" === true && row.type !== "INSTANCE") {
+                    copyPasteStyle(rowTemplate, row, { exclude: ['name'] });
                 }
                 // // Only need to loop through cells if has been changed by user
                 // if (row.children && getPluginData(row, "isRow") === true) {
@@ -1576,6 +2653,29 @@ function selectRow() {
         figma.notify("One or more table cells must be selected");
     }
 }
+function detachTable(selection) {
+    var _a;
+    for (let i = 0; i < selection.length; i++) {
+        let table = selection[i];
+        if (table.type === "INSTANCE") {
+            table = table.detachInstance();
+        }
+        let length = table.children.length;
+        for (let i = 0; i < length; i++) {
+            let node = table.children[i];
+            console.log(node);
+            if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+                if (node.type === "INSTANCE") {
+                    // console.log(node.type, node.id)
+                    node.detachInstance();
+                }
+                if (node.type === "COMPONENT") {
+                    replace_1(node, convertToFrame_1);
+                }
+            }
+        }
+    }
+}
 function linkComponent(template, selection) {
     if (selection.length === 1) {
         if (selection[0].type !== "COMPONENT") {
@@ -1644,7 +2744,7 @@ function createTable(msg) {
                 createTableInstance(templateNode, msg).then((table) => {
                     // If table successfully created?
                     if (table) {
-                        table.setRelaunchData({});
+                        // table.setRelaunchData({})
                         // Positions the table in the center of the viewport
                         positionInCenter(table);
                         // Makes table the users current selection
@@ -1836,6 +2936,7 @@ function importTemplate(nodes) {
                 node = convertToComponent_1(node);
             }
             markNode(node, 'table');
+            node.setRelaunchData(defaultRelaunchData);
             updatePluginData_1(figma.root, 'localTemplates', (data) => {
                 data = data || [];
                 data = addNewTemplate(node, data);
@@ -1987,6 +3088,20 @@ dist((plugin) => {
     // 		figma.closePlugin("Table created")
     // 	})
     // })
+    plugin.command('detachTable', () => {
+        detachTable(figma.currentPage.selection);
+        figma.closePlugin();
+    });
+    plugin.command('spawnTable', () => {
+        spawnTable(figma.currentPage.selection).then(() => {
+            figma.closePlugin();
+        });
+    });
+    plugin.command('toggleColumnResizing', () => {
+        toggleColumnResizing(figma.currentPage.selection).then(() => {
+            figma.closePlugin();
+        });
+    });
     plugin.command('importTemplate', () => {
         var selection = figma.currentPage.selection;
         if (selection.length === 1) {
@@ -2059,11 +3174,6 @@ dist((plugin) => {
             figma.closePlugin("User preferences reset");
         });
     });
-    plugin.command('toggleColumnResizing', () => {
-        toggleColumnResizing(figma.currentPage.selection).then(() => {
-            figma.closePlugin();
-        });
-    });
     // Listen for events from UI
     plugin.on('to-create-table', (msg) => {
         figma.clientStorage.getAsync('userPreferences').then((res) => {
@@ -2125,6 +3235,62 @@ dist((plugin) => {
         }
         figma.notify(`Template added`);
     });
+    plugin.on('edit-template', (msg) => {
+        lookForComponent(msg.template).then((templateNode) => {
+            var _a;
+            // figma.viewport.scrollAndZoomIntoView([templateNode])
+            animateIntoView([templateNode]);
+            figma.currentPage.selection = [templateNode];
+            let parts = findTemplateParts(templateNode);
+            let partsAsObject = {
+                table: {
+                    name: parts.table.name
+                },
+                tr: {
+                    name: parts.tr.name
+                },
+                td: {
+                    name: parts.td.name
+                },
+                th: {
+                    name: parts.th.name
+                }
+            };
+            let selection;
+            function isInsideTemplate(node) {
+                var _a;
+                let parentComponent = node.type === "COMPONENT" ? node : getParentComponent(node);
+                console.log(parentComponent);
+                if ((isInsideComponent(node) || node.type === "COMPONENT") && parentComponent) {
+                    if (((_a = getPluginData(parentComponent, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table') {
+                        return true;
+                    }
+                }
+            }
+            if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+                selection = {
+                    element: (_a = getPluginData(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
+                    name: figma.currentPage.selection[0].name
+                };
+                figma.ui.postMessage({ type: 'current-selection', selection: selection });
+            }
+            figma.on('selectionchange', () => {
+                var _a;
+                if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+                    console.log("selection changed");
+                    selection = {
+                        element: (_a = getPluginData(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
+                        name: figma.currentPage.selection[0].name
+                    };
+                    figma.ui.postMessage({ type: 'current-selection', selection: selection });
+                }
+                else {
+                    figma.ui.postMessage({ type: 'current-selection', selection: undefined });
+                }
+            });
+            figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
+        });
+    });
 });
 // console.log('fileId ->', getPluginData(figma.root, 'fileId'))
 // console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
@@ -2132,4 +3298,13 @@ dist((plugin) => {
 console.log('defaultTemplate ->', getPluginData(figma.root, 'defaultTemplate'));
 // getClientStorageAsync('userPreferences').then(res => {
 // 	console.log(res)
+// })
+// figma.on('run', ({ command, parameters }: RunEvent) => {
+// 	switch (command) {
+// 		case "spawnTable":
+// 			spawnTable(figma.currentPage.selection, { columnCount: parameters.numCols, rowCount: parameters.numRows }).then(() => {
+// 				figma.closePlugin()
+// 			})
+// 			break
+// 	}
 // })

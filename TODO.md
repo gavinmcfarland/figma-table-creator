@@ -21,3 +21,19 @@
 1. Style welcome pages. Add artwork images and position to bottom of the frame (DONE)
 2. Find out why clicking existing template doesn't work
 3. Fix remoteFiles being an empty array
+
+
+---
+
+1. Add check to see if table is the main template before detaching and using column resizing
+2. Width doesn't work when creating a table
+3. Fix new template to be an invrement of previous template
+3. Make modifications to default template
+4. Update name of all local templates when plugin runs
+5. Add edit icon to list of local templates DONE
+
+1. Change editTemplates file to list or array or see if you can loop object in Svelte.
+2. Highlight currently selected element in list if it exists
+3. Show grey line if nothing currently selected
+4. Don't show button if nothing selected
+5. If nothing is selected, don't show elements?

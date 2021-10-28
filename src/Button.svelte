@@ -28,8 +28,8 @@
 <style>
 	.Button,
 	button {
-		line-height: 26px;
-		padding: var(--padding-0) var(--padding-200);
+		line-height: 24px;
+		padding: var(--padding-0) var(--padding-150);
 		border: 2px solid var(--color-blue);
 		background-color: var(--color-blue);
 		color: white;
@@ -40,7 +40,7 @@
 	}
 
 	.Button {
-		border-radius: var(--border-radius-50);
+		border-radius: var(--border-radius-75);
 		background-color: var(--color-blue);
 		display: flex;
 		place-items: center;

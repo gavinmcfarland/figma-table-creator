@@ -1,9 +1,90 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex} from '@figlets/helpers'
-import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData } from './helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject} from '@figlets/helpers'
+import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent } from './helpers'
+import { upgradeFrom6to7 } from './upgradeFrom6to7'
 import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
 
+import { Tween, Queue, Easing } from 'tweeno'
+
+console.clear()
+
+
+function animateIntoView(selection, duration?, easing?) {
+	// Get current coordiantes
+	let origCoords = {
+		...figma.viewport.center,
+		z: figma.viewport.zoom
+	}
+
+	// Get to be coordiantes
+	figma.viewport.scrollAndZoomIntoView(selection)
+
+	let newCoords = {
+		...Object.assign({}, figma.viewport.center),
+		z: figma.viewport.zoom
+	}
+
+	// Reset back to current coordinates
+	figma.viewport.center = {
+		x: origCoords.x,
+		y: origCoords.y
+	}
+	figma.viewport.zoom = origCoords.z
+
+	var settings = {
+		// set when starting tween
+		from: origCoords,
+		// state to tween to
+		to: newCoords,
+		// 2 seconds
+		duration: duration || 1000,
+		// repeat 2 times
+		repeat: 0,
+		// do it smoothly
+		easing: easing || Easing.Cubic.Out,
+	};
+
+	var target = {
+		...origCoords,
+		update: function () {
+			figma.viewport.center = { x: this.x, y: this.y }
+			figma.viewport.zoom = this.z
+			// console.log(Math.round(this.x), Math.round(this.y))
+		}
+	};
+
+	var queue = new Queue(),
+		tween = new Tween(target, settings);
+
+	// add the tween to the queue
+	queue.add(tween);
+
+	// start the queue
+	queue.start();
+
+
+	let loop = setInterval(() => {
+		if (queue.tweens.length === 0) {
+			clearInterval(loop)
+		}
+		else {
+			queue.update();
+			// update the target object state
+			target.update();
+		}
+	}, 1)
+}
+
+
+
+
+
+
+
+
+// start the update loop
+// animate();
 // reset
 // setPluginData(figma.root, "usingRemoteTemplate", "")
 
@@ -27,8 +108,71 @@ import plugma from 'plugma'
 
 // }
 
-// Move to helpers
+upgradeFrom6to7()
 
+
+// Must pass in both the source/target and their matching main components
+async function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
+	for (let a = 0; a < targetChildren.length; a++) {
+		for (let b = 0; b < sourceChildren.length; b++) {
+
+			// If layer has children then run function again
+			if (sourceComponentChildren[a].children && targetComponentChildren[a].children && targetChildren[a].children && sourceChildren[a].children) {
+				overrideChildrenChars(sourceComponentChildren[a].children, targetComponentChildren[b].children, sourceChildren[b].children, targetChildren[b].children)
+			}
+
+			// If layer is a text node then check if the main components share the same name
+			else if (sourceChildren[a].type === "TEXT") {
+				if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
+					await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
+					// loadFonts(targetChildren[a]).then(() => {
+					// 	targetChildren[a].characters = sourceChildren[a].characters
+					// 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
+					// })
+				}
+			}
+		}
+	}
+}
+
+async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren?, targetComponentChildren?) {
+	for (let a = 0; a < sourceChildren.length; a++) {
+		if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
+			targetChildren[a].name = sourceChildren[a].name
+		}
+		// If layer has children then run function again
+		if (targetChildren[a].children && sourceChildren[a].children) {
+
+			overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children)
+		}
+
+		// If layer is a text node then check if the main components share the same name
+		else if (sourceChildren[a].type === "TEXT") {
+			// if (sourceChildren[a].name === targetChildren[b].name) {
+
+			await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
+			// loadFonts(targetChildren[a]).then(() => {
+			// 	targetChildren[a].characters = sourceChildren[a].characters
+			// 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
+			// })
+			// }
+		}
+
+	}
+}
+
+async function swapInstance(target, source) {
+	// await overrideChildrenChars(source.mainComponent.children, source.mainComponent.children, source.children, target.children)
+	// replace(newTableCell, oldTableCell.clone())
+	target.swapComponent(source.mainComponent)
+	await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children)
+}
+
+
+
+let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Turn column resizing on and off' }
+
+// Move to helpers
 
 const capitalize = (s) => {
 	if (typeof s !== 'string') return ''
@@ -62,57 +206,133 @@ async function lookForComponent(template) {
 	return component
 }
 
-async function toggleColumnResizing(selection) {
-	function getTableSettings(table) {
-		let rowCount = 0
-		let columnCount = 0
+function getTableSettings(table) {
+	let rowCount = 0
+	let columnCount = 0
 
-		for (let i = 0; i < table.children.length; i++) {
-			var node = table.children[i]
-			console.log
-			if (getPluginData(node, "elementSemantics")?.is === "tr") {
-				rowCount++
-			}
-		}
-
-		let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
-
-		let firstCell = firstRow.findOne((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
-
-
-		for (let i = 0; i < firstRow.children.length; i++) {
-			var node = firstRow.children[i]
-			var cellType = getPluginData(node, "elementSemantics")?.is
-			if (cellType === "td" || cellType === "th") {
-				columnCount++
-			}
-		}
-
-		return {
-			columnCount,
-			rowCount,
-			columnResizing: firstRow.type === "COMPONENT" ? true : false,
-			includeHeader: getPluginData(firstCell, "elementSemantics")?.is === "th" ? true : false,
-			cellAlignment: "MIN"
+	for (let i = 0; i < table.children.length; i++) {
+		var node = table.children[i]
+		console.log
+		if (getPluginData(node, "elementSemantics")?.is === "tr") {
+			rowCount++
 		}
 	}
+
+	let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
+
+	console.log(firstRow)
+
+	let firstCell = firstRow.findOne((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+
+
+	for (let i = 0; i < firstRow.children.length; i++) {
+		var node = firstRow.children[i]
+		var cellType = getPluginData(node, "elementSemantics")?.is
+		if (cellType === "td" || cellType === "th") {
+			columnCount++
+		}
+	}
+
+	return {
+		columnCount,
+		rowCount,
+		columnResizing: firstRow.type === "COMPONENT" ? true : false,
+		includeHeader: getPluginData(firstCell, "elementSemantics")?.is === "th" ? true : false,
+		cellAlignment: "MIN"
+	}
+}
+
+async function toggleColumnResizing(selection) {
+
 
 	for (let i = 0; i < selection.length; i++) {
 		var oldTable = selection[i]
 
 		let settings = getTableSettings(oldTable)
 
-		settings.columnResizing = !settings.columnResizing
+		if (settings.columnResizing) {
+			detachTable(selection)
+		}
+		else {
+			settings.columnResizing = !settings.columnResizing
 
-		// FIXME: Should use current node as the template
+			let newTable = await createTableInstance(oldTable, settings)
+
+			// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
+
+			// Loop new table and replace with cells from old table
+
+			let rowLength = oldTable.children.length
+
+			for (let a = 0; a < rowLength; a++) {
+				let nodeA = oldTable.children[a]
+				if (getPluginData(nodeA, "elementSemantics")?.is === "tr") {
+
+					let columnLength = nodeA.children.length
+
+					for (let b = 0; b < columnLength; b++) {
+						let nodeB = nodeA.children[b]
+
+						if (getPluginData(nodeB, "elementSemantics")?.is === "td" || getPluginData(nodeB, "elementSemantics")?.is === "th") {
+							let newTableCell = newTable.children[a].children[b]
+							let oldTableCell = nodeB
+							await swapInstance(oldTableCell, newTableCell)
+							newTableCell.resize(oldTableCell.width, oldTableCell.height)
+						}
+					}
+
+
+				}
+			}
+
+			figma.currentPage.selection = [newTable]
+
+			oldTable.remove()
+		}
+
+	}
+}
+
+async function spawnTable(selection, userSettings?) {
+
+	let newSelection = []
+
+	for (let i = 0; i < selection.length; i++) {
+		var oldTable = selection[i]
+
+		let settings = Object.assign(getTableSettings(oldTable), userSettings)
+
+
 		let newTable = await createTableInstance(oldTable, settings)
+
+		newSelection.push(newTable)
 
 		// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
 
 		// Loop new table and replace with cells from old table
 
-		oldTable.remove()
+		// oldTable.remove()
 	}
+
+	let tempGroupArray = []
+
+	for (let i = 0; i < figma.currentPage.selection.length; i++) {
+		let tempClone = figma.currentPage.selection[i].clone()
+		tempGroupArray.push(tempClone)
+	}
+
+	let tempGroup = figma.group(tempGroupArray, figma.currentPage.selection[0].parent)
+
+
+
+	for (let i = 0; i < newSelection.length; i++) {
+		let node = newSelection[i]
+		node.x = node.x + tempGroup.width + 80
+	}
+
+	figma.currentPage.selection = newSelection
+
+	tempGroup.remove()
 }
 
 async function createTableInstance(templateNode, preferences?) {
@@ -136,6 +356,8 @@ async function createTableInstance(templateNode, preferences?) {
 
 	var tableInstance = convertToFrame(part.table.clone())
 
+	setPluginData(tableInstance, "elementSemantics", { is: "table" })
+
 	// Remove children which are trs
 	tableInstance.findAll((node) => {
 		if (getPluginData(node, "elementSemantics")?.is === "tr") {
@@ -152,10 +374,12 @@ async function createTableInstance(templateNode, preferences?) {
 	if (preferences.columnResizing) {
 		// First row should be a component
 		firstRow = convertToComponent(part.tr.clone())
+		setPluginData(firstRow, "elementSemantics", {is: "tr"})
 	}
 	else {
 		// First row should be a frame
 		firstRow = convertToFrame(part.tr.clone())
+		setPluginData(firstRow, "elementSemantics", { is: "tr" })
 	}
 
 	tableInstance.insertChild(rowIndex, firstRow)
@@ -172,7 +396,25 @@ async function createTableInstance(templateNode, preferences?) {
 	// Create columns in first row
 
 	for (let i = 0; i < preferences.columnCount; i++) {
-		var duplicateCell = part.td.clone()
+		var duplicateCell
+		if (part.td.type === "COMPONENT") {
+			duplicateCell = part.td.clone()
+		}
+		if (part.td.type === "INSTANCE") {
+			duplicateCell = part.td.mainComponent.createInstance()
+		}
+
+
+		if (preferences.cellWidth) {
+			// let origLayoutAlign = duplicateCell.layoutAlign
+			duplicateCell.resizeWithoutConstraints(preferences.cellWidth, duplicateCell.height)
+			// duplicateCell.layoutAlign = origLayoutAlign
+		}
+
+
+
+
+		setPluginData(duplicateCell, "elementSemantics", { is: "td" })
 		// Figma doesn't automatically inherit this property
 		duplicateCell.layoutAlign = part.td.layoutAlign
 		duplicateCell.primaryAxisAlignItems = preferences.cellAlignment
@@ -191,6 +433,19 @@ async function createTableInstance(templateNode, preferences?) {
 			duplicateRow = firstRow.clone()
 		}
 
+		// If using columnResizing and header swap non headers to default cells
+
+		if (preferences.columnResizing && preferences.includeHeader) {
+			for (let i = 0; i < duplicateRow.children.length; i++) {
+				var cell = duplicateRow.children[i]
+				// cell.swapComponent(part.th)
+				// FIXME: Check if instance or main component
+
+				cell.mainComponent = part.td.mainComponent
+				setPluginData(cell, "elementSemantics", { is: "td" })
+			}
+		}
+
 		tableInstance.insertChild(rowIndex + 1, duplicateRow)
 	}
 
@@ -199,27 +454,14 @@ async function createTableInstance(templateNode, preferences?) {
 		for (var i = 0; i < firstRow.children.length; i++) {
 			var child = firstRow.children[i]
 			// FIXME: Check if instance or main component
+
 			child.swapComponent(part.th.mainComponent)
+			setPluginData(child, "elementSemantics", { is: "th" })
+			// child.mainComponent = part.th.mainComponent
 		}
 	}
 
-	// If using columnResizing and header swap non headers to default cells
-
-	if (preferences.columnResizing && preferences.includeHeader) {
-		for (let i = 0; i < tableInstance.children.length; i++) {
-			var row = tableInstance.children[i]
-
-			// Don't swap the first one
-			if (i > 0) {
-				for (let i = 0; i < row.children.length; i++) {
-					var cell = row.children[i]
-					// cell.swapComponent(part.th)
-					// FIXME: Check if instance or main component
-					cell.mainComponent = part.td.mainComponent
-				}
-			}
-		}
-	}
+	tableInstance.setRelaunchData(defaultRelaunchData)
 
 	return tableInstance
 }
@@ -234,7 +476,7 @@ async function updateTableInstances(template) {
 
 	var tableTemplate = await lookForComponent(template)
 
-	var rowTemplate = tableTemplate.findOne(node => node.getPluginData('isRow'))
+	var rowTemplate = tableTemplate.findOne(node => getPluginData(node, 'elementSemantics')?.is === "tr")
 
 	for (let b = 0; b < tables.length; b++) {
 
@@ -243,13 +485,13 @@ async function updateTableInstances(template) {
 		// Don't apply if an instance
 		if (table.type !== "INSTANCE") {
 			console.log("tableTemplate", tableTemplate)
-			copyPasteStyle(tableTemplate, table, { include: ['name'] })
+			copyPasteStyle(tableTemplate, table, { exclude: ['name'] })
 
 			for (let x = 0; x < table.children.length; x++) {
 				var row = table.children[x]
 
-				if (getPluginData(row, "isRow") === true && row.type !== "INSTANCE") {
-					copyPasteStyle(rowTemplate, row, { include: ['name'] })
+				if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
+					copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
 				}
 
 				// // Only need to loop through cells if has been changed by user
@@ -364,46 +606,30 @@ function selectRow() {
 
 
 function detachTable(selection) {
+	for (let i = 0; i < selection.length; i++) {
+		let table = selection[i]
 
-	let length1 = selection.length
-	let discard = []
-	let newTable
-
-	if (length1) {
-		let newRows = []
-		for (let i = 0; i < length1; i++) {
-			let table = selection[i]
-			discard.push(table)
-			newTable = detachInstance(table, table.parent)
-			newTable.setPluginData("isTable", "true")
-
-			let length2 = table.children.length
-			for (let b = 0; b < length2; b++) {
-				let row = newTable.children[b]
-				if (row.getPluginData("isRow") === "true") {
-					discard.push(row)
-					row = detachInstance(row, row.parent)
-					row.setPluginData("isRow", "true")
-					newRows.push(row)
-
-				}
-				else {
-					newRows.push(row)
-				}
-
-			}
-
-			for (let b = 0; b < newRows.length; b++) {
-				newTable.insertChild(b, newRows[b])
-			}
+		if (table.type === "INSTANCE") {
+			table = table.detachInstance()
 		}
-	}
-	else {
-		figma.notify("One or more table must be selected")
-	}
 
-	for (let b = 0; b < discard.length; b++) {
-		discard[b].remove()
+		let length = table.children.length
+
+		for (let i = 0; i < length; i++) {
+			let node = table.children[i]
+			console.log(node)
+			if (getPluginData(node, "elementSemantics")?.is === "tr") {
+
+				if (node.type === "INSTANCE") {
+					// console.log(node.type, node.id)
+					node.detachInstance()
+				}
+				if (node.type === "COMPONENT") {
+					replace(node, convertToFrame)
+				}
+			}
+
+		}
 	}
 }
 
@@ -500,7 +726,7 @@ function createTable(msg) {
 				createTableInstance(templateNode, msg).then((table) => {
 					// If table successfully created?
 					if (table) {
-						table.setRelaunchData({})
+						// table.setRelaunchData({})
 
 						// Positions the table in the center of the viewport
 						positionInCenter(table)
@@ -784,6 +1010,8 @@ function importTemplate(nodes) {
 
 			markNode(node, 'table')
 
+			node.setRelaunchData(defaultRelaunchData)
+
 			updatePluginData(figma.root, 'localTemplates', (data) => {
 
 				data = data || []
@@ -998,6 +1226,23 @@ plugma((plugin) => {
 
 	// })
 
+	plugin.command('detachTable', () => {
+		detachTable(figma.currentPage.selection)
+		figma.closePlugin()
+	})
+
+	plugin.command('spawnTable', () => {
+		spawnTable(figma.currentPage.selection).then(() => {
+			figma.closePlugin()
+		})
+	})
+
+	plugin.command('toggleColumnResizing', () => {
+		toggleColumnResizing(figma.currentPage.selection).then(() => {
+			figma.closePlugin()
+		})
+	})
+
 	plugin.command('importTemplate', () => {
 		var selection = figma.currentPage.selection
 
@@ -1093,13 +1338,6 @@ plugma((plugin) => {
 		})
 	})
 
-	plugin.command('toggleColumnResizing', () => {
-		toggleColumnResizing(figma.currentPage.selection).then(() => {
-			figma.closePlugin()
-		})
-
-	})
-
 
 	// Listen for events from UI
 
@@ -1187,6 +1425,75 @@ plugma((plugin) => {
 		figma.notify(`Template added`)
 	})
 
+	plugin.on('edit-template', (msg) => {
+		lookForComponent(msg.template).then((templateNode) => {
+			// figma.viewport.scrollAndZoomIntoView([templateNode])
+			animateIntoView([templateNode])
+			figma.currentPage.selection = [templateNode]
+			let parts = findTemplateParts(templateNode)
+			let partsAsObject = {
+				table: {
+					name: parts.table.name
+				},
+				tr: {
+					name: parts.tr.name
+				},
+				td: {
+					name: parts.td.name
+				},
+				th: {
+					name: parts.th.name
+				}
+			}
+			let selection
+
+			function isInsideTemplate(node) {
+				let parentComponent = node.type === "COMPONENT" ? node : getParentComponent(node)
+				console.log(parentComponent)
+				if ((isInsideComponent(node) || node.type === "COMPONENT") && parentComponent) {
+					if (getPluginData(parentComponent, 'elementSemantics')?.is === 'table') {
+						return true
+					}
+
+				}
+			}
+
+			if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+				selection = {
+					element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+					name: figma.currentPage.selection[0].name
+				}
+
+				figma.ui.postMessage({ type: 'current-selection', selection: selection })
+			}
+
+			figma.on('selectionchange', () => {
+
+
+
+				if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+					console.log("selection changed")
+					selection = {
+						element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+						name: figma.currentPage.selection[0].name
+					}
+
+					figma.ui.postMessage({ type: 'current-selection', selection: selection })
+
+				}
+				else {
+					figma.ui.postMessage({ type: 'current-selection', selection: undefined })
+				}
+
+			})
+
+
+			figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
+
+		})
+
+	})
+
 })
 
 // console.log('fileId ->', getPluginData(figma.root, 'fileId'))
@@ -1199,4 +1506,12 @@ console.log('defaultTemplate ->', getPluginData(figma.root, 'defaultTemplate'))
 // 	console.log(res)
 // })
 
-
+// figma.on('run', ({ command, parameters }: RunEvent) => {
+// 	switch (command) {
+// 		case "spawnTable":
+// 			spawnTable(figma.currentPage.selection, { columnCount: parameters.numCols, rowCount: parameters.numRows }).then(() => {
+// 				figma.closePlugin()
+// 			})
+// 			break
+// 	}
+// })

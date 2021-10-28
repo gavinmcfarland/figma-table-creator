@@ -26,6 +26,19 @@
         "separator": true
     },
     {
+        "name": "Spawn Table",
+        "command": "spawnTable",
+        "parameters": [
+            {
+                "name": "Columns",
+                "key": "numCols"
+            }
+        ]
+    },
+    {
+        "separator": true
+    },
+    {
       "name": "New Template",
       "command": "newTemplate"
     },
@@ -75,9 +88,11 @@
     }
   ],
   "relaunchButtons": [
-      {"command": "createTable", "name": "Create Table"},
-      {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
-      {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
-      {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
+        {"command": "createTable", "name": "Create Table"},
+        {"command": "spawnTable", "name": "Spawn Table"},
+        {"command": "toggleColumnResizing", "name": "Column Resizing"},
+        {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
+        {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
+        {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
     ]
 }
