@@ -24,6 +24,8 @@
 	let selectedFile
 	let editingTemplate
 	let defaultTemplate
+	let remoteFiles
+	let localTemplates
 
 	let welcomeSlides = [
 		false,
@@ -228,10 +230,20 @@
 		})
 	}
 
+	function postUiDetails(data) {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "post-ui-details",
+					data: template
+				}
+			},
+			"*"
+		)
+	}
+
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
-
-		console.log(data)
 
 		updateSelectedTemplate(data)
 
@@ -241,12 +253,16 @@
 			let store = {
 				pageState,
 				selectedFile,
+				remoteFiles,
+				data,
 				defaultTemplate: data.defaultTemplate,
 				...data
 			}
 			valueStore.set(store)
 
 			valueStore.subscribe((value) => {
+				localTemplates = value.localTemplates
+				remoteFiles = value.remoteFiles
 				defaultTemplate = value.defaultTemplate
 				selectedFile = value.selectedFile
 				pageState = value.pageState
@@ -256,6 +272,7 @@
 				includeHeader = value.includeHeader
 				cellAlignment = value.cellAlignment
 				columnResizing = value.columnResizing
+				data = value.data
 			})
 
 		// console.log(data.pluginAlreadyRun)
@@ -299,7 +316,7 @@
 
 
 
-		// return data
+		return data
 		}
 	}
 
@@ -334,6 +351,7 @@
 									</slot>
 									<slot slot="content">
 										<div class="tooltip">
+											{console.log("local templates", data.localTemplates)}
 												{#if data.localTemplates}
 													<div>
 														<input checked="{selectedFile?.id === data.fileId ? true : false}" type="radio" id="localTemplates" name="files">
