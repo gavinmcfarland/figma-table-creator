@@ -562,20 +562,26 @@ async function updateTableInstances(template) {
 			console.log("tableTemplate", tableTemplate)
 			copyPasteStyle(tableTemplate, table, { exclude: ['name'] })
 
-			for (let x = 0; x < table.children.length; x++) {
-				var row = table.children[x]
+			// for (let x = 0; x < table.children.length; x++) {
+			// 	var row = table.children[x]
 
-				if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
-					copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
+			// 	if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
+			// 		copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
+			// 	}
+
+			// 	// // Only need to loop through cells if has been changed by user
+			// 	// if (row.children && getPluginData(row, "isRow") === true) {
+			// 	// 	for (let k = 0; k < row.children.length; k++) {
+			// 	// 		var cell = row.children[k]
+			// 	// 	}
+			// 	// }
+			// }
+
+			table.findAll(node => {
+				if (getPluginData(node, 'elementSemantics')?.is === "tr" === true && node.type !== "INSTANCE") {
+					copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
 				}
-
-				// // Only need to loop through cells if has been changed by user
-				// if (row.children && getPluginData(row, "isRow") === true) {
-				// 	for (let k = 0; k < row.children.length; k++) {
-				// 		var cell = row.children[k]
-				// 	}
-				// }
-			}
+			})
 
 		}
 	}

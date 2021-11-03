@@ -733,7 +733,6 @@ function createDefaultTemplate() {
     component_101_204.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
     component_101_204.primaryAxisSizingMode = "FIXED";
     component_101_204.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_101_204.expanded = false;
     component_101_204.layoutMode = "VERTICAL";
     component_101_204.description = "";
     component_101_204.documentationLinks = [];
@@ -749,6 +748,7 @@ function createDefaultTemplate() {
     component_101_119.fills = [];
     component_101_119.primaryAxisSizingMode = "FIXED";
     component_101_119.backgrounds = [];
+    component_101_119.expanded = false;
     component_101_119.layoutMode = "VERTICAL";
     component_101_119.description = "";
     component_101_119.documentationLinks = [];
@@ -762,6 +762,7 @@ function createDefaultTemplate() {
     frame_101_114.fills = [];
     frame_101_114.backgrounds = [];
     frame_101_114.clipsContent = false;
+    frame_101_114.expanded = false;
     component_101_119.appendChild(frame_101_114);
     // Create COMPONENT
     var component_1_351 = figma.createComponent();
@@ -785,8 +786,7 @@ function createDefaultTemplate() {
     component_1_351.appendChild(line_1_352);
     // Create INSTANCE
     var instance_102_493 = component_1_351.createInstance();
-    instance_102_493.relativeTransform = [[1, 0, 0], [0, 1, 0]];
-    instance_102_493.expanded = true;
+    instance_102_493.relativeTransform = [[1, 0, 0], [0, 1, -250]];
     instance_102_493.y = -250;
     frame_101_114.appendChild(instance_102_493);
     // Swap COMPONENT
@@ -838,17 +838,14 @@ function createDefaultTemplate() {
     instance_101_198.primaryAxisSizingMode = "AUTO";
     instance_101_198.relativeTransform = [[1, 0, 0], [0, 1, 0]];
     instance_101_198.primaryAxisSizingMode = "AUTO";
-    instance_101_198.expanded = false;
     instance_101_198.constraints = { "horizontal": "SCALE", "vertical": "CENTER" };
     component_101_204.appendChild(instance_101_198);
     // Swap COMPONENT
     instance_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I101_198_101_114 = figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_114.id);
-    frame_I101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I101_198_102_493 = figma.getNodeById("I" + instance_101_198.id + ";" + instance_102_493.id);
-    instance_I101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -868,7 +865,6 @@ function createDefaultTemplate() {
     component_101_265.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
     component_101_265.primaryAxisSizingMode = "FIXED";
     component_101_265.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    component_101_265.expanded = false;
     component_101_265.layoutMode = "VERTICAL";
     component_101_265.description = "";
     component_101_265.documentationLinks = [];
@@ -878,17 +874,14 @@ function createDefaultTemplate() {
     instance_101_266.primaryAxisSizingMode = "AUTO";
     instance_101_266.relativeTransform = [[1, 0, 0], [0, 1, 0]];
     instance_101_266.primaryAxisSizingMode = "AUTO";
-    instance_101_266.expanded = false;
     instance_101_266.constraints = { "horizontal": "SCALE", "vertical": "CENTER" };
     component_101_265.appendChild(instance_101_266);
     // Swap COMPONENT
     instance_101_266.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I101_266_101_114 = figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_114.id);
-    frame_I101_266_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I101_266_102_493 = figma.getNodeById("I" + instance_101_266.id + ";" + instance_102_493.id);
-    instance_I101_266_102_493.expanded = false;
     // Swap COMPONENT
     instance_I101_266_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -967,6 +960,7 @@ function createDefaultTemplate() {
     var instance_1_366 = component_101_204.createInstance();
     instance_1_366.resize(120.0000000000, 35.0009994507);
     instance_1_366.name = "_Cell";
+    instance_1_366.expanded = false;
     component_1_365.appendChild(instance_1_366);
     // Swap COMPONENT
     instance_1_366.swapComponent(component_101_204);
@@ -976,10 +970,8 @@ function createDefaultTemplate() {
     instance_I1_366_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_366_101_198_101_114 = figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_114.id);
-    frame_I1_366_101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_366_101_198_102_493 = figma.getNodeById(instance_I1_366_101_198.id + ";" + instance_102_493.id);
-    instance_I1_366_101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_366_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1003,10 +995,8 @@ function createDefaultTemplate() {
     instance_I1_372_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_372_101_198_101_114 = figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_114.id);
-    frame_I1_372_101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_372_101_198_102_493 = figma.getNodeById(instance_I1_372_101_198.id + ";" + instance_102_493.id);
-    instance_I1_372_101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_372_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1054,10 +1044,8 @@ function createDefaultTemplate() {
     instance_I1_379_1_366_101_266.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_379_1_366_101_266_101_114 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_114.id);
-    frame_I1_379_1_366_101_266_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_379_1_366_101_266_102_493 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + instance_102_493.id);
-    instance_I1_379_1_366_101_266_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_379_1_366_101_266_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1078,10 +1066,8 @@ function createDefaultTemplate() {
     instance_I1_379_1_372_101_266.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_379_1_372_101_266_101_114 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_114.id);
-    frame_I1_379_1_372_101_266_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_379_1_372_101_266_102_493 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + instance_102_493.id);
-    instance_I1_379_1_372_101_266_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_379_1_372_101_266_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1108,10 +1094,8 @@ function createDefaultTemplate() {
     instance_I1_398_1_366_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_398_1_366_101_198_101_114 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_114.id);
-    frame_I1_398_1_366_101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_398_1_366_101_198_102_493 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + instance_102_493.id);
-    instance_I1_398_1_366_101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_398_1_366_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1122,6 +1106,7 @@ function createDefaultTemplate() {
     var text_I1_398_1_366_101_198_101_117 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + text_101_117.id);
     // Ref to SUB NODE
     var instance_I1_398_1_372 = figma.getNodeById("I" + instance_1_398.id + ";" + instance_1_372.id);
+    instance_I1_398_1_372.expanded = false;
     // Swap COMPONENT
     instance_I1_398_1_372.swapComponent(component_101_204);
     // Ref to SUB NODE
@@ -1130,10 +1115,8 @@ function createDefaultTemplate() {
     instance_I1_398_1_372_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_398_1_372_101_198_101_114 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_114.id);
-    frame_I1_398_1_372_101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_398_1_372_101_198_102_493 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + instance_102_493.id);
-    instance_I1_398_1_372_101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_398_1_372_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1160,10 +1143,8 @@ function createDefaultTemplate() {
     instance_I1_417_1_366_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_417_1_366_101_198_101_114 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_114.id);
-    frame_I1_417_1_366_101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_417_1_366_101_198_102_493 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + instance_102_493.id);
-    instance_I1_417_1_366_101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_417_1_366_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1174,6 +1155,7 @@ function createDefaultTemplate() {
     var text_I1_417_1_366_101_198_101_117 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + text_101_117.id);
     // Ref to SUB NODE
     var instance_I1_417_1_372 = figma.getNodeById("I" + instance_1_417.id + ";" + instance_1_372.id);
+    instance_I1_417_1_372.expanded = false;
     // Swap COMPONENT
     instance_I1_417_1_372.swapComponent(component_101_204);
     // Ref to SUB NODE
@@ -1182,10 +1164,8 @@ function createDefaultTemplate() {
     instance_I1_417_1_372_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
     var frame_I1_417_1_372_101_198_101_114 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_114.id);
-    frame_I1_417_1_372_101_198_101_114.expanded = false;
     // Ref to SUB NODE
     var instance_I1_417_1_372_101_198_102_493 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + instance_102_493.id);
-    instance_I1_417_1_372_101_198_102_493.expanded = false;
     // Swap COMPONENT
     instance_I1_417_1_372_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
@@ -1352,27 +1332,6 @@ function createDefaultTemplate() {
         };
         text_I102_121_1_433.characters = "Change the deafult appearance of all cells by customising this base component.";
     });
-    // Create INSTANCE
-    var instance_102_121 = component_1_430.createInstance();
-    instance_102_121.relativeTransform = [[1, 0, 9080], [0, 1, 5152]];
-    instance_102_121.y = 5152;
-    figma.currentPage.appendChild(instance_102_121);
-    // Swap COMPONENT
-    instance_102_121.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    var frame_I102_121_1_431 = figma.getNodeById("I" + instance_102_121.id + ";" + frame_1_431.id);
-    // Ref to SUB NODE
-    var rectangle_I102_121_1_432 = figma.getNodeById("I" + instance_102_121.id + ";" + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I102_121_1_433 = figma.getNodeById("I" + instance_102_121.id + ";" + text_1_433.id);
-    text_I102_121_1_433.resize(416.9899902344, 42.0000000000);
-    loadFonts().then((res) => {
-        text_I102_121_1_433.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_I102_121_1_433.characters = "Change the deafult appearance of all cells by customising this base component.";
-    });
     // Remove table border component from canvas
     component_1_351.remove();
     // Remove tooltip component from canvas
@@ -1384,6 +1343,8 @@ function createDefaultTemplate() {
     // Manually add properties so cells will fill row height
     instance_1_372.layoutAlign = "STRETCH";
     instance_1_366.layoutAlign = "STRETCH";
+    instance_101_198.layoutAlign = "STRETCH";
+    instance_101_266.layoutAlign = "STRETCH";
     obj.table = component_1_378;
     obj.row = component_1_365;
     obj.cell = component_101_204;
@@ -2612,7 +2573,6 @@ async function createTableInstance(templateNode, preferences) {
 }
 async function updateTableInstances(template) {
     // FIXME: Template file name not up to date for some reason
-    var _a;
     var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
     var tableTemplate = await lookForComponent(template);
     var rowTemplate = tableTemplate.findOne(node => { var _a; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
@@ -2622,18 +2582,24 @@ async function updateTableInstances(template) {
         if (table.type !== "INSTANCE") {
             console.log("tableTemplate", tableTemplate);
             copyPasteStyle(tableTemplate, table, { exclude: ['name'] });
-            for (let x = 0; x < table.children.length; x++) {
-                var row = table.children[x];
-                if (((_a = getPluginData(row, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr" === true && row.type !== "INSTANCE") {
-                    copyPasteStyle(rowTemplate, row, { exclude: ['name'] });
+            // for (let x = 0; x < table.children.length; x++) {
+            // 	var row = table.children[x]
+            // 	if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
+            // 		copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
+            // 	}
+            // 	// // Only need to loop through cells if has been changed by user
+            // 	// if (row.children && getPluginData(row, "isRow") === true) {
+            // 	// 	for (let k = 0; k < row.children.length; k++) {
+            // 	// 		var cell = row.children[k]
+            // 	// 	}
+            // 	// }
+            // }
+            table.findAll(node => {
+                var _a;
+                if (((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr" === true && node.type !== "INSTANCE") {
+                    copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
                 }
-                // // Only need to loop through cells if has been changed by user
-                // if (row.children && getPluginData(row, "isRow") === true) {
-                // 	for (let k = 0; k < row.children.length; k++) {
-                // 		var cell = row.children[k]
-                // 	}
-                // }
-            }
+            });
         }
     }
 }
