@@ -36,4 +36,8 @@
 2. Highlight currently selected element in list if it exists
 3. Show grey line if nothing currently selected
 4. Don't show button if nothing selected
-5. If nothing is selected, don't show elements?
+5. If nothing is selected, don't show elements? NO
+
+1. Don't rely on component + table to idenitify template. Use component and template. DONE
+2. BUG: Restrict the selection to the template currently being edited DONE
+

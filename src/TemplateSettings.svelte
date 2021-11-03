@@ -7,47 +7,41 @@
 
 	let parts = {}
 	let message
-	let data
 	let artworkTarget
 	let currentSelection
 	let previousSelection
+	let currentlyHovering = false
 
 	function updateTables() {
 		parent.postMessage({ pluginMessage: { type: "update-tables" } }, "*")
 	}
 
 	function linkComponent(component) {
-		console.log("Component linked")
 		parent.postMessage({ pluginMessage: { type: "link-component", template: component } }, "*")
 	}
 
-	function findTemplateParts(template) {
-		console.log("find template parts", template)
+	function editTemplate(template) {
+		// Todo: Needs to be seperated into two
 		parent.postMessage({ pluginMessage: { type: "edit-template", template } }, "*")
 	}
 
-	findTemplateParts(template)
-
-	function hover(node, element) {
-		node.addEventListener('mouseenter', () => {
-			if (previousSelection) {
-				artworkTarget.classList.remove(previousSelection.element)
-			}
-			artworkTarget.classList.add(element)
-			artworkTarget.classList.add('hover')
-		});
-
-		node.addEventListener('mouseleave', () => {
-			artworkTarget.classList.remove(element)
-			if (previousSelection) {
-				artworkTarget.classList.add(previousSelection.element)
-				artworkTarget.classList.remove('hover')
-			}
-		});
+	function findTemplateParts(template) {
+		// Todo: Needs to be seperated into two
+		parent.postMessage({ pluginMessage: { type: "find-template-parts", template } }, "*")
 	}
 
+	function fetchCurrentSelection(template) {
+		// Todo: Needs to be seperated into two
+		parent.postMessage({ pluginMessage: { type: "fetch-current-selection"}, template}, "*")
+	}
+
+	findTemplateParts(template)
+	editTemplate(template)
+
+
+
 	function doneEditing() {
-		console.log("clicked")
+		console.log("done editing")
 		pageState = {
 			welcomePageActive: false,
 			createTablePageActive: true,
@@ -61,18 +55,46 @@
 
 	}
 
+	function addRemoveElement(event, part, i) {
+		let {name, element, id} = part
+		let button = event.target
+		console.log(button)
+		if (typeof name === "undefined") {
+			parts[i].name = currentSelection.name
+			artworkTarget.classList.add('taken')
+			artworkTarget.classList.remove('not-taken')
+			// artworkTarget.classList.remove('add')
+			parent.postMessage({ pluginMessage: { type: "add-element", element } }, "*")
+
+		}
+		else {
+			parts[i].name = undefined
+			artworkTarget.classList.remove('remove')
+			artworkTarget.classList.remove('taken')
+			artworkTarget.classList.add('not-taken')
+
+			parent.postMessage({ pluginMessage: { type: "remove-element", element, id } }, "*")
+		}
+
+		fetchCurrentSelection(template)
+		findTemplateParts(template)
+	}
+
 	async function onMessage(event) {
 		message = await event.data.pluginMessage
 
 		if (message.type === "template-parts") {
-			template.parts = message.parts
+			parts = Object.values(message.parts)
+			console.log("template-parts-updated")
 		}
 
 		if (message.type === "current-selection") {
 			currentSelection = message.selection
 
 			if (currentSelection) {
+				console.log("currentSelection", currentSelection)
 				if (currentSelection.element) {
+
 					if (previousSelection && previousSelection.element) {
 						artworkTarget.classList.remove(previousSelection.element)
 						artworkTarget.classList.remove('current-' + previousSelection.element)
@@ -83,11 +105,12 @@
 					previousSelection = message.selection
 				}
 				else {
-					if (previousSelection) {
-						artworkTarget.classList.remove('current')
-						artworkTarget.classList.remove('current-' + previousSelection.element)
+					if(!currentlyHovering) {
 						artworkTarget.classList.remove(previousSelection.element)
 					}
+					artworkTarget.classList.remove('current')
+					artworkTarget.classList.remove('current-' + previousSelection.element)
+
 					previousSelection = undefined
 				}
 			}
@@ -95,6 +118,7 @@
 				if (previousSelection) {
 					artworkTarget.classList.remove('current')
 					artworkTarget.classList.remove('current-' + previousSelection.element)
+
 					artworkTarget.classList.remove(previousSelection.element)
 				}
 				previousSelection = undefined
@@ -102,13 +126,86 @@
 
 		}
 	}
+
+	function hover(node, i) {
+
+		const addRemoveButton = node.querySelector(".addRemoveButton")
+
+		if (addRemoveButton) {
+			addRemoveButton.addEventListener('mouseenter', () => {
+				// if (previousSelection) {
+				// artworkTarget.classList.remove(previousSelection.element)
+				// }
+				// artworkTarget.classList.add(parts[i].element)
+				// artworkTarget.classList.add('hover')
+				if (typeof parts[i].name !== "undefined") {
+					artworkTarget.classList.add('remove')
+				}
+				else {
+
+					artworkTarget.classList.add('add')
+				}
+
+			});
+
+			addRemoveButton.addEventListener('mouseleave', () => {
+				// artworkTarget.classList.remove(parts[i].element)
+				// if (previousSelection) {
+				// 	artworkTarget.classList.add(previousSelection.element)
+				// 	artworkTarget.classList.remove('hover')
+				// }
+
+				artworkTarget.classList.remove('remove')
+				artworkTarget.classList.remove('add')
+			});
+		}
+
+		node.addEventListener('mouseenter', () => {
+			currentlyHovering = true
+			if (previousSelection) {
+			artworkTarget.classList.remove(previousSelection.element)
+			}
+			artworkTarget.classList.add(parts[i].element)
+			artworkTarget.classList.add('hover')
+
+			if (parts[i].name) {
+				artworkTarget.classList.add('taken')
+			}
+			else {
+				artworkTarget.classList.add('not-taken')
+			}
+
+		});
+
+		node.addEventListener('mouseleave', () => {
+			currentlyHovering = false
+			artworkTarget.classList.remove(parts[i].element)
+			if (previousSelection) {
+				artworkTarget.classList.add(previousSelection.element)
+				artworkTarget.classList.remove('hover')
+			}
+
+
+			artworkTarget.classList.remove('taken')
+			artworkTarget.classList.remove('not-taken')
+		});
+	}
 </script>
 
 <svelte:window on:message={onMessage} />
 
 <div class="EditTemplate">
-	<p>
-		{template.name}
+	<div class="SectionTitle">
+		<span class="Label">
+			<span class="icon" icon="component" />
+			<span class="text text-bold">
+				{template.name}
+			</span>
+		</span>
+	</div>
+
+	<p class="type m-xxsmall description">
+		Configure which layers of your template represent the following elements below.
 	</p>
 
 	<div class="artwork">
@@ -116,51 +213,30 @@
 		<div class="image"></div>
 	</div>
 
-	<p class="currentlySelected">&nbsp;{#if currentSelection}{currentSelection.name}{/if}</p>
+	<!-- <p class="currentlySelected">&nbsp;{#if currentSelection}{currentSelection.name}{/if}</p> -->
 
-	<p class="type m-xxsmall">
-		Configure which layers of your template represent the following elements.
-	</p>
-
-	{#if currentSelection}
-		{#if template.parts}
+	<!-- {#if currentSelection} -->
+		{#if parts}
 
 		<div class="List">
-			<div class="ListItem" use:hover={'table'}>
-				<p class="element">&lt;table&gt;</p>
-				<span>{template.parts.table.name}</span>
-				<span class="buttons">
-					<span on:click={() => linkComponent("table")}><Button classes="secondary">Select</Button></span>
-				</span>
-			</div>
-			<div class="ListItem" use:hover={'tr'}>
-				<p class="element">&lt;tr&gt;</p>
-				<span>{template.parts.tr.name}</span>
-				<span class="buttons">
-					<span on:click={() => linkComponent("tr")}><Button classes="secondary">Select</Button></span>
-				</span>
-			</div>
-			<div class="ListItem" use:hover={'td'}>
-				<p class="element">&lt;td&gt;</p>
-				<span>{template.parts.td.name}</span>
-				<span class="buttons">
-					<span on:click={() => linkComponent("td")}><Button classes="secondary">Select</Button></span>
-				</span>
-			</div>
-			<div class="ListItem" use:hover={'th'}>
-				<p class="element">&lt;th&gt;</p>
-				<span>{template.parts.th.name}</span>
-				<span class="buttons">
-					<span on:click={() => linkComponent("th")}><Button classes="secondary">Select</Button></span>
-				</span>
-			</div>
+			{#each parts as part, i}
+
+				<div class={currentSelection?.element === part.element ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
+					<p class="element">&lt;{part.element}&gt;</p>
+					{#if part.name}
+					<span>{part.name}</span>
+					{:else}
+					<span class="currentSelectionName">{currentSelection ? currentSelection.name : ""}</span>
+					{/if}
+					<span class="buttons" style={part.name || currentSelection ? "" : "display: none;"}>
+						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i)}></span>
+					</span>
+				</div>
+
+			{/each}
 		</div>
 		{/if}
-	{:else}
-	<div style="margin-top: 16px">
-		<p>Select a template to configure</p>
-	</div>
-	{/if}
+	<!-- {/if} -->
 
 	<div class="BottomBar">
 		<span on:click={() => doneEditing()}><Button id="create-table">Done</Button></span>
@@ -170,8 +246,40 @@
 
 <style global>
 
+	.description {
+		color: var(--color-black-30)
+	}
+
+	.SectionTitle {
+		margin-top: -8px;
+		min-height: 34px;
+		display: flex;
+		place-items: center;
+	}
+
+	.SectionTitle .Label {
+		display: flex;
+		align-items: center;
+		line-height: 1;
+	}
+
+	.SectionTitle .Label .icon {
+		margin-right: 2px;
+		margin-left: -4px;
+	}
+
+	.SectionTitle .Label .text {
+		margin-top: 1px;
+	}
+
+
+
+	.text-bold {
+		font-weight: 600;
+	}
+
 	.EditTemplate .target {
-		border: 2px solid #18A0FB;
+		border: 2px solid var(--color-purple);
 		position: absolute;
 		display: none;
 		transition: all 0.25s ease-out;
@@ -182,26 +290,60 @@
 		margin-bottom: 8px;
 	}
 
-	.EditTemplate .currentlySelected {
+	.EditTemplate .target.currentlySelected {
 		margin-bottom: 24px; text-align: center;
 		margin-left: -4px;
 		color: var(--color-black-30)
 	}
 
+	.ListItem.currentlySelected {
+		outline: 1px solid var(--color-purple);
+		outline-offset: -1px;
+	}
+
 	.EditTemplate .hover {
-		border: 2px dashed #18A0FB;
+		border: 2px solid var(--color-black-30);
+	}
+
+	.ListItem .currentSelectionName {
+		display: none;
+		color: var(--color-black-30)
+	}
+
+	.ListItem:hover .currentSelectionName {
+		display: block;
 	}
 
 	/* .EditTemplate .current {
 		border: 2px solid #18A0FB;
 	} */
 
-	.EditTemplate .hover.current {
-		border: 2px dashed #18A0FB
+	/* .EditTemplate .hover {
+		border: 2px dashed red;
 	}
 
+	.EditTemplate .current {
+		border: 2px dashed green;
+	} */
+
 	.EditTemplate .current-table.table, .EditTemplate .current-tr.tr, .EditTemplate .current-td.td, .EditTemplate .current-th.th {
-		border: 2px solid #18A0FB;
+		border: 2px solid var(--color-purple);
+	}
+
+	.EditTemplate .taken.taken {
+		border-color: var(--color-purple) !important;
+	}
+
+	.EditTemplate .remove.remove {
+		border-color: #FF4D4D !important;
+	}
+
+	.EditTemplate .add {
+		border-color: var(--color-purple) !important;
+	}
+
+	.EditTemplate .not-taken {
+		border-style: dashed !important;
 	}
 
 	.EditTemplate .target.table {
@@ -237,7 +379,7 @@
 	}
 
 	.List {
-		margin-top: 16px;
+		margin-top: 8px;
 	}
 
 	.ListItem {

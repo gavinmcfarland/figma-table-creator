@@ -9,6 +9,42 @@ import { Tween, Queue, Easing } from 'tweeno'
 
 console.clear()
 
+function isVariant(node) {
+	if (node.type === "INSTANCE") {
+		return node.mainComponent.parent?.type === "COMPONENT_SET"
+	}
+
+}
+
+function getVariantName(node) {
+	if (isVariant(node)) {
+		let type = node.variantProperties?.Type || node.variantProperties?.type
+
+		if (type) {
+			return node.name + "/" + type
+		}
+		else {
+			return node.name + "/" + node.mainComponent.name
+		}
+	}
+	else {
+		return node.name
+	}
+}
+
+function getSelectionName(node) {
+	if (node) {
+		if (isVariant(node)) {
+			return getVariantName(node)
+		}
+		else {
+			return node.name
+		}
+	}
+	else {
+		return undefined
+	}
+}
 
 function animateIntoView(selection, duration?, easing?) {
 	// Get current coordiantes
@@ -250,6 +286,8 @@ async function toggleColumnResizing(selection) {
 
 		let settings = getTableSettings(oldTable)
 
+		console.log("settings", settings)
+
 		if (settings.columnResizing) {
 			detachTable(selection)
 		}
@@ -339,9 +377,14 @@ async function createTableInstance(templateNode, preferences?) {
 
 	// FIXME: Get it to work with parts which are not components as well
 
-	let part = findTemplateParts(templateNode)
+	var tableInstance = convertToFrame(templateNode.clone())
 
-	console.log(part)
+	let part = findTemplateParts(templateNode)
+	// let template = () => {
+	// 	if (templateNode)
+	// }()
+
+
 
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -354,20 +397,52 @@ async function createTableInstance(templateNode, preferences?) {
 		return
 	}
 
-	var tableInstance = convertToFrame(part.table.clone())
+	var table
 
-	setPluginData(tableInstance, "elementSemantics", { is: "table" })
+	if (part.table.id === templateNode.id) {
+		console.log("table and container are the same thing")
+		table = tableInstance
+
+	}
+	else {
+
+		// Remove table from template
+		tableInstance.findAll((node) => {
+			if (getPluginData(node, "elementSemantics")?.is === "table") {
+				node.remove()
+			}
+		})
+
+		var tableIndex = getNodeIndex(part.table)
+
+		// Add table back to template
+		tableInstance.insertChild(tableIndex, table)
+
+	}
+
+
+	// Create first row
+	var firstRow;
+	var rowIndex = getNodeIndex(part.tr)
+	function getRowParent() {
+		var row = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
+
+		return row.parent
+	}
+
+	var rowParent = getRowParent()
+
+	console.log("rowParent", rowParent)
+
 
 	// Remove children which are trs
-	tableInstance.findAll((node) => {
+	table.findAll((node) => {
 		if (getPluginData(node, "elementSemantics")?.is === "tr") {
 			node.remove()
 		}
 	})
 
-	// Create first row
-	var firstRow;
-	var rowIndex = getNodeIndex(part.tr)
+
 
 
 
@@ -382,7 +457,7 @@ async function createTableInstance(templateNode, preferences?) {
 		setPluginData(firstRow, "elementSemantics", { is: "tr" })
 	}
 
-	tableInstance.insertChild(rowIndex, firstRow)
+	rowParent.insertChild(rowIndex, firstRow)
 
 	// Remove children which are tds
 	firstRow.findAll((node) => {
@@ -446,7 +521,7 @@ async function createTableInstance(templateNode, preferences?) {
 			}
 		}
 
-		tableInstance.insertChild(rowIndex + 1, duplicateRow)
+		rowParent.insertChild(rowIndex + 1, duplicateRow)
 	}
 
 	// Swap first row to use header cell
@@ -606,6 +681,7 @@ function selectRow() {
 
 
 function detachTable(selection) {
+	let newSelection = []
 	for (let i = 0; i < selection.length; i++) {
 		let table = selection[i]
 
@@ -613,11 +689,7 @@ function detachTable(selection) {
 			table = table.detachInstance()
 		}
 
-		let length = table.children.length
-
-		for (let i = 0; i < length; i++) {
-			let node = table.children[i]
-			console.log(node)
+		table.findAll((node) => {
 			if (getPluginData(node, "elementSemantics")?.is === "tr") {
 
 				if (node.type === "INSTANCE") {
@@ -628,9 +700,12 @@ function detachTable(selection) {
 					replace(node, convertToFrame)
 				}
 			}
+		})
 
-		}
+		newSelection.push(table)
 	}
+
+	figma.currentPage.selection = newSelection
 }
 
 function linkComponent(template, selection) {
@@ -716,7 +791,7 @@ function createTable(msg) {
 
 	getClientStorageAsync('userPreferences').then((res) => {
 
-			// Will only let you create a table if less than 50 columns and rows
+		// Will only let you create a table if less than 50 columns and rows
 		if (msg.columnCount < 51 && msg.rowCount < 51) {
 
 			var template = getPluginData(figma.root, 'defaultTemplate')
@@ -804,17 +879,20 @@ function syncTemplateData() {
 async function syncDefaultTemplate() {
 	var defaultTemplate = getPluginData(figma.root, 'defaultTemplate')
 
-	var defaultComponent = await lookForComponent(defaultTemplate)
+	// Default template doesn't exist until user creates a new template or chooses a remote one
+	if (defaultTemplate) {
+		var defaultComponent = await lookForComponent(defaultTemplate)
 
-	updatePluginData(figma.root, 'defaultTemplate', (data) => {
+		updatePluginData(figma.root, 'defaultTemplate', (data) => {
 
-		if (defaultComponent) {
-			// data.defaultTemplate.file.name = figma.root.name
-			data.name = defaultComponent.name
-		}
+			if (defaultComponent) {
+				// data.defaultTemplate.file.name = figma.root.name
+				data.name = defaultComponent.name
+			}
 
-		return data
-	})
+			return data
+		})
+	}
 }
 
 // This makes sure the list of local and remote templates are up to date
@@ -956,13 +1034,10 @@ function findTemplateParts(templateNode) {
 	let elements = [
 		"tr",
 		"td",
-		"th"
+		"th",
+		"table"
 	]
 	let results = {}
-
-	if (getPluginData(templateNode, 'elementSemantics').is === "table") {
-		results["table"] = templateNode
-	}
 
 	// Loop though element definitions and find them in the template
 	for (let i = 0; i < elements.length; i++) {
@@ -972,12 +1047,21 @@ function findTemplateParts(templateNode) {
 			let elementSemantics = getPluginData(node, 'elementSemantics')
 
 			if (elementSemantics?.is === elementName) {
+				console.log(elementSemantics)
 				return true
 			}
 		})
 
 		results[elementName] = part
 	}
+
+	if (!results["table"]) {
+		if (getPluginData(templateNode, 'elementSemantics').is === "table") {
+			results["table"] = templateNode
+		}
+	}
+
+
 
 	// // For instances assign the mainComponent as the part
 	// for (let [key, value] of Object.entries(results)) {
@@ -987,6 +1071,39 @@ function findTemplateParts(templateNode) {
 	// }
 
 	return results
+}
+
+function removeElement(nodeId, element) {
+	let node = figma.getNodeById(nodeId)
+	let templateContainer = node.type === "COMPONENT" ? node : getParentComponent(node)
+
+	templateContainer.findAll(node => {
+		if (getPluginData(node, "elementSemantics")?.is === element) {
+			console.log(node.name)
+			if (node.type === "INSTANCE") {
+				setPluginData(node.mainComponent, "elementSemantics", "")
+			}
+			else {
+				setPluginData(node, "elementSemantics", "")
+			}
+		}
+	})
+
+	if (element === "table") {
+		setPluginData(templateContainer, "elementSemantics", "")
+	}
+
+}
+
+function addElement(element) {
+	let node = figma.currentPage.selection[0]
+	if (node.type === "INSTANCE") {
+		setPluginData(node.mainComponent, "elementSemantics", {is: element})
+	}
+	else {
+		setPluginData(node, "elementSemantics", { is: element })
+	}
+
 }
 
 function importTemplate(nodes) {
@@ -1137,6 +1254,49 @@ function setDefaultTemplate(template) {
 		figma.ui.postMessage({ ...res, defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') })
 	})
 
+}
+
+function postCurrentSelection(templateNodeId) {
+
+	let selection
+
+
+
+	function isInsideTemplate(node) {
+		let parentComponent = node.type === "COMPONENT" ? node : getParentComponent(node)
+		if ((isInsideComponent(node) || node.type === "COMPONENT") && parentComponent) {
+			if (getPluginData(parentComponent, 'template') && parentComponent.id === templateNodeId) {
+				return true
+			}
+		}
+	}
+
+	if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+		selection = {
+			element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+			name: getSelectionName(figma.currentPage.selection[0])
+		}
+
+		figma.ui.postMessage({ type: 'current-selection', selection: selection })
+	}
+
+	figma.on('selectionchange', () => {
+
+		if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+			console.log("selection changed")
+			selection = {
+				element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+				name: getSelectionName(figma.currentPage.selection[0])
+			}
+
+			figma.ui.postMessage({ type: 'current-selection', selection: selection })
+
+		}
+		else {
+			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
+		}
+
+	})
 }
 
 // setTimeout(() => {
@@ -1360,13 +1520,39 @@ plugma((plugin) => {
 
 		importTemplate([components.table])
 
-		// setDefaultTemplate(getPluginData(components.table, 'template'))
+		getClientStorageAsync("recentFiles").then((recentFiles) => {
 
-		figma.notify('New template created')
-		// Shouldn't be set, but lets do it just for good measure
-		setPluginData(figma.root, "usingRemoteTemplate", false)
-		setClientStorageAsync("pluginAlreadyRun", true)
-		syncRecentFiles()
+			if (recentFiles) {
+				// Exclude current file
+				recentFiles = recentFiles.filter(d => {
+					return !(d.id === getPluginData(figma.root, "fileId"))
+				})
+				recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0)
+			}
+
+
+			getClientStorageAsync("pluginAlreadyRun").then((pluginAlreadyRun) => {
+				figma.clientStorage.getAsync('userPreferences').then((res) => {
+					figma.ui.postMessage(
+						{
+							type: "create-table",
+							...res,
+							usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"),
+							defaultTemplate: getPluginData(figma.root, 'defaultTemplate'),
+							remoteFiles: getPluginData(figma.root, 'remoteFiles'),
+							localTemplates: getPluginData(figma.root, 'localTemplates'),
+							fileId: getPluginData(figma.root, 'fileId'),
+							pluginAlreadyRun: pluginAlreadyRun,
+							recentFiles: recentFiles
+						})
+					figma.notify('New template created')
+					// Shouldn't be set, but lets do it just for good measure
+					setPluginData(figma.root, "usingRemoteTemplate", false)
+					setClientStorageAsync("pluginAlreadyRun", true)
+					syncRecentFiles()
+				})
+			})
+		})
 
 	})
 
@@ -1425,6 +1611,14 @@ plugma((plugin) => {
 		figma.notify(`Template added`)
 	})
 
+	plugin.on('remove-element', (msg) => {
+		removeElement(msg.id, msg.element)
+	})
+
+	plugin.on('add-element', (msg) => {
+		addElement(msg.element)
+	})
+
 	plugin.on('edit-template', (msg) => {
 		lookForComponent(msg.template).then((templateNode) => {
 			// figma.viewport.scrollAndZoomIntoView([templateNode])
@@ -1433,59 +1627,111 @@ plugma((plugin) => {
 			let parts = findTemplateParts(templateNode)
 			let partsAsObject = {
 				table: {
-					name: parts.table.name
+					name: getSelectionName(parts?.table),
+					element: "table",
+					id: parts?.table?.id
 				},
 				tr: {
-					name: parts.tr.name
+					name: getSelectionName(parts?.tr),
+					element: "tr",
+					id: parts?.tr?.id
 				},
 				td: {
-					name: parts.td.name
+					name: getSelectionName(parts?.td),
+					element: "td",
+					id: parts?.td?.id
 				},
 				th: {
-					name: parts.th.name
-				}
-			}
-			let selection
-
-			function isInsideTemplate(node) {
-				let parentComponent = node.type === "COMPONENT" ? node : getParentComponent(node)
-				console.log(parentComponent)
-				if ((isInsideComponent(node) || node.type === "COMPONENT") && parentComponent) {
-					if (getPluginData(parentComponent, 'elementSemantics')?.is === 'table') {
-						return true
-					}
-
+					name: getSelectionName(parts?.th),
+					element: "th",
+					id: parts?.th?.id
 				}
 			}
 
-			if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
-				selection = {
-					element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
-					name: figma.currentPage.selection[0].name
-				}
+			postCurrentSelection(templateNode.id)
 
-				figma.ui.postMessage({ type: 'current-selection', selection: selection })
+			figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
+
+		})
+
+	})
+
+	plugin.on('fetch-current-selection', (msg) => {
+		lookForComponent(msg.template).then((templateNode) => {
+			postCurrentSelection(templateNode.id)
+		})
+
+
+	})
+
+	plugin.on('find-template-parts', (msg) => {
+		lookForComponent(msg.template).then((templateNode) => {
+			// figma.viewport.scrollAndZoomIntoView([templateNode])
+			// figma.currentPage.selection = [templateNode]
+			let parts = findTemplateParts(templateNode)
+			let partsAsObject = {
+				table: {
+					name: getSelectionName(parts?.table),
+					element: "table",
+					id: parts?.table?.id
+				},
+				tr: {
+					name: getSelectionName(parts?.tr),
+					element: "tr",
+					id: parts?.tr?.id
+				},
+				td: {
+					name: getSelectionName(parts?.td),
+					element: "td",
+					id: parts?.td?.id
+				},
+				th: {
+					name: getSelectionName(parts?.th),
+					element: "th",
+					id: parts?.th?.id
+				}
 			}
+			// let selection
 
-			figma.on('selectionchange', () => {
+			// function isInsideTemplate(node) {
+			// 	let parentComponent = node.type === "COMPONENT" ? node : getParentComponent(node)
+			// 	console.log(parentComponent)
+			// 	if ((isInsideComponent(node) || node.type === "COMPONENT") && parentComponent) {
+			// 		if (getPluginData(parentComponent, 'elementSemantics')?.is === 'table') {
+			// 			return true
+			// 		}
+
+			// 	}
+			// }
+
+			// if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+			// 	selection = {
+			// 		element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+			// 		name: figma.currentPage.selection[0].name
+			// 	}
+
+			// 	figma.ui.postMessage({ type: 'current-selection', selection: selection })
+			// }
+
+			// figma.on('selectionchange', () => {
 
 
 
-				if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
-					console.log("selection changed")
-					selection = {
-						element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
-						name: figma.currentPage.selection[0].name
-					}
+			// 	if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+			// 		console.log("selection changed")
+			// 		selection = {
+			// 			element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+			// 			name: figma.currentPage.selection[0].name
+			// 		}
 
-					figma.ui.postMessage({ type: 'current-selection', selection: selection })
+			// 		figma.ui.postMessage({ type: 'current-selection', selection: selection })
 
-				}
-				else {
-					figma.ui.postMessage({ type: 'current-selection', selection: undefined })
-				}
+			// 	}
+			// 	else {
+			// 		figma.ui.postMessage({ type: 'current-selection', selection: undefined })
+			// 	}
 
-			})
+			// })
 
 
 			figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })

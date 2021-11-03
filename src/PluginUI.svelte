@@ -18,9 +18,6 @@
 	let includeHeader
 	let cellWidth = 100
 	let cellAlignment
-	let welcomePageActive = false
-	let createTablePageActive = false
-	let templateSettingsPageActive = false
 	let selectedFile
 	let editingTemplate
 	let defaultTemplate
@@ -36,9 +33,9 @@
 	]
 
 	let pageState = {
-		welcomePageActive,
-		createTablePageActive,
-		templateSettingsPageActive
+		welcomePageActive: false,
+		createTablePageActive: false,
+		templateSettingsPageActive: false
 	}
 
 	function setActiveSlide(number) {
@@ -50,6 +47,17 @@
 		}
 
 
+	}
+
+	function setActivePage(name) {
+		// Reset page state
+		Object.keys(pageState).map(function(key, index) {
+  			pageState[key] = false;
+		});
+
+		pageState[name] = true
+
+		return pageState
 	}
 
 
@@ -108,8 +116,7 @@
 	}
 
 	function newTemplate() {
-		pageState.welcomePageActive = false
-		pageState.createTablePageActive = true
+		setActivePage("createTablePageActive")
 
 		parent.postMessage(
 			{
@@ -134,8 +141,8 @@
 	}
 
 	function existingTemplate() {
-		pageState.welcomePageActive = false
-		pageState.createTablePageActive = true
+
+		setActivePage("createTablePageActive")
 		usingRemoteTemplate(true)
 
 		parent.postMessage(
@@ -177,12 +184,22 @@
 			if (data.defaultTemplate?.file.id === data.fileId) {
 				selectedFile = data.defaultTemplate.file
 				selectedFile.name = "Local templates"
+
+				valueStore.update((data) => {
+					data.selectedFile = selectedFile
+					return data
+				})
 			}
 			else {
 				for (var i in data.remoteFiles) {
 					if (data.remoteFiles[i].id === data.defaultTemplate.file.id) {
 						// data.remoteFiles[i].selected = true
 						selectedFile = data.remoteFiles[i]
+
+						valueStore.update((data) => {
+							data.selectedFile = selectedFile
+							return data
+						})
 					}
 				}
 			}
@@ -217,10 +234,7 @@
 
 	function editTemplate(template) {
 		editingTemplate = template
-		pageState.welcomePageActive = false
-		pageState.createTablePageActive = false
-		pageState.templateSettingsPageActive = true
-		console.log("hi")
+		setActivePage("templateSettingsPageActive")
 	}
 
 	function handleInput(id, checked) {
@@ -245,25 +259,18 @@
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
 
-		updateSelectedTemplate(data)
-
-		updateSelectedFile(data)
 
 		if (data.type === "create-table") {
+			console.log("received new data")
 			let store = {
 				pageState,
 				selectedFile,
-				remoteFiles,
 				data,
-				defaultTemplate: data.defaultTemplate,
 				...data
 			}
 			valueStore.set(store)
 
 			valueStore.subscribe((value) => {
-				localTemplates = value.localTemplates
-				remoteFiles = value.remoteFiles
-				defaultTemplate = value.defaultTemplate
 				selectedFile = value.selectedFile
 				pageState = value.pageState
 				columnCount = value.columnCount
@@ -275,7 +282,6 @@
 				data = value.data
 			})
 
-		// console.log(data.pluginAlreadyRun)
 
 		if (data.pluginAlreadyRun) {
 			setActiveSlide(4)
@@ -285,39 +291,31 @@
 		}
 
 		if (data.type === "create-table") {
-			pageState.welcomePageActive = false
-			pageState.createTablePageActive = true
-			pageState.templateSettingsPageActive = false
+			setActivePage("createTablePageActive")
 
 			if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
-				pageState.welcomePageActive = true
-				pageState.createTablePageActive = false
+				setActivePage("welcomePageActive")
 			}
 
-			if ((Array.isArray(data.localTemplates) && data.localTemplates.length)) {
-				pageState.welcomePageActive = false
-				pageState.createTablePageActive = true
-			}
-
-			if (data.usingRemoteTemplate) {
-				pageState.welcomePageActive = false
-				pageState.createTablePageActive = true
+			if ((Array.isArray(data.localTemplates) && data.localTemplates.length) || data.usingRemoteTemplate) {
+				setActivePage("createTablePageActive")
 			}
 
 		}
 
 		if (data.type === "settings") {
-			pageState.welcomePageActive = false
-			pageState.createTablePageActive = false
-			pageState.templateSettingsPageActive = true
+			setActivePage("templateSettingsPageActive")
 		}
 
-
-
-
+		if (data.defaultTemplate) {
+			updateSelectedTemplate(data)
+			updateSelectedFile(data)
+		}
 
 		return data
 		}
+
+
 	}
 
 
@@ -325,14 +323,12 @@
 
 <svelte:window on:message={onLoad} />
 
-<!-- {console.log(data)} -->
-
-{#if pageState.createTablePageActive}
+{#if pageState.createTablePageActive && data.defaultTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div class=section-title>
 			<div class="SelectWrapper">
-				<Dropdown fill icon="template" id="menu">
-					<slot slot="label">{defaultTemplate?.name}</slot>
+				<Dropdown fill icon="component" id="menu">
+					<slot slot="label">{data.defaultTemplate?.name}</slot>
 
 					<slot slot="content">
 						<div class="menu">
@@ -340,9 +336,10 @@
 
 								<p style="font-weight: 600">Choose template</p>
 
+
 								<Dropdown id="tooltip">
 									<slot slot="label">
-										{selectedFile.name}
+										{selectedFile?.name}
 										<!-- {#if data.defaultTemplate?.file?.id === data.fileId}
 											Local templates
 										{:else}
@@ -351,7 +348,6 @@
 									</slot>
 									<slot slot="content">
 										<div class="tooltip">
-											{console.log("local templates", data.localTemplates)}
 												{#if data.localTemplates}
 													<div>
 														<input checked="{selectedFile?.id === data.fileId ? true : false}" type="radio" id="localTemplates" name="files">
@@ -381,6 +377,7 @@
 										</div>
 									</slot>
 								</Dropdown>
+
 
 							</div>
 							<div class="menu__content">
@@ -494,7 +491,7 @@
 	</div> -->
 
 	<!-- if existing user -->
-	<div class="container" style="padding: var(--size-200)">
+	<div class="container welcomePage" style="padding: var(--size-200)">
 		<div class="artwork">
 		<div class="svg2" style="margin: 0 -16px"></div>
 		</div>
@@ -512,7 +509,7 @@
 
 	{/if}
 	{#if welcomeSlides[1]}
-	<div class="container" style="padding: var(--size-200)">
+	<div class="container welcomePage" style="padding: var(--size-200)">
 		<div class="artwork">
 		<div class="svg3" style="margin: 0 -16px"></div>
 		</div>
@@ -528,7 +525,7 @@
 	</div>
 	{/if}
 	{#if welcomeSlides[2]}
-	<div class="container" style="padding: var(--size-200)">
+	<div class="container welcomePage" style="padding: var(--size-200)">
 		<div class="artwork">
 		<div class="svg4" style="margin: 0 -16px"></div>
 		</div>
@@ -544,7 +541,7 @@
 	</div>
 	{/if}
 	{#if welcomeSlides[3]}
-	<div class="container" style="padding: var(--size-200)">
+	<div class="container welcomePage" style="padding: var(--size-200)">
 		<div class="artwork">
 		<div class="svg5" style="margin: 0 -16px"></div>
 		</div>
@@ -560,7 +557,7 @@
 	</div>
 	{/if}
 	{#if welcomeSlides[4]}
-	<div class="container" style="padding: var(--size-200)">
+	<div class="container welcomePage" style="padding: var(--size-200)">
 		<div class="artwork">
 		<div class="svg6" style="margin: 0 -16px"></div>
 		</div>
@@ -599,6 +596,10 @@
 {/if}
 
 <style global>
+
+	.welcomePage .buttons .button {
+		margin-top: var(--margin-200);
+	}
 
 	.wrapper {
 		padding: var(--padding-200);
@@ -651,7 +652,6 @@
 
 	.text-bold {
 		font-weight: 600;
-		color: rgb(51, 51, 51);
 	}
 
 	.RadioButtons {
@@ -764,6 +764,10 @@
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M1.82812 7.99988L2.164 7.664L3.539 6.289L3.87488 5.95312L4.54663 6.62488L4.21075 6.96075L3.17163 7.99988L4.21075 9.039L4.54663 9.37488L3.87488 10.0466L3.539 9.71075L2.164 8.33575L1.82812 7.99988ZM6.62488 11.4531L6.96075 11.789L7.99988 12.8281L9.039 11.789L9.37488 11.4531L10.0466 12.1249L9.71075 12.4608L8.33575 13.8358L7.99988 14.1716L7.664 13.8358L6.289 12.4608L5.95312 12.1249L6.62488 11.4531ZM5.95312 3.87488L6.289 3.539L7.664 2.164L7.99988 1.82812L8.33575 2.164L9.71075 3.539L10.0466 3.87488L9.37488 4.54663L9.039 4.21075L7.99988 3.17163L6.96075 4.21075L6.62488 4.54663L5.95312 3.87488ZM11.4531 9.37488L11.789 9.039L12.8281 7.99988L11.789 6.96075L11.4531 6.62488L12.1249 5.95312L12.4608 6.289L13.8358 7.664L14.1716 7.99988L13.8358 8.33575L12.4608 9.71075L12.1249 10.0466L11.4531 9.37488Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
+	[icon="component"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M5.74254 4.74795L7.99981 2.5L10.2571 4.74795L7.99981 6.9959L5.74254 4.74795ZM4.74795 10.2571L2.5 7.9998L4.74795 5.74253L6.9959 7.9998L4.74795 10.2571ZM10.2571 11.2517L7.9998 13.4996L5.74253 11.2517L7.9998 9.00371L10.2571 11.2517ZM13.4996 7.99981L11.2517 5.74254L9.00371 7.99981L11.2517 10.2571L13.4996 7.99981Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
 	[icon="chevron-down"] {
 		width: 8px;
 		height: 8px;
@@ -775,6 +779,10 @@
 
 	[icon="plus"]::before {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M7.5 7.5V2.5H8.5V7.5H13.5V8.5H8.5V13.5H7.5V8.5H2.5V7.5H7.5Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	[icon="minus"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M22 16.5H10V15.5H22V16.5Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
 	[icon="swap"]::before {

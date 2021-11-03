@@ -86,6 +86,12 @@ button {
 	/* margin-top: var(--size-200); */
 }
 
+body {
+	font-family: Inter, sans-serif;
+	font-size: 11px;
+	color: var(--black);
+}
+
 :root {
 	--color-blue: #18a0fb;
 	--color-selection-a: #daebf7;
@@ -94,6 +100,7 @@ button {
 	--color-black-30: rgba(0, 0, 0, 0.3);
 	--color-black-80: rgba(0, 0, 0, 0.8);
 	--color-black-100: #000;
+	--color-purple: #7B61FF;
 
 	--size-0: 0px;
 	--size-25: 2px;
