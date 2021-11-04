@@ -790,6 +790,14 @@ export function createDefaultTemplate() {
 	obj.row = component_1_365
 	obj.cell = component_101_204
 	obj.headerCell = component_101_265
+	obj.cellSet = componentSet_1_364
+	obj.baseCell = component_101_119
+	obj.instances = [
+		instance_1_442,
+		instance_102_121,
+		instance_1_438,
+		instance_1_434
+	]
 	// component_1_5.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
 	// component_1_13.setPluginData("isCellHeader", "true")
 	// component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })

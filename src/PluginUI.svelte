@@ -35,7 +35,9 @@
 	let pageState = {
 		welcomePageActive: false,
 		createTablePageActive: false,
-		templateSettingsPageActive: false
+		templateSettingsPageActive: false,
+		chooseRemoteTemplate: false,
+		chooseTemplate: false
 	}
 
 	function setActiveSlide(number) {
@@ -143,6 +145,7 @@
 	function existingTemplate() {
 
 		setActivePage("createTablePageActive")
+
 		usingRemoteTemplate(true)
 
 		parent.postMessage(
@@ -155,11 +158,15 @@
 		)
 	}
 
+	function chooseRemoteTemplate() {
+		setActivePage("chooseRemoteTemplate")
+	}
+
 	function setDefaultTemplate(template, data) {
 
 		if (data) {
 			// Not sure how to get it to update UI
-			data = updateSelectedTemplate(template, data)
+			data = updateSelectedTemplate(data, template)
 		}
 
 		parent.postMessage(
@@ -322,6 +329,46 @@
 </script>
 
 <svelte:window on:message={onLoad} />
+
+{#if pageState.chooseRemoteTemplate}
+	<div class="container" style="padding: var(--size-100) var(--size-200)">
+
+		{#if data.remoteFiles}
+		<p>Choose a template</p>
+		<div class="List">
+			{#each data.remoteFiles as file}
+				<div class="ListItem" on:click={(event) => {
+					updateSelectedFile(data, file)
+					setActivePage("chooseTemplate")
+				}}><span>{file.name}</span></div>
+			{/each}
+		</div>
+		{/if}
+	</div>
+{/if}
+
+{#if pageState.chooseTemplate}
+	<div class="container" style="padding: var(--size-100) var(--size-200)">
+		<p>Choose a template</p>
+		{#if data.remoteFiles}
+			{#each data.remoteFiles as file}
+				{#if selectedFile?.id === file.id}
+					<div class="List">
+						{#each file.templates as template}
+						<div class="ListItem" on:click={(event) => {
+							// Only trigger if clicking on the element itself
+							if(event.target !== event.currentTarget) return;
+							usingRemoteTemplate(true)
+							setDefaultTemplate(template, data)
+							setActivePage("createTablePageActive")
+							}}>{template.name}</div>
+						{/each}
+					</div>
+				{/if}
+			{/each}
+		{/if}
+	</div>
+{/if}
 
 {#if pageState.createTablePageActive && data.defaultTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
@@ -578,8 +625,7 @@
 			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
 			{#if data.recentFiles}
 				<span on:click={() => {
-					existingTemplate()
-					setDefaultTemplate(data.remoteFiles[0].templates[0], data)
+					chooseRemoteTemplate()
 					}}><Button classes="secondary">Existing Template</Button></span>
 			{/if}
 		</div>
@@ -1031,6 +1077,41 @@
 	h6 {
 		font-size: 1em;
 		margin-bottom: var(--size-100);
+	}
+
+	.List {
+		margin-top: 8px;
+	}
+
+	.ListItem {
+		display: flex;
+		place-items: center;
+		min-height: 34px;
+		margin: 0 -16px;
+		padding: 0 16px;
+	}
+
+	.ListItem p {
+		margin: 0;
+	}
+
+	.ListItem .element {
+		font-weight: bold;
+		min-width: 50px;
+	}
+
+	.ListItem > .buttons {
+		margin-left: auto;
+		display: none;
+		margin-right: -8px;
+	}
+
+	.ListItem:hover {
+		background-color: var(--color-hover-fill)
+	}
+
+	.ListItem:hover > .buttons {
+		display: block;
 	}
 
 	.svg1 {

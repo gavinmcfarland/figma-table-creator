@@ -40,4 +40,13 @@
 
 1. Don't rely on component + table to idenitify template. Use component and template. DONE
 2. BUG: Restrict the selection to the template currently being edited DONE
+3. BUG: Template not selected after selecting and then opening menu again
+4. Check using remote files works DONE
+5. Fix tableSettings calculation based on parent of row
+6. Add checks for relaunch buttons being applied on component
+7. Add list of remote files UI DONE
+8. Add bold to header in default components
+9. Make sure select columns and rows data is added to cells
+10. detect when table template is using columns or rows
+11. Add back button to choosing file page
 

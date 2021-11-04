@@ -1349,6 +1349,14 @@ function createDefaultTemplate() {
     obj.row = component_1_365;
     obj.cell = component_101_204;
     obj.headerCell = component_101_265;
+    obj.cellSet = componentSet_1_364;
+    obj.baseCell = component_101_119;
+    obj.instances = [
+        instance_1_442,
+        instance_102_121,
+        instance_1_438,
+        instance_1_434
+    ];
     // component_1_5.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
     // component_1_13.setPluginData("isCellHeader", "true")
     // component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
@@ -2357,8 +2365,12 @@ async function lookForComponent(template) {
         if (localComponent && localComponent.key === template.component.key) {
             component = localComponent;
         }
+        else {
+            throw "error";
+        }
     }
     catch (_a) {
+        console.log("get remote", localComponent);
         component = await figma.importComponentByKeyAsync(template.component.key);
     }
     return component;
@@ -2790,6 +2802,7 @@ function createTable(msg) {
                     }
                 });
             }).catch((error) => {
+                console.log("error", error);
                 figma.notify("Check template component is published");
             });
         }
@@ -2800,22 +2813,64 @@ function createTable(msg) {
 }
 // Merge document localTemplate and merge to clientStorage as recentFiles
 async function syncRecentFiles() {
-    return updateClientStorageAsync_1("recentFiles", (recentFiles) => {
-        recentFiles = recentFiles || [];
-        var localTemplates = getPluginData(figma.root, "localTemplates");
-        // console.log("localTemplates", localTemplates)
-        if ((Array.isArray(localTemplates) && localTemplates.length > 0) && recentFiles) {
-            var newFile = {
-                id: getPluginData(figma.root, 'fileId'),
-                name: figma.root.name,
-                templates: localTemplates
-            };
-            // Only add file to array if unique
-            if (!recentFiles.some((item) => item.id === newFile.id)) {
-                recentFiles.push(newFile);
+    var localTemplates = getPluginData(figma.root, "localTemplates");
+    console.log("localTemplates", localTemplates);
+    async function findPublishedTemplates() {
+        let publishedTemplates = [];
+        if (localTemplates && localTemplates.length > 0) {
+            for (let i = 0; i < localTemplates.length; i++) {
+                var template = localTemplates[i];
+                var templateComponent = await lookForComponent(template);
+                var status = await templateComponent.getPublishStatusAsync();
+                if (status !== "UNPUBLISHED") {
+                    publishedTemplates.push(template);
+                }
             }
         }
-        return recentFiles;
+        if (publishedTemplates.length > 0) {
+            return publishedTemplates;
+        }
+        else {
+            return false;
+        }
+    }
+    let publishedTemplates = await findPublishedTemplates();
+    return updateClientStorageAsync_1("recentFiles", (recentFiles) => {
+        recentFiles = recentFiles || [];
+        if (publishedTemplates) {
+            if ((Array.isArray(localTemplates) && localTemplates.length > 0) && recentFiles) {
+                var newFile = {
+                    id: getPluginData(figma.root, 'fileId'),
+                    name: figma.root.name,
+                    // TODO: I could check if template component has been published. If so then add it
+                    templates: publishedTemplates
+                };
+                // Only add file to array if unique AND contains publishedTemplates
+                if ((!recentFiles.some((item) => item.id === newFile.id)) && publishedTemplates) {
+                    recentFiles.push(newFile);
+                }
+                else {
+                    if (publishedTemplates) {
+                        // Update file data
+                        recentFiles.map((file, i) => {
+                            if (file.id === getPluginData(figma.root, 'fileId')) {
+                                recentFiles[i] = newFile;
+                            }
+                        });
+                    }
+                    else {
+                        // remove file from list
+                        recentFiles.map((file, i) => {
+                            if (file.id === getPluginData(figma.root, 'fileId')) {
+                                recentFiles.splice(i, 1);
+                            }
+                        });
+                    }
+                }
+            }
+            console.log("updatedRecentFiles", recentFiles);
+            return recentFiles;
+        }
     });
 }
 // This makes sure the node data
@@ -2849,18 +2904,23 @@ async function syncRemoteFiles() {
     // console.log("recentFiles", recentFiles)
     updatePluginData_1(figma.root, 'remoteFiles', (remoteFiles) => {
         remoteFiles = remoteFiles || undefined;
-        // Merge recentFiles into remoteFiles
-        if (recentFiles) {
-            if (!remoteFiles)
-                remoteFiles = [];
-            var ids = new Set(remoteFiles.map(d => d.id));
-            var merged = [...remoteFiles, ...recentFiles.filter(d => !ids.has(d.id))];
-            // Exclude current file
-            merged = merged.filter(d => {
-                return !(d.id === getPluginData(figma.root, "fileId"));
-            });
-            remoteFiles = merged;
-        }
+        // Update remoteFiles to match recentFiles
+        // Exclude current file
+        recentFiles = recentFiles.filter(d => {
+            return !(d.id === getPluginData(figma.root, "fileId"));
+        });
+        remoteFiles = recentFiles;
+        // // Merge recentFiles into remoteFiles
+        // if (recentFiles) {
+        // 	if (!remoteFiles) remoteFiles = []
+        // 	var ids = new Set(remoteFiles.map(d => d.id));
+        // 	var merged = [...remoteFiles, ...recentFiles.filter(d => !ids.has(d.id))];
+        // 	// Exclude current file
+        // 	merged = merged.filter(d => {
+        // 		return !(d.id === getPluginData(figma.root, "fileId"))
+        // 	})
+        // 	remoteFiles = merged
+        // }
         if (remoteFiles) {
             for (var i = 0; i < remoteFiles.length; i++) {
                 var file = remoteFiles[i];
@@ -2874,15 +2934,15 @@ async function syncRemoteFiles() {
                         });
                         return remoteFiles;
                     });
-                }).catch(() => {
+                }).catch((error) => {
+                    console.log(error);
                     // FIXME: Do I need to do something here if component is deleted?
                     // FIXME: Is this the wrong time to check if component is published?
                     // figma.notify("Please check component is published")
                 });
             }
-            // FIXME: Fix helper. Only needed because helper will cause plugin data to be undefined if doesn't return value
-            return remoteFiles;
         }
+        return remoteFiles;
     });
 }
 function syncLocalTemplates() {
@@ -2961,7 +3021,6 @@ function removeElement(nodeId, element) {
     templateContainer.findAll(node => {
         var _a;
         if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === element) {
-            console.log(node.name);
             if (node.type === "INSTANCE") {
                 setPluginData_1(node.mainComponent, "elementSemantics", "");
             }
@@ -3002,7 +3061,7 @@ function importTemplate(nodes) {
                 data = addNewTemplate(node, data);
                 return data;
             });
-            figma.notify(`Imported ${node.name}`);
+            // figma.notify(`Imported ${node.name}`)
         }
         else {
             updatePluginData_1(figma.root, 'remoteFiles', (data) => {
@@ -3092,6 +3151,43 @@ function setDefaultTemplate(template) {
     figma.clientStorage.getAsync('userPreferences').then((res) => {
         figma.ui.postMessage(Object.assign(Object.assign({}, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
     });
+}
+async function createNewTemplate() {
+    var components = createDefaultTemplate();
+    // Find templates locally
+    var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT");
+    localTemplates.sort((a, b) => a.name - b.name);
+    localTemplates.map(node => {
+        console.log(node.name);
+    });
+    if (localTemplates[localTemplates.length - 1].name.startsWith("Table")) {
+        let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/);
+        console.log(matches);
+        if (matches) {
+            components.table.name = `Table ${parseInt(matches[0], 10) + 1}`;
+        }
+    }
+    // markNode(components.table, 'table')
+    importTemplate([components.table]);
+    getClientStorageAsync_1("recentFiles").then((recentFiles) => {
+        if (recentFiles) {
+            // Exclude current file
+            recentFiles = recentFiles.filter(d => {
+                return !(d.id === getPluginData(figma.root, "fileId"));
+            });
+            recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0);
+        }
+        getClientStorageAsync_1("pluginAlreadyRun").then((pluginAlreadyRun) => {
+            figma.clientStorage.getAsync('userPreferences').then((res) => {
+                figma.ui.postMessage(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
+                // Shouldn't be set, but lets do it just for good measure
+                setPluginData_1(figma.root, "usingRemoteTemplate", false);
+                setClientStorageAsync_1("pluginAlreadyRun", true);
+                syncRecentFiles();
+            });
+        });
+    });
+    return components;
 }
 function postCurrentSelection(templateNodeId) {
     var _a;
@@ -3232,15 +3328,16 @@ dist((plugin) => {
         });
     });
     plugin.command('newTemplate', () => {
-        var components = createDefaultTemplate();
-        // markNode(components.table, 'table')
-        importTemplate([components.table]);
-        var tempGroup = figma.group(Object.values(components), figma.currentPage);
-        positionInCenter(tempGroup);
-        figma.currentPage.selection = ungroup_1(tempGroup, figma.currentPage);
-        setPluginData_1(figma.root, "usingRemoteTemplate", false);
-        syncRecentFiles().then(() => {
-            figma.closePlugin('New template created');
+        createNewTemplate().then((components) => {
+            components.cellSet.remove();
+            components.row.remove();
+            components.baseCell.remove();
+            components.instances.map(instance => instance.remove());
+            delete components.instances;
+            var tempGroup = figma.group(Object.values(components), figma.currentPage);
+            positionInCenter(tempGroup);
+            figma.currentPage.selection = ungroup_1(tempGroup, figma.currentPage);
+            figma.closePlugin();
         });
     });
     plugin.command('selectColumn', () => {
@@ -3279,28 +3376,7 @@ dist((plugin) => {
         });
     });
     plugin.on('new-template', (msg) => {
-        var components = createDefaultTemplate();
-        // markNode(components.table, 'table')
-        importTemplate([components.table]);
-        getClientStorageAsync_1("recentFiles").then((recentFiles) => {
-            if (recentFiles) {
-                // Exclude current file
-                recentFiles = recentFiles.filter(d => {
-                    return !(d.id === getPluginData(figma.root, "fileId"));
-                });
-                recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0);
-            }
-            getClientStorageAsync_1("pluginAlreadyRun").then((pluginAlreadyRun) => {
-                figma.clientStorage.getAsync('userPreferences').then((res) => {
-                    figma.ui.postMessage(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
-                    figma.notify('New template created');
-                    // Shouldn't be set, but lets do it just for good measure
-                    setPluginData_1(figma.root, "usingRemoteTemplate", false);
-                    setClientStorageAsync_1("pluginAlreadyRun", true);
-                    syncRecentFiles();
-                });
-            });
-        });
+        createNewTemplate();
     });
     plugin.on('existing-template', (msg) => {
         figma.notify('Using remote template');
@@ -3450,7 +3526,11 @@ dist((plugin) => {
 // console.log('fileId ->', getPluginData(figma.root, 'fileId'))
 // console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
 // console.log('localTemplates ->', getPluginData(figma.root, 'localTemplates'))
-console.log('defaultTemplate ->', getPluginData(figma.root, 'defaultTemplate'));
+// console.log('defaultTemplate ->', getPluginData(figma.root, 'defaultTemplate'))
+// console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
+getClientStorageAsync_1("recentFiles").then(recentFiles => {
+    console.log(recentFiles);
+});
 // getClientStorageAsync('userPreferences').then(res => {
 // 	console.log(res)
 // })
