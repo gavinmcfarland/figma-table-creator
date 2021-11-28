@@ -22,15 +22,15 @@ async function updateClientStorageAsync(key, callback) {
     }
 }
 
-const eventListeners = [];
+const eventListeners$1 = [];
 figma.ui.onmessage = message => {
-    for (let eventListener of eventListeners) {
+    for (let eventListener of eventListeners$1) {
         if (message.action === eventListener.action)
             eventListener.callback(message.data);
     }
 };
 
-const nodeProps = [
+const nodeProps$1 = [
     'id',
     'parent',
     'name',
@@ -101,7 +101,7 @@ const nodeProps = [
     'guides',
     'type'
 ];
-const readOnly = [
+const readOnly$1 = [
     'id',
     'parent',
     'removed',
@@ -134,7 +134,7 @@ const readOnly = [
 */
 // FIXME: When an empty objet is provided, copy over all properties including width and height
 // FIXME: Don't require a setter in order to copy property. Should be able to copy from an object literal for example.
-function copyPaste(source, target, ...args) {
+function copyPaste$1(source, target, ...args) {
     var targetIsEmpty;
     if (target && Object.keys(target).length === 0 && target.constructor === Object) {
         targetIsEmpty = true;
@@ -152,19 +152,19 @@ function copyPaste(source, target, ...args) {
         options = {};
     const { include, exclude, withoutRelations, removeConflicts } = options;
     // const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__))
-    let allowlist = nodeProps.filter(function (el) {
-        return !readOnly.includes(el);
+    let allowlist = nodeProps$1.filter(function (el) {
+        return !readOnly$1.includes(el);
     });
     if (include) {
         // If include supplied, include copy across these properties and their values if they exist
         allowlist = include.filter(function (el) {
-            return !readOnly.includes(el);
+            return !readOnly$1.includes(el);
         });
     }
     if (exclude) {
         // If exclude supplied then don't copy over the values of these properties
         allowlist = allowlist.filter(function (el) {
-            return !exclude.concat(readOnly).includes(el);
+            return !exclude.concat(readOnly$1).includes(el);
         });
     }
     // target supplied, don't copy over the values of these properties
@@ -245,12 +245,12 @@ function copyPaste(source, target, ...args) {
     if (targetIsEmpty) {
         if (source.type === "FRAME" || source.type === "COMPONENT" || source.type === "COMPONENT_SET" || source.type === "PAGE" || source.type === 'GROUP' || source.type === 'INSTANCE' || source.type === 'DOCUMENT' || source.type === 'BOOLEAN_OPERATION') {
             if (source.children && !withoutRelations) {
-                obj.children = source.children.map((child) => copyPaste(child, {}, { withoutRelations }));
+                obj.children = source.children.map((child) => copyPaste$1(child, {}, { withoutRelations }));
             }
         }
         if (source.type === "INSTANCE") {
             if (source.mainComponent && !withoutRelations) {
-                obj.masterComponent = copyPaste(source.mainComponent, {}, { withoutRelations });
+                obj.masterComponent = copyPaste$1(source.mainComponent, {}, { withoutRelations });
             }
         }
     }
@@ -273,7 +273,7 @@ function convertToFrame(node) {
         console.log("hello");
         let frame = node.createInstance().detachInstance();
         parent.appendChild(frame);
-        copyPaste(node, frame, { include: ['x', 'y'] });
+        copyPaste$1(node, frame, { include: ['x', 'y'] });
         // Treat like native method
         figma.currentPage.appendChild(frame);
         node.remove();
@@ -283,7 +283,7 @@ function convertToFrame(node) {
         let frame = figma.createFrame();
         // FIXME: Add this into copyPaste helper
         frame.resizeWithoutConstraints(node.width, node.height);
-        copyPaste(node, frame);
+        copyPaste$1(node, frame);
         node.remove();
         return frame;
     }
@@ -320,7 +320,7 @@ function convertToComponent(node) {
     node = convertToFrame(node);
     // FIXME: Add this into copyPaste helper
     component.resizeWithoutConstraints(node.width, node.height);
-    copyPaste(node, component);
+    copyPaste$1(node, component);
     moveChildren(node, component);
     node.remove();
     return component;
@@ -331,7 +331,7 @@ function convertToComponent(node) {
  * @param {String} key A key to store data under
  * @param {any} data Data to be stoed
  */
-function setPluginData(node, key, data) {
+function setPluginData$1(node, key, data) {
     node.setPluginData(key, JSON.stringify(data));
 }
 function updatePluginData(node, key, callback) {
@@ -452,7 +452,6 @@ function isFunction(functionToCheck) {
  * @returns Returns the new node as a component
  */
 function replace(target, source) {
-    console.log(target.id);
     let isSelection = false;
     let targetCopy;
     let clonedSelection = [];
@@ -493,7 +492,7 @@ function replace(target, source) {
     if (result) {
         // FIXME: Add this into copyPaste helper
         result.resizeWithoutConstraints(targetWidth, targetHeight);
-        copyPaste(targetCopy, result, { include: ['x', 'y', 'constraints'] });
+        copyPaste$1(targetCopy, result, { include: ['x', 'y', 'constraints'] });
         // copyPaste not working properly so have to manually copy x and y
         result.x = targetCopy.x;
         result.y = targetCopy.y;
@@ -512,15 +511,208 @@ function replace(target, source) {
 
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
-var copyPaste_1 = copyPaste;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
 var replace_1 = replace;
 var setClientStorageAsync_1 = setClientStorageAsync;
-var setPluginData_1 = setPluginData;
+var setPluginData_1 = setPluginData$1;
 var ungroup_1 = ungroup;
 var updateClientStorageAsync_1 = updateClientStorageAsync;
 var updatePluginData_1 = updatePluginData;
+
+const eventListeners = [];
+
+figma.ui.onmessage = message => {
+  for (let eventListener of eventListeners) {
+    if (message.action === eventListener.action) eventListener.callback(message.data);
+  }
+};
+
+const nodeProps = ['id', 'parent', 'name', 'removed', 'visible', 'locked', 'children', 'constraints', 'absoluteTransform', 'relativeTransform', 'x', 'y', 'rotation', 'width', 'height', 'constrainProportions', 'layoutAlign', 'layoutGrow', 'opacity', 'blendMode', 'isMask', 'effects', 'effectStyleId', 'expanded', 'backgrounds', 'backgroundStyleId', 'fills', 'strokes', 'strokeWeight', 'strokeMiterLimit', 'strokeAlign', 'strokeCap', 'strokeJoin', 'dashPattern', 'fillStyleId', 'strokeStyleId', 'cornerRadius', 'cornerSmoothing', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius', 'exportSettings', 'overflowDirection', 'numberOfFixedChildren', 'overlayPositionType', 'overlayBackground', 'overlayBackgroundInteraction', 'reactions', 'description', 'remote', 'key', 'layoutMode', 'primaryAxisSizingMode', 'counterAxisSizingMode', 'primaryAxisAlignItems', 'counterAxisAlignItems', 'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom', 'itemSpacing', // 'horizontalPadding',
+// 'verticalPadding',
+'layoutGrids', 'gridStyleId', 'clipsContent', 'guides', 'type'];
+const readOnly = ['id', 'parent', 'removed', 'children', 'absoluteTransform', 'width', 'height', 'overlayPositionType', 'overlayBackground', 'overlayBackgroundInteraction', 'reactions', 'remote', 'key', 'type', 'masterComponent', 'mainComponent'];
+//     const obj = {};
+//     if (mixedProps[prop] && node[prop] === figma.mixed) {
+//         for (let prop of mixedProp[prop]) {
+//             obj[prop] = source[prop]
+//         }
+//     } else {
+//         obj[prop] = node[prop]
+//     }
+// }
+
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options, callback: Callback)
+// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback, options: Options)
+
+/**
+* Allows you to copy and paste props between nodes.
+*
+* @param source - The node you want to copy from
+* @param target - The node or object you want to paste to
+* @param args - Either options or a callback.
+* @returns A node or object with the properties copied over
+*/
+function copyPaste(source, target, ...args) {
+  var targetIsEmpty;
+
+  if (target && Object.keys(target).length === 0 && target.constructor === Object) {
+    targetIsEmpty = true;
+  }
+
+  var options;
+  if (typeof args[0] === 'function') ;
+  if (typeof args[1] === 'function') ;
+  if (typeof args[0] === 'object' && typeof args[0] !== 'function') options = args[0];
+  if (typeof args[0] === 'object' && typeof args[0] !== 'function') options = args[0];
+  if (!options) options = {};
+  const {
+    include,
+    exclude,
+    withoutRelations,
+    removeConflicts
+  } = options; // const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__))
+
+  let allowlist = nodeProps.filter(function (el) {
+    return !readOnly.includes(el);
+  });
+
+  if (include) {
+    // If include supplied, include copy across these properties and their values if they exist
+    allowlist = include.filter(function (el) {
+      return !readOnly.includes(el);
+    });
+  }
+
+  if (exclude) {
+    // If exclude supplied then don't copy over the values of these properties
+    allowlist = allowlist.filter(function (el) {
+      return !exclude.concat(readOnly).includes(el);
+    });
+  } // target supplied, don't copy over the values of these properties
+
+
+  if (target && !targetIsEmpty) {
+    allowlist = allowlist.filter(function (el) {
+      return !['id', 'type'].includes(el);
+    });
+  }
+
+  var obj = {};
+
+  if (targetIsEmpty) {
+    if (obj.id === undefined) {
+      obj.id = source.id;
+    }
+
+    if (obj.type === undefined) {
+      obj.type = source.type;
+    }
+
+    if (source.key) obj.key = source.key;
+  }
+
+  const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__));
+
+  for (const [key, value] of props) {
+    if (allowlist.includes(key)) {
+      try {
+        if (typeof obj[key] === 'symbol') {
+          obj[key] = 'Mixed';
+        } else {
+          obj[key] = value.get.call(source);
+        }
+      } catch (err) {
+        obj[key] = undefined;
+      }
+    } // Needs building in
+    // if (callback) {
+    //     callback(obj)
+    // }
+    // else {
+    // }
+
+  }
+
+  if (!removeConflicts) {
+    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
+    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
+    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
+    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
+    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+
+    if (obj.textStyleId) {
+      delete obj.fontName;
+      delete obj.fontSize;
+      delete obj.letterSpacing;
+      delete obj.lineHeight;
+      delete obj.paragraphIndent;
+      delete obj.paragraphSpacing;
+      delete obj.textCase;
+      delete obj.textDecoration;
+    } else {
+      delete obj.textStyleId;
+    }
+
+    if (obj.cornerRadius !== figma.mixed) {
+      delete obj.topLeftRadius;
+      delete obj.topRightRadius;
+      delete obj.bottomLeftRadius;
+      delete obj.bottomRightRadius;
+    } else {
+      delete obj.cornerRadius;
+    }
+  } // Only applicable to objects because these properties cannot be set on nodes
+
+
+  if (targetIsEmpty) {
+    if (source.parent && !withoutRelations) {
+      obj.parent = {
+        id: source.parent.id,
+        type: source.parent.type
+      };
+    }
+  } // Only applicable to objects because these properties cannot be set on nodes
+
+
+  if (targetIsEmpty) {
+    if (source.type === "FRAME" || source.type === "COMPONENT" || source.type === "COMPONENT_SET" || source.type === "PAGE" || source.type === 'GROUP' || source.type === 'INSTANCE' || source.type === 'DOCUMENT' || source.type === 'BOOLEAN_OPERATION') {
+      if (source.children && !withoutRelations) {
+        obj.children = source.children.map(child => copyPaste(child, {}, {
+          withoutRelations
+        }));
+      }
+    }
+
+    if (source.type === "INSTANCE") {
+      if (source.mainComponent && !withoutRelations) {
+        obj.masterComponent = copyPaste(source.mainComponent, {}, {
+          withoutRelations
+        });
+      }
+    }
+  }
+
+  Object.assign(target, obj);
+  return obj;
+}
+
+/**
+ * Helpers which automatically parse and stringify when you get, set or update plugin data
+ */
+/**
+ * 
+ * @param {BaseNode} node  A figma node to set data on
+ * @param {String} key A key to store data under
+ * @param {any} data Data to be stoed
+ */
+
+function setPluginData(node, key, data) {
+  node.setPluginData(key, JSON.stringify(data));
+}
 
 function copyPasteStyle(source, target, options = {}) {
     // exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
@@ -560,7 +752,7 @@ function copyPasteStyle(source, target, options = {}) {
     else {
         options.include = styleProps;
     }
-    return copyPaste_1(source, target, options);
+    return copyPaste(source, target, options);
 }
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
@@ -792,7 +984,7 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I102_493_1_352 = figma.getNodeById("I" + instance_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById("I" + instance_102_493.id + ";" + line_1_352.id);
     // Create FRAME
     var frame_101_116 = figma.createFrame();
     frame_101_116.resize(120.0000000000, 35.0000000000);
@@ -843,17 +1035,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I101_198_101_114 = figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I101_198_102_493 = figma.getNodeById("I" + instance_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I101_198_102_493_1_352 = figma.getNodeById(instance_I101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I101_198_101_116 = figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I101_198_101_117 = figma.getNodeById("I" + instance_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById("I" + instance_101_198.id + ";" + text_101_117.id);
     // Create COMPONENT
     var component_101_265 = figma.createComponent();
     component_101_265.resize(120.0000000000, 35.0000000000);
@@ -879,17 +1071,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_101_266.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I101_266_101_114 = figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_114.id);
+    figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I101_266_102_493 = figma.getNodeById("I" + instance_101_266.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I101_266_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I101_266_102_493_1_352 = figma.getNodeById(instance_I101_266_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I101_266_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I101_266_101_116 = figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_116.id);
+    figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I101_266_101_117 = figma.getNodeById("I" + instance_101_266.id + ";" + text_101_117.id);
+    figma.getNodeById("I" + instance_101_266.id + ";" + text_101_117.id);
     // Create COMPONENT_SET
     var componentSet_1_364 = figma.combineAsVariants([component_101_204, component_101_265], figma.currentPage);
     componentSet_1_364.resize(240.0000000000, 35.0000000000);
@@ -969,17 +1161,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_366_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_366_101_198_101_114 = figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_366_101_198_102_493 = figma.getNodeById(instance_I1_366_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_366_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_366_101_198_102_493_1_352 = figma.getNodeById(instance_I1_366_101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_366_101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_366_101_198_101_116 = figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_366_101_198_101_117 = figma.getNodeById(instance_I1_366_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_366_101_198.id + ";" + text_101_117.id);
     // Create INSTANCE
     var instance_1_372 = component_101_204.createInstance();
     instance_1_372.resize(120.0000000000, 35.0009994507);
@@ -994,17 +1186,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_372_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_372_101_198_101_114 = figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_372_101_198_102_493 = figma.getNodeById(instance_I1_372_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_372_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_372_101_198_102_493_1_352 = figma.getNodeById(instance_I1_372_101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_372_101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_372_101_198_101_116 = figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_372_101_198_101_117 = figma.getNodeById(instance_I1_372_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_372_101_198.id + ";" + text_101_117.id);
     // Create COMPONENT
     var component_1_378 = figma.createComponent();
     component_1_378.resize(240.0000000000, 105.0029983521);
@@ -1043,17 +1235,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_379_1_366_101_266.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_379_1_366_101_266_101_114 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_379_1_366_101_266_102_493 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_379_1_366_101_266_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_379_1_366_101_266_102_493_1_352 = figma.getNodeById(instance_I1_379_1_366_101_266_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_379_1_366_101_266_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_379_1_366_101_266_101_116 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_379_1_366_101_266_101_117 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + text_101_117.id);
     // Ref to SUB NODE
     var instance_I1_379_1_372 = figma.getNodeById("I" + instance_1_379.id + ";" + instance_1_372.id);
     instance_I1_379_1_372.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
@@ -1065,17 +1257,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_379_1_372_101_266.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_379_1_372_101_266_101_114 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_379_1_372_101_266_102_493 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_379_1_372_101_266_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_379_1_372_101_266_102_493_1_352 = figma.getNodeById(instance_I1_379_1_372_101_266_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_379_1_372_101_266_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_379_1_372_101_266_101_116 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_379_1_372_101_266_101_117 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + text_101_117.id);
     // Create INSTANCE
     var instance_1_398 = component_1_365.createInstance();
     instance_1_398.relativeTransform = [[1, 0, 0], [0, 1, 35.0009994507]];
@@ -1093,17 +1285,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_398_1_366_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_398_1_366_101_198_101_114 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_398_1_366_101_198_102_493 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_398_1_366_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_398_1_366_101_198_102_493_1_352 = figma.getNodeById(instance_I1_398_1_366_101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_398_1_366_101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_398_1_366_101_198_101_116 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_398_1_366_101_198_101_117 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + text_101_117.id);
     // Ref to SUB NODE
     var instance_I1_398_1_372 = figma.getNodeById("I" + instance_1_398.id + ";" + instance_1_372.id);
     instance_I1_398_1_372.expanded = false;
@@ -1114,17 +1306,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_398_1_372_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_398_1_372_101_198_101_114 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_398_1_372_101_198_102_493 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_398_1_372_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_398_1_372_101_198_102_493_1_352 = figma.getNodeById(instance_I1_398_1_372_101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_398_1_372_101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_398_1_372_101_198_101_116 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_398_1_372_101_198_101_117 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + text_101_117.id);
     // Create INSTANCE
     var instance_1_417 = component_1_365.createInstance();
     instance_1_417.relativeTransform = [[1, 0, 0], [0, 1, 70.0019989014]];
@@ -1142,17 +1334,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_417_1_366_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_417_1_366_101_198_101_114 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_417_1_366_101_198_102_493 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_417_1_366_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_417_1_366_101_198_102_493_1_352 = figma.getNodeById(instance_I1_417_1_366_101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_417_1_366_101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_417_1_366_101_198_101_116 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_417_1_366_101_198_101_117 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + text_101_117.id);
     // Ref to SUB NODE
     var instance_I1_417_1_372 = figma.getNodeById("I" + instance_1_417.id + ";" + instance_1_372.id);
     instance_I1_417_1_372.expanded = false;
@@ -1163,17 +1355,17 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_I1_417_1_372_101_198.swapComponent(component_101_119);
     // Ref to SUB NODE
-    var frame_I1_417_1_372_101_198_101_114 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_114.id);
+    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_114.id);
     // Ref to SUB NODE
     var instance_I1_417_1_372_101_198_102_493 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + instance_102_493.id);
     // Swap COMPONENT
     instance_I1_417_1_372_101_198_102_493.swapComponent(component_1_351);
     // Ref to SUB NODE
-    var line_I1_417_1_372_101_198_102_493_1_352 = figma.getNodeById(instance_I1_417_1_372_101_198_102_493.id + ";" + line_1_352.id);
+    figma.getNodeById(instance_I1_417_1_372_101_198_102_493.id + ";" + line_1_352.id);
     // Ref to SUB NODE
-    var frame_I1_417_1_372_101_198_101_116 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_116.id);
+    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    var text_I1_417_1_372_101_198_101_117 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + text_101_117.id);
+    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + text_101_117.id);
     // Create COMPONENT
     var component_1_430 = figma.createComponent();
     component_1_430.resize(457.0000000000, 179.0000000000);
@@ -1256,9 +1448,9 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_1_434.swapComponent(component_1_430);
     // Ref to SUB NODE
-    var frame_I1_434_1_431 = figma.getNodeById("I" + instance_1_434.id + ";" + frame_1_431.id);
+    figma.getNodeById("I" + instance_1_434.id + ";" + frame_1_431.id);
     // Ref to SUB NODE
-    var rectangle_I1_434_1_432 = figma.getNodeById("I" + instance_1_434.id + ";" + rectangle_1_432.id);
+    figma.getNodeById("I" + instance_1_434.id + ";" + rectangle_1_432.id);
     // Ref to SUB NODE
     var text_I1_434_1_433 = figma.getNodeById("I" + instance_1_434.id + ";" + text_1_433.id);
     text_I1_434_1_433.resize(416.9899902344, 63.0000000000);
@@ -1277,9 +1469,9 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_1_438.swapComponent(component_1_430);
     // Ref to SUB NODE
-    var frame_I1_438_1_431 = figma.getNodeById("I" + instance_1_438.id + ";" + frame_1_431.id);
+    figma.getNodeById("I" + instance_1_438.id + ";" + frame_1_431.id);
     // Ref to SUB NODE
-    var rectangle_I1_438_1_432 = figma.getNodeById("I" + instance_1_438.id + ";" + rectangle_1_432.id);
+    figma.getNodeById("I" + instance_1_438.id + ";" + rectangle_1_432.id);
     // Ref to SUB NODE
     var text_I1_438_1_433 = figma.getNodeById("I" + instance_1_438.id + ";" + text_1_433.id);
     text_I1_438_1_433.resize(416.9899902344, 42.0000000000);
@@ -1298,9 +1490,9 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_1_442.swapComponent(component_1_430);
     // Ref to SUB NODE
-    var frame_I1_442_1_431 = figma.getNodeById("I" + instance_1_442.id + ";" + frame_1_431.id);
+    figma.getNodeById("I" + instance_1_442.id + ";" + frame_1_431.id);
     // Ref to SUB NODE
-    var rectangle_I1_442_1_432 = figma.getNodeById("I" + instance_1_442.id + ";" + rectangle_1_432.id);
+    figma.getNodeById("I" + instance_1_442.id + ";" + rectangle_1_432.id);
     // Ref to SUB NODE
     var text_I1_442_1_433 = figma.getNodeById("I" + instance_1_442.id + ";" + text_1_433.id);
     text_I1_442_1_433.resize(416.9899902344, 42.0000000000);
@@ -1319,9 +1511,9 @@ function createDefaultTemplate() {
     // Swap COMPONENT
     instance_102_121.swapComponent(component_1_430);
     // Ref to SUB NODE
-    var frame_I102_121_1_431 = figma.getNodeById("I" + instance_102_121.id + ";" + frame_1_431.id);
+    figma.getNodeById("I" + instance_102_121.id + ";" + frame_1_431.id);
     // Ref to SUB NODE
-    var rectangle_I102_121_1_432 = figma.getNodeById("I" + instance_102_121.id + ";" + rectangle_1_432.id);
+    figma.getNodeById("I" + instance_102_121.id + ";" + rectangle_1_432.id);
     // Ref to SUB NODE
     var text_I102_121_1_433 = figma.getNodeById("I" + instance_102_121.id + ";" + text_1_433.id);
     text_I102_121_1_433.resize(416.9899902344, 42.0000000000);
@@ -1336,10 +1528,10 @@ function createDefaultTemplate() {
     component_1_351.remove();
     // Remove tooltip component from canvas
     component_1_430.remove();
-    setPluginData_1(component_1_378, "elementSemantics", { is: "table" });
-    setPluginData_1(component_1_365, "elementSemantics", { is: "tr" });
-    setPluginData_1(component_101_204, "elementSemantics", { is: "td" });
-    setPluginData_1(component_101_265, "elementSemantics", { is: "th" });
+    setPluginData(component_1_378, "elementSemantics", { is: "table" });
+    setPluginData(component_1_365, "elementSemantics", { is: "tr" });
+    setPluginData(component_101_204, "elementSemantics", { is: "td" });
+    setPluginData(component_101_265, "elementSemantics", { is: "th" });
     // Manually add properties so cells will fill row height
     instance_1_372.layoutAlign = "STRETCH";
     instance_1_366.layoutAlign = "STRETCH";
@@ -1373,8 +1565,8 @@ var scripts = {
 	start: "sirv public"
 };
 var devDependencies = {
-	"@figlets/helpers": "^0.0.0-alpha.9",
 	"@figma/plugin-typings": "^1.37.0",
+	"@fignite/helpers": "^0.0.0-alpha.10",
 	"@rollup/plugin-commonjs": "^17.0.0",
 	"@rollup/plugin-image": "^2.0.6",
 	"@rollup/plugin-json": "^4.1.0",

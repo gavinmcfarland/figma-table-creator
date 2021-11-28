@@ -12,6 +12,7 @@
 	export let max
 	export let step
 	export let classes = ""
+	export let style
 
 	const dispatch = createEventDispatcher()
 
@@ -62,8 +63,11 @@
 	}
 
 	.TextField span {
-		margin-right: var(--margin-200);
+		/* margin-right: var(--margin-200); */
 		color: var(--color-black-30);
+		min-width: 32px;
+		text-align: center;
+		margin-left: -8px;
 	}
 
 	.TextField input {
@@ -72,7 +76,7 @@
 	}
 </style>
 
-<div>
+<div style={style}>
 	<label class="TextField {classes}">
 		<span>{label}</span>
 		<input

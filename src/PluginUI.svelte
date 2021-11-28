@@ -499,8 +499,8 @@
 			</div>
 		</div>
 		<div class="field-group">
-			<Field id="columnCount" label="Columns" type="number" step="1" min="1" max="50" value={columnCount} />
-			<Field id="rowCount" label="Rows" type="number" step="1" min="1" max="50" value={rowCount} />
+			<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} />
+			<Field id="rowCount" label="R" type="number" step="1" min="1" max="50" value={rowCount} />
 		</div>
 
 		<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
@@ -509,7 +509,7 @@
 
 		<div class="text-bold SectionTitle">Cell</div>
 		<div style="display: flex; gap: var(--size-200);">
-			<Field id="cellWidth" label="Width" type="number" step="1" min="1" max="1000" value={cellWidth} />
+			<Field style="width: 106px" id="cellWidth" label="W" type="number" step="1" min="1" max="1000" value={cellWidth} />
 
 			<div class="RadioButtons">
 				<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
