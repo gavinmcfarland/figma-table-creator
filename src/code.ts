@@ -206,7 +206,7 @@ async function swapInstance(target, source) {
 
 
 
-let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Turn column resizing on and off' }
+let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' }
 
 // Move to helpers
 
@@ -249,6 +249,7 @@ async function lookForComponent(template) {
 function getTableSettings(table) {
 	let rowCount = 0
 	let columnCount = 0
+	let usingColumnsOrRows = "rows"
 
 	for (let i = 0; i < table.children.length; i++) {
 		var node = table.children[i]
@@ -259,10 +260,19 @@ function getTableSettings(table) {
 	}
 
 	let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
-
-	console.log(firstRow)
-
 	let firstCell = firstRow.findOne((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+
+	console.log("layoutDirection", firstRow.parent.layoutMode)
+
+	if (firstRow.parent.layoutMode === "VERTICAL") {
+		usingColumnsOrRows = "rows"
+	}
+
+	if (firstRow.parent.layoutMode === "HORIZONTAL") {
+		usingColumnsOrRows = "columns"
+	}
+
+
 
 
 	for (let i = 0; i < firstRow.children.length; i++) {
@@ -278,8 +288,57 @@ function getTableSettings(table) {
 		rowCount,
 		columnResizing: firstRow.type === "COMPONENT" ? true : false,
 		includeHeader: getPluginData(firstCell, "elementSemantics")?.is === "th" ? true : false,
-		cellAlignment: "MIN"
+		cellAlignment: "MIN",
+		usingColumnsOrRows,
+		cellWidth: firstCell.width
 	}
+}
+
+async function toggleColumnsOrRows(selection) {
+
+	// TODO: Change name of row to column
+	// TODO: Change cell to hug height
+	// TODO: Fix localise component to take account of rows or columns
+
+	for (let i = 0; i < selection.length; i++) {
+		var table = selection[i]
+
+		let settings = getTableSettings(table)
+
+		let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
+
+		// let part: any = findTemplateParts(table)
+
+		if (settings.usingColumnsOrRows === "rows") {
+			if (table.type === "COMPONENT") {
+				// Change main component row
+				firstRow.mainComponent.layoutMode = "VERTICAL"
+			}
+			else {
+				// Change the table container
+				firstRow.parent.layoutMode = "HORIZONTAL"
+
+				// Change every row in table
+				var r = 0
+				table.findAll((node) => {
+					if (getPluginData(node, "elementSemantics")?.is === "tr") {
+						node.layoutMode = "VERTICAL"
+						node.resize(settings.cellWidth, node.height)
+
+						// TODO: Need to reparent each cell
+						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+						for (let c = 0; c < settings.columnCount; c++) {
+							var cell = cells[c]
+							var cellLocation = [c + 1, r + 1]
+							node.parent.children[c].appendChild(cell)
+						}
+						r = r + 1
+					}
+				})
+			}
+		}
+	}
+
 }
 
 async function toggleColumnResizing(selection) {
@@ -1331,31 +1390,44 @@ function setDefaultTemplate(template) {
 
 }
 
-async function createNewTemplate() {
+async function createNewTemplate(opts) {
+	let {shouldCreateNewPage} = opts
+
+	if (shouldCreateNewPage) {
+		var newPage = figma.createPage()
+		newPage.name = "Table Creator"
+
+		figma.currentPage = newPage
+	}
+
 	var components = createDefaultTemplate()
+
+	// figma.currentPage.selection = figma.currentPage.children
+	figma.viewport.scrollAndZoomIntoView(figma.currentPage.children)
 
 	// Find templates locally
 	var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT")
 
-	localTemplates.sort((a, b) => a.name - b.name)
 
-	localTemplates.map(node => {
-		console.log(node.name)
-	})
+	if (localTemplates.length > 0) {
 
-	if (localTemplates[localTemplates.length - 1].name.startsWith("Table")) {
-		let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/);
+		localTemplates.sort((a, b) => a.name - b.name)
 
-		console.log(matches)
+		localTemplates.map(node => {
+			console.log(node.name)
+		})
 
-		if (matches) {
-			components.table.name = `Table ${parseInt(matches[0], 10) + 1}`
+		if (localTemplates[localTemplates.length - 1].name.startsWith("Table")) {
+			let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/);
+
+			console.log(matches)
+
+			if (matches) {
+				components.table.name = `Table ${parseInt(matches[0], 10) + 1}`
+			}
+
 		}
-
 	}
-
-
-	// markNode(components.table, 'table')
 
 	importTemplate([components.table])
 
@@ -1543,6 +1615,12 @@ plugma((plugin) => {
 		})
 	})
 
+	plugin.command('toggleColumnsOrRows', () => {
+		toggleColumnsOrRows(figma.currentPage.selection).then(() => {
+			figma.closePlugin()
+		})
+	})
+
 	plugin.command('importTemplate', () => {
 		var selection = figma.currentPage.selection
 
@@ -1637,6 +1715,12 @@ plugma((plugin) => {
 		})
 	})
 
+	plugin.command('resetOnboarding', () => {
+		setClientStorageAsync("pluginAlreadyRun", false).then(() => {
+			figma.closePlugin("Onboarding flow reset");
+		})
+	})
+
 
 	// Listen for events from UI
 
@@ -1653,7 +1737,7 @@ plugma((plugin) => {
 	})
 
 	plugin.on('new-template', (msg) => {
-		createNewTemplate()
+		createNewTemplate({shouldCreateNewPage: true})
 	})
 
 	plugin.on('existing-template', (msg) => {

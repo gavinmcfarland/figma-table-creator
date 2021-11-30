@@ -2541,7 +2541,7 @@ async function swapInstance(target, source) {
     target.swapComponent(source.mainComponent);
     await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children);
 }
-let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Turn column resizing on and off' };
+let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' };
 // Move to helpers
 function genRandomId() {
     var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
@@ -2571,6 +2571,7 @@ function getTableSettings(table) {
     var _a, _b, _c;
     let rowCount = 0;
     let columnCount = 0;
+    let usingColumnsOrRows = "rows";
     for (let i = 0; i < table.children.length; i++) {
         var node = table.children[i];
         if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
@@ -2578,8 +2579,14 @@ function getTableSettings(table) {
         }
     }
     let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
-    console.log(firstRow);
     let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+    console.log("layoutDirection", firstRow.parent.layoutMode);
+    if (firstRow.parent.layoutMode === "VERTICAL") {
+        usingColumnsOrRows = "rows";
+    }
+    if (firstRow.parent.layoutMode === "HORIZONTAL") {
+        usingColumnsOrRows = "columns";
+    }
     for (let i = 0; i < firstRow.children.length; i++) {
         var node = firstRow.children[i];
         var cellType = (_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is;
@@ -2592,8 +2599,44 @@ function getTableSettings(table) {
         rowCount,
         columnResizing: firstRow.type === "COMPONENT" ? true : false,
         includeHeader: ((_c = getPluginData(firstCell, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th" ? true : false,
-        cellAlignment: "MIN"
+        cellAlignment: "MIN",
+        usingColumnsOrRows,
+        cellWidth: firstCell.width
     };
+}
+async function toggleColumnsOrRows(selection) {
+    // TODO: Change name of row to column
+    // TODO: Change cell to hug height
+    // TODO: Fix localise component to take account of rows or columns
+    for (let i = 0; i < selection.length; i++) {
+        var table = selection[i];
+        let settings = getTableSettings(table);
+        let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
+        // let part: any = findTemplateParts(table)
+        if (settings.usingColumnsOrRows === "rows") {
+            if (table.type === "COMPONENT") {
+                // Change main component row
+                firstRow.mainComponent.layoutMode = "VERTICAL";
+            }
+            else {
+                // Change the table container
+                firstRow.parent.layoutMode = "HORIZONTAL";
+                table.findAll((node) => {
+                    var _a;
+                    if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+                        node.layoutMode = "VERTICAL";
+                        node.resize(settings.cellWidth, node.height);
+                        // TODO: Need to reparent each cell
+                        var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+                        for (let c = 0; c < settings.columnCount; c++) {
+                            var cell = cells[c];
+                            node.parent.children[c].appendChild(cell);
+                        }
+                    }
+                });
+            }
+        }
+    }
 }
 async function toggleColumnResizing(selection) {
     var _a, _b, _c;
@@ -3344,22 +3387,31 @@ function setDefaultTemplate(template) {
         figma.ui.postMessage(Object.assign(Object.assign({}, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
     });
 }
-async function createNewTemplate() {
+async function createNewTemplate(opts) {
+    let { shouldCreateNewPage } = opts;
+    if (shouldCreateNewPage) {
+        var newPage = figma.createPage();
+        newPage.name = "Table Creator";
+        figma.currentPage = newPage;
+    }
     var components = createDefaultTemplate();
+    // figma.currentPage.selection = figma.currentPage.children
+    figma.viewport.scrollAndZoomIntoView(figma.currentPage.children);
     // Find templates locally
     var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT");
-    localTemplates.sort((a, b) => a.name - b.name);
-    localTemplates.map(node => {
-        console.log(node.name);
-    });
-    if (localTemplates[localTemplates.length - 1].name.startsWith("Table")) {
-        let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/);
-        console.log(matches);
-        if (matches) {
-            components.table.name = `Table ${parseInt(matches[0], 10) + 1}`;
+    if (localTemplates.length > 0) {
+        localTemplates.sort((a, b) => a.name - b.name);
+        localTemplates.map(node => {
+            console.log(node.name);
+        });
+        if (localTemplates[localTemplates.length - 1].name.startsWith("Table")) {
+            let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/);
+            console.log(matches);
+            if (matches) {
+                components.table.name = `Table ${parseInt(matches[0], 10) + 1}`;
+            }
         }
     }
-    // markNode(components.table, 'table')
     importTemplate([components.table]);
     getClientStorageAsync_1("recentFiles").then((recentFiles) => {
         if (recentFiles) {
@@ -3483,6 +3535,11 @@ dist((plugin) => {
             figma.closePlugin();
         });
     });
+    plugin.command('toggleColumnsOrRows', () => {
+        toggleColumnsOrRows(figma.currentPage.selection).then(() => {
+            figma.closePlugin();
+        });
+    });
     plugin.command('importTemplate', () => {
         var selection = figma.currentPage.selection;
         if (selection.length === 1) {
@@ -3556,6 +3613,11 @@ dist((plugin) => {
             figma.closePlugin("User preferences reset");
         });
     });
+    plugin.command('resetOnboarding', () => {
+        setClientStorageAsync_1("pluginAlreadyRun", false).then(() => {
+            figma.closePlugin("Onboarding flow reset");
+        });
+    });
     // Listen for events from UI
     plugin.on('to-create-table', (msg) => {
         figma.clientStorage.getAsync('userPreferences').then((res) => {
@@ -3568,7 +3630,7 @@ dist((plugin) => {
         });
     });
     plugin.on('new-template', (msg) => {
-        createNewTemplate();
+        createNewTemplate({ shouldCreateNewPage: true });
     });
     plugin.on('existing-template', (msg) => {
         figma.notify('Using remote template');

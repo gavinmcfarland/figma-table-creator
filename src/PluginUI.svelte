@@ -595,7 +595,7 @@
 		<div class="content">
 		<h6>Remote files</h6>
 		<p>
-			Use templates across different files. First make sure it’s published in the remote file, then in the other file select it from the dropdown when creating a table.
+			Use templates across different files. Make sure the template is published in the remote file, then in the other file run the plugin choose "Existing Template".
 		</p>
 		<div class="buttons">
 			<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>

@@ -1,18 +1,18 @@
 {
-  "name": "Table Creator",
-  "id": "885838970710285271",
+  "name": "Table Creator Beta",
+  "id": "beta",
   "api": "1.0.0",
   "main": "code.js",
   "ui": {
-      "main": "index.html",
-      "components": "components.html",
-      "versionLog": "version-log.html",
-      "uuid": "uuid.html"
+      "main": "index.html"
   },
   "menu": [
     {
       "name": "Create Table",
       "command": "createTable"
+    },
+    {
+        "separator": true
     },
     {
       "name": "Select Column",
@@ -21,19 +21,6 @@
     {
       "name": "Select Row",
       "command": "selectRow"
-    },
-    {
-        "separator": true
-    },
-    {
-        "name": "Spawn Table",
-        "command": "spawnTable",
-        "parameters": [
-            {
-                "name": "Columns",
-                "key": "numCols"
-            }
-        ]
     },
     {
         "separator": true
@@ -50,27 +37,6 @@
         "separator": true
     },
     {
-        "name": "Mark Node",
-        "menu": [
-            {
-                "name": "As Table",
-                "command": "markTable"
-            },
-            {
-                "name": "As Cell",
-                "command": "markTableData"
-            },
-            {
-                "name": "As Row",
-                "command": "markTableRow"
-            }
-        ]
-    },
-    {
-      "name": "Toggle Column Resizing",
-      "command": "toggleColumnResizing"
-    },
-    {
       "name": "View Node Data",
       "command": "viewNodeData"
     },
@@ -83,14 +49,15 @@
       "command": "resetUserPreferences"
     },
     {
-      "name": "Settings",
-      "command": "linkComponents"
-    }
+        "name": "Reset Onboarding",
+        "command": "resetOnboarding"
+      }
   ],
   "relaunchButtons": [
         {"command": "createTable", "name": "Create Table"},
         {"command": "spawnTable", "name": "Spawn Table"},
-        {"command": "toggleColumnResizing", "name": "Column Resizing"},
+        {"command": "toggleColumnResizing", "name": "Localised Component"},
+        {"command": "toggleColumnsOrRows", "name": "Columns or Rows", "multipleSelection": true},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
         {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
         {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
