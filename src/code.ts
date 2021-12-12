@@ -321,18 +321,120 @@ async function toggleColumnsOrRows(selection) {
 				// Change every row in table
 				var r = 0
 				table.findAll((node) => {
+					// For each row
 					if (getPluginData(node, "elementSemantics")?.is === "tr") {
-						node.layoutMode = "VERTICAL"
-						node.resize(settings.cellWidth, node.height)
 
-						// TODO: Need to reparent each cell
 						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
 						for (let c = 0; c < settings.columnCount; c++) {
+
 							var cell = cells[c]
 							var cellLocation = [c + 1, r + 1]
+
+							cell.primaryAxisSizingMode = "AUTO"
+
 							node.parent.children[c].appendChild(cell)
+							node.parent.children[c].resize(cell.width, node.height)
+							node.parent.children[c].layoutAlign = "STRETCH"
+
 						}
 						r = r + 1
+
+						node.layoutMode = "VERTICAL"
+						node.name = node.name.replace("Row", "Col")
+
+						if (node.children.length === 0) {
+							node.remove()
+						}
+
+					}
+				})
+			}
+		}
+
+		if (settings.usingColumnsOrRows === "columns") {
+			var rowWidth = firstRow.parent.width
+
+			if (table.type === "COMPONENT") {
+				// Change main component row
+				firstRow.mainComponent.layoutMode = "HORIZONTAL"
+			}
+			else {
+
+
+				// Change every row in table
+				var r = 0
+				table.findAll((node) => {
+					// For each row
+					if (getPluginData(node, "elementSemantics")?.is === "tr") {
+
+
+						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+						for (let c = 0; c < settings.columnCount; c++) {
+
+							var cell = cells[c]
+							var cellLocation = [c + 1, r + 1]
+							var colWidth;
+
+							if (c === 0) {
+								colWidth = cell.width
+								console.log("columnWidth", colWidth)
+							}
+
+
+							// cell.primaryAxisSizingMode = "AUTO"
+
+							if (node.parent.children[c]) {
+								node.parent.children[c].appendChild(cell)
+							}
+							else {
+								// Create row
+							}
+
+
+
+
+
+
+
+							cell.resize(colWidth, cell.height)
+							cell.primaryAxisSizingMode = "FIXED"
+							// cell.layoutAlign = "STRETCH"
+
+
+
+
+						}
+
+						r = r + 1
+
+						node.layoutMode = "HORIZONTAL"
+						node.counterAxisSizingMode = "AUTO"
+						node.layoutGrow = 0
+						node.name = node.name.replace("Col", "Row")
+
+					}
+				})
+
+				// Change the table container
+				firstRow.parent.layoutMode = "VERTICAL"
+
+				table.findAll((node) => {
+					// For each row
+					if (getPluginData(node, "elementSemantics")?.is === "tr") {
+
+						r = r + 1
+
+						node.counterAxisSizingMode = "AUTO"
+						// node.layoutGrow = 0
+
+						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+
+						for (let c = 0; c < settings.columnCount; c++) {
+
+							var cell = cells[c]
+							cell.layoutAlign = "STRETCH"
+						}
+
 					}
 				})
 			}

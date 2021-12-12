@@ -2623,14 +2623,70 @@ async function toggleColumnsOrRows(selection) {
                 firstRow.parent.layoutMode = "HORIZONTAL";
                 table.findAll((node) => {
                     var _a;
+                    // For each row
                     if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
-                        node.layoutMode = "VERTICAL";
-                        node.resize(settings.cellWidth, node.height);
-                        // TODO: Need to reparent each cell
                         var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
                         for (let c = 0; c < settings.columnCount; c++) {
                             var cell = cells[c];
+                            cell.primaryAxisSizingMode = "AUTO";
                             node.parent.children[c].appendChild(cell);
+                            node.parent.children[c].resize(cell.width, node.height);
+                            node.parent.children[c].layoutAlign = "STRETCH";
+                        }
+                        node.layoutMode = "VERTICAL";
+                        node.name = node.name.replace("Row", "Col");
+                        if (node.children.length === 0) {
+                            node.remove();
+                        }
+                    }
+                });
+            }
+        }
+        if (settings.usingColumnsOrRows === "columns") {
+            firstRow.parent.width;
+            if (table.type === "COMPONENT") {
+                // Change main component row
+                firstRow.mainComponent.layoutMode = "HORIZONTAL";
+            }
+            else {
+                table.findAll((node) => {
+                    var _a;
+                    // For each row
+                    if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+                        var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+                        for (let c = 0; c < settings.columnCount; c++) {
+                            var cell = cells[c];
+                            var colWidth;
+                            if (c === 0) {
+                                colWidth = cell.width;
+                                console.log("columnWidth", colWidth);
+                            }
+                            // cell.primaryAxisSizingMode = "AUTO"
+                            if (node.parent.children[c]) {
+                                node.parent.children[c].appendChild(cell);
+                            }
+                            cell.resize(colWidth, cell.height);
+                            cell.primaryAxisSizingMode = "FIXED";
+                            // cell.layoutAlign = "STRETCH"
+                        }
+                        node.layoutMode = "HORIZONTAL";
+                        node.counterAxisSizingMode = "AUTO";
+                        node.layoutGrow = 0;
+                        node.name = node.name.replace("Col", "Row");
+                    }
+                });
+                // Change the table container
+                firstRow.parent.layoutMode = "VERTICAL";
+                table.findAll((node) => {
+                    var _a;
+                    // For each row
+                    if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+                        node.counterAxisSizingMode = "AUTO";
+                        // node.layoutGrow = 0
+                        var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+                        for (let c = 0; c < settings.columnCount; c++) {
+                            var cell = cells[c];
+                            cell.layoutAlign = "STRETCH";
                         }
                     }
                 });

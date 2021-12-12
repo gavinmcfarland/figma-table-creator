@@ -50,3 +50,8 @@
 10. detect when table template is using columns or rows
 11. Add back button to choosing file page
 
+
+1. When editing template which is on a different page the plugin doesn't change page
+2. Toggling from cols to rows doesn't work when not the same number of columns and rows
+3. Toggling localised component loses text
+
