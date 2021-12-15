@@ -55,4 +55,5 @@
 2. Toggling from cols to rows doesn't work when not the same number of columns and rows
 3. Toggling localised component loses text
 4. Add bold font weight to header component
+5. Change row to column to select all children of parent rather than just nodes marked with tr
 

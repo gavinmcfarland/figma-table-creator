@@ -352,6 +352,19 @@ function updatePluginData(node, key, callback) {
 }
 
 /**
+ * Convinient way to delete children of a node
+ * @param {SceneNode & ChildrenMixin } node A node with children
+ */
+function removeChildren(node) {
+    var length = node.children.length;
+    if (length > 0) {
+        for (let i = 0; i < length; i++) {
+            node.children[0].remove();
+        }
+    }
+}
+
+/**
  * Mimics similar behaviour to ungrouping nodes in editor.
  * @param {SceneNode & ChildrenMixin } node A node with children
  * @param parent Target container to append ungrouped nodes to
@@ -513,6 +526,7 @@ var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
+var removeChildren_1 = removeChildren;
 var replace_1 = replace;
 var setClientStorageAsync_1 = setClientStorageAsync;
 var setPluginData_1 = setPluginData$1;
@@ -904,18 +918,22 @@ function upgradeFrom6to7() {
     // Tidy up data on the users template by removing old pluginData
 }
 
-// Load FONTS
-async function loadFonts() {
-    await Promise.all([
-        figma.loadFontAsync({
-            family: "Inter",
-            style: "Regular"
-        })
-    ]);
-}
 // Wrap in function
 function createDefaultTemplate() {
     const obj = {};
+    // Load FONTS
+    async function loadFonts() {
+        await Promise.all([
+            figma.loadFontAsync({
+                family: "Inter",
+                style: "Regular"
+            }),
+            figma.loadFontAsync({
+                family: "Inter",
+                style: "Semi Bold"
+            })
+        ]);
+    }
     // Create COMPONENT
     var component_101_204 = figma.createComponent();
     component_101_204.resize(120.0000000000, 35.0000000000);
@@ -1081,7 +1099,7 @@ function createDefaultTemplate() {
     // Ref to SUB NODE
     figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_116.id);
     // Ref to SUB NODE
-    figma.getNodeById("I" + instance_101_266.id + ";" + text_101_117.id);
+    var text_I101_266_101_117 = figma.getNodeById("I" + instance_101_266.id + ";" + text_101_117.id);
     // Create COMPONENT_SET
     var componentSet_1_364 = figma.combineAsVariants([component_101_204, component_101_265], figma.currentPage);
     componentSet_1_364.resize(240.0000000000, 35.0000000000);
@@ -1532,11 +1550,21 @@ function createDefaultTemplate() {
     setPluginData(component_1_365, "elementSemantics", { is: "tr" });
     setPluginData(component_101_204, "elementSemantics", { is: "td" });
     setPluginData(component_101_265, "elementSemantics", { is: "th" });
+    // does it need to be on base component?
+    component_101_204.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    component_101_265.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     // Manually add properties so cells will fill row height
     instance_1_372.layoutAlign = "STRETCH";
     instance_1_366.layoutAlign = "STRETCH";
     instance_101_198.layoutAlign = "STRETCH";
     instance_101_266.layoutAlign = "STRETCH";
+    // Manually add bold font weight to header cell
+    loadFonts().then((res) => {
+        text_I101_266_101_117.fontName = {
+            family: "Inter",
+            style: "Semi Bold"
+        };
+    });
     obj.table = component_1_378;
     obj.row = component_1_365;
     obj.cell = component_101_204;
@@ -1549,11 +1577,6 @@ function createDefaultTemplate() {
         instance_1_438,
         instance_1_434
     ];
-    // component_1_5.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
-    // component_1_13.setPluginData("isCellHeader", "true")
-    // component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
-    // component_1_21.setPluginData("isRow", "true")
-    // component_1_35.setRelaunchData({ detachTable: 'Detaches table and rows' })
     return obj;
 }
 
@@ -2611,87 +2634,145 @@ async function toggleColumnsOrRows(selection) {
     for (let i = 0; i < selection.length; i++) {
         var table = selection[i];
         let settings = getTableSettings(table);
-        let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
         // let part: any = findTemplateParts(table)
-        if (settings.usingColumnsOrRows === "rows") {
+        function iterateChildren() {
+            let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
             if (table.type === "COMPONENT") {
                 // Change main component row
-                firstRow.mainComponent.layoutMode = "VERTICAL";
+                firstRow.mainComponent.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL";
             }
             else {
                 // Change the table container
-                firstRow.parent.layoutMode = "HORIZONTAL";
-                table.findAll((node) => {
-                    var _a;
-                    // For each row
-                    if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
-                        var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+                if (settings.usingColumnsOrRows === "rows") {
+                    firstRow.parent.layoutMode = "HORIZONTAL";
+                }
+                var origRowlength = firstRow.parent.children.length;
+                var rowContainer = firstRow.parent;
+                for (let i = 0; i < firstRow.parent.children.length; i++) {
+                    var row = rowContainer.children[i];
+                    var cells = row.children;
+                    if (i < origRowlength) {
                         for (let c = 0; c < settings.columnCount; c++) {
                             var cell = cells[c];
-                            cell.primaryAxisSizingMode = "AUTO";
-                            node.parent.children[c].appendChild(cell);
-                            node.parent.children[c].resize(cell.width, node.height);
-                            node.parent.children[c].layoutAlign = "STRETCH";
-                        }
-                        node.layoutMode = "VERTICAL";
-                        node.name = node.name.replace("Row", "Col");
-                        if (node.children.length === 0) {
-                            node.remove();
+                            // var cellLocation = [c + 1, r + 1]
+                            if (cell) {
+                                cell.primaryAxisSizingMode = "AUTO";
+                                if (i === 0 && !row.parent.children[c]) {
+                                    // If it's the first row and column doesn't exist then create a new column
+                                    var clonedColumn = row.clone();
+                                    removeChildren_1(clonedColumn); // Need to remove children because they are clones
+                                    table.appendChild(clonedColumn);
+                                }
+                                if (row.parent.children[c]) {
+                                    console.log("c", c);
+                                    if (settings.usingColumnsOrRows === "rows") {
+                                        row.parent.children[c].appendChild(cell);
+                                        row.parent.children[c].resize(cell.width, row.height);
+                                        row.parent.children[c].layoutAlign = "STRETCH";
+                                    }
+                                    else {
+                                        row.parent.children[c].appendChild(cell);
+                                        cell.resize(cell.width, row.height);
+                                        cell.primaryAxisSizingMode = "FIXED";
+                                        cell.layoutAlign = "STRETCH";
+                                    }
+                                }
+                            }
                         }
                     }
-                });
+                    row.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL";
+                    if (settings.usingColumnsOrRows === "rows") {
+                        row.name = row.name.replace("Row", "Col");
+                    }
+                    else {
+                        row.name = row.name.replace("Col", "Row");
+                        row.layoutGrow = 0;
+                        row.counterAxisSizingMode = "AUTO";
+                    }
+                }
+                if (settings.usingColumnsOrRows === "columns") {
+                    firstRow.parent.layoutMode = "VERTICAL";
+                }
+                // Because changing layout mode swaps sizingModes you need to loop children again
+                var rowlength = rowContainer.children.length;
+                console.log(rowlength);
+                // For some reason can't remove nodes while in loop, so workaround is to add to an array.
+                let discardBucket = [];
+                for (let i = 0; i < rowlength; i++) {
+                    var row = rowContainer.children[i];
+                    if (row) {
+                        if (settings.usingColumnsOrRows === "columns") {
+                            row.counterAxisSizingMode = "AUTO";
+                        }
+                        // If row ends up being empty, then assume it's not needed
+                        if (row.children.length === 0) {
+                            console.log("remove row");
+                            discardBucket.push(row);
+                        }
+                    }
+                }
+                for (let i = 0; i < discardBucket.length; i++) {
+                    discardBucket[i].remove();
+                }
             }
         }
-        if (settings.usingColumnsOrRows === "columns") {
-            firstRow.parent.width;
-            if (table.type === "COMPONENT") {
-                // Change main component row
-                firstRow.mainComponent.layoutMode = "HORIZONTAL";
-            }
-            else {
-                table.findAll((node) => {
-                    var _a;
-                    // For each row
-                    if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
-                        var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
-                        for (let c = 0; c < settings.columnCount; c++) {
-                            var cell = cells[c];
-                            var colWidth;
-                            if (c === 0) {
-                                colWidth = cell.width;
-                                console.log("columnWidth", colWidth);
-                            }
-                            // cell.primaryAxisSizingMode = "AUTO"
-                            if (node.parent.children[c]) {
-                                node.parent.children[c].appendChild(cell);
-                            }
-                            cell.resize(colWidth, cell.height);
-                            cell.primaryAxisSizingMode = "FIXED";
-                            // cell.layoutAlign = "STRETCH"
-                        }
-                        node.layoutMode = "HORIZONTAL";
-                        node.counterAxisSizingMode = "AUTO";
-                        node.layoutGrow = 0;
-                        node.name = node.name.replace("Col", "Row");
-                    }
-                });
-                // Change the table container
-                firstRow.parent.layoutMode = "VERTICAL";
-                table.findAll((node) => {
-                    var _a;
-                    // For each row
-                    if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
-                        node.counterAxisSizingMode = "AUTO";
-                        // node.layoutGrow = 0
-                        var cells = node.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
-                        for (let c = 0; c < settings.columnCount; c++) {
-                            var cell = cells[c];
-                            cell.layoutAlign = "STRETCH";
-                        }
-                    }
-                });
-            }
-        }
+        iterateChildren();
+        // if (settings.usingColumnsOrRows === "columns") {
+        // 	var rowWidth = firstRow.parent.width
+        // 	if (table.type === "COMPONENT") {
+        // 		// Change main component row
+        // 		firstRow.mainComponent.layoutMode = "HORIZONTAL"
+        // 	}
+        // 	else {
+        // 		// Change every row in table
+        // 		var r = 0
+        // 		table.findAll((node) => {
+        // 			// For each row
+        // 			if (getPluginData(node, "elementSemantics")?.is === "tr") {
+        // 				var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+        // 				for (let c = 0; c < settings.columnCount; c++) {
+        // 					var cell = cells[c]
+        // 					var cellLocation = [c + 1, r + 1]
+        // 					var colWidth;
+        // 					if (c === 0) {
+        // 						colWidth = cell.width
+        // 						console.log("columnWidth", colWidth)
+        // 					}
+        // 					// cell.primaryAxisSizingMode = "AUTO"
+        // 					if (node.parent.children[c]) {
+        // 						node.parent.children[c].appendChild(cell)
+        // 					}
+        // 					else {
+        // 						// Create row
+        // 					}
+        // 					cell.resize(colWidth, cell.height)
+        // 					cell.primaryAxisSizingMode = "FIXED"
+        // 					// cell.layoutAlign = "STRETCH"
+        // 				}
+        // 				r = r + 1
+        // 				node.layoutMode = "HORIZONTAL"
+        // 				node.counterAxisSizingMode = "AUTO"
+        // 				node.layoutGrow = 0
+        // 				node.name = node.name.replace("Col", "Row")
+        // 			}
+        // 		})
+        // 		// Change the table container
+        // 		firstRow.parent.layoutMode = "VERTICAL"
+        // 		// table.findAll((node) => {
+        // 		// 	// For each row
+        // 		// 	if (getPluginData(node, "elementSemantics")?.is === "tr") {
+        // 		// 		r = r + 1
+        // 		// 		node.counterAxisSizingMode = "AUTO"
+        // 		// 		// node.layoutGrow = 0
+        // 		// 		var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+        // 		// 		for (let c = 0; c < settings.columnCount; c++) {
+        // 		// 			var cell = cells[c]
+        // 		// 			cell.layoutAlign = "STRETCH"
+        // 		// 		}
+        // 		// 	}
+        // 		// })
+        // 	}
+        // }
     }
 }
 async function toggleColumnResizing(selection) {
@@ -3320,6 +3401,7 @@ function removeElement(nodeId, element) {
             }
         }
     });
+    // TODO: Remove relaunch data for selecting row or column if td
     if (element === "table") {
         setPluginData_1(templateContainer, "elementSemantics", "");
     }
@@ -3328,6 +3410,7 @@ function addElement(element) {
     let node = figma.currentPage.selection[0];
     if (node.type === "INSTANCE") {
         setPluginData_1(node.mainComponent, "elementSemantics", { is: element });
+        // TODO: Add relaunch data for selecting row or column if td
     }
     else {
         setPluginData_1(node, "elementSemantics", { is: element });

@@ -296,8 +296,6 @@ function getTableSettings(table) {
 
 async function toggleColumnsOrRows(selection) {
 
-	// TODO: Change name of row to column
-	// TODO: Change cell to hug height
 	// TODO: Fix localise component to take account of rows or columns
 
 	for (let i = 0; i < selection.length; i++) {
@@ -305,140 +303,124 @@ async function toggleColumnsOrRows(selection) {
 
 		let settings = getTableSettings(table)
 
-		let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
 
 		// let part: any = findTemplateParts(table)
 
-		if (settings.usingColumnsOrRows === "rows") {
-			if (table.type === "COMPONENT") {
-				// Change main component row
-				firstRow.mainComponent.layoutMode = "VERTICAL"
-			}
-			else {
-				// Change the table container
-				firstRow.parent.layoutMode = "HORIZONTAL"
+		function iterateChildren() {
 
-				// Change every row in table
-				var r = 0
-				table.findAll((node) => {
-					// For each row
-					if (getPluginData(node, "elementSemantics")?.is === "tr") {
-
-						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
-						for (let c = 0; c < settings.columnCount; c++) {
-
-							var cell = cells[c]
-							var cellLocation = [c + 1, r + 1]
-
-							cell.primaryAxisSizingMode = "AUTO"
-
-							node.parent.children[c].appendChild(cell)
-							node.parent.children[c].resize(cell.width, node.height)
-							node.parent.children[c].layoutAlign = "STRETCH"
-
-						}
-						r = r + 1
-
-						node.layoutMode = "VERTICAL"
-						node.name = node.name.replace("Row", "Col")
-
-						if (node.children.length === 0) {
-							node.remove()
-						}
-
-					}
-				})
-			}
-		}
-
-		if (settings.usingColumnsOrRows === "columns") {
-			var rowWidth = firstRow.parent.width
+			let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
 
 			if (table.type === "COMPONENT") {
 				// Change main component row
-				firstRow.mainComponent.layoutMode = "HORIZONTAL"
+				firstRow.mainComponent.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL"
 			}
 			else {
-
-
-				// Change every row in table
-				var r = 0
-				table.findAll((node) => {
-					// For each row
-					if (getPluginData(node, "elementSemantics")?.is === "tr") {
-
-
-						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
-						for (let c = 0; c < settings.columnCount; c++) {
-
-							var cell = cells[c]
-							var cellLocation = [c + 1, r + 1]
-							var colWidth;
-
-							if (c === 0) {
-								colWidth = cell.width
-								console.log("columnWidth", colWidth)
-							}
-
-
-							// cell.primaryAxisSizingMode = "AUTO"
-
-							if (node.parent.children[c]) {
-								node.parent.children[c].appendChild(cell)
-							}
-							else {
-								// Create row
-							}
-
-
-
-
-
-
-
-							cell.resize(colWidth, cell.height)
-							cell.primaryAxisSizingMode = "FIXED"
-							// cell.layoutAlign = "STRETCH"
-
-
-
-
-						}
-
-						r = r + 1
-
-						node.layoutMode = "HORIZONTAL"
-						node.counterAxisSizingMode = "AUTO"
-						node.layoutGrow = 0
-						node.name = node.name.replace("Col", "Row")
-
-					}
-				})
-
 				// Change the table container
-				firstRow.parent.layoutMode = "VERTICAL"
+				if (settings.usingColumnsOrRows === "rows") {
+					firstRow.parent.layoutMode = "HORIZONTAL"
+				}
 
-				table.findAll((node) => {
-					// For each row
-					if (getPluginData(node, "elementSemantics")?.is === "tr") {
+				var origRowlength = firstRow.parent.children.length
 
-						r = r + 1
+				var rowContainer = firstRow.parent
 
-						node.counterAxisSizingMode = "AUTO"
-						// node.layoutGrow = 0
+				for (let i = 0; i < firstRow.parent.children.length; i++) {
+					var row = rowContainer.children[i]
 
-						var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
+					var cells = row.children
 
+					if (i < origRowlength) {
 						for (let c = 0; c < settings.columnCount; c++) {
 
 							var cell = cells[c]
-							cell.layoutAlign = "STRETCH"
+							// var cellLocation = [c + 1, r + 1]
+
+							if (cell) {
+
+								cell.primaryAxisSizingMode = "AUTO"
+
+								if (i === 0 && !row.parent.children[c]) {
+									// If it's the first row and column doesn't exist then create a new column
+
+									var clonedColumn = row.clone()
+									removeChildren(clonedColumn) // Need to remove children because they are clones
+									table.appendChild(clonedColumn)
+								}
+
+								if (row.parent.children[c]) {
+									console.log("c", c)
+
+
+										if (settings.usingColumnsOrRows === "rows") {
+											row.parent.children[c].appendChild(cell)
+											row.parent.children[c].resize(cell.width, row.height)
+											row.parent.children[c].layoutAlign = "STRETCH"
+										}
+										else {
+											row.parent.children[c].appendChild(cell)
+											cell.resize(cell.width, row.height)
+											cell.primaryAxisSizingMode = "FIXED"
+											cell.layoutAlign = "STRETCH"
+										}
+
+
+								}
+							}
+
+						}
+					}
+
+
+					row.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL"
+
+					if (settings.usingColumnsOrRows === "rows") {
+						row.name = row.name.replace("Row", "Col")
+					}
+					else {
+						row.name = row.name.replace("Col", "Row")
+						row.layoutGrow = 0
+						row.counterAxisSizingMode = "AUTO"
+					}
+
+				}
+
+				if (settings.usingColumnsOrRows === "columns") {
+					firstRow.parent.layoutMode = "VERTICAL"
+				}
+
+				// Because changing layout mode swaps sizingModes you need to loop children again
+				var rowlength = rowContainer.children.length
+				console.log(rowlength)
+
+				// For some reason can't remove nodes while in loop, so workaround is to add to an array.
+				let discardBucket = []
+
+				for (let i = 0; i < rowlength; i++) {
+
+					var row = rowContainer.children[i]
+
+					if (row) {
+						if (settings.usingColumnsOrRows === "columns") {
+							row.counterAxisSizingMode = "AUTO"
 						}
 
+						// If row ends up being empty, then assume it's not needed
+						if (row.children.length === 0) {
+							console.log("remove row")
+							discardBucket.push(row)
+						}
 					}
-				})
+				}
+
+				for (let i = 0; i < discardBucket.length; i++) {
+					discardBucket[i].remove()
+				}
+
 			}
+
 		}
+
+		iterateChildren()
 	}
 
 }
@@ -1325,6 +1307,8 @@ function removeElement(nodeId, element) {
 		}
 	})
 
+	// TODO: Remove relaunch data for selecting row or column if td
+
 	if (element === "table") {
 		setPluginData(templateContainer, "elementSemantics", "")
 	}
@@ -1335,6 +1319,7 @@ function addElement(element) {
 	let node = figma.currentPage.selection[0]
 	if (node.type === "INSTANCE") {
 		setPluginData(node.mainComponent, "elementSemantics", {is: element})
+		// TODO: Add relaunch data for selecting row or column if td
 	}
 	else {
 		setPluginData(node, "elementSemantics", { is: element })

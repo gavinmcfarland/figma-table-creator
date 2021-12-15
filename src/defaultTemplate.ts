@@ -1,19 +1,23 @@
 import { ungroupNode } from "./helpers"
 import { setPluginData, updatePluginData } from '@figlets/helpers'
 
-// Load FONTS
-async function loadFonts() {
-	await Promise.all([
-		figma.loadFontAsync({
-			family: "Inter",
-			style: "Regular"
-		})
-	])
-}
-
 // Wrap in function
 export function createDefaultTemplate() {
 	const obj: any = {}
+
+	// Load FONTS
+	async function loadFonts() {
+		await Promise.all([
+			figma.loadFontAsync({
+				family: "Inter",
+				style: "Regular"
+			}),
+			figma.loadFontAsync({
+				family: "Inter",
+				style: "Semi Bold"
+			})
+		])
+	}
 
 	// Create COMPONENT
 	var component_101_204 = figma.createComponent()
@@ -779,12 +783,23 @@ export function createDefaultTemplate() {
 	setPluginData(component_1_365, "elementSemantics", { is: "tr" })
 	setPluginData(component_101_204, "elementSemantics", { is: "td" })
 	setPluginData(component_101_265, "elementSemantics", { is: "th" })
+	// does it need to be on base component?
+	component_101_204.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
+	component_101_265.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
 
 	// Manually add properties so cells will fill row height
 	instance_1_372.layoutAlign = "STRETCH"
 	instance_1_366.layoutAlign = "STRETCH"
 	instance_101_198.layoutAlign = "STRETCH"
 	instance_101_266.layoutAlign = "STRETCH"
+
+	// Manually add bold font weight to header cell
+	loadFonts().then((res) => {
+		text_I101_266_101_117.fontName = {
+			family: "Inter",
+			style: "Semi Bold"
+		}
+	})
 
 	obj.table = component_1_378
 	obj.row = component_1_365
@@ -798,11 +813,6 @@ export function createDefaultTemplate() {
 		instance_1_438,
 		instance_1_434
 	]
-	// component_1_5.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
-	// component_1_13.setPluginData("isCellHeader", "true")
-	// component_1_13.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' })
-	// component_1_21.setPluginData("isRow", "true")
-	// component_1_35.setRelaunchData({ detachTable: 'Detaches table and rows' })
 
 	return obj
 }
