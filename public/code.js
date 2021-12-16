@@ -526,6 +526,7 @@ var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
+var nodeToObject_1 = nodeToObject;
 var removeChildren_1 = removeChildren;
 var replace_1 = replace;
 var setClientStorageAsync_1 = setClientStorageAsync;
@@ -2628,66 +2629,83 @@ function getTableSettings(table) {
     };
 }
 async function toggleColumnsOrRows(selection) {
-    // TODO: Change name of row to column
-    // TODO: Change cell to hug height
+    function isRow(node) {
+        var _a;
+        return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr";
+    }
     // TODO: Fix localise component to take account of rows or columns
     for (let i = 0; i < selection.length; i++) {
         var table = selection[i];
         let settings = getTableSettings(table);
         // let part: any = findTemplateParts(table)
         function iterateChildren() {
+            var _a;
             let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
             if (table.type === "COMPONENT") {
                 // Change main component row
                 firstRow.mainComponent.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL";
             }
             else {
+                var origRowlength = firstRow.parent.children.length;
+                var rowContainer = firstRow.parent;
+                var rowContainerObject = nodeToObject_1(rowContainer);
                 // Change the table container
                 if (settings.usingColumnsOrRows === "rows") {
                     firstRow.parent.layoutMode = "HORIZONTAL";
                 }
-                var origRowlength = firstRow.parent.children.length;
-                var rowContainer = firstRow.parent;
                 for (let i = 0; i < firstRow.parent.children.length; i++) {
                     var row = rowContainer.children[i];
-                    var cells = row.children;
-                    if (i < origRowlength) {
-                        for (let c = 0; c < settings.columnCount; c++) {
-                            var cell = cells[c];
-                            // var cellLocation = [c + 1, r + 1]
-                            if (cell) {
-                                cell.primaryAxisSizingMode = "AUTO";
-                                if (i === 0 && !row.parent.children[c]) {
-                                    // If it's the first row and column doesn't exist then create a new column
-                                    var clonedColumn = row.clone();
-                                    removeChildren_1(clonedColumn); // Need to remove children because they are clones
-                                    table.appendChild(clonedColumn);
-                                }
-                                if (row.parent.children[c]) {
-                                    console.log("c", c);
-                                    if (settings.usingColumnsOrRows === "rows") {
-                                        row.parent.children[c].appendChild(cell);
-                                        row.parent.children[c].resize(cell.width, row.height);
-                                        row.parent.children[c].layoutAlign = "STRETCH";
+                    if (isRow(row)) {
+                        console.log("rowName", row.name);
+                        row.width;
+                        row.height;
+                        var cells = row.children;
+                        if (settings.usingColumnsOrRows === "columns") {
+                            row.name = row.name.replace("Col", "Row");
+                            row.layoutMode = "HORIZONTAL";
+                            row.layoutGrow = 0;
+                            row.counterAxisSizingMode = "AUTO";
+                        }
+                        if (i < origRowlength) {
+                            for (let c = 0; c < settings.columnCount; c++) {
+                                var cell = cells[c];
+                                // var cellLocation = [c + 1, r + 1]
+                                // var columnIndex = getNodeIndex(row) + c
+                                if (cell) {
+                                    cell.primaryAxisSizingMode = "AUTO";
+                                    // We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
+                                    if (row.id === firstRow.id && !row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                        // If it's the first row and column doesn't exist then create a new column
+                                        var clonedColumn = row.clone();
+                                        removeChildren_1(clonedColumn); // Need to remove children because they are clones
+                                        table.appendChild(clonedColumn);
                                     }
-                                    else {
-                                        row.parent.children[c].appendChild(cell);
-                                        cell.resize(cell.width, row.height);
-                                        cell.primaryAxisSizingMode = "FIXED";
-                                        cell.layoutAlign = "STRETCH";
+                                    if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                        console.log("c", c);
+                                        if (settings.usingColumnsOrRows === "rows") {
+                                            row.parent.children[getNodeIndex_1(firstRow) + c].appendChild(cell);
+                                            row.parent.children[getNodeIndex_1(firstRow) + c].resize(cell.width, row.height);
+                                            row.parent.children[getNodeIndex_1(firstRow) + c].layoutAlign = "STRETCH";
+                                        }
+                                        else {
+                                            row.parent.children[getNodeIndex_1(firstRow) + c].appendChild(cell);
+                                            cell.resize(row.width, 100);
+                                            // cell.primaryAxisSizingMode = "FIXED"
+                                            // cell.layoutAlign = "STRETCH"
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    row.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL";
+                    else {
+                        console.log("none row width", row.height);
+                        row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width);
+                    }
                     if (settings.usingColumnsOrRows === "rows") {
                         row.name = row.name.replace("Row", "Col");
-                    }
-                    else {
-                        row.name = row.name.replace("Col", "Row");
-                        row.layoutGrow = 0;
-                        row.counterAxisSizingMode = "AUTO";
+                        if (isRow(row))
+                            row.layoutMode = "VERTICAL";
                     }
                 }
                 if (settings.usingColumnsOrRows === "columns") {
@@ -2695,14 +2713,30 @@ async function toggleColumnsOrRows(selection) {
                 }
                 // Because changing layout mode swaps sizingModes you need to loop children again
                 var rowlength = rowContainer.children.length;
-                console.log(rowlength);
                 // For some reason can't remove nodes while in loop, so workaround is to add to an array.
                 let discardBucket = [];
                 for (let i = 0; i < rowlength; i++) {
                     var row = rowContainer.children[i];
-                    if (row) {
+                    // This is the original object before rows are converted to columns, so may not always match new converted table
+                    if ((_a = rowContainerObject.children[i]) === null || _a === void 0 ? void 0 : _a.layoutAlign)
+                        row.layoutAlign = rowContainerObject.children[i].layoutAlign;
+                    if (isRow(row)) {
                         if (settings.usingColumnsOrRows === "columns") {
                             row.counterAxisSizingMode = "AUTO";
+                            row.layoutAlign = "STRETCH";
+                            // We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
+                            var cells = row.children;
+                            var length = settings.usingColumnsOrRows === "columns" ? firstRow.parent.children.length : firstRow.children.length;
+                            for (let c = 0; c < length; c++) {
+                                var cell = cells[c];
+                                if (cell) {
+                                    if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                        cell.primaryAxisSizingMode = "FIXED";
+                                        cell.layoutAlign = "STRETCH";
+                                        console.log(cell.layoutAlign);
+                                    }
+                                }
+                            }
                         }
                         // If row ends up being empty, then assume it's not needed
                         if (row.children.length === 0) {
@@ -2717,62 +2751,6 @@ async function toggleColumnsOrRows(selection) {
             }
         }
         iterateChildren();
-        // if (settings.usingColumnsOrRows === "columns") {
-        // 	var rowWidth = firstRow.parent.width
-        // 	if (table.type === "COMPONENT") {
-        // 		// Change main component row
-        // 		firstRow.mainComponent.layoutMode = "HORIZONTAL"
-        // 	}
-        // 	else {
-        // 		// Change every row in table
-        // 		var r = 0
-        // 		table.findAll((node) => {
-        // 			// For each row
-        // 			if (getPluginData(node, "elementSemantics")?.is === "tr") {
-        // 				var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
-        // 				for (let c = 0; c < settings.columnCount; c++) {
-        // 					var cell = cells[c]
-        // 					var cellLocation = [c + 1, r + 1]
-        // 					var colWidth;
-        // 					if (c === 0) {
-        // 						colWidth = cell.width
-        // 						console.log("columnWidth", colWidth)
-        // 					}
-        // 					// cell.primaryAxisSizingMode = "AUTO"
-        // 					if (node.parent.children[c]) {
-        // 						node.parent.children[c].appendChild(cell)
-        // 					}
-        // 					else {
-        // 						// Create row
-        // 					}
-        // 					cell.resize(colWidth, cell.height)
-        // 					cell.primaryAxisSizingMode = "FIXED"
-        // 					// cell.layoutAlign = "STRETCH"
-        // 				}
-        // 				r = r + 1
-        // 				node.layoutMode = "HORIZONTAL"
-        // 				node.counterAxisSizingMode = "AUTO"
-        // 				node.layoutGrow = 0
-        // 				node.name = node.name.replace("Col", "Row")
-        // 			}
-        // 		})
-        // 		// Change the table container
-        // 		firstRow.parent.layoutMode = "VERTICAL"
-        // 		// table.findAll((node) => {
-        // 		// 	// For each row
-        // 		// 	if (getPluginData(node, "elementSemantics")?.is === "tr") {
-        // 		// 		r = r + 1
-        // 		// 		node.counterAxisSizingMode = "AUTO"
-        // 		// 		// node.layoutGrow = 0
-        // 		// 		var cells = node.findAll((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
-        // 		// 		for (let c = 0; c < settings.columnCount; c++) {
-        // 		// 			var cell = cells[c]
-        // 		// 			cell.layoutAlign = "STRETCH"
-        // 		// 		}
-        // 		// 	}
-        // 		// })
-        // 	}
-        // }
     }
 }
 async function toggleColumnResizing(selection) {

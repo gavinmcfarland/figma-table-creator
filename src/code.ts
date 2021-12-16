@@ -296,6 +296,10 @@ function getTableSettings(table) {
 
 async function toggleColumnsOrRows(selection) {
 
+	function isRow(node) {
+		return getPluginData(node, "elementSemantics")?.is === "tr"
+	}
+
 	// TODO: Fix localise component to take account of rows or columns
 
 	for (let i = 0; i < selection.length; i++) {
@@ -315,71 +319,102 @@ async function toggleColumnsOrRows(selection) {
 				firstRow.mainComponent.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL"
 			}
 			else {
-				// Change the table container
-				if (settings.usingColumnsOrRows === "rows") {
-					firstRow.parent.layoutMode = "HORIZONTAL"
-				}
 
 				var origRowlength = firstRow.parent.children.length
 
 				var rowContainer = firstRow.parent
 
+				var rowContainerObject = nodeToObject(rowContainer)
+
+				// Change the table container
+				if (settings.usingColumnsOrRows === "rows") {
+					firstRow.parent.layoutMode = "HORIZONTAL"
+				}
+
+
+
 				for (let i = 0; i < firstRow.parent.children.length; i++) {
 					var row = rowContainer.children[i]
 
-					var cells = row.children
+					if (isRow(row)) {
 
-					if (i < origRowlength) {
-						for (let c = 0; c < settings.columnCount; c++) {
+						console.log("rowName", row.name)
 
-							var cell = cells[c]
-							// var cellLocation = [c + 1, r + 1]
-
-							if (cell) {
-
-								cell.primaryAxisSizingMode = "AUTO"
-
-								if (i === 0 && !row.parent.children[c]) {
-									// If it's the first row and column doesn't exist then create a new column
-
-									var clonedColumn = row.clone()
-									removeChildren(clonedColumn) // Need to remove children because they are clones
-									table.appendChild(clonedColumn)
-								}
-
-								if (row.parent.children[c]) {
-									console.log("c", c)
+						var rowWidth = row.width
+						var rowHeight = row.height
 
 
-										if (settings.usingColumnsOrRows === "rows") {
-											row.parent.children[c].appendChild(cell)
-											row.parent.children[c].resize(cell.width, row.height)
-											row.parent.children[c].layoutAlign = "STRETCH"
-										}
-										else {
-											row.parent.children[c].appendChild(cell)
-											cell.resize(cell.width, row.height)
-											cell.primaryAxisSizingMode = "FIXED"
-											cell.layoutAlign = "STRETCH"
-										}
+						var cells = row.children
 
-
-								}
-							}
+						if (settings.usingColumnsOrRows === "columns") {
+							row.name = row.name.replace("Col", "Row")
+							row.layoutMode = "HORIZONTAL"
+							row.layoutGrow = 0
+							row.counterAxisSizingMode = "AUTO"
 
 						}
+
+						if (i < origRowlength) {
+							for (let c = 0; c < settings.columnCount; c++) {
+
+								var cell = cells[c]
+								// var cellLocation = [c + 1, r + 1]
+								// var columnIndex = getNodeIndex(row) + c
+
+								if (cell) {
+
+									cell.primaryAxisSizingMode = "AUTO"
+
+									// We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
+									if (row.id === firstRow.id && !row.parent.children[getNodeIndex(firstRow) + c]) {
+										// If it's the first row and column doesn't exist then create a new column
+
+										var clonedColumn = row.clone()
+										removeChildren(clonedColumn) // Need to remove children because they are clones
+										table.appendChild(clonedColumn)
+									}
+
+									if (row.parent.children[getNodeIndex(firstRow) + c]) {
+										console.log("c", c)
+
+
+											if (settings.usingColumnsOrRows === "rows") {
+												row.parent.children[getNodeIndex(firstRow) + c].appendChild(cell)
+												row.parent.children[getNodeIndex(firstRow) + c].resize(cell.width, row.height)
+												row.parent.children[getNodeIndex(firstRow) + c].layoutAlign = "STRETCH"
+											}
+											else {
+												row.parent.children[getNodeIndex(firstRow) + c].appendChild(cell)
+												cell.resize(row.width, 100)
+
+
+
+												// cell.primaryAxisSizingMode = "FIXED"
+												// cell.layoutAlign = "STRETCH"
+
+
+											}
+
+
+									}
+								}
+
+							}
+						}
+					}
+					else {
+
+						console.log("none row width", row.height)
+						row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
 					}
 
 
-					row.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL"
+
+
 
 					if (settings.usingColumnsOrRows === "rows") {
 						row.name = row.name.replace("Row", "Col")
-					}
-					else {
-						row.name = row.name.replace("Col", "Row")
-						row.layoutGrow = 0
-						row.counterAxisSizingMode = "AUTO"
+						if (isRow(row)) row.layoutMode = "VERTICAL"
 					}
 
 				}
@@ -390,7 +425,6 @@ async function toggleColumnsOrRows(selection) {
 
 				// Because changing layout mode swaps sizingModes you need to loop children again
 				var rowlength = rowContainer.children.length
-				console.log(rowlength)
 
 				// For some reason can't remove nodes while in loop, so workaround is to add to an array.
 				let discardBucket = []
@@ -399,9 +433,35 @@ async function toggleColumnsOrRows(selection) {
 
 					var row = rowContainer.children[i]
 
-					if (row) {
+					// This is the original object before rows are converted to columns, so may not always match new converted table
+					if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
+
+					if (isRow(row)) {
 						if (settings.usingColumnsOrRows === "columns") {
 							row.counterAxisSizingMode = "AUTO"
+							row.layoutAlign = "STRETCH"
+
+							// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
+
+							var cells = row.children
+							var length = settings.usingColumnsOrRows === "columns" ? firstRow.parent.children.length : firstRow.children.length
+							for (let c = 0; c < length; c++) {
+
+								var cell = cells[c]
+
+								if (cell) {
+
+
+									if (row.parent.children[getNodeIndex(firstRow) + c]) {
+
+										cell.primaryAxisSizingMode = "FIXED"
+										cell.layoutAlign = "STRETCH"
+										console.log(cell.layoutAlign)
+									}
+								}
+
+							}
+
 						}
 
 						// If row ends up being empty, then assume it's not needed
