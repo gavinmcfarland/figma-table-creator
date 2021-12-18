@@ -2653,6 +2653,46 @@ async function toggleColumnsOrRows(selection) {
                 if (settings.usingColumnsOrRows === "rows") {
                     firstRow.parent.layoutMode = "HORIZONTAL";
                 }
+                // Number of none rows won't work because when looping cells it hasn't looped rows yet.
+                // function getRowIndex(currentNode, n = 0) {
+                // 	// var i = getNodeIndex(node.parent.children[c])
+                // 	var firstNode = currentNode.parent.children[1]
+                // 	var i = getNodeIndex(currentNode)
+                // 	// Is currentNode a row
+                // 	if (isRow(firstNode)) {
+                // 		// Does currenNode index equal 0
+                // 		if (0 === getNodeIndex(currentNode)) {
+                // 			return 0
+                // 		}
+                // 		else {
+                // 			getRowIndex(currentNode.parent.children[i + 1], c)
+                // 		}
+                // 	}
+                // 	else {
+                // 		n = n + 1
+                // 		getRowIndex(currentNode.parent.children[n], n)
+                // 	}
+                // 	if (isRow(node.parent.children[c + n])) {
+                // 		return c + n
+                // 	}
+                // 	else {
+                // 		return getRowIndex(node, c, n + 1)
+                // 	}
+                // }
+                function getIndex(node, c) {
+                    var container = node.parent;
+                    var i = -1;
+                    var x = -1;
+                    while (i < c) {
+                        i++;
+                        x++;
+                        var item = container.children[x];
+                        if (!isRow(item)) {
+                            i--;
+                        }
+                    }
+                    return x;
+                }
                 for (let i = 0; i < firstRow.parent.children.length; i++) {
                     var row = rowContainer.children[i];
                     if (isRow(row)) {
@@ -2671,24 +2711,26 @@ async function toggleColumnsOrRows(selection) {
                                 var cell = cells[c];
                                 // var cellLocation = [c + 1, r + 1]
                                 // var columnIndex = getNodeIndex(row) + c
+                                var oppositeIndex = getIndex(row, c);
+                                console.log("column", c, "requiredIndex", oppositeIndex);
                                 if (cell) {
+                                    console.log("column", c, "requiredIndex", oppositeIndex);
                                     cell.primaryAxisSizingMode = "AUTO";
                                     // We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
-                                    if (row.id === firstRow.id && !row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                    if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
                                         // If it's the first row and column doesn't exist then create a new column
                                         var clonedColumn = row.clone();
                                         removeChildren_1(clonedColumn); // Need to remove children because they are clones
                                         table.appendChild(clonedColumn);
                                     }
-                                    if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
-                                        console.log("c", c);
+                                    if (row.parent.children[oppositeIndex]) {
                                         if (settings.usingColumnsOrRows === "rows") {
-                                            row.parent.children[getNodeIndex_1(firstRow) + c].appendChild(cell);
-                                            row.parent.children[getNodeIndex_1(firstRow) + c].resize(cell.width, row.height);
-                                            row.parent.children[getNodeIndex_1(firstRow) + c].layoutAlign = "STRETCH";
+                                            row.parent.children[oppositeIndex].appendChild(cell);
+                                            row.parent.children[oppositeIndex].resize(cell.width, row.height);
+                                            row.parent.children[oppositeIndex].layoutAlign = "STRETCH";
                                         }
                                         else {
-                                            row.parent.children[getNodeIndex_1(firstRow) + c].appendChild(cell);
+                                            row.parent.children[oppositeIndex].appendChild(cell);
                                             cell.resize(row.width, 100);
                                             // cell.primaryAxisSizingMode = "FIXED"
                                             // cell.layoutAlign = "STRETCH"
