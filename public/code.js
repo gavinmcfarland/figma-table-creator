@@ -365,6 +365,58 @@ function removeChildren(node) {
 }
 
 /**
+ * Resizes a node, to allow nodes of size < 0.01
+ * A value of zero will be replaced with 1/Number.MAX_SAFE_INTEGER
+ * @param {SceneNode & LayoutMixin} node Node to resize
+ * @param {number} width
+ * @param {number} height
+ * @returns Resized Node
+ */
+function resize(node, width, height) {
+    let nodeParent = node.parent;
+    let primaryAxisSizingMode = node.primaryAxisSizingMode;
+    let counterAxisSizingMode = node.counterAxisSizingMode;
+    let layoutAlign = node.layoutAlign;
+    let layoutGrow = node.layoutGrow;
+    //Workaround to resize a node, if its size is less than 0.01
+    //If 0, make it almost zero
+    width === 0 ? width = 1 / Number.MAX_SAFE_INTEGER : null;
+    width === null ? width = node.width : null;
+    height === 0 ? height = 1 / Number.MAX_SAFE_INTEGER : null;
+    height === null ? height = node.height : null;
+    node.resize(width < 0.01 ? 1 : width, height < 0.01 ? 1 : height);
+    if (width < 0.01 || height < 0.01) {
+        let dummy = figma.createRectangle();
+        dummy.resize(width < 0.01 ? 1 / width : width, height < 0.01 ? 1 / height : height);
+        let group = figma.group([node, dummy], figma.currentPage);
+        group.resize(width < 0.01 ? 1 : width, height < 0.01 ? 1 : height);
+        nodeParent.appendChild(node);
+        group.remove();
+    }
+    if (width === null) {
+        if (node.layoutMode === "VERTICAL") {
+            node.primaryAxisSizingMode = primaryAxisSizingMode;
+            node.layoutAlign = layoutAlign;
+        }
+        if (node.layoutMode === "HORIZONTAL") {
+            node.counterAxisSizingMode = counterAxisSizingMode;
+            node.layoutGrow = layoutGrow;
+        }
+    }
+    if (height === null) {
+        if (node.layoutMode === "HORIZONTAL") {
+            node.primaryAxisSizingMode = primaryAxisSizingMode;
+            node.layoutAlign = layoutAlign;
+        }
+        if (node.layoutMode === "HORIZONTAL") {
+            node.counterAxisSizingMode = counterAxisSizingMode;
+            node.layoutGrow = layoutGrow;
+        }
+    }
+    return node;
+}
+
+/**
  * Mimics similar behaviour to ungrouping nodes in editor.
  * @param {SceneNode & ChildrenMixin } node A node with children
  * @param parent Target container to append ungrouped nodes to
@@ -544,6 +596,7 @@ var getPageNode_1 = getPageNode;
 var nodeToObject_1 = nodeToObject;
 var removeChildren_1 = removeChildren;
 var replace_1 = replace;
+var resize_1 = resize;
 var setClientStorageAsync_1 = setClientStorageAsync;
 var setPluginData_1 = setPluginData$1;
 var ungroup_1 = ungroup;
@@ -2460,6 +2513,13 @@ var tweeno = {
 };
 
 console.clear();
+function swapAxises(node) {
+    let primary = node.primaryAxisSizingMode;
+    let counter = node.counterAxisSizingMode;
+    node.primaryAxisSizingMode = counter;
+    node.counterAxisSizingMode = primary;
+    return node;
+}
 function isVariant(node) {
     var _a;
     if (node.type === "INSTANCE") {
@@ -2700,14 +2760,12 @@ async function toggleColumnsOrRows(selection) {
                             if (i < origRowlength) {
                                 for (let c = 0; c < settings.columnCount; c++) {
                                     var cell = cells[c];
+                                    cell.width;
                                     // var cellLocation = [c + 1, r + 1]
                                     // var columnIndex = getNodeIndex(row) + c
                                     var oppositeIndex = getIndex(row, c);
-                                    console.log("column", c, "requiredIndex", oppositeIndex);
                                     if (cell) {
-                                        console.log("column", c, "requiredIndex", oppositeIndex);
                                         cell.primaryAxisSizingMode = "AUTO";
-                                        console.log("columnExists", row.parent.children[oppositeIndex]);
                                         // We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
                                         if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
                                             // If it's the first row and column doesn't exist then create a new column
@@ -2718,14 +2776,24 @@ async function toggleColumnsOrRows(selection) {
                                         if (row.parent.children[oppositeIndex]) {
                                             if (settings.usingColumnsOrRows === "rows") {
                                                 row.parent.children[oppositeIndex].appendChild(cell);
-                                                row.parent.children[oppositeIndex].resize(cell.width, row.height);
+                                                row.parent.children[oppositeIndex].resize(rowContainerObject.children[i].children[c].width, row.height);
+                                                row.parent.children[oppositeIndex].layoutGrow = rowContainerObject.children[i].children[c].layoutGrow;
                                                 row.parent.children[oppositeIndex].layoutAlign = "STRETCH";
                                             }
                                             else {
                                                 row.parent.children[oppositeIndex].appendChild(cell);
-                                                cell.resize(row.width, 100);
-                                                // cell.primaryAxisSizingMode = "FIXED"
-                                                // cell.layoutAlign = "STRETCH"
+                                                cell.resize(row.width, cell.height);
+                                                // cell.primaryAxisSizingMode = rowContainerObject.children[i].children[c].primaryAxisSizingMode
+                                                if (rowContainerObject.children[i].layoutGrow === 1) {
+                                                    cell.layoutGrow = 1;
+                                                    // cell.layoutAlign =  "STRETCH"
+                                                    // cell.primaryAxisSizingMode = "AUTO"
+                                                }
+                                                else {
+                                                    cell.layoutGrow = 0;
+                                                    // cell.layoutAlign =  "INHERIT"
+                                                    // cell.primaryAxisSizingMode = "FIXED"
+                                                }
                                             }
                                         }
                                     }
@@ -2733,7 +2801,6 @@ async function toggleColumnsOrRows(selection) {
                             }
                         }
                         else {
-                            console.log("none row width", row.height);
                             row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width);
                         }
                         if (settings.usingColumnsOrRows === "rows" && isRow(row)) {
@@ -2744,6 +2811,8 @@ async function toggleColumnsOrRows(selection) {
                     if (settings.usingColumnsOrRows === "columns") {
                         rowContainer.layoutMode = "VERTICAL";
                     }
+                    swapAxises(rowContainer);
+                    resize_1(rowContainer, rowContainerObject.width, null);
                     // Because changing layout mode swaps sizingModes you need to loop children again
                     var rowlength = rowContainer.children.length;
                     // For some reason can't remove nodes while in loop, so workaround is to add to an array.
@@ -2815,7 +2884,7 @@ async function toggleColumnResizing(selection) {
                             await swapInstance(oldTableCell, newTableCell);
                             // replace(newTableCell, oldTableCell)
                             // newTableCell.swapComponent(oldTableCell.mainComponent)
-                            newTableCell.resize(oldTableCell.width, oldTableCell.height);
+                            resize_1(newTableCell, oldTableCell.width, null);
                         }
                     }
                 }

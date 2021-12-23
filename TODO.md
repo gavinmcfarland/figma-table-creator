@@ -51,9 +51,11 @@
 11. Add back button to choosing file page
 
 
-1. When editing template which is on a different page the plugin doesn't change page
+1. When editing template which is on a different page the plugin doesn't change page DONE
 2. Toggling from cols to rows doesn't work when not the same number of columns and rows DONE
 3. Toggling localised component loses text DONE
 4. Add bold font weight to header component DONE
 5. Change row to column to select all children of parent rather than just nodes marked with tr DONE
+
+1. Disable converting component template from rows to columns for now
 

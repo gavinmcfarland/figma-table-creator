@@ -1,5 +1,5 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode} from '@fignite/helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode, resize} from '@fignite/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent } from './helpers'
 import { upgradeFrom6to7 } from './upgradeFrom6to7'
 import { createDefaultTemplate } from './defaultTemplate'
@@ -8,6 +8,16 @@ import plugma from 'plugma'
 import { Tween, Queue, Easing } from 'tweeno'
 
 console.clear()
+
+function swapAxises(node) {
+	let primary = node.primaryAxisSizingMode
+	let counter = node.counterAxisSizingMode
+
+	node.primaryAxisSizingMode = counter
+	node.counterAxisSizingMode = primary
+
+	return node
+}
 
 function isVariant(node) {
 	if (node.type === "INSTANCE") {
@@ -374,20 +384,19 @@ async function toggleColumnsOrRows(selection) {
 								for (let c = 0; c < settings.columnCount; c++) {
 
 									var cell = cells[c]
+									var cellWidth = cell.width
 									// var cellLocation = [c + 1, r + 1]
 									// var columnIndex = getNodeIndex(row) + c
 
 									var oppositeIndex = getIndex(row, c)
 
-									console.log("column", c, "requiredIndex", oppositeIndex)
 
 									if (cell) {
 
-										console.log("column", c, "requiredIndex", oppositeIndex)
 
 
 										cell.primaryAxisSizingMode = "AUTO"
-										console.log("columnExists", row.parent.children[oppositeIndex])
+
 										// We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
 										if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
 											// If it's the first row and column doesn't exist then create a new column
@@ -403,17 +412,28 @@ async function toggleColumnsOrRows(selection) {
 
 												if (settings.usingColumnsOrRows === "rows") {
 													row.parent.children[oppositeIndex].appendChild(cell)
-													row.parent.children[oppositeIndex].resize(cell.width, row.height)
+													row.parent.children[oppositeIndex].resize(rowContainerObject.children[i].children[c].width, row.height)
+													row.parent.children[oppositeIndex].layoutGrow = rowContainerObject.children[i].children[c].layoutGrow
 													row.parent.children[oppositeIndex].layoutAlign = "STRETCH"
 												}
 												else {
 													row.parent.children[oppositeIndex].appendChild(cell)
-													cell.resize(row.width, 100)
+													cell.resize(row.width, cell.height)
 
+													// cell.primaryAxisSizingMode = rowContainerObject.children[i].children[c].primaryAxisSizingMode
 
+													if (rowContainerObject.children[i].layoutGrow === 1) {
+														cell.layoutGrow = 1
+														// cell.layoutAlign =  "STRETCH"
+														// cell.primaryAxisSizingMode = "AUTO"
 
-													// cell.primaryAxisSizingMode = "FIXED"
-													// cell.layoutAlign = "STRETCH"
+													}
+													else {
+														cell.layoutGrow = 0
+														// cell.layoutAlign =  "INHERIT"
+														// cell.primaryAxisSizingMode = "FIXED"
+													}
+
 
 
 												}
@@ -426,7 +446,6 @@ async function toggleColumnsOrRows(selection) {
 							}
 						}
 						else {
-							console.log("none row width", row.height)
 							row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
 						}
 
@@ -444,6 +463,9 @@ async function toggleColumnsOrRows(selection) {
 					if (settings.usingColumnsOrRows === "columns") {
 						rowContainer.layoutMode = "VERTICAL"
 					}
+
+					swapAxises(rowContainer)
+					resize(rowContainer, rowContainerObject.width, null)
 
 					// Because changing layout mode swaps sizingModes you need to loop children again
 					var rowlength = rowContainer.children.length
@@ -550,7 +572,7 @@ async function toggleColumnResizing(selection) {
 							await swapInstance(oldTableCell, newTableCell)
 							// replace(newTableCell, oldTableCell)
 							// newTableCell.swapComponent(oldTableCell.mainComponent)
-							newTableCell.resize(oldTableCell.width, oldTableCell.height)
+							resize(newTableCell, oldTableCell.width, null)
 						}
 					}
 
