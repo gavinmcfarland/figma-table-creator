@@ -1,5 +1,5 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject} from '@fignite/helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode} from '@fignite/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent } from './helpers'
 import { upgradeFrom6to7 } from './upgradeFrom6to7'
 import { createDefaultTemplate } from './defaultTemplate'
@@ -47,6 +47,11 @@ function getSelectionName(node) {
 }
 
 function animateIntoView(selection, duration?, easing?) {
+
+	let page = getPageNode(selection[0])
+
+	figma.currentPage = page
+
 	// Get current coordiantes
 	let origCoords = {
 		...figma.viewport.center,
@@ -175,6 +180,7 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 	for (let a = 0; a < sourceChildren.length; a++) {
 		if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
 			targetChildren[a].name = sourceChildren[a].name
+			// targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
 		}
 		// If layer has children then run function again
 		if (targetChildren[a].children && sourceChildren[a].children) {

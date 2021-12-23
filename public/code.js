@@ -453,6 +453,20 @@ const nodeToObject = (node, withoutRelations, removeConflicts) => {
     return obj;
 };
 
+/**
+ * Returns the page node of the selected node
+ * @param {SceneNode} node A node
+ * @returns The page node
+ */
+function getPageNode(node) {
+    if (node.parent.type === "PAGE") {
+        return node.parent;
+    }
+    else {
+        return getPageNode(node.parent);
+    }
+}
+
 function isFunction(functionToCheck) {
     return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
 }
@@ -526,6 +540,7 @@ var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
+var getPageNode_1 = getPageNode;
 var nodeToObject_1 = nodeToObject;
 var removeChildren_1 = removeChildren;
 var replace_1 = replace;
@@ -2480,6 +2495,8 @@ function getSelectionName(node) {
     }
 }
 function animateIntoView(selection, duration, easing) {
+    let page = getPageNode_1(selection[0]);
+    figma.currentPage = page;
     // Get current coordiantes
     let origCoords = Object.assign(Object.assign({}, figma.viewport.center), { z: figma.viewport.zoom });
     // Get to be coordiantes
@@ -2546,6 +2563,7 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
     for (let a = 0; a < sourceChildren.length; a++) {
         if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
             targetChildren[a].name = sourceChildren[a].name;
+            // targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
         }
         // If layer has children then run function again
         if (targetChildren[a].children && sourceChildren[a].children) {
