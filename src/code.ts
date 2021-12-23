@@ -544,7 +544,7 @@ async function toggleColumnResizing(selection) {
 							await swapInstance(oldTableCell, newTableCell)
 							// replace(newTableCell, oldTableCell)
 							// newTableCell.swapComponent(oldTableCell.mainComponent)
-							// newTableCell.resize(oldTableCell.width, oldTableCell.height)
+							newTableCell.resize(oldTableCell.width, oldTableCell.height)
 						}
 					}
 
