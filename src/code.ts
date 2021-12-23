@@ -179,7 +179,7 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 		// If layer has children then run function again
 		if (targetChildren[a].children && sourceChildren[a].children) {
 
-			overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children)
+			await overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children)
 		}
 
 		// If layer is a text node then check if the main components share the same name
@@ -187,11 +187,6 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 			// if (sourceChildren[a].name === targetChildren[b].name) {
 
 			await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
-			// loadFonts(targetChildren[a]).then(() => {
-			// 	targetChildren[a].characters = sourceChildren[a].characters
-			// 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
-			// })
-			// }
 		}
 
 	}
@@ -200,7 +195,7 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 async function swapInstance(target, source) {
 	// await overrideChildrenChars(source.mainComponent.children, source.mainComponent.children, source.children, target.children)
 	// replace(newTableCell, oldTableCell.clone())
-	target.swapComponent(source.mainComponent)
+	// target.swapComponent(source.mainComponent)
 	await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children)
 }
 
@@ -253,7 +248,6 @@ function getTableSettings(table) {
 
 	for (let i = 0; i < table.children.length; i++) {
 		var node = table.children[i]
-		console.log
 		if (getPluginData(node, "elementSemantics")?.is === "tr") {
 			rowCount++
 		}
@@ -305,20 +299,19 @@ async function toggleColumnsOrRows(selection) {
 	for (let i = 0; i < selection.length; i++) {
 		var table = selection[i]
 
-		let settings = getTableSettings(table)
+		let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
 
+		if (table.type === "INSTANCE" || firstRow.type === "INSTANCE" || firstRow.type === "COMPONENT") {
+			figma.closePlugin("Table and rows must be detached")
+		}
+		else {
 
-		// let part: any = findTemplateParts(table)
+			let settings = getTableSettings(table)
 
-		function iterateChildren() {
+			// let part: any = findTemplateParts(table)
 
-			let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
+			function iterateChildren() {
 
-			if (table.type === "COMPONENT") {
-				// Change main component row
-				firstRow.mainComponent.layoutMode = settings.usingColumnsOrRows === "rows" ? "VERTICAL" : "HORIZONTAL"
-			}
-			else {
 
 				var origRowlength = firstRow.parent.children.length
 
@@ -328,217 +321,190 @@ async function toggleColumnsOrRows(selection) {
 
 				// Change the table container
 				if (settings.usingColumnsOrRows === "rows") {
-					firstRow.parent.layoutMode = "HORIZONTAL"
+					rowContainer.layoutMode = "HORIZONTAL"
 				}
 
-				// Number of none rows won't work because when looping cells it hasn't looped rows yet.
+				if (firstRow.type !== "COMPONENT") {
 
-				// function getRowIndex(currentNode, n = 0) {
-				// 	// var i = getNodeIndex(node.parent.children[c])
-				// 	var firstNode = currentNode.parent.children[1]
-				// 	var i = getNodeIndex(currentNode)
-
-				// 	// Is currentNode a row
-				// 	if (isRow(firstNode)) {
-				// 		// Does currenNode index equal 0
-				// 		if (0 === getNodeIndex(currentNode)) {
-				// 			return 0
-				// 		}
-				// 		else {
-				// 			getRowIndex(currentNode.parent.children[i + 1], c)
-				// 		}
-				// 	}
-				// 	else {
-				// 		n = n + 1
-				// 		getRowIndex(currentNode.parent.children[n], n)
-				// 	}
-
-
-				// 	if (isRow(node.parent.children[c + n])) {
-				// 		return c + n
-				// 	}
-				// 	else {
-				// 		return getRowIndex(node, c, n + 1)
-				// 	}
-				// }
-
-				function getIndex(node, c) {
-					var container = node.parent
-					var score = c
-					var i = -1
-					var x = -1
-					while (i < c) {
-						i++
-						x++
-						var item = container.children[x]
-						if (!isRow(item)) {
-							i--
+					function getIndex(node, c) {
+						var container = node.parent
+						var score = c
+						var i = -1
+						var x = -1
+						while (i < c) {
+							i++
+							x++
+							var item = container.children[x]
+							if ((item && !isRow(item))) {
+								i--
+							}
 						}
+
+						return x
 					}
 
-					return x
-				}
+					for (let i = 0; i < firstRow.parent.children.length; i++) {
+						var row = rowContainer.children[i]
 
-				for (let i = 0; i < firstRow.parent.children.length; i++) {
-					var row = rowContainer.children[i]
+						if (isRow(row)) {
 
-					if (isRow(row)) {
+							console.log("rowName", row.name)
 
-						console.log("rowName", row.name)
-
-						var rowWidth = row.width
-						var rowHeight = row.height
+							var rowWidth = row.width
+							var rowHeight = row.height
 
 
-						var cells = row.children
+							var cells = row.children
 
-						if (settings.usingColumnsOrRows === "columns") {
-							row.name = row.name.replace("Col", "Row")
-							row.layoutMode = "HORIZONTAL"
-							row.layoutGrow = 0
-							row.counterAxisSizingMode = "AUTO"
+							if (settings.usingColumnsOrRows === "columns") {
+								row.name = row.name.replace("Col", "Row")
+								row.layoutMode = "HORIZONTAL"
+								row.layoutGrow = 0
+								row.counterAxisSizingMode = "AUTO"
 
-						}
+							}
 
-						if (i < origRowlength) {
-							for (let c = 0; c < settings.columnCount; c++) {
+							if (i < origRowlength) {
+								for (let c = 0; c < settings.columnCount; c++) {
 
-								var cell = cells[c]
-								// var cellLocation = [c + 1, r + 1]
-								// var columnIndex = getNodeIndex(row) + c
+									var cell = cells[c]
+									// var cellLocation = [c + 1, r + 1]
+									// var columnIndex = getNodeIndex(row) + c
 
-								var oppositeIndex = getIndex(row, c)
-
-								console.log("column", c, "requiredIndex", oppositeIndex)
-
-								if (cell) {
+									var oppositeIndex = getIndex(row, c)
 
 									console.log("column", c, "requiredIndex", oppositeIndex)
 
+									if (cell) {
 
-									cell.primaryAxisSizingMode = "AUTO"
+										console.log("column", c, "requiredIndex", oppositeIndex)
 
-									// We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
-									if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
-										// If it's the first row and column doesn't exist then create a new column
 
-										var clonedColumn = row.clone()
-										removeChildren(clonedColumn) // Need to remove children because they are clones
-										table.appendChild(clonedColumn)
+										cell.primaryAxisSizingMode = "AUTO"
+										console.log("columnExists", row.parent.children[oppositeIndex])
+										// We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
+										if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
+											// If it's the first row and column doesn't exist then create a new column
+
+											var clonedColumn = row.clone()
+											removeChildren(clonedColumn) // Need to remove children because they are clones
+											table.appendChild(clonedColumn)
+										}
+
+										if (row.parent.children[oppositeIndex]) {
+
+
+
+												if (settings.usingColumnsOrRows === "rows") {
+													row.parent.children[oppositeIndex].appendChild(cell)
+													row.parent.children[oppositeIndex].resize(cell.width, row.height)
+													row.parent.children[oppositeIndex].layoutAlign = "STRETCH"
+												}
+												else {
+													row.parent.children[oppositeIndex].appendChild(cell)
+													cell.resize(row.width, 100)
+
+
+
+													// cell.primaryAxisSizingMode = "FIXED"
+													// cell.layoutAlign = "STRETCH"
+
+
+												}
+
+
+										}
 									}
 
-									if (row.parent.children[oppositeIndex]) {
+								}
+							}
+						}
+						else {
+							console.log("none row width", row.height)
+							row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
+						}
 
 
 
-											if (settings.usingColumnsOrRows === "rows") {
-												row.parent.children[oppositeIndex].appendChild(cell)
-												row.parent.children[oppositeIndex].resize(cell.width, row.height)
-												row.parent.children[oppositeIndex].layoutAlign = "STRETCH"
-											}
-											else {
-												row.parent.children[oppositeIndex].appendChild(cell)
-												cell.resize(row.width, 100)
 
 
+						if (settings.usingColumnsOrRows === "rows" && isRow(row)) {
+							row.name = row.name.replace("Row", "Col")
+							row.layoutMode = "VERTICAL"
+						}
 
-												// cell.primaryAxisSizingMode = "FIXED"
-												// cell.layoutAlign = "STRETCH"
+					}
+
+					if (settings.usingColumnsOrRows === "columns") {
+						rowContainer.layoutMode = "VERTICAL"
+					}
+
+					// Because changing layout mode swaps sizingModes you need to loop children again
+					var rowlength = rowContainer.children.length
+
+					// For some reason can't remove nodes while in loop, so workaround is to add to an array.
+					let discardBucket = []
+
+					for (let i = 0; i < rowlength; i++) {
+
+						var row = rowContainer.children[i]
+
+						// This is the original object before rows are converted to columns, so may not always match new converted table
+						if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
+
+						if (isRow(row)) {
+							if (settings.usingColumnsOrRows === "columns") {
+								row.counterAxisSizingMode = "AUTO"
+								row.layoutAlign = "STRETCH"
+
+								// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
+
+								var cells = row.children
+								var length = settings.usingColumnsOrRows === "columns" ? firstRow.parent.children.length : firstRow.children.length
+								for (let c = 0; c < length; c++) {
+
+									var cell = cells[c]
+
+									if (cell) {
 
 
-											}
+										if (row.parent.children[getNodeIndex(firstRow) + c]) {
 
-
+											cell.primaryAxisSizingMode = "FIXED"
+											cell.layoutAlign = "STRETCH"
+											console.log(cell.layoutAlign)
+										}
 									}
+
 								}
 
 							}
-						}
-					}
-					else {
-						console.log("none row width", row.height)
-						row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
-					}
 
-
-
-
-
-					if (settings.usingColumnsOrRows === "rows") {
-						row.name = row.name.replace("Row", "Col")
-						if (isRow(row)) row.layoutMode = "VERTICAL"
-					}
-
-				}
-
-				if (settings.usingColumnsOrRows === "columns") {
-					firstRow.parent.layoutMode = "VERTICAL"
-				}
-
-				// Because changing layout mode swaps sizingModes you need to loop children again
-				var rowlength = rowContainer.children.length
-
-				// For some reason can't remove nodes while in loop, so workaround is to add to an array.
-				let discardBucket = []
-
-				for (let i = 0; i < rowlength; i++) {
-
-					var row = rowContainer.children[i]
-
-					// This is the original object before rows are converted to columns, so may not always match new converted table
-					if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
-
-					if (isRow(row)) {
-						if (settings.usingColumnsOrRows === "columns") {
-							row.counterAxisSizingMode = "AUTO"
-							row.layoutAlign = "STRETCH"
-
-							// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
-
-							var cells = row.children
-							var length = settings.usingColumnsOrRows === "columns" ? firstRow.parent.children.length : firstRow.children.length
-							for (let c = 0; c < length; c++) {
-
-								var cell = cells[c]
-
-								if (cell) {
-
-
-									if (row.parent.children[getNodeIndex(firstRow) + c]) {
-
-										cell.primaryAxisSizingMode = "FIXED"
-										cell.layoutAlign = "STRETCH"
-										console.log(cell.layoutAlign)
-									}
-								}
-
+							// If row ends up being empty, then assume it's not needed
+							if (row.children.length === 0) {
+								console.log("remove row")
+								discardBucket.push(row)
 							}
-
 						}
+					}
 
-						// If row ends up being empty, then assume it's not needed
-						if (row.children.length === 0) {
-							console.log("remove row")
-							discardBucket.push(row)
-						}
+					for (let i = 0; i < discardBucket.length; i++) {
+						discardBucket[i].remove()
 					}
 				}
 
-				for (let i = 0; i < discardBucket.length; i++) {
-					discardBucket[i].remove()
-				}
 
 			}
 
+			iterateChildren()
 		}
 
-		iterateChildren()
 	}
 
 }
 
 async function toggleColumnResizing(selection) {
-
+	console.log("start")
 
 	for (let i = 0; i < selection.length; i++) {
 		var oldTable = selection[i]
@@ -572,9 +538,13 @@ async function toggleColumnResizing(selection) {
 
 						if (getPluginData(nodeB, "elementSemantics")?.is === "td" || getPluginData(nodeB, "elementSemantics")?.is === "th") {
 							let newTableCell = newTable.children[a].children[b]
+
 							let oldTableCell = nodeB
+
 							await swapInstance(oldTableCell, newTableCell)
-							newTableCell.resize(oldTableCell.width, oldTableCell.height)
+							// replace(newTableCell, oldTableCell)
+							// newTableCell.swapComponent(oldTableCell.mainComponent)
+							// newTableCell.resize(oldTableCell.width, oldTableCell.height)
 						}
 					}
 
@@ -588,6 +558,8 @@ async function toggleColumnResizing(selection) {
 		}
 
 	}
+
+	console.log("end")
 }
 
 async function spawnTable(selection, userSettings?) {
@@ -720,10 +692,12 @@ async function createTableInstance(templateNode, preferences?) {
 
 	// Remove children which are tds
 	firstRow.findAll((node) => {
-		console.log(node)
-		if (getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th") {
+		console.log("children", node)
+		if (node) {
+			if (getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th") {
 
-			node.remove()
+				node.remove()
+			}
 		}
 	})
 

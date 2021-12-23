@@ -793,6 +793,11 @@ export function createDefaultTemplate() {
 	instance_101_198.layoutAlign = "STRETCH"
 	instance_101_266.layoutAlign = "STRETCH"
 
+	// Manually add shadow to cells for when used in column mode
+	component_101_265.effects = [{"type":"INNER_SHADOW","color":{"r":0.7254902124404907,"g":0.7254902124404907,"b":0.7254902124404907,"a":1},"offset":{"x":0,"y":1},"radius":0,"spread":0,"visible":true,"blendMode":"NORMAL"}]
+	component_101_204.effects = [{"type":"INNER_SHADOW","color":{"r":0.7254902124404907,"g":0.7254902124404907,"b":0.7254902124404907,"a":1},"offset":{"x":0,"y":1},"radius":0,"spread":0,"visible":true,"blendMode":"NORMAL"}]
+	component_101_204.backgrounds = [{"type":"SOLID","visible":true,"opacity":0.0020000000949949026,"blendMode":"NORMAL","color":{"r":1,"g":1,"b":1}}]
+
 	// Manually add bold font weight to header cell
 	loadFonts().then((res) => {
 		text_I101_266_101_117.fontName = {

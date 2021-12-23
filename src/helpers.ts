@@ -165,7 +165,6 @@ export function compareVersion(v1, v2, options?) {
 
 export async function changeText(node, text, weight?) {
 
-
 	if (node.fontName === figma.mixed) {
 		await figma.loadFontAsync(node.getRangeFontName(0, 1) as FontName)
 	} else {
