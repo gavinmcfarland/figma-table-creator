@@ -117,6 +117,18 @@
 		)
 	}
 
+	function saveUserPreferences(preferences) {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "save-user-preferences",
+					...preferences
+				},
+			},
+			"*"
+		)
+	}
+
 	function newTemplate() {
 		setActivePage("createTablePageActive")
 
@@ -491,6 +503,7 @@
 							<div>
 								<input bind:checked={columnResizing} type="checkbox" id="columnResizing" name="columnResizing">
 								<label on:click={(event) => {
+									saveUserPreferences({columnResizing: !columnResizing})
 									}} for="columnResizing">Column Resizing</label>
 							</div>
 						</div>

@@ -1951,6 +1951,15 @@ plugma((plugin) => {
 
 	plugin.on('create-table', createTable)
 
+	plugin.on('save-user-preferences', (msg) => {
+		console.log("saving user prefernces", msg.columnResizing)
+		updateClientStorageAsync('userPreferences', (data) => {
+			data.columnResizing = msg.columnResizing
+
+			return data
+		})
+	})
+
 	plugin.on('link-component', (msg) => {
 		linkComponent(msg.template, figma.currentPage.selection)
 	})
