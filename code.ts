@@ -770,6 +770,8 @@ function findComponentById(id) {
 }
 
 function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usingLocalComponent, cellAlignment) {
+	var tableTemplatedCreatedByPlugin = false
+	var rowTemplatedCreatedByPlugin = false
 
 	// Get Cell Templa
 	var cell = findComponentById(figma.root.getPluginData("cellComponentID"))
@@ -782,15 +784,28 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 	}
 
 	var rowTemplate = findComponentById(figma.root.getPluginData("rowComponentID"))
-	var row = figma.createFrame()
-
-	copyPasteProps(rowTemplate, row, { include: ['name'] })
-
-
-
 	var tableTemplate = findComponentById(figma.root.getPluginData("tableComponentID"))
+
+	var row = figma.createFrame()
 	var table = figma.createFrame()
 
+	if (!tableTemplate) {
+		tableTemplatedCreatedByPlugin = true
+		tableTemplate = figma.createComponent()
+		tableTemplate.name = "Table"
+	}
+
+	if (!rowTemplate) {
+		rowTemplatedCreatedByPlugin = true
+		rowTemplate = figma.createComponent()
+		rowTemplate.counterAxisSizingMode = "AUTO"
+	}
+
+
+
+	console.log(rowTemplate)
+
+	copyPasteProps(rowTemplate, row, { include: ['name'] })
 	copyPasteProps(tableTemplate, table, { include: ['name'] })
 
 
@@ -977,6 +992,9 @@ function createNewTable(numberColumns, numberRows, cellWidth, includeHeader, usi
 
 		table.appendChild(duplicatedRow)
 
+		if (tableTemplatedCreatedByPlugin) tableTemplate.remove()
+		if (rowTemplatedCreatedByPlugin) rowTemplate.remove()
+
 	}
 
 
@@ -1041,6 +1059,9 @@ function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentC
 
 function updateTables() {
 
+	var tableTemplatedCreatedByPlugin = false
+	var rowTemplatedCreatedByPlugin = false
+
 	// Find all tables
 	var pages = figma.root.children
 	var tables
@@ -1055,11 +1076,15 @@ function updateTables() {
 
 	// If can't find table and row templates use plain frame
 	if (!tableTemplate) {
-		tableTemplate = figma.createFrame()
+		tableTemplatedCreatedByPlugin = true
+		tableTemplate = figma.createComponent()
+		tableTemplate.name = "Table"
 	}
 
 	if (!rowTemplate) {
-		rowTemplate = figma.createFrame()
+		rowTemplatedCreatedByPlugin = true
+		rowTemplate = figma.createComponent()
+		rowTemplate.counterAxisSizingMode = "AUTO"
 	}
 
 	var cellTemplateID = figma.root.getPluginData("cellComponentID")
@@ -1162,6 +1187,9 @@ function updateTables() {
 		}
 	}
 	discardBucket.remove()
+
+	if (tableTemplatedCreatedByPlugin) tableTemplate.remove()
+	if (rowTemplatedCreatedByPlugin) rowTemplate.remove()
 
 }
 
