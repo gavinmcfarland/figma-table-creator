@@ -22,15 +22,15 @@ async function updateClientStorageAsync(key, callback) {
     }
 }
 
-const eventListeners$1 = [];
+const eventListeners = [];
 figma.ui.onmessage = message => {
-    for (let eventListener of eventListeners$1) {
+    for (let eventListener of eventListeners) {
         if (message.action === eventListener.action)
             eventListener.callback(message.data);
     }
 };
 
-const nodeProps$1 = [
+const nodeProps = [
     'id',
     'parent',
     'name',
@@ -101,7 +101,7 @@ const nodeProps$1 = [
     'guides',
     'type'
 ];
-const readOnly$1 = [
+const readOnly = [
     'id',
     'parent',
     'removed',
@@ -134,7 +134,7 @@ const readOnly$1 = [
 */
 // FIXME: When an empty objet is provided, copy over all properties including width and height
 // FIXME: Don't require a setter in order to copy property. Should be able to copy from an object literal for example.
-function copyPaste$1(source, target, ...args) {
+function copyPaste(source, target, ...args) {
     var targetIsEmpty;
     if (target && Object.keys(target).length === 0 && target.constructor === Object) {
         targetIsEmpty = true;
@@ -152,19 +152,19 @@ function copyPaste$1(source, target, ...args) {
         options = {};
     const { include, exclude, withoutRelations, removeConflicts } = options;
     // const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__))
-    let allowlist = nodeProps$1.filter(function (el) {
-        return !readOnly$1.includes(el);
+    let allowlist = nodeProps.filter(function (el) {
+        return !readOnly.includes(el);
     });
     if (include) {
         // If include supplied, include copy across these properties and their values if they exist
         allowlist = include.filter(function (el) {
-            return !readOnly$1.includes(el);
+            return !readOnly.includes(el);
         });
     }
     if (exclude) {
         // If exclude supplied then don't copy over the values of these properties
         allowlist = allowlist.filter(function (el) {
-            return !exclude.concat(readOnly$1).includes(el);
+            return !exclude.concat(readOnly).includes(el);
         });
     }
     // target supplied, don't copy over the values of these properties
@@ -245,12 +245,12 @@ function copyPaste$1(source, target, ...args) {
     if (targetIsEmpty) {
         if (source.type === "FRAME" || source.type === "COMPONENT" || source.type === "COMPONENT_SET" || source.type === "PAGE" || source.type === 'GROUP' || source.type === 'INSTANCE' || source.type === 'DOCUMENT' || source.type === 'BOOLEAN_OPERATION') {
             if (source.children && !withoutRelations) {
-                obj.children = source.children.map((child) => copyPaste$1(child, {}, { withoutRelations }));
+                obj.children = source.children.map((child) => copyPaste(child, {}, { withoutRelations }));
             }
         }
         if (source.type === "INSTANCE") {
             if (source.mainComponent && !withoutRelations) {
-                obj.masterComponent = copyPaste$1(source.mainComponent, {}, { withoutRelations });
+                obj.masterComponent = copyPaste(source.mainComponent, {}, { withoutRelations });
             }
         }
     }
@@ -273,7 +273,7 @@ function convertToFrame(node) {
         console.log("hello");
         let frame = node.createInstance().detachInstance();
         parent.appendChild(frame);
-        copyPaste$1(node, frame, { include: ['x', 'y'] });
+        copyPaste(node, frame, { include: ['x', 'y'] });
         // Treat like native method
         figma.currentPage.appendChild(frame);
         node.remove();
@@ -283,7 +283,7 @@ function convertToFrame(node) {
         let frame = figma.createFrame();
         // FIXME: Add this into copyPaste helper
         frame.resizeWithoutConstraints(node.width, node.height);
-        copyPaste$1(node, frame);
+        copyPaste(node, frame);
         node.remove();
         return frame;
     }
@@ -320,7 +320,7 @@ function convertToComponent(node) {
     node = convertToFrame(node);
     // FIXME: Add this into copyPaste helper
     component.resizeWithoutConstraints(node.width, node.height);
-    copyPaste$1(node, component);
+    copyPaste(node, component);
     moveChildren(node, component);
     node.remove();
     return component;
@@ -331,7 +331,7 @@ function convertToComponent(node) {
  * @param {String} key A key to store data under
  * @param {any} data Data to be stoed
  */
-function setPluginData$1(node, key, data) {
+function setPluginData(node, key, data) {
     node.setPluginData(key, JSON.stringify(data));
 }
 function updatePluginData(node, key, callback) {
@@ -373,17 +373,11 @@ function removeChildren(node) {
  * @returns Resized Node
  */
 function resize(node, width, height) {
-    let nodeParent = node.parent;
-    let primaryAxisSizingMode = node.primaryAxisSizingMode;
-    let counterAxisSizingMode = node.counterAxisSizingMode;
-    let layoutAlign = node.layoutAlign;
-    let layoutGrow = node.layoutGrow;
     //Workaround to resize a node, if its size is less than 0.01
     //If 0, make it almost zero
     width === 0 ? width = 1 / Number.MAX_SAFE_INTEGER : null;
-    width === null ? width = node.width : null;
     height === 0 ? height = 1 / Number.MAX_SAFE_INTEGER : null;
-    height === null ? height = node.height : null;
+    let nodeParent = node.parent;
     node.resize(width < 0.01 ? 1 : width, height < 0.01 ? 1 : height);
     if (width < 0.01 || height < 0.01) {
         let dummy = figma.createRectangle();
@@ -392,26 +386,6 @@ function resize(node, width, height) {
         group.resize(width < 0.01 ? 1 : width, height < 0.01 ? 1 : height);
         nodeParent.appendChild(node);
         group.remove();
-    }
-    if (width === null) {
-        if (node.layoutMode === "VERTICAL") {
-            node.primaryAxisSizingMode = primaryAxisSizingMode;
-            node.layoutAlign = layoutAlign;
-        }
-        if (node.layoutMode === "HORIZONTAL") {
-            node.counterAxisSizingMode = counterAxisSizingMode;
-            node.layoutGrow = layoutGrow;
-        }
-    }
-    if (height === null) {
-        if (node.layoutMode === "HORIZONTAL") {
-            node.primaryAxisSizingMode = primaryAxisSizingMode;
-            node.layoutAlign = layoutAlign;
-        }
-        if (node.layoutMode === "HORIZONTAL") {
-            node.counterAxisSizingMode = counterAxisSizingMode;
-            node.layoutGrow = layoutGrow;
-        }
     }
     return node;
 }
@@ -571,7 +545,7 @@ function replace(target, source) {
     if (result) {
         // FIXME: Add this into copyPaste helper
         result.resizeWithoutConstraints(targetWidth, targetHeight);
-        copyPaste$1(targetCopy, result, { include: ['x', 'y', 'constraints'] });
+        copyPaste(targetCopy, result, { include: ['x', 'y', 'constraints'] });
         // copyPaste not working properly so have to manually copy x and y
         result.x = targetCopy.x;
         result.y = targetCopy.y;
@@ -590,6 +564,7 @@ function replace(target, source) {
 
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
+var copyPaste_1 = copyPaste;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
 var getPageNode_1 = getPageNode;
@@ -598,204 +573,10 @@ var removeChildren_1 = removeChildren;
 var replace_1 = replace;
 var resize_1 = resize;
 var setClientStorageAsync_1 = setClientStorageAsync;
-var setPluginData_1 = setPluginData$1;
+var setPluginData_1 = setPluginData;
 var ungroup_1 = ungroup;
 var updateClientStorageAsync_1 = updateClientStorageAsync;
 var updatePluginData_1 = updatePluginData;
-
-const eventListeners = [];
-
-figma.ui.onmessage = message => {
-  for (let eventListener of eventListeners) {
-    if (message.action === eventListener.action) eventListener.callback(message.data);
-  }
-};
-
-const nodeProps = ['id', 'parent', 'name', 'removed', 'visible', 'locked', 'children', 'constraints', 'absoluteTransform', 'relativeTransform', 'x', 'y', 'rotation', 'width', 'height', 'constrainProportions', 'layoutAlign', 'layoutGrow', 'opacity', 'blendMode', 'isMask', 'effects', 'effectStyleId', 'expanded', 'backgrounds', 'backgroundStyleId', 'fills', 'strokes', 'strokeWeight', 'strokeMiterLimit', 'strokeAlign', 'strokeCap', 'strokeJoin', 'dashPattern', 'fillStyleId', 'strokeStyleId', 'cornerRadius', 'cornerSmoothing', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius', 'exportSettings', 'overflowDirection', 'numberOfFixedChildren', 'overlayPositionType', 'overlayBackground', 'overlayBackgroundInteraction', 'reactions', 'description', 'remote', 'key', 'layoutMode', 'primaryAxisSizingMode', 'counterAxisSizingMode', 'primaryAxisAlignItems', 'counterAxisAlignItems', 'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom', 'itemSpacing', // 'horizontalPadding',
-// 'verticalPadding',
-'layoutGrids', 'gridStyleId', 'clipsContent', 'guides', 'type'];
-const readOnly = ['id', 'parent', 'removed', 'children', 'absoluteTransform', 'width', 'height', 'overlayPositionType', 'overlayBackground', 'overlayBackgroundInteraction', 'reactions', 'remote', 'key', 'type', 'masterComponent', 'mainComponent'];
-//     const obj = {};
-//     if (mixedProps[prop] && node[prop] === figma.mixed) {
-//         for (let prop of mixedProp[prop]) {
-//             obj[prop] = source[prop]
-//         }
-//     } else {
-//         obj[prop] = node[prop]
-//     }
-// }
-
-// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode)
-// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options)
-// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback)
-// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options, callback: Callback)
-// export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback, options: Options)
-
-/**
-* Allows you to copy and paste props between nodes.
-*
-* @param source - The node you want to copy from
-* @param target - The node or object you want to paste to
-* @param args - Either options or a callback.
-* @returns A node or object with the properties copied over
-*/
-function copyPaste(source, target, ...args) {
-  var targetIsEmpty;
-
-  if (target && Object.keys(target).length === 0 && target.constructor === Object) {
-    targetIsEmpty = true;
-  }
-
-  var options;
-  if (typeof args[0] === 'function') ;
-  if (typeof args[1] === 'function') ;
-  if (typeof args[0] === 'object' && typeof args[0] !== 'function') options = args[0];
-  if (typeof args[0] === 'object' && typeof args[0] !== 'function') options = args[0];
-  if (!options) options = {};
-  const {
-    include,
-    exclude,
-    withoutRelations,
-    removeConflicts
-  } = options; // const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__))
-
-  let allowlist = nodeProps.filter(function (el) {
-    return !readOnly.includes(el);
-  });
-
-  if (include) {
-    // If include supplied, include copy across these properties and their values if they exist
-    allowlist = include.filter(function (el) {
-      return !readOnly.includes(el);
-    });
-  }
-
-  if (exclude) {
-    // If exclude supplied then don't copy over the values of these properties
-    allowlist = allowlist.filter(function (el) {
-      return !exclude.concat(readOnly).includes(el);
-    });
-  } // target supplied, don't copy over the values of these properties
-
-
-  if (target && !targetIsEmpty) {
-    allowlist = allowlist.filter(function (el) {
-      return !['id', 'type'].includes(el);
-    });
-  }
-
-  var obj = {};
-
-  if (targetIsEmpty) {
-    if (obj.id === undefined) {
-      obj.id = source.id;
-    }
-
-    if (obj.type === undefined) {
-      obj.type = source.type;
-    }
-
-    if (source.key) obj.key = source.key;
-  }
-
-  const props = Object.entries(Object.getOwnPropertyDescriptors(source.__proto__));
-
-  for (const [key, value] of props) {
-    if (allowlist.includes(key)) {
-      try {
-        if (typeof obj[key] === 'symbol') {
-          obj[key] = 'Mixed';
-        } else {
-          obj[key] = value.get.call(source);
-        }
-      } catch (err) {
-        obj[key] = undefined;
-      }
-    } // Needs building in
-    // if (callback) {
-    //     callback(obj)
-    // }
-    // else {
-    // }
-
-  }
-
-  if (!removeConflicts) {
-    !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
-    !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
-    !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
-    !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
-    !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
-
-    if (obj.textStyleId) {
-      delete obj.fontName;
-      delete obj.fontSize;
-      delete obj.letterSpacing;
-      delete obj.lineHeight;
-      delete obj.paragraphIndent;
-      delete obj.paragraphSpacing;
-      delete obj.textCase;
-      delete obj.textDecoration;
-    } else {
-      delete obj.textStyleId;
-    }
-
-    if (obj.cornerRadius !== figma.mixed) {
-      delete obj.topLeftRadius;
-      delete obj.topRightRadius;
-      delete obj.bottomLeftRadius;
-      delete obj.bottomRightRadius;
-    } else {
-      delete obj.cornerRadius;
-    }
-  } // Only applicable to objects because these properties cannot be set on nodes
-
-
-  if (targetIsEmpty) {
-    if (source.parent && !withoutRelations) {
-      obj.parent = {
-        id: source.parent.id,
-        type: source.parent.type
-      };
-    }
-  } // Only applicable to objects because these properties cannot be set on nodes
-
-
-  if (targetIsEmpty) {
-    if (source.type === "FRAME" || source.type === "COMPONENT" || source.type === "COMPONENT_SET" || source.type === "PAGE" || source.type === 'GROUP' || source.type === 'INSTANCE' || source.type === 'DOCUMENT' || source.type === 'BOOLEAN_OPERATION') {
-      if (source.children && !withoutRelations) {
-        obj.children = source.children.map(child => copyPaste(child, {}, {
-          withoutRelations
-        }));
-      }
-    }
-
-    if (source.type === "INSTANCE") {
-      if (source.mainComponent && !withoutRelations) {
-        obj.masterComponent = copyPaste(source.mainComponent, {}, {
-          withoutRelations
-        });
-      }
-    }
-  }
-
-  Object.assign(target, obj);
-  return obj;
-}
-
-/**
- * Helpers which automatically parse and stringify when you get, set or update plugin data
- */
-/**
- * 
- * @param {BaseNode} node  A figma node to set data on
- * @param {String} key A key to store data under
- * @param {any} data Data to be stoed
- */
-
-function setPluginData(node, key, data) {
-  node.setPluginData(key, JSON.stringify(data));
-}
 
 function copyPasteStyle(source, target, options = {}) {
     // exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
@@ -835,7 +616,7 @@ function copyPasteStyle(source, target, options = {}) {
     else {
         options.include = styleProps;
     }
-    return copyPaste(source, target, options);
+    return copyPaste_1(source, target, options);
 }
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
@@ -1615,10 +1396,10 @@ function createDefaultTemplate() {
     component_1_351.remove();
     // Remove tooltip component from canvas
     component_1_430.remove();
-    setPluginData(component_1_378, "elementSemantics", { is: "table" });
-    setPluginData(component_1_365, "elementSemantics", { is: "tr" });
-    setPluginData(component_101_204, "elementSemantics", { is: "td" });
-    setPluginData(component_101_265, "elementSemantics", { is: "th" });
+    setPluginData_1(component_1_378, "elementSemantics", { is: "table" });
+    setPluginData_1(component_1_365, "elementSemantics", { is: "tr" });
+    setPluginData_1(component_101_204, "elementSemantics", { is: "td" });
+    setPluginData_1(component_101_265, "elementSemantics", { is: "th" });
     // does it need to be on base component?
     component_101_204.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
     component_101_265.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });

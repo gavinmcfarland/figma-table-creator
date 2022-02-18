@@ -1,5 +1,5 @@
 
-import { copyPaste } from '@figlets/helpers'
+import { copyPaste } from '@fignite/helpers'
 
 export function copyPasteStyle(source, target, options: any = {}) {
 
