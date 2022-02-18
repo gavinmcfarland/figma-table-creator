@@ -280,7 +280,6 @@
 
 
 		if (data.type === "create-table") {
-			console.log("received new data")
 			let store = {
 				pageState,
 				selectedFile,

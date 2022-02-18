@@ -2,7 +2,7 @@ import { ungroupNode } from "./helpers"
 import { setPluginData, updatePluginData } from '@fignite/helpers'
 
 // Wrap in function
-export function createDefaultTemplate() {
+export async function createDefaultTemplate() {
 	const obj: any = {}
 
 	// Load FONTS
@@ -23,7 +23,6 @@ export function createDefaultTemplate() {
 	var component_101_204 = figma.createComponent()
 	component_101_204.resize(120.0000000000, 35.0000000000)
 	component_101_204.name = "Type=Default"
-	component_101_204.widgetEvents = []
 	component_101_204.layoutAlign = "STRETCH"
 	component_101_204.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }]
 	component_101_204.primaryAxisSizingMode = "FIXED"
@@ -36,7 +35,6 @@ export function createDefaultTemplate() {
 	var component_101_119 = figma.createComponent()
 	component_101_119.resize(120.0000000000, 35.0000000000)
 	component_101_119.name = "_BaseCell"
-	component_101_119.widgetEvents = []
 	component_101_119.relativeTransform = [[1, 0, 8760], [0, 1, 5164]]
 	component_101_119.x = 8760
 	component_101_119.y = 5164
@@ -53,7 +51,6 @@ export function createDefaultTemplate() {
 	var frame_101_114 = figma.createFrame()
 	frame_101_114.resizeWithoutConstraints(120.0000000000, 0.01)
 	frame_101_114.primaryAxisSizingMode = "AUTO"
-	frame_101_114.widgetEvents = []
 	frame_101_114.locked = true
 	frame_101_114.layoutAlign = "STRETCH"
 	frame_101_114.fills = []
@@ -65,7 +62,6 @@ export function createDefaultTemplate() {
 	// Create COMPONENT
 	var component_1_351 = figma.createComponent()
 	component_1_351.name = "_TableBorder"
-	component_1_351.widgetEvents = []
 	component_1_351.relativeTransform = [[1, 0, 8476], [0, 1, 5168]]
 	component_1_351.x = 8476
 	component_1_351.y = 5168
@@ -77,7 +73,6 @@ export function createDefaultTemplate() {
 	// Create LINE
 	var line_1_352 = figma.createLine()
 	line_1_352.resizeWithoutConstraints(500.0000000000, 0.0000000000)
-	line_1_352.widgetEvents = []
 	line_1_352.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }]
 	line_1_352.relativeTransform = [[-4.37e-8, -1, 0], [1, -4.37e-8, 0]]
 	line_1_352.rotation = -90.00000250447827
@@ -101,7 +96,6 @@ export function createDefaultTemplate() {
 	frame_101_116.resize(120.0000000000, 35.0000000000)
 	frame_101_116.primaryAxisSizingMode = "AUTO"
 	frame_101_116.name = "Content"
-	frame_101_116.widgetEvents = []
 	frame_101_116.relativeTransform = [[1, 0, 0], [0, 1, 0.001]]
 	frame_101_116.y = 0.0010000000474974513
 	frame_101_116.layoutAlign = "STRETCH"
@@ -118,7 +112,6 @@ export function createDefaultTemplate() {
 	// Create TEXT
 	var text_101_117 = figma.createText()
 	text_101_117.resize(96.0000000000, 15.0000000000)
-	text_101_117.widgetEvents = []
 	text_101_117.relativeTransform = [[1, 0, 12], [0, 1, 10]]
 	text_101_117.x = 12
 	text_101_117.y = 10
@@ -172,7 +165,6 @@ export function createDefaultTemplate() {
 	var component_101_265 = figma.createComponent()
 	component_101_265.resize(120.0000000000, 35.0000000000)
 	component_101_265.name = "Type=Header"
-	component_101_265.widgetEvents = []
 	component_101_265.relativeTransform = [[1, 0, 120], [0, 1, 0]]
 	component_101_265.x = 120
 	component_101_265.layoutAlign = "STRETCH"
@@ -218,7 +210,6 @@ export function createDefaultTemplate() {
 	componentSet_1_364.resize(240.0000000000, 35.0000000000)
 	componentSet_1_364.primaryAxisSizingMode = "AUTO"
 	componentSet_1_364.name = "_Cell"
-	componentSet_1_364.widgetEvents = []
 	componentSet_1_364.visible = true
 	componentSet_1_364.locked = false
 	componentSet_1_364.opacity = 1
@@ -267,7 +258,6 @@ export function createDefaultTemplate() {
 	component_1_365.primaryAxisSizingMode = "AUTO"
 	component_1_365.counterAxisSizingMode = "AUTO"
 	component_1_365.name = "_Row"
-	component_1_365.widgetEvents = []
 	component_1_365.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }]
 	component_1_365.relativeTransform = [[1, 0, 8760], [0, 1, 4854]]
 	component_1_365.x = 8760
@@ -356,7 +346,6 @@ export function createDefaultTemplate() {
 	component_1_378.primaryAxisSizingMode = "AUTO"
 	component_1_378.counterAxisSizingMode = "AUTO"
 	component_1_378.name = "Table 1"
-	component_1_378.widgetEvents = []
 	component_1_378.effects = [{ "type": "DROP_SHADOW", "color": { "r": 0, "g": 0, "b": 0, "a": 0.10000000149011612 }, "offset": { "x": 0, "y": 2 }, "radius": 6, "spread": 0, "visible": true, "blendMode": "NORMAL", "showShadowBehindNode": false }]
 	component_1_378.relativeTransform = [[1, 0, 8760], [0, 1, 4629]]
 	component_1_378.x = 8760
@@ -591,7 +580,6 @@ export function createDefaultTemplate() {
 	component_1_430.resize(457.0000000000, 179.0000000000)
 	component_1_430.counterAxisSizingMode = "AUTO"
 	component_1_430.name = "_Tooltip"
-	component_1_430.widgetEvents = []
 	component_1_430.effects = [{ "type": "DROP_SHADOW", "color": { "r": 0.9666666388511658, "g": 0.15708333253860474, "b": 0.15708333253860474, "a": 0.09000000357627869 }, "offset": { "x": 0, "y": 16 }, "radius": 8, "spread": 0, "visible": false, "blendMode": "NORMAL", "showShadowBehindNode": true }]
 	component_1_430.relativeTransform = [[1, 0, 9080], [0, 1, 4316]]
 	component_1_430.x = 9080
@@ -615,7 +603,6 @@ export function createDefaultTemplate() {
 	frame_1_431.resizeWithoutConstraints(0.01, 0.01)
 	frame_1_431.primaryAxisSizingMode = "AUTO"
 	frame_1_431.name = "Frame 2"
-	frame_1_431.widgetEvents = []
 	frame_1_431.relativeTransform = [[1, 0, 20], [0, 1, 16]]
 	frame_1_431.x = 20
 	frame_1_431.y = 16
@@ -629,7 +616,6 @@ export function createDefaultTemplate() {
 	var rectangle_1_432 = figma.createRectangle()
 	rectangle_1_432.resize(15.5563220978, 15.5563220978)
 	rectangle_1_432.name = "Rectangle 1"
-	rectangle_1_432.widgetEvents = []
 	rectangle_1_432.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.0784313753247261, "g": 0.0784313753247261, "b": 0.0784313753247261 } }]
 	rectangle_1_432.relativeTransform = [[0.7071068287, -0.7071068287, -19.1801757812], [0.7071068287, 0.7071068287, 1.8198242188]]
 	rectangle_1_432.x = -19.18017578125
@@ -642,7 +628,6 @@ export function createDefaultTemplate() {
 	var text_1_433 = figma.createText()
 	text_1_433.resize(416.9899902344, 147.0000000000)
 	text_1_433.name = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables"
-	text_1_433.widgetEvents = []
 	text_1_433.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }]
 	text_1_433.relativeTransform = [[1, 0, 20.0100002289], [0, 1, 16]]
 	text_1_433.x = 20.010000228881836

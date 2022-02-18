@@ -1,137 +1,11 @@
 
 import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode, resize} from '@fignite/helpers'
-import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent } from './helpers'
+import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent, getSelectionName, getVariantName, isVariant, swapAxises, animateIntoView, genRandomId, swapInstance, lookForComponent} from './helpers'
 import { upgradeFrom6to7 } from './upgradeFrom6to7'
 import { createDefaultTemplate } from './defaultTemplate'
 import plugma from 'plugma'
 
-import { Tween, Queue, Easing } from 'tweeno'
-
 console.clear()
-
-function swapAxises(node) {
-	let primary = node.primaryAxisSizingMode
-	let counter = node.counterAxisSizingMode
-
-	node.primaryAxisSizingMode = counter
-	node.counterAxisSizingMode = primary
-
-	return node
-}
-
-function isVariant(node) {
-	if (node.type === "INSTANCE") {
-		return node.mainComponent.parent?.type === "COMPONENT_SET"
-	}
-
-}
-
-function getVariantName(node) {
-	if (isVariant(node)) {
-		let type = node.variantProperties?.Type || node.variantProperties?.type
-
-		if (type) {
-			return node.name + "/" + type
-		}
-		else {
-			return node.name + "/" + node.mainComponent.name
-		}
-	}
-	else {
-		return node.name
-	}
-}
-
-function getSelectionName(node) {
-	if (node) {
-		if (isVariant(node)) {
-			return getVariantName(node)
-		}
-		else {
-			return node.name
-		}
-	}
-	else {
-		return undefined
-	}
-}
-
-function animateIntoView(selection, duration?, easing?) {
-
-	let page = getPageNode(selection[0])
-
-	figma.currentPage = page
-
-	// Get current coordiantes
-	let origCoords = {
-		...figma.viewport.center,
-		z: figma.viewport.zoom
-	}
-
-	// Get to be coordiantes
-	figma.viewport.scrollAndZoomIntoView(selection)
-
-	let newCoords = {
-		...Object.assign({}, figma.viewport.center),
-		z: figma.viewport.zoom
-	}
-
-	// Reset back to current coordinates
-	figma.viewport.center = {
-		x: origCoords.x,
-		y: origCoords.y
-	}
-	figma.viewport.zoom = origCoords.z
-
-	var settings = {
-		// set when starting tween
-		from: origCoords,
-		// state to tween to
-		to: newCoords,
-		// 2 seconds
-		duration: duration || 1000,
-		// repeat 2 times
-		repeat: 0,
-		// do it smoothly
-		easing: easing || Easing.Cubic.Out,
-	};
-
-	var target = {
-		...origCoords,
-		update: function () {
-			figma.viewport.center = { x: this.x, y: this.y }
-			figma.viewport.zoom = this.z
-			// console.log(Math.round(this.x), Math.round(this.y))
-		}
-	};
-
-	var queue = new Queue(),
-		tween = new Tween(target, settings);
-
-	// add the tween to the queue
-	queue.add(tween);
-
-	// start the queue
-	queue.start();
-
-
-	let loop = setInterval(() => {
-		if (queue.tweens.length === 0) {
-			clearInterval(loop)
-		}
-		else {
-			queue.update();
-			// update the target object state
-			target.update();
-		}
-	}, 1)
-}
-
-
-
-
-
-
 
 
 // start the update loop
@@ -159,67 +33,11 @@ function animateIntoView(selection, duration?, easing?) {
 
 // }
 
-upgradeFrom6to7()
-
-
-// Must pass in both the source/target and their matching main components
-async function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
-	for (let a = 0; a < targetChildren.length; a++) {
-		for (let b = 0; b < sourceChildren.length; b++) {
-
-			// If layer has children then run function again
-			if (sourceComponentChildren[a].children && targetComponentChildren[a].children && targetChildren[a].children && sourceChildren[a].children) {
-				overrideChildrenChars(sourceComponentChildren[a].children, targetComponentChildren[b].children, sourceChildren[b].children, targetChildren[b].children)
-			}
-
-			// If layer is a text node then check if the main components share the same name
-			else if (sourceChildren[a].type === "TEXT") {
-				if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
-					await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
-					// loadFonts(targetChildren[a]).then(() => {
-					// 	targetChildren[a].characters = sourceChildren[a].characters
-					// 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
-					// })
-				}
-			}
-		}
-	}
-}
-
-async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren?, targetComponentChildren?) {
-	for (let a = 0; a < sourceChildren.length; a++) {
-		if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
-			targetChildren[a].name = sourceChildren[a].name
-			// targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
-		}
-		// If layer has children then run function again
-		if (targetChildren[a].children && sourceChildren[a].children) {
-
-			await overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children)
-		}
-
-		// If layer is a text node then check if the main components share the same name
-		else if (sourceChildren[a].type === "TEXT") {
-			// if (sourceChildren[a].name === targetChildren[b].name) {
-
-			await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
-		}
-
-	}
-}
-
-async function swapInstance(target, source) {
-	// await overrideChildrenChars(source.mainComponent.children, source.mainComponent.children, source.children, target.children)
-	// replace(newTableCell, oldTableCell.clone())
-	// target.swapComponent(source.mainComponent)
-	await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children)
-}
+// upgradeFrom6to7()
 
 
 
 let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' }
-
-// Move to helpers
 
 const capitalize = (s) => {
 	if (typeof s !== 'string') return ''
@@ -227,35 +45,6 @@ const capitalize = (s) => {
 }
 
 // Move to helpers
-function genRandomId() {
-	var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
-	return randPassword
-}
-
-async function lookForComponent(template) {
-	// Import component first?
-	// If fails, then look for it by id? What if same id is confused with local component?
-	// Needs to know if component is remote?
-
-	var component;
-
-	var localComponent = findComponentById(template.component.id)
-
-	try {
-		if (localComponent && localComponent.key === template.component.key) {
-			component = localComponent
-		}
-		else {
-			throw "error"
-		}
-	}
-	catch {
-		console.log("get remote", localComponent)
-		component = await figma.importComponentByKeyAsync(template.component.key)
-	}
-
-	return component
-}
 
 function getTableSettings(table) {
 	let rowCount = 0
@@ -945,8 +734,6 @@ function selectRow() {
 	}
 }
 
-
-
 function detachTable(selection) {
 	let newSelection = []
 	for (let i = 0; i < selection.length; i++) {
@@ -1236,9 +1023,12 @@ async function syncRemoteFiles() {
 		// Update remoteFiles to match recentFiles
 
 		// Exclude current file
-		recentFiles = recentFiles.filter(d => {
-			return !(d.id === getPluginData(figma.root, "fileId"))
-		})
+		if (remoteFiles) {
+			recentFiles = recentFiles.filter(d => {
+				return !(d.id === getPluginData(figma.root, "fileId"))
+			})
+		}
+
 
 		remoteFiles = recentFiles
 		// // Merge recentFiles into remoteFiles
@@ -1591,7 +1381,7 @@ function setDefaultTemplate(template) {
 
 }
 
-async function createNewTemplate(opts) {
+async function createNewTemplate(opts?) {
 	let {shouldCreateNewPage} = opts
 
 	if (shouldCreateNewPage) {
@@ -1601,16 +1391,16 @@ async function createNewTemplate(opts) {
 		figma.currentPage = newPage
 	}
 
-	var components = createDefaultTemplate()
+	var components = await createDefaultTemplate()
 
-	// figma.currentPage.selection = figma.currentPage.children
+	figma.currentPage.selection = figma.currentPage.children
 	figma.viewport.scrollAndZoomIntoView(figma.currentPage.children)
 
 	// Find templates locally
 	var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT")
 
 
-	if (localTemplates.length > 0) {
+	if (localTemplates && localTemplates.length > 0) {
 
 		localTemplates.sort((a, b) => a.name - b.name)
 
@@ -1938,6 +1728,7 @@ plugma((plugin) => {
 	})
 
 	plugin.on('new-template', (msg) => {
+		// When creating default templates
 		createNewTemplate({shouldCreateNewPage: true})
 	})
 
@@ -2143,7 +1934,7 @@ plugma((plugin) => {
 // console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
 
 getClientStorageAsync("recentFiles").then(recentFiles => {
-	console.log(recentFiles)
+	console.log("recentFiles", recentFiles)
 })
 
 

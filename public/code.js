@@ -578,1038 +578,6 @@ var ungroup_1 = ungroup;
 var updateClientStorageAsync_1 = updateClientStorageAsync;
 var updatePluginData_1 = updatePluginData;
 
-function copyPasteStyle(source, target, options = {}) {
-    // exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
-    const styleProps = [
-        'opacity',
-        'blendMode',
-        'effects',
-        'effectStyleId',
-        'backgrounds',
-        'backgroundStyleId',
-        'fills',
-        'strokes',
-        'strokeWeight',
-        'strokeMiterLimit',
-        'strokeAlign',
-        'strokeCap',
-        'strokeJoin',
-        'dashPattern',
-        'fillStyleId',
-        'strokeStyleId',
-        'cornerRadius',
-        'cornerSmoothing',
-        'topLeftRadius',
-        'topRightRadius',
-        'bottomLeftRadius',
-        'bottomRightRadius',
-        'paddingLeft',
-        'paddingRight',
-        'paddingTop',
-        'paddingBottom',
-        'itemSpacing',
-        'clipsContent'
-    ];
-    if (options.include) {
-        options.include = options.include.concat(styleProps);
-    }
-    else {
-        options.include = styleProps;
-    }
-    return copyPaste_1(source, target, options);
-}
-function clone(val) {
-    return JSON.parse(JSON.stringify(val));
-}
-function isInsideComponent(node) {
-    const parent = node.parent;
-    // Sometimes parent is null
-    if (parent) {
-        if (parent && parent.type === 'COMPONENT') {
-            return true;
-        }
-        else if (parent && parent.type === 'PAGE') {
-            return false;
-        }
-        else {
-            return isInsideComponent(parent);
-        }
-    }
-    else {
-        return false;
-    }
-}
-function getParentComponent(node) {
-    const parent = node.parent;
-    // Sometimes parent is null
-    if (parent) {
-        if (parent && parent.type === 'COMPONENT') {
-            return parent;
-        }
-        else if (parent && parent.type === 'PAGE') {
-            return false;
-        }
-        else {
-            return getParentComponent(parent);
-        }
-    }
-    else {
-        return false;
-    }
-}
-function positionInCenter(node) {
-    // Position newly created table in center of viewport
-    node.x = figma.viewport.center.x - (node.width / 2);
-    node.y = figma.viewport.center.y - (node.height / 2);
-}
-async function changeText(node, text, weight) {
-    if (node.fontName === figma.mixed) {
-        await figma.loadFontAsync(node.getRangeFontName(0, 1));
-    }
-    else {
-        await figma.loadFontAsync({
-            family: node.fontName.family,
-            style: weight || node.fontName.style
-        });
-    }
-    if (weight) {
-        node.fontName = {
-            family: node.fontName.family,
-            style: weight
-        };
-    }
-    if (text) {
-        node.characters = text;
-    }
-    if (text === "") {
-        // Fixes issue where spaces are ignored and node has zero width
-        node.resize(10, node.height);
-    }
-    node.textAutoResize = "HEIGHT";
-    node.layoutAlign = "STRETCH";
-}
-function findComponentById(id) {
-    // var pages = figma.root.children
-    // var component
-    // // Look through each page to see if matches node id
-    // for (let i = 0; i < pages.length; i++) {
-    // 	if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
-    // 		component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
-    // 	}
-    // }
-    // return component || false
-    var node = figma.getNodeById(id);
-    if (node) {
-        if (node.parent === null || node.parent.parent === null) {
-            figma.root.setPluginData("cellComponentState", "exists");
-            return false;
-        }
-        else {
-            figma.root.setPluginData("cellComponentState", "removed");
-            return node;
-        }
-    }
-    else {
-        figma.root.setPluginData("cellComponentState", "deleted");
-        return null;
-    }
-}
-function getPluginData(node, key) {
-    var data;
-    if (node.getPluginData(key)) {
-        data = JSON.parse(node.getPluginData(key));
-    }
-    else {
-        data = undefined;
-    }
-    return data;
-}
-
-// TODO: Is it easier to ask the user to import and select their own components?
-// 1. Hi, I'm tablo. My creator made me so I could help you upgrade to the shiny new version of Table Creator.
-// 2. I notice you don't have a table or row component. Unfortunately you won't be able to continue using this plugin, only kidding. I just need to create some
-// 1. The way table create works is slightly different now. Instead of relying on a single cell component to create tables from. Table Creator now use a table component as a template. As part of this upgrade I'm going to hopefully successfully upgrade your existing components to work with the new version of Table Creator. Unfortunately because of the way plugins work without this making this upgrade you won't be able to continue using the plugin. You can either follow this upgrade, or start from scratch and try and link your old components.
-// 2. First I'll look to see if I can find a table component. If you don't have one I'll create one for you. This will be used as the main template that new tables are created from.
-// 3. Next I'll look to see if you have a row component. If you don't
-function upgradeFrom6to7() {
-    function findUsersExisitingComponents() {
-        return {
-            table: findComponentById(figma.root.getPluginData("tableComponentID")),
-            tr: findComponentById(figma.root.getPluginData("rowComponentID")),
-            td: findComponentById(figma.root.getPluginData("cellComponentID")),
-            th: findComponentById(figma.root.getPluginData("cellHeaderComponentID"))
-        };
-    }
-    const usersExistingComponents = findUsersExisitingComponents();
-    let newComponents = Object.assign({}, usersExistingComponents);
-    if (usersExistingComponents.td) {
-        if (!usersExistingComponents.table) {
-            newComponents.table = figma.createComponent();
-            // Leave a not to let user know how it works now
-        }
-        else {
-            newComponents.table = usersExistingComponents.table;
-        }
-        if (!usersExistingComponents.tr) {
-            newComponents.tr = figma.createComponent();
-            // Add auto layout
-            // Add cells to row component
-            newComponents.tr.appendChild(newComponents.td.createInstance());
-            newComponents.tr.appendChild(newComponents.td.createInstance());
-            // Add row instance to table component
-        }
-        else {
-            newComponents.tr = usersExistingComponents.tr;
-        }
-    }
-    // Need to set templateData on the users existing components
-    // If they don't have a table template then I need to create one
-    // Import user's old template component as a new template
-    // Tidy up data on the users template by removing old pluginData
-}
-
-// Wrap in function
-function createDefaultTemplate() {
-    const obj = {};
-    // Load FONTS
-    async function loadFonts() {
-        await Promise.all([
-            figma.loadFontAsync({
-                family: "Inter",
-                style: "Regular"
-            }),
-            figma.loadFontAsync({
-                family: "Inter",
-                style: "Semi Bold"
-            })
-        ]);
-    }
-    // Create COMPONENT
-    var component_101_204 = figma.createComponent();
-    component_101_204.resize(120.0000000000, 35.0000000000);
-    component_101_204.name = "Type=Default";
-    component_101_204.widgetEvents = [];
-    component_101_204.layoutAlign = "STRETCH";
-    component_101_204.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_101_204.primaryAxisSizingMode = "FIXED";
-    component_101_204.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_101_204.layoutMode = "VERTICAL";
-    component_101_204.description = "";
-    component_101_204.documentationLinks = [];
-    // Create COMPONENT
-    var component_101_119 = figma.createComponent();
-    component_101_119.resize(120.0000000000, 35.0000000000);
-    component_101_119.name = "_BaseCell";
-    component_101_119.widgetEvents = [];
-    component_101_119.relativeTransform = [[1, 0, 8760], [0, 1, 5164]];
-    component_101_119.x = 8760;
-    component_101_119.y = 5164;
-    component_101_119.layoutAlign = "STRETCH";
-    component_101_119.fills = [];
-    component_101_119.primaryAxisSizingMode = "FIXED";
-    component_101_119.backgrounds = [];
-    component_101_119.expanded = false;
-    component_101_119.layoutMode = "VERTICAL";
-    component_101_119.description = "";
-    component_101_119.documentationLinks = [];
-    // Create FRAME
-    var frame_101_114 = figma.createFrame();
-    frame_101_114.resizeWithoutConstraints(120.0000000000, 0.01);
-    frame_101_114.primaryAxisSizingMode = "AUTO";
-    frame_101_114.widgetEvents = [];
-    frame_101_114.locked = true;
-    frame_101_114.layoutAlign = "STRETCH";
-    frame_101_114.fills = [];
-    frame_101_114.backgrounds = [];
-    frame_101_114.clipsContent = false;
-    frame_101_114.expanded = false;
-    component_101_119.appendChild(frame_101_114);
-    // Create COMPONENT
-    var component_1_351 = figma.createComponent();
-    component_1_351.name = "_TableBorder";
-    component_1_351.widgetEvents = [];
-    component_1_351.relativeTransform = [[1, 0, 8476], [0, 1, 5168]];
-    component_1_351.x = 8476;
-    component_1_351.y = 5168;
-    component_1_351.expanded = false;
-    component_1_351.constraints = { "horizontal": "STRETCH", "vertical": "STRETCH" };
-    component_1_351.description = "";
-    component_1_351.documentationLinks = [];
-    // Create LINE
-    var line_1_352 = figma.createLine();
-    line_1_352.resizeWithoutConstraints(500.0000000000, 0.0000000000);
-    line_1_352.widgetEvents = [];
-    line_1_352.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }];
-    line_1_352.relativeTransform = [[-4.37e-8, -1, 0], [1, -4.37e-8, 0]];
-    line_1_352.rotation = -90.00000250447827;
-    line_1_352.constraints = { "horizontal": "STRETCH", "vertical": "STRETCH" };
-    component_1_351.appendChild(line_1_352);
-    // Create INSTANCE
-    var instance_102_493 = component_1_351.createInstance();
-    instance_102_493.relativeTransform = [[1, 0, 0], [0, 1, -250]];
-    instance_102_493.y = -250;
-    frame_101_114.appendChild(instance_102_493);
-    // Swap COMPONENT
-    instance_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_102_493.id + ";" + line_1_352.id);
-    // Create FRAME
-    var frame_101_116 = figma.createFrame();
-    frame_101_116.resize(120.0000000000, 35.0000000000);
-    frame_101_116.primaryAxisSizingMode = "AUTO";
-    frame_101_116.name = "Content";
-    frame_101_116.widgetEvents = [];
-    frame_101_116.relativeTransform = [[1, 0, 0], [0, 1, 0.001]];
-    frame_101_116.y = 0.0010000000474974513;
-    frame_101_116.layoutAlign = "STRETCH";
-    frame_101_116.fills = [];
-    frame_101_116.paddingLeft = 12;
-    frame_101_116.paddingRight = 12;
-    frame_101_116.paddingTop = 10;
-    frame_101_116.paddingBottom = 10;
-    frame_101_116.backgrounds = [];
-    frame_101_116.expanded = false;
-    frame_101_116.layoutMode = "VERTICAL";
-    component_101_119.appendChild(frame_101_116);
-    // Create TEXT
-    var text_101_117 = figma.createText();
-    text_101_117.resize(96.0000000000, 15.0000000000);
-    text_101_117.widgetEvents = [];
-    text_101_117.relativeTransform = [[1, 0, 12], [0, 1, 10]];
-    text_101_117.x = 12;
-    text_101_117.y = 10;
-    text_101_117.layoutAlign = "STRETCH";
-    text_101_117.hyperlink = null;
-    loadFonts().then((res) => {
-        text_101_117.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_101_117.listSpacing = 0;
-        text_101_117.characters = "";
-        text_101_117.lineHeight = { "unit": "PERCENT", "value": 125 };
-        text_101_117.fontName = { "family": "Inter", "style": "Regular" };
-        text_101_117.textAutoResize = "HEIGHT";
-    });
-    frame_101_116.appendChild(text_101_117);
-    // Create INSTANCE
-    var instance_101_198 = component_101_119.createInstance();
-    instance_101_198.resize(120.0000000000, 35.0009994507);
-    instance_101_198.primaryAxisSizingMode = "AUTO";
-    instance_101_198.relativeTransform = [[1, 0, 0], [0, 1, 0]];
-    instance_101_198.primaryAxisSizingMode = "AUTO";
-    instance_101_198.constraints = { "horizontal": "SCALE", "vertical": "CENTER" };
-    component_101_204.appendChild(instance_101_198);
-    // Swap COMPONENT
-    instance_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I101_198_102_493 = figma.getNodeById("I" + instance_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_101_198.id + ";" + text_101_117.id);
-    // Create COMPONENT
-    var component_101_265 = figma.createComponent();
-    component_101_265.resize(120.0000000000, 35.0000000000);
-    component_101_265.name = "Type=Header";
-    component_101_265.widgetEvents = [];
-    component_101_265.relativeTransform = [[1, 0, 120], [0, 1, 0]];
-    component_101_265.x = 120;
-    component_101_265.layoutAlign = "STRETCH";
-    component_101_265.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    component_101_265.primaryAxisSizingMode = "FIXED";
-    component_101_265.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    component_101_265.layoutMode = "VERTICAL";
-    component_101_265.description = "";
-    component_101_265.documentationLinks = [];
-    // Create INSTANCE
-    var instance_101_266 = component_101_119.createInstance();
-    instance_101_266.resize(120.0000000000, 35.0009994507);
-    instance_101_266.primaryAxisSizingMode = "AUTO";
-    instance_101_266.relativeTransform = [[1, 0, 0], [0, 1, 0]];
-    instance_101_266.primaryAxisSizingMode = "AUTO";
-    instance_101_266.constraints = { "horizontal": "SCALE", "vertical": "CENTER" };
-    component_101_265.appendChild(instance_101_266);
-    // Swap COMPONENT
-    instance_101_266.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I101_266_102_493 = figma.getNodeById("I" + instance_101_266.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I101_266_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I101_266_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    var text_I101_266_101_117 = figma.getNodeById("I" + instance_101_266.id + ";" + text_101_117.id);
-    // Create COMPONENT_SET
-    var componentSet_1_364 = figma.combineAsVariants([component_101_204, component_101_265], figma.currentPage);
-    componentSet_1_364.resize(240.0000000000, 35.0000000000);
-    componentSet_1_364.primaryAxisSizingMode = "AUTO";
-    componentSet_1_364.name = "_Cell";
-    componentSet_1_364.widgetEvents = [];
-    componentSet_1_364.visible = true;
-    componentSet_1_364.locked = false;
-    componentSet_1_364.opacity = 1;
-    componentSet_1_364.blendMode = "PASS_THROUGH";
-    componentSet_1_364.isMask = false;
-    componentSet_1_364.effects = [];
-    componentSet_1_364.relativeTransform = [[1, 0, 8760], [0, 1, 5009]];
-    componentSet_1_364.x = 8760;
-    componentSet_1_364.y = 5009;
-    componentSet_1_364.rotation = 0;
-    componentSet_1_364.layoutAlign = "INHERIT";
-    componentSet_1_364.constrainProportions = false;
-    componentSet_1_364.layoutGrow = 0;
-    componentSet_1_364.fills = [];
-    componentSet_1_364.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.48235294222831726, "g": 0.3803921639919281, "b": 1 } }];
-    componentSet_1_364.strokeWeight = 1;
-    componentSet_1_364.strokeAlign = "INSIDE";
-    componentSet_1_364.strokeJoin = "MITER";
-    componentSet_1_364.dashPattern = [10, 5];
-    componentSet_1_364.strokeCap = "NONE";
-    componentSet_1_364.strokeMiterLimit = 4;
-    componentSet_1_364.cornerRadius = 5;
-    componentSet_1_364.cornerSmoothing = 0;
-    componentSet_1_364.paddingLeft = 0;
-    componentSet_1_364.paddingRight = 0;
-    componentSet_1_364.paddingTop = 0;
-    componentSet_1_364.paddingBottom = 0;
-    componentSet_1_364.primaryAxisAlignItems = "MIN";
-    componentSet_1_364.counterAxisAlignItems = "MIN";
-    componentSet_1_364.primaryAxisSizingMode = "AUTO";
-    componentSet_1_364.layoutGrids = [];
-    componentSet_1_364.backgrounds = [];
-    componentSet_1_364.clipsContent = true;
-    componentSet_1_364.guides = [];
-    componentSet_1_364.expanded = true;
-    componentSet_1_364.constraints = { "horizontal": "MIN", "vertical": "MIN" };
-    componentSet_1_364.layoutMode = "HORIZONTAL";
-    componentSet_1_364.counterAxisSizingMode = "FIXED";
-    componentSet_1_364.itemSpacing = 0;
-    componentSet_1_364.description = "";
-    componentSet_1_364.documentationLinks = [];
-    // Create COMPONENT
-    var component_1_365 = figma.createComponent();
-    component_1_365.resize(240.0000000000, 35.0009994507);
-    component_1_365.primaryAxisSizingMode = "AUTO";
-    component_1_365.counterAxisSizingMode = "AUTO";
-    component_1_365.name = "_Row";
-    component_1_365.widgetEvents = [];
-    component_1_365.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
-    component_1_365.relativeTransform = [[1, 0, 8760], [0, 1, 4854]];
-    component_1_365.x = 8760;
-    component_1_365.y = 4854;
-    component_1_365.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_1_365.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_1_365.clipsContent = true;
-    component_1_365.layoutMode = "HORIZONTAL";
-    component_1_365.counterAxisSizingMode = "AUTO";
-    component_1_365.description = "";
-    component_1_365.documentationLinks = [];
-    figma.currentPage.appendChild(component_1_365);
-    // Create INSTANCE
-    var instance_1_366 = component_101_204.createInstance();
-    instance_1_366.resize(120.0000000000, 35.0009994507);
-    instance_1_366.name = "_Cell";
-    instance_1_366.expanded = false;
-    component_1_365.appendChild(instance_1_366);
-    // Swap COMPONENT
-    instance_1_366.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_366_101_198 = figma.getNodeById("I" + instance_1_366.id + ";" + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_366_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_366_101_198_102_493 = figma.getNodeById(instance_I1_366_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_366_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198.id + ";" + text_101_117.id);
-    // Create INSTANCE
-    var instance_1_372 = component_101_204.createInstance();
-    instance_1_372.resize(120.0000000000, 35.0009994507);
-    instance_1_372.name = "_Cell";
-    instance_1_372.relativeTransform = [[1, 0, 120], [0, 1, 0]];
-    instance_1_372.x = 120;
-    component_1_365.appendChild(instance_1_372);
-    // Swap COMPONENT
-    instance_1_372.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_372_101_198 = figma.getNodeById("I" + instance_1_372.id + ";" + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_372_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_372_101_198_102_493 = figma.getNodeById(instance_I1_372_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_372_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198.id + ";" + text_101_117.id);
-    // Create COMPONENT
-    var component_1_378 = figma.createComponent();
-    component_1_378.resize(240.0000000000, 105.0029983521);
-    component_1_378.primaryAxisSizingMode = "AUTO";
-    component_1_378.counterAxisSizingMode = "AUTO";
-    component_1_378.name = "Table 1";
-    component_1_378.widgetEvents = [];
-    component_1_378.effects = [{ "type": "DROP_SHADOW", "color": { "r": 0, "g": 0, "b": 0, "a": 0.10000000149011612 }, "offset": { "x": 0, "y": 2 }, "radius": 6, "spread": 0, "visible": true, "blendMode": "NORMAL", "showShadowBehindNode": false }];
-    component_1_378.relativeTransform = [[1, 0, 8760], [0, 1, 4629]];
-    component_1_378.x = 8760;
-    component_1_378.y = 4629;
-    component_1_378.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_1_378.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }];
-    component_1_378.cornerRadius = 4;
-    component_1_378.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    component_1_378.clipsContent = true;
-    component_1_378.layoutMode = "VERTICAL";
-    component_1_378.counterAxisSizingMode = "AUTO";
-    component_1_378.description = "";
-    component_1_378.documentationLinks = [];
-    figma.currentPage.appendChild(component_1_378);
-    // Create INSTANCE
-    var instance_1_379 = component_1_365.createInstance();
-    instance_1_379.relativeTransform = [[1, 0, 0], [0, 1, 0]];
-    component_1_378.appendChild(instance_1_379);
-    // Swap COMPONENT
-    instance_1_379.swapComponent(component_1_365);
-    // Ref to SUB NODE
-    var instance_I1_379_1_366 = figma.getNodeById("I" + instance_1_379.id + ";" + instance_1_366.id);
-    instance_I1_379_1_366.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    instance_I1_379_1_366.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    // Swap COMPONENT
-    instance_I1_379_1_366.swapComponent(component_101_265);
-    // Ref to SUB NODE
-    var instance_I1_379_1_366_101_266 = figma.getNodeById(instance_I1_379_1_366.id + ";" + instance_101_266.id);
-    // Swap COMPONENT
-    instance_I1_379_1_366_101_266.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_379_1_366_101_266_102_493 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_379_1_366_101_266_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + text_101_117.id);
-    // Ref to SUB NODE
-    var instance_I1_379_1_372 = figma.getNodeById("I" + instance_1_379.id + ";" + instance_1_372.id);
-    instance_I1_379_1_372.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    instance_I1_379_1_372.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
-    // Swap COMPONENT
-    instance_I1_379_1_372.swapComponent(component_101_265);
-    // Ref to SUB NODE
-    var instance_I1_379_1_372_101_266 = figma.getNodeById(instance_I1_379_1_372.id + ";" + instance_101_266.id);
-    // Swap COMPONENT
-    instance_I1_379_1_372_101_266.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_379_1_372_101_266_102_493 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_379_1_372_101_266_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + text_101_117.id);
-    // Create INSTANCE
-    var instance_1_398 = component_1_365.createInstance();
-    instance_1_398.relativeTransform = [[1, 0, 0], [0, 1, 35.0009994507]];
-    instance_1_398.y = 35.000999450683594;
-    instance_1_398.expanded = false;
-    component_1_378.appendChild(instance_1_398);
-    // Swap COMPONENT
-    instance_1_398.swapComponent(component_1_365);
-    // Ref to SUB NODE
-    var instance_I1_398_1_366 = figma.getNodeById("I" + instance_1_398.id + ";" + instance_1_366.id);
-    // Swap COMPONENT
-    instance_I1_398_1_366.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_398_1_366_101_198 = figma.getNodeById(instance_I1_398_1_366.id + ";" + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_398_1_366_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_398_1_366_101_198_102_493 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_398_1_366_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + text_101_117.id);
-    // Ref to SUB NODE
-    var instance_I1_398_1_372 = figma.getNodeById("I" + instance_1_398.id + ";" + instance_1_372.id);
-    instance_I1_398_1_372.expanded = false;
-    // Swap COMPONENT
-    instance_I1_398_1_372.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_398_1_372_101_198 = figma.getNodeById(instance_I1_398_1_372.id + ";" + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_398_1_372_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_398_1_372_101_198_102_493 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_398_1_372_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + text_101_117.id);
-    // Create INSTANCE
-    var instance_1_417 = component_1_365.createInstance();
-    instance_1_417.relativeTransform = [[1, 0, 0], [0, 1, 70.0019989014]];
-    instance_1_417.y = 70.00199890136719;
-    instance_1_417.expanded = false;
-    component_1_378.appendChild(instance_1_417);
-    // Swap COMPONENT
-    instance_1_417.swapComponent(component_1_365);
-    // Ref to SUB NODE
-    var instance_I1_417_1_366 = figma.getNodeById("I" + instance_1_417.id + ";" + instance_1_366.id);
-    // Swap COMPONENT
-    instance_I1_417_1_366.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_417_1_366_101_198 = figma.getNodeById(instance_I1_417_1_366.id + ";" + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_417_1_366_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_417_1_366_101_198_102_493 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_417_1_366_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + text_101_117.id);
-    // Ref to SUB NODE
-    var instance_I1_417_1_372 = figma.getNodeById("I" + instance_1_417.id + ";" + instance_1_372.id);
-    instance_I1_417_1_372.expanded = false;
-    // Swap COMPONENT
-    instance_I1_417_1_372.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_417_1_372_101_198 = figma.getNodeById(instance_I1_417_1_372.id + ";" + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_417_1_372_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_417_1_372_101_198_102_493 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_417_1_372_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198_102_493.id + ";" + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + text_101_117.id);
-    // Create COMPONENT
-    var component_1_430 = figma.createComponent();
-    component_1_430.resize(457.0000000000, 179.0000000000);
-    component_1_430.counterAxisSizingMode = "AUTO";
-    component_1_430.name = "_Tooltip";
-    component_1_430.widgetEvents = [];
-    component_1_430.effects = [{ "type": "DROP_SHADOW", "color": { "r": 0.9666666388511658, "g": 0.15708333253860474, "b": 0.15708333253860474, "a": 0.09000000357627869 }, "offset": { "x": 0, "y": 16 }, "radius": 8, "spread": 0, "visible": false, "blendMode": "NORMAL", "showShadowBehindNode": true }];
-    component_1_430.relativeTransform = [[1, 0, 9080], [0, 1, 4316]];
-    component_1_430.x = 9080;
-    component_1_430.y = 4316;
-    component_1_430.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }, { "type": "GRADIENT_LINEAR", "visible": true, "opacity": 1, "blendMode": "NORMAL", "gradientStops": [{ "color": { "r": 0, "g": 0, "b": 0, "a": 1 }, "position": 0 }, { "color": { "r": 0.26249998807907104, "g": 0.26249998807907104, "b": 0.26249998807907104, "a": 1 }, "position": 1 }], "gradientTransform": [[0.37368255853652954, 0.4259088337421417, 0.21073251962661743], [-0.0000021187263428146252, 0.0000018692335288506001, 0.5000001788139343]] }];
-    component_1_430.cornerRadius = 8;
-    component_1_430.paddingLeft = 20;
-    component_1_430.paddingRight = 20;
-    component_1_430.paddingTop = 16;
-    component_1_430.paddingBottom = 16;
-    component_1_430.primaryAxisSizingMode = "FIXED";
-    component_1_430.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }, { "type": "GRADIENT_LINEAR", "visible": true, "opacity": 1, "blendMode": "NORMAL", "gradientStops": [{ "color": { "r": 0, "g": 0, "b": 0, "a": 1 }, "position": 0 }, { "color": { "r": 0.26249998807907104, "g": 0.26249998807907104, "b": 0.26249998807907104, "a": 1 }, "position": 1 }], "gradientTransform": [[0.37368255853652954, 0.4259088337421417, 0.21073251962661743], [-0.0000021187263428146252, 0.0000018692335288506001, 0.5000001788139343]] }];
-    component_1_430.expanded = false;
-    component_1_430.layoutMode = "HORIZONTAL";
-    component_1_430.counterAxisSizingMode = "AUTO";
-    component_1_430.description = "";
-    component_1_430.documentationLinks = [];
-    // Create FRAME
-    var frame_1_431 = figma.createFrame();
-    frame_1_431.resizeWithoutConstraints(0.01, 0.01);
-    frame_1_431.primaryAxisSizingMode = "AUTO";
-    frame_1_431.name = "Frame 2";
-    frame_1_431.widgetEvents = [];
-    frame_1_431.relativeTransform = [[1, 0, 20], [0, 1, 16]];
-    frame_1_431.x = 20;
-    frame_1_431.y = 16;
-    frame_1_431.fills = [];
-    frame_1_431.backgrounds = [];
-    frame_1_431.clipsContent = false;
-    frame_1_431.expanded = false;
-    component_1_430.appendChild(frame_1_431);
-    // Create RECTANGLE
-    var rectangle_1_432 = figma.createRectangle();
-    rectangle_1_432.resize(15.5563220978, 15.5563220978);
-    rectangle_1_432.name = "Rectangle 1";
-    rectangle_1_432.widgetEvents = [];
-    rectangle_1_432.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.0784313753247261, "g": 0.0784313753247261, "b": 0.0784313753247261 } }];
-    rectangle_1_432.relativeTransform = [[0.7071068287, -0.7071068287, -19.1801757812], [0.7071068287, 0.7071068287, 1.8198242188]];
-    rectangle_1_432.x = -19.18017578125;
-    rectangle_1_432.y = 1.81982421875;
-    rectangle_1_432.rotation = -45;
-    rectangle_1_432.constrainProportions = true;
-    frame_1_431.appendChild(rectangle_1_432);
-    // Create TEXT
-    var text_1_433 = figma.createText();
-    text_1_433.resize(416.9899902344, 147.0000000000);
-    text_1_433.name = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
-    text_1_433.widgetEvents = [];
-    text_1_433.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    text_1_433.relativeTransform = [[1, 0, 20.0100002289], [0, 1, 16]];
-    text_1_433.x = 20.010000228881836;
-    text_1_433.y = 16;
-    text_1_433.layoutGrow = 1;
-    text_1_433.hyperlink = null;
-    text_1_433.autoRename = false;
-    loadFonts().then((res) => {
-        text_1_433.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_1_433.listSpacing = 0;
-        text_1_433.characters = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
-        text_1_433.fontSize = 14;
-        text_1_433.lineHeight = { "unit": "PERCENT", "value": 150 };
-        text_1_433.fontName = { "family": "Inter", "style": "Regular" };
-        text_1_433.textAutoResize = "HEIGHT";
-    });
-    component_1_430.appendChild(text_1_433);
-    // Create INSTANCE
-    var instance_1_434 = component_1_430.createInstance();
-    instance_1_434.relativeTransform = [[1, 0, 9080], [0, 1, 4618]];
-    instance_1_434.y = 4618;
-    figma.currentPage.appendChild(instance_1_434);
-    // Swap COMPONENT
-    instance_1_434.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_1_434.id + ";" + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_1_434.id + ";" + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I1_434_1_433 = figma.getNodeById("I" + instance_1_434.id + ";" + text_1_433.id);
-    text_I1_434_1_433.resize(416.9899902344, 63.0000000000);
-    loadFonts().then((res) => {
-        text_I1_434_1_433.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_I1_434_1_433.characters = "This component is the template used by the plugin to create tables from. You can customise the appearance of your tables by customising these components.";
-    });
-    // Create INSTANCE
-    var instance_1_438 = component_1_430.createInstance();
-    instance_1_438.relativeTransform = [[1, 0, 9080], [0, 1, 4843]];
-    instance_1_438.y = 4843;
-    figma.currentPage.appendChild(instance_1_438);
-    // Swap COMPONENT
-    instance_1_438.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_1_438.id + ";" + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_1_438.id + ";" + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I1_438_1_433 = figma.getNodeById("I" + instance_1_438.id + ";" + text_1_433.id);
-    text_I1_438_1_433.resize(416.9899902344, 42.0000000000);
-    loadFonts().then((res) => {
-        text_I1_438_1_433.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_I1_438_1_433.characters = " To customise the horizontal borders change the shadow colour.";
-    });
-    // Create INSTANCE
-    var instance_1_442 = component_1_430.createInstance();
-    instance_1_442.relativeTransform = [[1, 0, 9080], [0, 1, 4998]];
-    instance_1_442.y = 4998;
-    figma.currentPage.appendChild(instance_1_442);
-    // Swap COMPONENT
-    instance_1_442.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_1_442.id + ";" + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_1_442.id + ";" + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I1_442_1_433 = figma.getNodeById("I" + instance_1_442.id + ";" + text_1_433.id);
-    text_I1_442_1_433.resize(416.9899902344, 42.0000000000);
-    loadFonts().then((res) => {
-        text_I1_442_1_433.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_I1_442_1_433.characters = "Change the appearance of each cell type by customising these variants.";
-    });
-    // Create INSTANCE
-    var instance_102_121 = component_1_430.createInstance();
-    instance_102_121.relativeTransform = [[1, 0, 9080], [0, 1, 5152]];
-    instance_102_121.y = 5152;
-    figma.currentPage.appendChild(instance_102_121);
-    // Swap COMPONENT
-    instance_102_121.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_102_121.id + ";" + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById("I" + instance_102_121.id + ";" + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I102_121_1_433 = figma.getNodeById("I" + instance_102_121.id + ";" + text_1_433.id);
-    text_I102_121_1_433.resize(416.9899902344, 42.0000000000);
-    loadFonts().then((res) => {
-        text_I102_121_1_433.fontName = {
-            family: "Inter",
-            style: "Regular"
-        };
-        text_I102_121_1_433.characters = "Change the deafult appearance of all cells by customising this base component.";
-    });
-    // Remove table border component from canvas
-    component_1_351.remove();
-    // Remove tooltip component from canvas
-    component_1_430.remove();
-    setPluginData_1(component_1_378, "elementSemantics", { is: "table" });
-    setPluginData_1(component_1_365, "elementSemantics", { is: "tr" });
-    setPluginData_1(component_101_204, "elementSemantics", { is: "td" });
-    setPluginData_1(component_101_265, "elementSemantics", { is: "th" });
-    // does it need to be on base component?
-    component_101_204.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
-    component_101_265.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
-    // Manually add properties so cells will fill row height
-    instance_1_372.layoutAlign = "STRETCH";
-    instance_1_366.layoutAlign = "STRETCH";
-    instance_101_198.layoutAlign = "STRETCH";
-    instance_101_266.layoutAlign = "STRETCH";
-    // Manually add shadow to cells for when used in column mode
-    component_101_265.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
-    component_101_204.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
-    component_101_204.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.0020000000949949026, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
-    // Manually add bold font weight to header cell
-    loadFonts().then((res) => {
-        text_I101_266_101_117.fontName = {
-            family: "Inter",
-            style: "Semi Bold"
-        };
-    });
-    obj.table = component_1_378;
-    obj.row = component_1_365;
-    obj.cell = component_101_204;
-    obj.headerCell = component_101_265;
-    obj.cellSet = componentSet_1_364;
-    obj.baseCell = component_101_119;
-    obj.instances = [
-        instance_1_442,
-        instance_102_121,
-        instance_1_438,
-        instance_1_434
-    ];
-    return obj;
-}
-
-var name = "svelte-app";
-var version = "1.0.2";
-var scripts = {
-	build: "rollup -c",
-	dev: "rollup -c -w",
-	start: "sirv public"
-};
-var devDependencies = {
-	"@figma/plugin-typings": "^1.37.0",
-	"@fignite/helpers": "^0.0.0-alpha.10",
-	"@rollup/plugin-commonjs": "^17.0.0",
-	"@rollup/plugin-image": "^2.0.6",
-	"@rollup/plugin-json": "^4.1.0",
-	"@rollup/plugin-node-resolve": "^11.2.1",
-	"@rollup/plugin-replace": "^2.4.2",
-	cssnano: "^4.1.10",
-	"figma-plugin-ds-svelte": "^1.0.7",
-	"flex-gap-polyfill": "^2.2.1",
-	nanoid: "^3.1.22",
-	plugma: "0.0.0-alpha0.7",
-	postcss: "^8.2.4",
-	"postcss-nested": "^4.2.3",
-	rollup: "^2.36.2",
-	"rollup-plugin-html-bundle": "0.0.3",
-	"rollup-plugin-livereload": "^2.0.0",
-	"rollup-plugin-node-polyfills": "^0.2.1",
-	"rollup-plugin-postcss": "^4.0.0",
-	"rollup-plugin-svelte": "^7.0.0",
-	"rollup-plugin-svg": "^2.0.0",
-	"rollup-plugin-terser": "^7.0.2",
-	"rollup-plugin-typescript": "^1.0.1",
-	svelte: "^3.31.2",
-	"svelte-preprocess": "^4.6.9",
-	tslib: "^2.1.0",
-	typescript: "^4.1.3"
-};
-var dependencies = {
-	autoprefixer: "^10.2.1",
-	"common-tags": "^1.8.0",
-	"fs-extra": "^9.1.0",
-	"postcss-logical": "^4.0.2",
-	"sirv-cli": "^1.0.10",
-	stylup: "0.0.0-alpha.3",
-	tweeno: "^1.1.3",
-	uniqid: "^5.3.0",
-	uuid: "^8.3.2"
-};
-var require$$0 = {
-	name: name,
-	version: version,
-	scripts: scripts,
-	devDependencies: devDependencies,
-	dependencies: dependencies
-};
-
-// TODO: Check package from working directory
-// TODO: Check versions from working directory
-// TODO: How to fix issue of referenceing file when used as depency
-// import pkg from '../package.json';
-// import versionHistory from './versions.json';
-// import semver from 'semver';
-// import fs from 'fs';
-// import path from 'path';
-var pkg;
-
-{
-    pkg = require$$0;
-}
-// try {
-// 	versionHistory = require("./package.json");
-// }
-// catch {
-// 	versionHistory = {}
-// }
-// pkg = require(process.cwd() + "/package.json");
-// }
-// console.log(process.cwd() + "/package.json");
-// fs.readFile("../package.json", (err, data) => {
-// 	console.log(err, data)
-// })
-// const file = require("package.json")
-// console.log(file)
-// function updateAvailable() {
-// 	var currentVersion = figma.root.getPluginData("pluginVersion") || pkg.version;
-// 	var newVersion = pkg.version;
-// 	if (semver.gt(newVersion, currentVersion)) {
-// 		return true
-// 	}
-// 	else {
-// 		false
-// 	}
-// }
-function plugma(plugin) {
-    var pluginState = {
-        updateAvailable: false,
-        ui: {}
-    };
-    // console.log(pkg)
-    if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
-        pluginState.version = pkg.version;
-    }
-    // pluginState.updateAvailable = updateAvailable()
-    var eventListeners = [];
-    var menuCommands = [];
-    pluginState.on = (type, callback) => {
-        eventListeners.push({ type, callback });
-    };
-    pluginState.command = (type, callback) => {
-        menuCommands.push({ type, callback });
-    };
-    // Override default page name if set
-    var pageMannuallySet = false;
-    pluginState.setStartPage = (name) => {
-        pluginState.ui.page = name;
-        pageMannuallySet = true;
-    };
-    // pluginState.update = (callback) => {
-    // 	for (let [version, changes] of Object.entries(versionHistory)) {
-    // 		if (version === pkg.version) {
-    // 			// for (let i = 0; i < changes.length; i++) {
-    // 			// 	var change = changes[i]
-    // 			// }
-    // 			callback({ version, changes })
-    // 		}
-    // 	}
-    // }
-    var pluginCommands = plugin(pluginState);
-    // // Override default page name if set
-    // if (pageName[0]) {
-    // 	pluginState.ui.page = pageName[0]
-    // }
-    // console.log("pageName", pluginState.ui.page)
-    Object.assign({}, pluginState, { commands: pluginCommands });
-    if (pluginCommands) {
-        for (let [key, value] of Object.entries(pluginCommands)) {
-            // If command exists in manifest
-            if (figma.command === key) {
-                // Pass default page for ui
-                if (!pageMannuallySet) {
-                    pluginState.ui.page = key;
-                }
-                // Override default page name if set
-                // if (pageName[0]) {
-                // 	pluginState.ui.page = pageName[0]
-                // }
-                // Call function for that command
-                value(pluginState);
-                // Show UI?
-                if (pluginState.ui.open) {
-                    console.log("open?");
-                    figma.showUI(pluginState.ui.html);
-                }
-            }
-        }
-    }
-    figma.ui.onmessage = message => {
-        for (let eventListener of eventListeners) {
-            // console.log(message)
-            if (message.type === eventListener.type)
-                eventListener.callback(message);
-        }
-    };
-    pluginState.ui.show = (data) => {
-        figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
-        figma.ui.postMessage(data);
-    };
-    for (let command of menuCommands) {
-        if (figma.command === command.type) {
-            command.callback(pluginState);
-        }
-    }
-    // console.log(pluginObject)
-}
-
-var dist = plugma;
-
 /* istanbul ignore next */
 var Easing = {
     Linear: {
@@ -2293,47 +1261,10 @@ var tweeno = {
     Easing: easing
 };
 
-console.clear();
-function swapAxises(node) {
-    let primary = node.primaryAxisSizingMode;
-    let counter = node.counterAxisSizingMode;
-    node.primaryAxisSizingMode = counter;
-    node.counterAxisSizingMode = primary;
-    return node;
-}
-function isVariant(node) {
-    var _a;
-    if (node.type === "INSTANCE") {
-        return ((_a = node.mainComponent.parent) === null || _a === void 0 ? void 0 : _a.type) === "COMPONENT_SET";
-    }
-}
-function getVariantName(node) {
-    var _a, _b;
-    if (isVariant(node)) {
-        let type = ((_a = node.variantProperties) === null || _a === void 0 ? void 0 : _a.Type) || ((_b = node.variantProperties) === null || _b === void 0 ? void 0 : _b.type);
-        if (type) {
-            return node.name + "/" + type;
-        }
-        else {
-            return node.name + "/" + node.mainComponent.name;
-        }
-    }
-    else {
-        return node.name;
-    }
-}
-function getSelectionName(node) {
-    if (node) {
-        if (isVariant(node)) {
-            return getVariantName(node);
-        }
-        else {
-            return node.name;
-        }
-    }
-    else {
-        return undefined;
-    }
+// Move to helpers
+function genRandomId() {
+    var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
+    return randPassword;
 }
 function animateIntoView(selection, duration, easing) {
     let page = getPageNode_1(selection[0]);
@@ -2382,24 +1313,47 @@ function animateIntoView(selection, duration, easing) {
         }
     }, 1);
 }
-// start the update loop
-// animate();
-// reset
-// setPluginData(figma.root, "usingRemoteTemplate", "")
-// setPluginData(figma.root, "pluginVersion", "")
-// setClientStorageAsync("pluginAlreadyRun", false)
-// async function pluginAlreadyRun() {
-// 	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
-// 	var newPluginVersion = "7.0.0"
-// 	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
-// 		// setPluginData(figma.root, "pluginVersion", "7.0.0")
-// 		return true
-// 	}
-// 	if (pluginAlreadyRun) {
-// 		return false
-// 	}
-// }
-upgradeFrom6to7();
+function swapAxises(node) {
+    let primary = node.primaryAxisSizingMode;
+    let counter = node.counterAxisSizingMode;
+    node.primaryAxisSizingMode = counter;
+    node.counterAxisSizingMode = primary;
+    return node;
+}
+function isVariant(node) {
+    var _a;
+    if (node.type === "INSTANCE") {
+        return ((_a = node.mainComponent.parent) === null || _a === void 0 ? void 0 : _a.type) === "COMPONENT_SET";
+    }
+}
+function getVariantName(node) {
+    var _a, _b;
+    if (isVariant(node)) {
+        let type = ((_a = node.variantProperties) === null || _a === void 0 ? void 0 : _a.Type) || ((_b = node.variantProperties) === null || _b === void 0 ? void 0 : _b.type);
+        if (type) {
+            return node.name + "/" + type;
+        }
+        else {
+            return node.name + "/" + node.mainComponent.name;
+        }
+    }
+    else {
+        return node.name;
+    }
+}
+function getSelectionName(node) {
+    if (node) {
+        if (isVariant(node)) {
+            return getVariantName(node);
+        }
+        else {
+            return node.name;
+        }
+    }
+    else {
+        return undefined;
+    }
+}
 async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
     for (let a = 0; a < sourceChildren.length; a++) {
         if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
@@ -2423,12 +1377,6 @@ async function swapInstance(target, source) {
     // target.swapComponent(source.mainComponent)
     await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children);
 }
-let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' };
-// Move to helpers
-function genRandomId() {
-    var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
-    return randPassword;
-}
 async function lookForComponent(template) {
     // Import component first?
     // If fails, then look for it by id? What if same id is confused with local component?
@@ -2449,6 +1397,1001 @@ async function lookForComponent(template) {
     }
     return component;
 }
+function copyPasteStyle(source, target, options = {}) {
+    // exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
+    const styleProps = [
+        'opacity',
+        'blendMode',
+        'effects',
+        'effectStyleId',
+        'backgrounds',
+        'backgroundStyleId',
+        'fills',
+        'strokes',
+        'strokeWeight',
+        'strokeMiterLimit',
+        'strokeAlign',
+        'strokeCap',
+        'strokeJoin',
+        'dashPattern',
+        'fillStyleId',
+        'strokeStyleId',
+        'cornerRadius',
+        'cornerSmoothing',
+        'topLeftRadius',
+        'topRightRadius',
+        'bottomLeftRadius',
+        'bottomRightRadius',
+        'paddingLeft',
+        'paddingRight',
+        'paddingTop',
+        'paddingBottom',
+        'itemSpacing',
+        'clipsContent'
+    ];
+    if (options.include) {
+        options.include = options.include.concat(styleProps);
+    }
+    else {
+        options.include = styleProps;
+    }
+    return copyPaste_1(source, target, options);
+}
+function clone(val) {
+    return JSON.parse(JSON.stringify(val));
+}
+function isInsideComponent(node) {
+    const parent = node.parent;
+    // Sometimes parent is null
+    if (parent) {
+        if (parent && parent.type === 'COMPONENT') {
+            return true;
+        }
+        else if (parent && parent.type === 'PAGE') {
+            return false;
+        }
+        else {
+            return isInsideComponent(parent);
+        }
+    }
+    else {
+        return false;
+    }
+}
+function getParentComponent(node) {
+    const parent = node.parent;
+    // Sometimes parent is null
+    if (parent) {
+        if (parent && parent.type === 'COMPONENT') {
+            return parent;
+        }
+        else if (parent && parent.type === 'PAGE') {
+            return false;
+        }
+        else {
+            return getParentComponent(parent);
+        }
+    }
+    else {
+        return false;
+    }
+}
+function positionInCenter(node) {
+    // Position newly created table in center of viewport
+    node.x = figma.viewport.center.x - (node.width / 2);
+    node.y = figma.viewport.center.y - (node.height / 2);
+}
+async function changeText(node, text, weight) {
+    if (node.fontName === figma.mixed) {
+        await figma.loadFontAsync(node.getRangeFontName(0, 1));
+    }
+    else {
+        await figma.loadFontAsync({
+            family: node.fontName.family,
+            style: weight || node.fontName.style
+        });
+    }
+    if (weight) {
+        node.fontName = {
+            family: node.fontName.family,
+            style: weight
+        };
+    }
+    if (text) {
+        node.characters = text;
+    }
+    if (text === "") {
+        // Fixes issue where spaces are ignored and node has zero width
+        node.resize(10, node.height);
+    }
+    node.textAutoResize = "HEIGHT";
+    node.layoutAlign = "STRETCH";
+}
+function findComponentById(id) {
+    // var pages = figma.root.children
+    // var component
+    // // Look through each page to see if matches node id
+    // for (let i = 0; i < pages.length; i++) {
+    // 	if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
+    // 		component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
+    // 	}
+    // }
+    // return component || false
+    var node = figma.getNodeById(id);
+    if (node) {
+        if (node.parent === null || node.parent.parent === null) {
+            figma.root.setPluginData("cellComponentState", "exists");
+            return false;
+        }
+        else {
+            figma.root.setPluginData("cellComponentState", "removed");
+            return node;
+        }
+    }
+    else {
+        figma.root.setPluginData("cellComponentState", "deleted");
+        return null;
+    }
+}
+function getPluginData(node, key) {
+    var data;
+    if (node.getPluginData(key)) {
+        data = JSON.parse(node.getPluginData(key));
+    }
+    else {
+        data = undefined;
+    }
+    return data;
+}
+
+// Wrap in function
+async function createDefaultTemplate() {
+    const obj = {};
+    // Load FONTS
+    async function loadFonts() {
+        await Promise.all([
+            figma.loadFontAsync({
+                family: "Inter",
+                style: "Regular"
+            }),
+            figma.loadFontAsync({
+                family: "Inter",
+                style: "Semi Bold"
+            })
+        ]);
+    }
+    // Create COMPONENT
+    var component_101_204 = figma.createComponent();
+    component_101_204.resize(120.0000000000, 35.0000000000);
+    component_101_204.name = "Type=Default";
+    component_101_204.layoutAlign = "STRETCH";
+    component_101_204.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_101_204.primaryAxisSizingMode = "FIXED";
+    component_101_204.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.000009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_101_204.layoutMode = "VERTICAL";
+    component_101_204.description = "";
+    component_101_204.documentationLinks = [];
+    // Create COMPONENT
+    var component_101_119 = figma.createComponent();
+    component_101_119.resize(120.0000000000, 35.0000000000);
+    component_101_119.name = "_BaseCell";
+    component_101_119.relativeTransform = [[1, 0, 8760], [0, 1, 5164]];
+    component_101_119.x = 8760;
+    component_101_119.y = 5164;
+    component_101_119.layoutAlign = "STRETCH";
+    component_101_119.fills = [];
+    component_101_119.primaryAxisSizingMode = "FIXED";
+    component_101_119.backgrounds = [];
+    component_101_119.expanded = false;
+    component_101_119.layoutMode = "VERTICAL";
+    component_101_119.description = "";
+    component_101_119.documentationLinks = [];
+    // Create FRAME
+    var frame_101_114 = figma.createFrame();
+    frame_101_114.resizeWithoutConstraints(120.0000000000, 0.01);
+    frame_101_114.primaryAxisSizingMode = "AUTO";
+    frame_101_114.locked = true;
+    frame_101_114.layoutAlign = "STRETCH";
+    frame_101_114.fills = [];
+    frame_101_114.backgrounds = [];
+    frame_101_114.clipsContent = false;
+    frame_101_114.expanded = false;
+    component_101_119.appendChild(frame_101_114);
+    // Create COMPONENT
+    var component_1_351 = figma.createComponent();
+    component_1_351.name = "_TableBorder";
+    component_1_351.relativeTransform = [[1, 0, 8476], [0, 1, 5168]];
+    component_1_351.x = 8476;
+    component_1_351.y = 5168;
+    component_1_351.expanded = false;
+    component_1_351.constraints = { "horizontal": "STRETCH", "vertical": "STRETCH" };
+    component_1_351.description = "";
+    component_1_351.documentationLinks = [];
+    // Create LINE
+    var line_1_352 = figma.createLine();
+    line_1_352.resizeWithoutConstraints(500.0000000000, 0.0000000000);
+    line_1_352.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }];
+    line_1_352.relativeTransform = [[-4.37e-8, -1, 0], [1, -4.37e-8, 0]];
+    line_1_352.rotation = -90.00000250447827;
+    line_1_352.constraints = { "horizontal": "STRETCH", "vertical": "STRETCH" };
+    component_1_351.appendChild(line_1_352);
+    // Create INSTANCE
+    var instance_102_493 = component_1_351.createInstance();
+    instance_102_493.relativeTransform = [[1, 0, 0], [0, 1, -250]];
+    instance_102_493.y = -250;
+    frame_101_114.appendChild(instance_102_493);
+    // Swap COMPONENT
+    instance_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_102_493.id + ";" + line_1_352.id);
+    // Create FRAME
+    var frame_101_116 = figma.createFrame();
+    frame_101_116.resize(120.0000000000, 35.0000000000);
+    frame_101_116.primaryAxisSizingMode = "AUTO";
+    frame_101_116.name = "Content";
+    frame_101_116.relativeTransform = [[1, 0, 0], [0, 1, 0.001]];
+    frame_101_116.y = 0.0010000000474974513;
+    frame_101_116.layoutAlign = "STRETCH";
+    frame_101_116.fills = [];
+    frame_101_116.paddingLeft = 12;
+    frame_101_116.paddingRight = 12;
+    frame_101_116.paddingTop = 10;
+    frame_101_116.paddingBottom = 10;
+    frame_101_116.backgrounds = [];
+    frame_101_116.expanded = false;
+    frame_101_116.layoutMode = "VERTICAL";
+    component_101_119.appendChild(frame_101_116);
+    // Create TEXT
+    var text_101_117 = figma.createText();
+    text_101_117.resize(96.0000000000, 15.0000000000);
+    text_101_117.relativeTransform = [[1, 0, 12], [0, 1, 10]];
+    text_101_117.x = 12;
+    text_101_117.y = 10;
+    text_101_117.layoutAlign = "STRETCH";
+    text_101_117.hyperlink = null;
+    loadFonts().then((res) => {
+        text_101_117.fontName = {
+            family: "Inter",
+            style: "Regular"
+        };
+        text_101_117.listSpacing = 0;
+        text_101_117.characters = "";
+        text_101_117.lineHeight = { "unit": "PERCENT", "value": 125 };
+        text_101_117.fontName = { "family": "Inter", "style": "Regular" };
+        text_101_117.textAutoResize = "HEIGHT";
+    });
+    frame_101_116.appendChild(text_101_117);
+    // Create INSTANCE
+    var instance_101_198 = component_101_119.createInstance();
+    instance_101_198.resize(120.0000000000, 35.0009994507);
+    instance_101_198.primaryAxisSizingMode = "AUTO";
+    instance_101_198.relativeTransform = [[1, 0, 0], [0, 1, 0]];
+    instance_101_198.primaryAxisSizingMode = "AUTO";
+    instance_101_198.constraints = { "horizontal": "SCALE", "vertical": "CENTER" };
+    component_101_204.appendChild(instance_101_198);
+    // Swap COMPONENT
+    instance_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I101_198_102_493 = figma.getNodeById("I" + instance_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_101_198.id + ";" + text_101_117.id);
+    // Create COMPONENT
+    var component_101_265 = figma.createComponent();
+    component_101_265.resize(120.0000000000, 35.0000000000);
+    component_101_265.name = "Type=Header";
+    component_101_265.relativeTransform = [[1, 0, 120], [0, 1, 0]];
+    component_101_265.x = 120;
+    component_101_265.layoutAlign = "STRETCH";
+    component_101_265.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    component_101_265.primaryAxisSizingMode = "FIXED";
+    component_101_265.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    component_101_265.layoutMode = "VERTICAL";
+    component_101_265.description = "";
+    component_101_265.documentationLinks = [];
+    // Create INSTANCE
+    var instance_101_266 = component_101_119.createInstance();
+    instance_101_266.resize(120.0000000000, 35.0009994507);
+    instance_101_266.primaryAxisSizingMode = "AUTO";
+    instance_101_266.relativeTransform = [[1, 0, 0], [0, 1, 0]];
+    instance_101_266.primaryAxisSizingMode = "AUTO";
+    instance_101_266.constraints = { "horizontal": "SCALE", "vertical": "CENTER" };
+    component_101_265.appendChild(instance_101_266);
+    // Swap COMPONENT
+    instance_101_266.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I101_266_102_493 = figma.getNodeById("I" + instance_101_266.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I101_266_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I101_266_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_101_266.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    var text_I101_266_101_117 = figma.getNodeById("I" + instance_101_266.id + ";" + text_101_117.id);
+    // Create COMPONENT_SET
+    var componentSet_1_364 = figma.combineAsVariants([component_101_204, component_101_265], figma.currentPage);
+    componentSet_1_364.resize(240.0000000000, 35.0000000000);
+    componentSet_1_364.primaryAxisSizingMode = "AUTO";
+    componentSet_1_364.name = "_Cell";
+    componentSet_1_364.visible = true;
+    componentSet_1_364.locked = false;
+    componentSet_1_364.opacity = 1;
+    componentSet_1_364.blendMode = "PASS_THROUGH";
+    componentSet_1_364.isMask = false;
+    componentSet_1_364.effects = [];
+    componentSet_1_364.relativeTransform = [[1, 0, 8760], [0, 1, 5009]];
+    componentSet_1_364.x = 8760;
+    componentSet_1_364.y = 5009;
+    componentSet_1_364.rotation = 0;
+    componentSet_1_364.layoutAlign = "INHERIT";
+    componentSet_1_364.constrainProportions = false;
+    componentSet_1_364.layoutGrow = 0;
+    componentSet_1_364.fills = [];
+    componentSet_1_364.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.48235294222831726, "g": 0.3803921639919281, "b": 1 } }];
+    componentSet_1_364.strokeWeight = 1;
+    componentSet_1_364.strokeAlign = "INSIDE";
+    componentSet_1_364.strokeJoin = "MITER";
+    componentSet_1_364.dashPattern = [10, 5];
+    componentSet_1_364.strokeCap = "NONE";
+    componentSet_1_364.strokeMiterLimit = 4;
+    componentSet_1_364.cornerRadius = 5;
+    componentSet_1_364.cornerSmoothing = 0;
+    componentSet_1_364.paddingLeft = 0;
+    componentSet_1_364.paddingRight = 0;
+    componentSet_1_364.paddingTop = 0;
+    componentSet_1_364.paddingBottom = 0;
+    componentSet_1_364.primaryAxisAlignItems = "MIN";
+    componentSet_1_364.counterAxisAlignItems = "MIN";
+    componentSet_1_364.primaryAxisSizingMode = "AUTO";
+    componentSet_1_364.layoutGrids = [];
+    componentSet_1_364.backgrounds = [];
+    componentSet_1_364.clipsContent = true;
+    componentSet_1_364.guides = [];
+    componentSet_1_364.expanded = true;
+    componentSet_1_364.constraints = { "horizontal": "MIN", "vertical": "MIN" };
+    componentSet_1_364.layoutMode = "HORIZONTAL";
+    componentSet_1_364.counterAxisSizingMode = "FIXED";
+    componentSet_1_364.itemSpacing = 0;
+    componentSet_1_364.description = "";
+    componentSet_1_364.documentationLinks = [];
+    // Create COMPONENT
+    var component_1_365 = figma.createComponent();
+    component_1_365.resize(240.0000000000, 35.0009994507);
+    component_1_365.primaryAxisSizingMode = "AUTO";
+    component_1_365.counterAxisSizingMode = "AUTO";
+    component_1_365.name = "_Row";
+    component_1_365.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
+    component_1_365.relativeTransform = [[1, 0, 8760], [0, 1, 4854]];
+    component_1_365.x = 8760;
+    component_1_365.y = 4854;
+    component_1_365.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_1_365.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.00009999999747378752, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_1_365.clipsContent = true;
+    component_1_365.layoutMode = "HORIZONTAL";
+    component_1_365.counterAxisSizingMode = "AUTO";
+    component_1_365.description = "";
+    component_1_365.documentationLinks = [];
+    figma.currentPage.appendChild(component_1_365);
+    // Create INSTANCE
+    var instance_1_366 = component_101_204.createInstance();
+    instance_1_366.resize(120.0000000000, 35.0009994507);
+    instance_1_366.name = "_Cell";
+    instance_1_366.expanded = false;
+    component_1_365.appendChild(instance_1_366);
+    // Swap COMPONENT
+    instance_1_366.swapComponent(component_101_204);
+    // Ref to SUB NODE
+    var instance_I1_366_101_198 = figma.getNodeById("I" + instance_1_366.id + ";" + instance_101_198.id);
+    // Swap COMPONENT
+    instance_I1_366_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_366_101_198_102_493 = figma.getNodeById(instance_I1_366_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_366_101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_366_101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_366_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_366_101_198.id + ";" + text_101_117.id);
+    // Create INSTANCE
+    var instance_1_372 = component_101_204.createInstance();
+    instance_1_372.resize(120.0000000000, 35.0009994507);
+    instance_1_372.name = "_Cell";
+    instance_1_372.relativeTransform = [[1, 0, 120], [0, 1, 0]];
+    instance_1_372.x = 120;
+    component_1_365.appendChild(instance_1_372);
+    // Swap COMPONENT
+    instance_1_372.swapComponent(component_101_204);
+    // Ref to SUB NODE
+    var instance_I1_372_101_198 = figma.getNodeById("I" + instance_1_372.id + ";" + instance_101_198.id);
+    // Swap COMPONENT
+    instance_I1_372_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_372_101_198_102_493 = figma.getNodeById(instance_I1_372_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_372_101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_372_101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_372_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_372_101_198.id + ";" + text_101_117.id);
+    // Create COMPONENT
+    var component_1_378 = figma.createComponent();
+    component_1_378.resize(240.0000000000, 105.0029983521);
+    component_1_378.primaryAxisSizingMode = "AUTO";
+    component_1_378.counterAxisSizingMode = "AUTO";
+    component_1_378.name = "Table 1";
+    component_1_378.effects = [{ "type": "DROP_SHADOW", "color": { "r": 0, "g": 0, "b": 0, "a": 0.10000000149011612 }, "offset": { "x": 0, "y": 2 }, "radius": 6, "spread": 0, "visible": true, "blendMode": "NORMAL", "showShadowBehindNode": false }];
+    component_1_378.relativeTransform = [[1, 0, 8760], [0, 1, 4629]];
+    component_1_378.x = 8760;
+    component_1_378.y = 4629;
+    component_1_378.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_1_378.strokes = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907 } }];
+    component_1_378.cornerRadius = 4;
+    component_1_378.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    component_1_378.clipsContent = true;
+    component_1_378.layoutMode = "VERTICAL";
+    component_1_378.counterAxisSizingMode = "AUTO";
+    component_1_378.description = "";
+    component_1_378.documentationLinks = [];
+    figma.currentPage.appendChild(component_1_378);
+    // Create INSTANCE
+    var instance_1_379 = component_1_365.createInstance();
+    instance_1_379.relativeTransform = [[1, 0, 0], [0, 1, 0]];
+    component_1_378.appendChild(instance_1_379);
+    // Swap COMPONENT
+    instance_1_379.swapComponent(component_1_365);
+    // Ref to SUB NODE
+    var instance_I1_379_1_366 = figma.getNodeById("I" + instance_1_379.id + ";" + instance_1_366.id);
+    instance_I1_379_1_366.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    instance_I1_379_1_366.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    // Swap COMPONENT
+    instance_I1_379_1_366.swapComponent(component_101_265);
+    // Ref to SUB NODE
+    var instance_I1_379_1_366_101_266 = figma.getNodeById(instance_I1_379_1_366.id + ";" + instance_101_266.id);
+    // Swap COMPONENT
+    instance_I1_379_1_366_101_266.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_379_1_366_101_266_102_493 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_379_1_366_101_266_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_366_101_266_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_366_101_266.id + ";" + text_101_117.id);
+    // Ref to SUB NODE
+    var instance_I1_379_1_372 = figma.getNodeById("I" + instance_1_379.id + ";" + instance_1_372.id);
+    instance_I1_379_1_372.fills = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    instance_I1_379_1_372.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.05999999865889549, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }];
+    // Swap COMPONENT
+    instance_I1_379_1_372.swapComponent(component_101_265);
+    // Ref to SUB NODE
+    var instance_I1_379_1_372_101_266 = figma.getNodeById(instance_I1_379_1_372.id + ";" + instance_101_266.id);
+    // Swap COMPONENT
+    instance_I1_379_1_372_101_266.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_379_1_372_101_266_102_493 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_379_1_372_101_266_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_372_101_266_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_379_1_372_101_266.id + ";" + text_101_117.id);
+    // Create INSTANCE
+    var instance_1_398 = component_1_365.createInstance();
+    instance_1_398.relativeTransform = [[1, 0, 0], [0, 1, 35.0009994507]];
+    instance_1_398.y = 35.000999450683594;
+    instance_1_398.expanded = false;
+    component_1_378.appendChild(instance_1_398);
+    // Swap COMPONENT
+    instance_1_398.swapComponent(component_1_365);
+    // Ref to SUB NODE
+    var instance_I1_398_1_366 = figma.getNodeById("I" + instance_1_398.id + ";" + instance_1_366.id);
+    // Swap COMPONENT
+    instance_I1_398_1_366.swapComponent(component_101_204);
+    // Ref to SUB NODE
+    var instance_I1_398_1_366_101_198 = figma.getNodeById(instance_I1_398_1_366.id + ";" + instance_101_198.id);
+    // Swap COMPONENT
+    instance_I1_398_1_366_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_398_1_366_101_198_102_493 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_398_1_366_101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_366_101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_366_101_198.id + ";" + text_101_117.id);
+    // Ref to SUB NODE
+    var instance_I1_398_1_372 = figma.getNodeById("I" + instance_1_398.id + ";" + instance_1_372.id);
+    instance_I1_398_1_372.expanded = false;
+    // Swap COMPONENT
+    instance_I1_398_1_372.swapComponent(component_101_204);
+    // Ref to SUB NODE
+    var instance_I1_398_1_372_101_198 = figma.getNodeById(instance_I1_398_1_372.id + ";" + instance_101_198.id);
+    // Swap COMPONENT
+    instance_I1_398_1_372_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_398_1_372_101_198_102_493 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_398_1_372_101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_372_101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_398_1_372_101_198.id + ";" + text_101_117.id);
+    // Create INSTANCE
+    var instance_1_417 = component_1_365.createInstance();
+    instance_1_417.relativeTransform = [[1, 0, 0], [0, 1, 70.0019989014]];
+    instance_1_417.y = 70.00199890136719;
+    instance_1_417.expanded = false;
+    component_1_378.appendChild(instance_1_417);
+    // Swap COMPONENT
+    instance_1_417.swapComponent(component_1_365);
+    // Ref to SUB NODE
+    var instance_I1_417_1_366 = figma.getNodeById("I" + instance_1_417.id + ";" + instance_1_366.id);
+    // Swap COMPONENT
+    instance_I1_417_1_366.swapComponent(component_101_204);
+    // Ref to SUB NODE
+    var instance_I1_417_1_366_101_198 = figma.getNodeById(instance_I1_417_1_366.id + ";" + instance_101_198.id);
+    // Swap COMPONENT
+    instance_I1_417_1_366_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_417_1_366_101_198_102_493 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_417_1_366_101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_366_101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_366_101_198.id + ";" + text_101_117.id);
+    // Ref to SUB NODE
+    var instance_I1_417_1_372 = figma.getNodeById("I" + instance_1_417.id + ";" + instance_1_372.id);
+    instance_I1_417_1_372.expanded = false;
+    // Swap COMPONENT
+    instance_I1_417_1_372.swapComponent(component_101_204);
+    // Ref to SUB NODE
+    var instance_I1_417_1_372_101_198 = figma.getNodeById(instance_I1_417_1_372.id + ";" + instance_101_198.id);
+    // Swap COMPONENT
+    instance_I1_417_1_372_101_198.swapComponent(component_101_119);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_114.id);
+    // Ref to SUB NODE
+    var instance_I1_417_1_372_101_198_102_493 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + instance_102_493.id);
+    // Swap COMPONENT
+    instance_I1_417_1_372_101_198_102_493.swapComponent(component_1_351);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_372_101_198_102_493.id + ";" + line_1_352.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + frame_101_116.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I1_417_1_372_101_198.id + ";" + text_101_117.id);
+    // Create COMPONENT
+    var component_1_430 = figma.createComponent();
+    component_1_430.resize(457.0000000000, 179.0000000000);
+    component_1_430.counterAxisSizingMode = "AUTO";
+    component_1_430.name = "_Tooltip";
+    component_1_430.effects = [{ "type": "DROP_SHADOW", "color": { "r": 0.9666666388511658, "g": 0.15708333253860474, "b": 0.15708333253860474, "a": 0.09000000357627869 }, "offset": { "x": 0, "y": 16 }, "radius": 8, "spread": 0, "visible": false, "blendMode": "NORMAL", "showShadowBehindNode": true }];
+    component_1_430.relativeTransform = [[1, 0, 9080], [0, 1, 4316]];
+    component_1_430.x = 9080;
+    component_1_430.y = 4316;
+    component_1_430.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }, { "type": "GRADIENT_LINEAR", "visible": true, "opacity": 1, "blendMode": "NORMAL", "gradientStops": [{ "color": { "r": 0, "g": 0, "b": 0, "a": 1 }, "position": 0 }, { "color": { "r": 0.26249998807907104, "g": 0.26249998807907104, "b": 0.26249998807907104, "a": 1 }, "position": 1 }], "gradientTransform": [[0.37368255853652954, 0.4259088337421417, 0.21073251962661743], [-0.0000021187263428146252, 0.0000018692335288506001, 0.5000001788139343]] }];
+    component_1_430.cornerRadius = 8;
+    component_1_430.paddingLeft = 20;
+    component_1_430.paddingRight = 20;
+    component_1_430.paddingTop = 16;
+    component_1_430.paddingBottom = 16;
+    component_1_430.primaryAxisSizingMode = "FIXED";
+    component_1_430.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0, "g": 0, "b": 0 } }, { "type": "GRADIENT_LINEAR", "visible": true, "opacity": 1, "blendMode": "NORMAL", "gradientStops": [{ "color": { "r": 0, "g": 0, "b": 0, "a": 1 }, "position": 0 }, { "color": { "r": 0.26249998807907104, "g": 0.26249998807907104, "b": 0.26249998807907104, "a": 1 }, "position": 1 }], "gradientTransform": [[0.37368255853652954, 0.4259088337421417, 0.21073251962661743], [-0.0000021187263428146252, 0.0000018692335288506001, 0.5000001788139343]] }];
+    component_1_430.expanded = false;
+    component_1_430.layoutMode = "HORIZONTAL";
+    component_1_430.counterAxisSizingMode = "AUTO";
+    component_1_430.description = "";
+    component_1_430.documentationLinks = [];
+    // Create FRAME
+    var frame_1_431 = figma.createFrame();
+    frame_1_431.resizeWithoutConstraints(0.01, 0.01);
+    frame_1_431.primaryAxisSizingMode = "AUTO";
+    frame_1_431.name = "Frame 2";
+    frame_1_431.relativeTransform = [[1, 0, 20], [0, 1, 16]];
+    frame_1_431.x = 20;
+    frame_1_431.y = 16;
+    frame_1_431.fills = [];
+    frame_1_431.backgrounds = [];
+    frame_1_431.clipsContent = false;
+    frame_1_431.expanded = false;
+    component_1_430.appendChild(frame_1_431);
+    // Create RECTANGLE
+    var rectangle_1_432 = figma.createRectangle();
+    rectangle_1_432.resize(15.5563220978, 15.5563220978);
+    rectangle_1_432.name = "Rectangle 1";
+    rectangle_1_432.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 0.0784313753247261, "g": 0.0784313753247261, "b": 0.0784313753247261 } }];
+    rectangle_1_432.relativeTransform = [[0.7071068287, -0.7071068287, -19.1801757812], [0.7071068287, 0.7071068287, 1.8198242188]];
+    rectangle_1_432.x = -19.18017578125;
+    rectangle_1_432.y = 1.81982421875;
+    rectangle_1_432.rotation = -45;
+    rectangle_1_432.constrainProportions = true;
+    frame_1_431.appendChild(rectangle_1_432);
+    // Create TEXT
+    var text_1_433 = figma.createText();
+    text_1_433.resize(416.9899902344, 147.0000000000);
+    text_1_433.name = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
+    text_1_433.fills = [{ "type": "SOLID", "visible": true, "opacity": 1, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    text_1_433.relativeTransform = [[1, 0, 20.0100002289], [0, 1, 16]];
+    text_1_433.x = 20.010000228881836;
+    text_1_433.y = 16;
+    text_1_433.layoutGrow = 1;
+    text_1_433.hyperlink = null;
+    text_1_433.autoRename = false;
+    loadFonts().then((res) => {
+        text_1_433.fontName = {
+            family: "Inter",
+            style: "Regular"
+        };
+        text_1_433.listSpacing = 0;
+        text_1_433.characters = "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
+        text_1_433.fontSize = 14;
+        text_1_433.lineHeight = { "unit": "PERCENT", "value": 150 };
+        text_1_433.fontName = { "family": "Inter", "style": "Regular" };
+        text_1_433.textAutoResize = "HEIGHT";
+    });
+    component_1_430.appendChild(text_1_433);
+    // Create INSTANCE
+    var instance_1_434 = component_1_430.createInstance();
+    instance_1_434.relativeTransform = [[1, 0, 9080], [0, 1, 4618]];
+    instance_1_434.y = 4618;
+    figma.currentPage.appendChild(instance_1_434);
+    // Swap COMPONENT
+    instance_1_434.swapComponent(component_1_430);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_1_434.id + ";" + frame_1_431.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_1_434.id + ";" + rectangle_1_432.id);
+    // Ref to SUB NODE
+    var text_I1_434_1_433 = figma.getNodeById("I" + instance_1_434.id + ";" + text_1_433.id);
+    text_I1_434_1_433.resize(416.9899902344, 63.0000000000);
+    loadFonts().then((res) => {
+        text_I1_434_1_433.fontName = {
+            family: "Inter",
+            style: "Regular"
+        };
+        text_I1_434_1_433.characters = "This component is the template used by the plugin to create tables from. You can customise the appearance of your tables by customising these components.";
+    });
+    // Create INSTANCE
+    var instance_1_438 = component_1_430.createInstance();
+    instance_1_438.relativeTransform = [[1, 0, 9080], [0, 1, 4843]];
+    instance_1_438.y = 4843;
+    figma.currentPage.appendChild(instance_1_438);
+    // Swap COMPONENT
+    instance_1_438.swapComponent(component_1_430);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_1_438.id + ";" + frame_1_431.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_1_438.id + ";" + rectangle_1_432.id);
+    // Ref to SUB NODE
+    var text_I1_438_1_433 = figma.getNodeById("I" + instance_1_438.id + ";" + text_1_433.id);
+    text_I1_438_1_433.resize(416.9899902344, 42.0000000000);
+    loadFonts().then((res) => {
+        text_I1_438_1_433.fontName = {
+            family: "Inter",
+            style: "Regular"
+        };
+        text_I1_438_1_433.characters = " To customise the horizontal borders change the shadow colour.";
+    });
+    // Create INSTANCE
+    var instance_1_442 = component_1_430.createInstance();
+    instance_1_442.relativeTransform = [[1, 0, 9080], [0, 1, 4998]];
+    instance_1_442.y = 4998;
+    figma.currentPage.appendChild(instance_1_442);
+    // Swap COMPONENT
+    instance_1_442.swapComponent(component_1_430);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_1_442.id + ";" + frame_1_431.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_1_442.id + ";" + rectangle_1_432.id);
+    // Ref to SUB NODE
+    var text_I1_442_1_433 = figma.getNodeById("I" + instance_1_442.id + ";" + text_1_433.id);
+    text_I1_442_1_433.resize(416.9899902344, 42.0000000000);
+    loadFonts().then((res) => {
+        text_I1_442_1_433.fontName = {
+            family: "Inter",
+            style: "Regular"
+        };
+        text_I1_442_1_433.characters = "Change the appearance of each cell type by customising these variants.";
+    });
+    // Create INSTANCE
+    var instance_102_121 = component_1_430.createInstance();
+    instance_102_121.relativeTransform = [[1, 0, 9080], [0, 1, 5152]];
+    instance_102_121.y = 5152;
+    figma.currentPage.appendChild(instance_102_121);
+    // Swap COMPONENT
+    instance_102_121.swapComponent(component_1_430);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_102_121.id + ";" + frame_1_431.id);
+    // Ref to SUB NODE
+    figma.getNodeById("I" + instance_102_121.id + ";" + rectangle_1_432.id);
+    // Ref to SUB NODE
+    var text_I102_121_1_433 = figma.getNodeById("I" + instance_102_121.id + ";" + text_1_433.id);
+    text_I102_121_1_433.resize(416.9899902344, 42.0000000000);
+    loadFonts().then((res) => {
+        text_I102_121_1_433.fontName = {
+            family: "Inter",
+            style: "Regular"
+        };
+        text_I102_121_1_433.characters = "Change the deafult appearance of all cells by customising this base component.";
+    });
+    // Remove table border component from canvas
+    component_1_351.remove();
+    // Remove tooltip component from canvas
+    component_1_430.remove();
+    setPluginData_1(component_1_378, "elementSemantics", { is: "table" });
+    setPluginData_1(component_1_365, "elementSemantics", { is: "tr" });
+    setPluginData_1(component_101_204, "elementSemantics", { is: "td" });
+    setPluginData_1(component_101_265, "elementSemantics", { is: "th" });
+    // does it need to be on base component?
+    component_101_204.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    component_101_265.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    // Manually add properties so cells will fill row height
+    instance_1_372.layoutAlign = "STRETCH";
+    instance_1_366.layoutAlign = "STRETCH";
+    instance_101_198.layoutAlign = "STRETCH";
+    instance_101_266.layoutAlign = "STRETCH";
+    // Manually add shadow to cells for when used in column mode
+    component_101_265.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
+    component_101_204.effects = [{ "type": "INNER_SHADOW", "color": { "r": 0.7254902124404907, "g": 0.7254902124404907, "b": 0.7254902124404907, "a": 1 }, "offset": { "x": 0, "y": 1 }, "radius": 0, "spread": 0, "visible": true, "blendMode": "NORMAL" }];
+    component_101_204.backgrounds = [{ "type": "SOLID", "visible": true, "opacity": 0.0020000000949949026, "blendMode": "NORMAL", "color": { "r": 1, "g": 1, "b": 1 } }];
+    // Manually add bold font weight to header cell
+    loadFonts().then((res) => {
+        text_I101_266_101_117.fontName = {
+            family: "Inter",
+            style: "Semi Bold"
+        };
+    });
+    obj.table = component_1_378;
+    obj.row = component_1_365;
+    obj.cell = component_101_204;
+    obj.headerCell = component_101_265;
+    obj.cellSet = componentSet_1_364;
+    obj.baseCell = component_101_119;
+    obj.instances = [
+        instance_1_442,
+        instance_102_121,
+        instance_1_438,
+        instance_1_434
+    ];
+    return obj;
+}
+
+var name = "svelte-app";
+var version = "1.0.2";
+var scripts = {
+	build: "rollup -c",
+	dev: "rollup -c -w",
+	start: "sirv public"
+};
+var devDependencies = {
+	"@figma/plugin-typings": "^1.37.0",
+	"@fignite/helpers": "^0.0.0-alpha.10",
+	"@rollup/plugin-commonjs": "^17.0.0",
+	"@rollup/plugin-image": "^2.0.6",
+	"@rollup/plugin-json": "^4.1.0",
+	"@rollup/plugin-node-resolve": "^11.2.1",
+	"@rollup/plugin-replace": "^2.4.2",
+	cssnano: "^4.1.10",
+	"figma-plugin-ds-svelte": "^1.0.7",
+	"flex-gap-polyfill": "^2.2.1",
+	nanoid: "^3.1.22",
+	plugma: "0.0.0-alpha0.7",
+	postcss: "^8.2.4",
+	"postcss-nested": "^4.2.3",
+	rollup: "^2.36.2",
+	"rollup-plugin-html-bundle": "0.0.3",
+	"rollup-plugin-livereload": "^2.0.0",
+	"rollup-plugin-node-polyfills": "^0.2.1",
+	"rollup-plugin-postcss": "^4.0.0",
+	"rollup-plugin-svelte": "^7.0.0",
+	"rollup-plugin-svg": "^2.0.0",
+	"rollup-plugin-terser": "^7.0.2",
+	"rollup-plugin-typescript": "^1.0.1",
+	svelte: "^3.31.2",
+	"svelte-preprocess": "^4.6.9",
+	tslib: "^2.1.0",
+	typescript: "^4.1.3"
+};
+var dependencies = {
+	autoprefixer: "^10.2.1",
+	"common-tags": "^1.8.0",
+	"fs-extra": "^9.1.0",
+	"postcss-logical": "^4.0.2",
+	"sirv-cli": "^1.0.10",
+	stylup: "0.0.0-alpha.3",
+	tweeno: "^1.1.3",
+	uniqid: "^5.3.0",
+	uuid: "^8.3.2"
+};
+var require$$0 = {
+	name: name,
+	version: version,
+	scripts: scripts,
+	devDependencies: devDependencies,
+	dependencies: dependencies
+};
+
+// TODO: Check package from working directory
+// TODO: Check versions from working directory
+// TODO: How to fix issue of referenceing file when used as depency
+// import pkg from '../package.json';
+// import versionHistory from './versions.json';
+// import semver from 'semver';
+// import fs from 'fs';
+// import path from 'path';
+var pkg;
+
+{
+    pkg = require$$0;
+}
+// try {
+// 	versionHistory = require("./package.json");
+// }
+// catch {
+// 	versionHistory = {}
+// }
+// pkg = require(process.cwd() + "/package.json");
+// }
+// console.log(process.cwd() + "/package.json");
+// fs.readFile("../package.json", (err, data) => {
+// 	console.log(err, data)
+// })
+// const file = require("package.json")
+// console.log(file)
+// function updateAvailable() {
+// 	var currentVersion = figma.root.getPluginData("pluginVersion") || pkg.version;
+// 	var newVersion = pkg.version;
+// 	if (semver.gt(newVersion, currentVersion)) {
+// 		return true
+// 	}
+// 	else {
+// 		false
+// 	}
+// }
+function plugma(plugin) {
+    var pluginState = {
+        updateAvailable: false,
+        ui: {}
+    };
+    // console.log(pkg)
+    if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
+        pluginState.version = pkg.version;
+    }
+    // pluginState.updateAvailable = updateAvailable()
+    var eventListeners = [];
+    var menuCommands = [];
+    pluginState.on = (type, callback) => {
+        eventListeners.push({ type, callback });
+    };
+    pluginState.command = (type, callback) => {
+        menuCommands.push({ type, callback });
+    };
+    // Override default page name if set
+    var pageMannuallySet = false;
+    pluginState.setStartPage = (name) => {
+        pluginState.ui.page = name;
+        pageMannuallySet = true;
+    };
+    // pluginState.update = (callback) => {
+    // 	for (let [version, changes] of Object.entries(versionHistory)) {
+    // 		if (version === pkg.version) {
+    // 			// for (let i = 0; i < changes.length; i++) {
+    // 			// 	var change = changes[i]
+    // 			// }
+    // 			callback({ version, changes })
+    // 		}
+    // 	}
+    // }
+    var pluginCommands = plugin(pluginState);
+    // // Override default page name if set
+    // if (pageName[0]) {
+    // 	pluginState.ui.page = pageName[0]
+    // }
+    // console.log("pageName", pluginState.ui.page)
+    Object.assign({}, pluginState, { commands: pluginCommands });
+    if (pluginCommands) {
+        for (let [key, value] of Object.entries(pluginCommands)) {
+            // If command exists in manifest
+            if (figma.command === key) {
+                // Pass default page for ui
+                if (!pageMannuallySet) {
+                    pluginState.ui.page = key;
+                }
+                // Override default page name if set
+                // if (pageName[0]) {
+                // 	pluginState.ui.page = pageName[0]
+                // }
+                // Call function for that command
+                value(pluginState);
+                // Show UI?
+                if (pluginState.ui.open) {
+                    console.log("open?");
+                    figma.showUI(pluginState.ui.html);
+                }
+            }
+        }
+    }
+    figma.ui.onmessage = message => {
+        for (let eventListener of eventListeners) {
+            // console.log(message)
+            if (message.type === eventListener.type)
+                eventListener.callback(message);
+        }
+    };
+    pluginState.ui.show = (data) => {
+        figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
+        figma.ui.postMessage(data);
+    };
+    for (let command of menuCommands) {
+        if (figma.command === command.type) {
+            command.callback(pluginState);
+        }
+    }
+    // console.log(pluginObject)
+}
+
+var dist = plugma;
+
+console.clear();
+// start the update loop
+// animate();
+// reset
+// setPluginData(figma.root, "usingRemoteTemplate", "")
+// setPluginData(figma.root, "pluginVersion", "")
+// setClientStorageAsync("pluginAlreadyRun", false)
+// async function pluginAlreadyRun() {
+// 	var oldPluginVersion = getPluginData(figma.root, "pluginVersion")
+// 	var newPluginVersion = "7.0.0"
+// 	if (parseFloat(oldPluginVersion) < parseFloat(newPluginVersion)) {
+// 		// setPluginData(figma.root, "pluginVersion", "7.0.0")
+// 		return true
+// 	}
+// 	if (pluginAlreadyRun) {
+// 		return false
+// 	}
+// }
+// upgradeFrom6to7()
+let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' };
+// Move to helpers
 function getTableSettings(table) {
     var _a, _b, _c;
     let rowCount = 0;
@@ -3146,9 +3089,11 @@ async function syncRemoteFiles() {
         remoteFiles = remoteFiles || undefined;
         // Update remoteFiles to match recentFiles
         // Exclude current file
-        recentFiles = recentFiles.filter(d => {
-            return !(d.id === getPluginData(figma.root, "fileId"));
-        });
+        if (remoteFiles) {
+            recentFiles = recentFiles.filter(d => {
+                return !(d.id === getPluginData(figma.root, "fileId"));
+            });
+        }
         remoteFiles = recentFiles;
         // // Merge recentFiles into remoteFiles
         // if (recentFiles) {
@@ -3401,12 +3346,12 @@ async function createNewTemplate(opts) {
         newPage.name = "Table Creator";
         figma.currentPage = newPage;
     }
-    var components = createDefaultTemplate();
-    // figma.currentPage.selection = figma.currentPage.children
+    var components = await createDefaultTemplate();
+    figma.currentPage.selection = figma.currentPage.children;
     figma.viewport.scrollAndZoomIntoView(figma.currentPage.children);
     // Find templates locally
     var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT");
-    if (localTemplates.length > 0) {
+    if (localTemplates && localTemplates.length > 0) {
         localTemplates.sort((a, b) => a.name - b.name);
         localTemplates.map(node => {
             console.log(node.name);
@@ -3637,6 +3582,7 @@ dist((plugin) => {
         });
     });
     plugin.on('new-template', (msg) => {
+        // When creating default templates
         createNewTemplate({ shouldCreateNewPage: true });
     });
     plugin.on('existing-template', (msg) => {
@@ -3797,7 +3743,7 @@ dist((plugin) => {
 // console.log('defaultTemplate ->', getPluginData(figma.root, 'defaultTemplate'))
 // console.log('remoteFiles ->', getPluginData(figma.root, 'remoteFiles'))
 getClientStorageAsync_1("recentFiles").then(recentFiles => {
-    console.log(recentFiles);
+    console.log("recentFiles", recentFiles);
 });
 // getClientStorageAsync('userPreferences').then(res => {
 // 	console.log(res)
