@@ -2,7 +2,7 @@
 import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode, resize} from '@fignite/helpers'
 import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent, getSelectionName, getVariantName, isVariant, swapAxises, animateIntoView, genRandomId, swapInstance, lookForComponent} from './helpers'
 import { upgradeFrom6to7 } from './upgradeFrom6to7'
-import { createDefaultTemplate } from './defaultTemplate'
+import { createDefaultComponents } from './defaultTemplate'
 import plugma from 'plugma'
 
 console.clear()
@@ -1381,21 +1381,7 @@ function setDefaultTemplate(template) {
 
 }
 
-async function createNewTemplate(opts?) {
-	let {shouldCreateNewPage} = opts
-
-	if (shouldCreateNewPage) {
-		var newPage = figma.createPage()
-		newPage.name = "Table Creator"
-
-		figma.currentPage = newPage
-	}
-
-	var components = await createDefaultTemplate()
-
-	figma.currentPage.selection = figma.currentPage.children
-	figma.viewport.scrollAndZoomIntoView(figma.currentPage.children)
-
+function renameTemplateNumerically(template) {
 	// Find templates locally
 	var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT")
 
@@ -1414,16 +1400,35 @@ async function createNewTemplate(opts?) {
 			console.log(matches)
 
 			if (matches) {
-				components.table.name = `Table ${parseInt(matches[0], 10) + 1}`
+				template.name = `Table ${parseInt(matches[0], 10) + 1}`
 			}
 
 		}
 	}
+}
+
+async function createNewTemplate(opts?) {
+	let {shouldCreateNewPage} = opts
+
+	if (shouldCreateNewPage) {
+		var newPage = figma.createPage()
+		newPage.name = "Table Creator"
+
+		figma.currentPage = newPage
+	}
+
+	var components = await createDefaultComponents()
+
+	figma.currentPage.selection = figma.currentPage.children
+	figma.viewport.scrollAndZoomIntoView(figma.currentPage.children)
+
+	renameTemplateNumerically(components.table)
 
 	importTemplate([components.table])
 
 	getClientStorageAsync("recentFiles").then((recentFiles) => {
 
+		// Get recent files
 		if (recentFiles) {
 			// Exclude current file
 			recentFiles = recentFiles.filter(d => {
@@ -1951,3 +1956,11 @@ getClientStorageAsync("recentFiles").then(recentFiles => {
 // 			break
 // 	}
 // })
+
+figma.on('run', ({ command }: RunEvent) => {
+	switch (command) {
+		case "createTable":
+
+			break
+	}
+})

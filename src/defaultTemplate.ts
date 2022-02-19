@@ -2,7 +2,7 @@ import { ungroupNode } from "./helpers"
 import { setPluginData, updatePluginData } from '@fignite/helpers'
 
 // Wrap in function
-export async function createDefaultTemplate() {
+export async function createDefaultComponents() {
 	const obj: any = {}
 
 	// Load FONTS

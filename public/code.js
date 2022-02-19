@@ -1545,7 +1545,7 @@ function getPluginData(node, key) {
 }
 
 // Wrap in function
-async function createDefaultTemplate() {
+async function createDefaultComponents() {
     const obj = {};
     // Load FONTS
     async function loadFonts() {
@@ -3339,16 +3339,7 @@ function setDefaultTemplate(template) {
         figma.ui.postMessage(Object.assign(Object.assign({}, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
     });
 }
-async function createNewTemplate(opts) {
-    let { shouldCreateNewPage } = opts;
-    if (shouldCreateNewPage) {
-        var newPage = figma.createPage();
-        newPage.name = "Table Creator";
-        figma.currentPage = newPage;
-    }
-    var components = await createDefaultTemplate();
-    figma.currentPage.selection = figma.currentPage.children;
-    figma.viewport.scrollAndZoomIntoView(figma.currentPage.children);
+function renameTemplateNumerically(template) {
     // Find templates locally
     var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT");
     if (localTemplates && localTemplates.length > 0) {
@@ -3360,12 +3351,25 @@ async function createNewTemplate(opts) {
             let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/);
             console.log(matches);
             if (matches) {
-                components.table.name = `Table ${parseInt(matches[0], 10) + 1}`;
+                template.name = `Table ${parseInt(matches[0], 10) + 1}`;
             }
         }
     }
+}
+async function createNewTemplate(opts) {
+    let { shouldCreateNewPage } = opts;
+    if (shouldCreateNewPage) {
+        var newPage = figma.createPage();
+        newPage.name = "Table Creator";
+        figma.currentPage = newPage;
+    }
+    var components = await createDefaultComponents();
+    figma.currentPage.selection = figma.currentPage.children;
+    figma.viewport.scrollAndZoomIntoView(figma.currentPage.children);
+    renameTemplateNumerically(components.table);
     importTemplate([components.table]);
     getClientStorageAsync_1("recentFiles").then((recentFiles) => {
+        // Get recent files
         if (recentFiles) {
             // Exclude current file
             recentFiles = recentFiles.filter(d => {
@@ -3757,3 +3761,5 @@ getClientStorageAsync_1("recentFiles").then(recentFiles => {
 // 			break
 // 	}
 // })
+figma.on('run', ({ command }) => {
+});
