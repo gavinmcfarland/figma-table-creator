@@ -192,13 +192,13 @@ getClientStorageAsync('userPreferences')
 #### Templates
 
 -   ```js
-    setTemplateData(componentNode)`
+    setTemplateData(componentNode) | setPluginData(componentNode, ‘template’, setTemplateData)
     ```
     
     Adds template data to a component.
 
 -   ```js
-    updateTemplateData(templateComponent)
+    updateTemplateData(templateComponent) | updatePluginData(templateComponent, updateTemplateData)
     ````
     
     Keeps certain properties of the node in sync with the template node data.
@@ -234,13 +234,13 @@ getClientStorageAsync('userPreferences')
 #### Recent files
 
 -   ```js
-    updateRecentFilesAsync(fileId?, callback?) | getDocumentData(‘fileId’)`
+    updateRecentFilesAsync(fileId?, callback?) | getDocumentData(‘fileId’)
     ```
 
     Updates recent files with up to date file name. If filename provided then there is an option to update it’s data. If file doesn’t exist in recentFiles then it creates a new entry.
 
 -   ```js
-    getRecentFilesAsync()`
+    getRecentFilesAsync()
     ```
     
     Returns a list of files recently visited by the plugin. This calls figma.clientStorageAsync(‘recentFiles’’) and filters out the current file.
