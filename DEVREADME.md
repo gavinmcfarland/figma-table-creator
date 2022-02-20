@@ -191,40 +191,56 @@ getClientStorageAsync('userPreferences')
 
 #### Semantics
 
--   `setSemantics(figma.currentPage.selection[0], {is: element})`
+-   ```js
+    setSemantics(figma.currentPage.selection[0], {is: element})
+    ```
 
     Adds template data to a component.
 
 #### Templates
 
--   `setPluginData(componentNode, ‘template’, setTemplateData)`
+-   ```js
+    setPluginData(componentNode, ‘template’, setTemplateData)`
+    ```
     
     Adds template data to a component.
 
--   `updatePluginData(templateComponent, updateTemplateData)`
+-   ```js
+    updatePluginData(templateComponent, updateTemplateData
+    ````
     
     Keeps certain properties of the node in sync with the template node data.
 
--   `setDocumentData(‘defaultTemplate’, setDefaultTemplateData)`
+-   ```js
+    setDocumentData(‘defaultTemplate’, setDefaultTemplateData)
+    ```
 
     Sets the default template on the document. When template it set, post new data to UI.
 
--   `getTemplateComponents()`   
+-   ```
+    getTemplateComponents()
+    ```   
     
     Returns all template components in the document.
 
 #### Remote files
 
--   `updateDocumentData(‘remoteFiles’, updateRemoteFilesData)`
+-   ```js
+    updateDocumentData(‘remoteFiles’, updateRemoteFilesData)
+    ```
     
     Updates the reference to each file to make sure the document references the correct file name. Fetches the most up to date file name for each file.
 
 #### Recent files
 
--   `updateRecentFilesAsync(fileId?, callback?) | getDocumentData(‘fileId’)`
+-   ```js
+    updateRecentFilesAsync(fileId?, callback?) | getDocumentData(‘fileId’)`
+    ```
 
     Updates recent files with up to date file name. If filename provided then there is an option to update it’s data. If file doesn’t exist in recentFiles then it creates a new entry.
 
--   `getRecentFilesAsync()`
+-   ```js
+    getRecentFilesAsync()`
+    ```
     
     Returns a list of files recently visited by the plugin. This calls figma.clientStorageAsync(‘recentFiles’’) and filters out the current file.
