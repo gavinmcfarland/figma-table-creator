@@ -206,7 +206,7 @@ getClientStorageAsync('userPreferences')
     Adds template data to a component.
 
 -   ```js
-    updatePluginData(templateComponent, updateTemplateData
+    updatePluginData(templateComponent, updateTemplateData)
     ````
     
     Keeps certain properties of the node in sync with the template node data.
@@ -217,7 +217,7 @@ getClientStorageAsync('userPreferences')
 
     Sets the default template on the document. When template it set, post new data to UI.
 
--   ```
+-   ```js
     getTemplateComponents()
     ```   
     
