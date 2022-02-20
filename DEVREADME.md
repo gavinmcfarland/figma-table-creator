@@ -10,7 +10,7 @@ Table Creator uses a component create tables from. This component is refered to 
 ### File Id
 
 ```js
-getPluginData(figma.root, 'fileId')
+getDocumentData('fileId')
 ```
 
 ### Deafult Template
@@ -18,7 +18,7 @@ getPluginData(figma.root, 'fileId')
 The currently selected template used by the plugin.
 
 ```js
-getPluginData(figma.root, 'defaultTemplate')
+getDocumentData('defaultTemplate')
 ```
 
 ```js
@@ -41,7 +41,7 @@ getPluginData(figma.root, 'defaultTemplate')
 The previous template the user used with the plugin.
 
 ```js
-getPluginData(figma.root, 'previousTemplate')
+getDocumentData('previousTemplate')
 ```
 
 ```js
@@ -59,12 +59,12 @@ getPluginData(figma.root, 'previousTemplate')
 }
 ```
 
-### Local Templates
+### Local Templates (depreciated)
 
 A list of templates used by the plugin locally.
 
 ```js
-getPluginData(figma.root, 'localTemplates')
+getDocumentData('localTemplates')
 ```
 
 ```js
@@ -85,7 +85,7 @@ getPluginData(figma.root, 'localTemplates')
 A list of files stored on the `document` used by the plugin. This is so the user can select a new default template to create tables from.
 
 ```js
-getPluginData(figma.root, 'remoteFiles')
+getDocumentData('remoteFiles')
 ```
 
 ```js
@@ -189,24 +189,16 @@ getClientStorageAsync('userPreferences')
 
 ### Setting data
 
-#### Semantics
-
--   ```js
-    setSemantics(figma.currentPage.selection[0], {is: element})
-    ```
-
-    Adds template data to a component.
-
 #### Templates
 
 -   ```js
-    setPluginData(componentNode, ‘template’, setTemplateData)`
+    setTemplateData(componentNode)`
     ```
     
     Adds template data to a component.
 
 -   ```js
-    updatePluginData(templateComponent, updateTemplateData)
+    updateTemplateData(templateComponent)
     ````
     
     Keeps certain properties of the node in sync with the template node data.
@@ -222,6 +214,14 @@ getClientStorageAsync('userPreferences')
     ```   
     
     Returns all template components in the document.
+
+#### Semantics
+
+-   ```js
+    setSemanticData(figma.currentPage.selection[0], {is: element})
+    ```
+
+    Adds template data to a component.
 
 #### Remote files
 
