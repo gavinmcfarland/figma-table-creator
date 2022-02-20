@@ -44,8 +44,6 @@ const capitalize = (s) => {
 	return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-// Move to helpers
-
 function getTableSettings(table) {
 	let rowCount = 0
 	let columnCount = 0
