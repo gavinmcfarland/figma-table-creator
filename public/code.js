@@ -325,6 +325,39 @@ function convertToComponent(node) {
     node.remove();
     return component;
 }
+
+/**
+ * Helpers which automatically parse and stringify when you get, set or update plugin data
+ */
+/**
+ *
+ * @param {BaseNode} node A figma node to get data from
+ * @param {string} key  The key under which data is stored
+ * @returns Plugin Data
+ */
+function getPluginData(node, key, opts) {
+    var data;
+    data = node.getPluginData(key);
+    if (data) {
+        if (data.startsWith('>>>')) {
+            data = data;
+        }
+        else {
+            data = JSON.parse(data);
+        }
+    }
+    else {
+        data = undefined;
+    }
+    if ((typeof data === 'string') && data.startsWith('>>>')) {
+        data = data.slice(3);
+        var string = `(() => {
+            return ` + data + `
+            })()`;
+        data = eval(string);
+    }
+    return data;
+}
 /**
  *
  * @param {BaseNode} node  A figma node to set data on
@@ -332,7 +365,12 @@ function convertToComponent(node) {
  * @param {any} data Data to be stoed
  */
 function setPluginData(node, key, data) {
-    node.setPluginData(key, JSON.stringify(data));
+    if (data.startsWith('>>>')) {
+        node.setPluginData(key, data);
+    }
+    else {
+        node.setPluginData(key, JSON.stringify(data));
+    }
 }
 function updatePluginData(node, key, callback) {
     var data;
@@ -568,6 +606,7 @@ var copyPaste_1 = copyPaste;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getNodeIndex_1 = getNodeIndex;
 var getPageNode_1 = getPageNode;
+var getPluginData_1 = getPluginData;
 var nodeToObject_1 = nodeToObject;
 var removeChildren_1 = removeChildren;
 var replace_1 = replace;
@@ -1261,6 +1300,11 @@ var tweeno = {
     Easing: easing
 };
 
+// figma.on('run', () => {
+// 	updatePluginData(node, key, () => {
+// 		data
+// 	})
+// })
 // Move to helpers
 function genRandomId() {
     var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
@@ -1532,16 +1576,6 @@ function findComponentById(id) {
         figma.root.setPluginData("cellComponentState", "deleted");
         return null;
     }
-}
-function getPluginData(node, key) {
-    var data;
-    if (node.getPluginData(key)) {
-        data = JSON.parse(node.getPluginData(key));
-    }
-    else {
-        data = undefined;
-    }
-    return data;
 }
 
 // Wrap in function
@@ -2372,6 +2406,49 @@ function plugma(plugin) {
 var dist = plugma;
 
 console.clear();
+// syncBoundPluginData()
+// if (figma.currentPage.selection[0]) {
+// 	var nodeId = figma.currentPage.selection[0].id
+// 	bindPluginData(figma.currentPage.selection[0], 'test', `{
+// 			test: figma.getNodeById("${nodeId}").name
+// 		}`)
+// }
+if (figma.currentPage.selection[0]) {
+    var nodeId = figma.currentPage.selection[0].id;
+    setPluginData_1(figma.currentPage.selection[0], 'test', `>>>{
+			name: figma.getNodeById("${nodeId}").name,
+			width: figma.getNodeById("${nodeId}").width
+		}`);
+}
+console.log("getNodeData", getPluginData_1(figma.getNodeById("10:325"), 'test'));
+// function setTemplate(node) {
+// 	if (node.type === "COMPONENT") {
+// 		setPluginData(node, "template", {
+// 			file: {
+// 				id: getPluginData(figma.root, 'fileId'),
+// 				name: figma.root.name
+// 			},
+// 			name: node.name,
+// 			id: genRandomId(),
+// 			component: {
+// 				key: node.key,
+// 				id: node.id
+// 			}
+// 		})
+// 	}
+// }
+// // Updates file name and component name for template data (currently only works with local template data)
+// function updateTemplate(node) {
+// 	if (node.type === "COMPONENT") {
+// 		updatePluginData(node, "template", (data) => {
+// 			if (data) {
+// 				data.file.name = figma.root.name
+// 				data.name = node.name
+// 			}
+// 			return data
+// 		})
+// 	}
+// }
 // start the update loop
 // animate();
 // reset
@@ -2391,7 +2468,6 @@ console.clear();
 // }
 // upgradeFrom6to7()
 let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' };
-// Move to helpers
 function getTableSettings(table) {
     var _a, _b, _c;
     let rowCount = 0;
@@ -2399,12 +2475,12 @@ function getTableSettings(table) {
     let usingColumnsOrRows = "rows";
     for (let i = 0; i < table.children.length; i++) {
         var node = table.children[i];
-        if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+        if (((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
             rowCount++;
         }
     }
-    let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
-    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
+    let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
+    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData_1(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th"; });
     console.log("layoutDirection", firstRow.parent.layoutMode);
     if (firstRow.parent.layoutMode === "VERTICAL") {
         usingColumnsOrRows = "rows";
@@ -2414,7 +2490,7 @@ function getTableSettings(table) {
     }
     for (let i = 0; i < firstRow.children.length; i++) {
         var node = firstRow.children[i];
-        var cellType = (_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is;
+        var cellType = (_b = getPluginData_1(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is;
         if (cellType === "td" || cellType === "th") {
             columnCount++;
         }
@@ -2423,7 +2499,7 @@ function getTableSettings(table) {
         columnCount,
         rowCount,
         columnResizing: firstRow.type === "COMPONENT" ? true : false,
-        includeHeader: ((_c = getPluginData(firstCell, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th" ? true : false,
+        includeHeader: ((_c = getPluginData_1(firstCell, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th" ? true : false,
         cellAlignment: "MIN",
         usingColumnsOrRows,
         cellWidth: firstCell.width
@@ -2432,12 +2508,12 @@ function getTableSettings(table) {
 async function toggleColumnsOrRows(selection) {
     function isRow(node) {
         var _a;
-        return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr";
+        return ((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr";
     }
     // TODO: Fix localise component to take account of rows or columns
     for (let i = 0; i < selection.length; i++) {
         var table = selection[i];
-        let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
+        let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
         if (table.type === "INSTANCE" || firstRow.type === "INSTANCE" || firstRow.type === "COMPONENT") {
             figma.closePlugin("Table and rows must be detached");
         }
@@ -2598,11 +2674,11 @@ async function toggleColumnResizing(selection) {
             let rowLength = oldTable.children.length;
             for (let a = 0; a < rowLength; a++) {
                 let nodeA = oldTable.children[a];
-                if (((_a = getPluginData(nodeA, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+                if (((_a = getPluginData_1(nodeA, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
                     let columnLength = nodeA.children.length;
                     for (let b = 0; b < columnLength; b++) {
                         let nodeB = nodeA.children[b];
-                        if (((_b = getPluginData(nodeB, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "td" || ((_c = getPluginData(nodeB, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th") {
+                        if (((_b = getPluginData_1(nodeB, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "td" || ((_c = getPluginData_1(nodeB, "elementSemantics")) === null || _c === void 0 ? void 0 : _c.is) === "th") {
                             let newTableCell = newTable.children[a].children[b];
                             let oldTableCell = nodeB;
                             await swapInstance(oldTableCell, newTableCell);
@@ -2667,7 +2743,7 @@ async function createTableInstance(templateNode, preferences) {
         // Remove table from template
         tableInstance.findAll((node) => {
             var _a;
-            if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "table") {
+            if (((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "table") {
                 node.remove();
             }
         });
@@ -2679,7 +2755,7 @@ async function createTableInstance(templateNode, preferences) {
     var firstRow;
     var rowIndex = getNodeIndex_1(part.tr);
     function getRowParent() {
-        var row = table.findOne((node) => { var _a; return ((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
+        var row = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
         return row.parent;
     }
     var rowParent = getRowParent();
@@ -2687,7 +2763,7 @@ async function createTableInstance(templateNode, preferences) {
     // Remove children which are trs
     table.findAll((node) => {
         var _a;
-        if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+        if (((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
             node.remove();
         }
     });
@@ -2707,7 +2783,7 @@ async function createTableInstance(templateNode, preferences) {
         var _a, _b;
         console.log("children", node);
         if (node) {
-            if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th") {
+            if (((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "td" || ((_b = getPluginData_1(node, "elementSemantics")) === null || _b === void 0 ? void 0 : _b.is) === "th") {
                 node.remove();
             }
         }
@@ -2768,9 +2844,9 @@ async function createTableInstance(templateNode, preferences) {
 }
 async function updateTableInstances(template) {
     // FIXME: Template file name not up to date for some reason
-    var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
+    var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
     var tableTemplate = await lookForComponent(template);
-    var rowTemplate = tableTemplate.findOne(node => { var _a; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
+    var rowTemplate = tableTemplate.findOne(node => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr"; });
     for (let b = 0; b < tables.length; b++) {
         var table = tables[b];
         // Don't apply if an instance
@@ -2791,7 +2867,7 @@ async function updateTableInstances(template) {
             // }
             table.findAll(node => {
                 var _a;
-                if (((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr" === true && node.type !== "INSTANCE") {
+                if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === "tr" === true && node.type !== "INSTANCE") {
                     copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
                 }
             });
@@ -2882,7 +2958,7 @@ function detachTable(selection) {
         }
         table.findAll((node) => {
             var _a;
-            if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
+            if (((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === "tr") {
                 if (node.type === "INSTANCE") {
                     // console.log(node.type, node.id)
                     node.detachInstance();
@@ -2909,7 +2985,7 @@ function linkComponent(template, selection) {
             };
             // Make sure old templates don't have any old preferences on them
             // TODO: Need to check this works
-            var oldTemplate = findComponentById(getPluginData(figma.root, 'components').current[template].id);
+            var oldTemplate = findComponentById(getPluginData_1(figma.root, 'components').current[template].id);
             // Check if a previous template has been set first
             if (oldTemplate) {
                 // updatePluginData(figma.root, 'components', (data) => { data.previous[template] = oldTemplate.id })
@@ -2958,7 +3034,7 @@ function createTable(msg) {
     getClientStorageAsync_1('userPreferences').then((res) => {
         // Will only let you create a table if less than 50 columns and rows
         if (msg.columnCount < 51 && msg.rowCount < 51) {
-            var template = getPluginData(figma.root, 'defaultTemplate');
+            var template = getPluginData_1(figma.root, 'defaultTemplate');
             lookForComponent(template).then((templateNode) => {
                 // Will input from user and create table node
                 createTableInstance(templateNode, msg).then((table) => {
@@ -2996,7 +3072,7 @@ function createTable(msg) {
 }
 // Merge document localTemplate and merge to clientStorage as recentFiles
 async function syncRecentFiles() {
-    var localTemplates = getPluginData(figma.root, "localTemplates");
+    var localTemplates = getPluginData_1(figma.root, "localTemplates");
     console.log("localTemplates", localTemplates);
     async function findPublishedTemplates() {
         let publishedTemplates = [];
@@ -3023,7 +3099,7 @@ async function syncRecentFiles() {
         if (publishedTemplates) {
             if ((Array.isArray(localTemplates) && localTemplates.length > 0) && recentFiles) {
                 var newFile = {
-                    id: getPluginData(figma.root, 'fileId'),
+                    id: getPluginData_1(figma.root, 'fileId'),
                     name: figma.root.name,
                     // TODO: I could check if template component has been published. If so then add it
                     templates: publishedTemplates
@@ -3036,7 +3112,7 @@ async function syncRecentFiles() {
                     if (publishedTemplates) {
                         // Update file data
                         recentFiles.map((file, i) => {
-                            if (file.id === getPluginData(figma.root, 'fileId')) {
+                            if (file.id === getPluginData_1(figma.root, 'fileId')) {
                                 recentFiles[i] = newFile;
                             }
                         });
@@ -3044,7 +3120,7 @@ async function syncRecentFiles() {
                     else {
                         // remove file from list
                         recentFiles.map((file, i) => {
-                            if (file.id === getPluginData(figma.root, 'fileId')) {
+                            if (file.id === getPluginData_1(figma.root, 'fileId')) {
                                 recentFiles.splice(i, 1);
                             }
                         });
@@ -3058,14 +3134,14 @@ async function syncRecentFiles() {
 }
 // This makes sure the node data
 function syncTemplateData() {
-    var templateNodes = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === "COMPONENT");
+    var templateNodes = figma.root.findAll((node) => getPluginData_1(node, 'template') && node.type === "COMPONENT");
     for (let templateNode of templateNodes) {
         updateTemplate(templateNode);
     }
 }
 // This makes sure the default/chosen template is up to date
 async function syncDefaultTemplate() {
-    var defaultTemplate = getPluginData(figma.root, 'defaultTemplate');
+    var defaultTemplate = getPluginData_1(figma.root, 'defaultTemplate');
     // Default template doesn't exist until user creates a new template or chooses a remote one
     if (defaultTemplate) {
         var defaultComponent = await lookForComponent(defaultTemplate);
@@ -3091,7 +3167,7 @@ async function syncRemoteFiles() {
         // Exclude current file
         if (remoteFiles) {
             recentFiles = recentFiles.filter(d => {
-                return !(d.id === getPluginData(figma.root, "fileId"));
+                return !(d.id === getPluginData_1(figma.root, "fileId"));
             });
         }
         remoteFiles = recentFiles;
@@ -3110,7 +3186,7 @@ async function syncRemoteFiles() {
             for (var i = 0; i < remoteFiles.length; i++) {
                 var file = remoteFiles[i];
                 figma.importComponentByKeyAsync(file.templates[0].component.key).then((component) => {
-                    var remoteTemplate = getPluginData(component, 'template');
+                    var remoteTemplate = getPluginData_1(component, 'template');
                     updatePluginData_1(figma.root, 'remoteFiles', (remoteFiles) => {
                         remoteFiles.map((file) => {
                             if (file.id === remoteTemplate.file.id) {
@@ -3141,7 +3217,7 @@ function syncLocalTemplates() {
                 var componentId = templates[i].component.id;
                 var component = findComponentById(componentId);
                 if (component) {
-                    templates[i] = getPluginData(component, 'template');
+                    templates[i] = getPluginData_1(component, 'template');
                 }
                 else {
                     templates.splice(i, 1);
@@ -3155,10 +3231,10 @@ function syncLocalTemplates() {
 function addNewTemplate(node, templates) {
     // Add template to file in list
     var newTemplateEntry = {
-        id: getPluginData(node, 'template').id,
-        name: getPluginData(node, 'template').name,
-        component: getPluginData(node, 'template').component,
-        file: getPluginData(node, 'template').file
+        id: getPluginData_1(node, 'template').id,
+        name: getPluginData_1(node, 'template').name,
+        component: getPluginData_1(node, 'template').component,
+        file: getPluginData_1(node, 'template').file
     };
     // Only add new template if unique
     if (!templates.some((template) => template.id === newTemplateEntry.id)) {
@@ -3179,7 +3255,7 @@ function findTemplateParts(templateNode) {
     for (let i = 0; i < elements.length; i++) {
         let elementName = elements[i];
         let part = templateNode.findOne(node => {
-            let elementSemantics = getPluginData(node, 'elementSemantics');
+            let elementSemantics = getPluginData_1(node, 'elementSemantics');
             if ((elementSemantics === null || elementSemantics === void 0 ? void 0 : elementSemantics.is) === elementName) {
                 console.log(elementSemantics);
                 return true;
@@ -3188,7 +3264,7 @@ function findTemplateParts(templateNode) {
         results[elementName] = part;
     }
     if (!results["table"]) {
-        if (getPluginData(templateNode, 'elementSemantics').is === "table") {
+        if (getPluginData_1(templateNode, 'elementSemantics').is === "table") {
             results["table"] = templateNode;
         }
     }
@@ -3205,7 +3281,7 @@ function removeElement(nodeId, element) {
     let templateContainer = node.type === "COMPONENT" ? node : getParentComponent(node);
     templateContainer.findAll(node => {
         var _a;
-        if (((_a = getPluginData(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === element) {
+        if (((_a = getPluginData_1(node, "elementSemantics")) === null || _a === void 0 ? void 0 : _a.is) === element) {
             if (node.type === "INSTANCE") {
                 setPluginData_1(node.mainComponent, "elementSemantics", "");
             }
@@ -3236,7 +3312,7 @@ function importTemplate(nodes) {
     // Add file to list of files used by the document
     for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
-        var isLocalButNotComponent = ((_b = (_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.file) === null || _b === void 0 ? void 0 : _b.id) === getPluginData(figma.root, 'fileId') && node.type !== "COMPONENT";
+        var isLocalButNotComponent = ((_b = (_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.file) === null || _b === void 0 ? void 0 : _b.id) === getPluginData_1(figma.root, 'fileId') && node.type !== "COMPONENT";
         if (node.type === "COMPONENT" || isLocalButNotComponent) {
             if (isLocalButNotComponent) {
                 node = convertToComponent_1(node);
@@ -3263,8 +3339,8 @@ function importTemplate(nodes) {
                 // }
                 // Use when importing from another file
                 var newValue = {
-                    id: getPluginData(figma.currentPage.selection[0], 'template').file.id,
-                    name: getPluginData(figma.currentPage.selection[0], 'template').file.name,
+                    id: getPluginData_1(figma.currentPage.selection[0], 'template').file.id,
+                    name: getPluginData_1(figma.currentPage.selection[0], 'template').file.name,
                     templates: []
                 };
                 // Only add file to array if unique
@@ -3273,7 +3349,7 @@ function importTemplate(nodes) {
                 }
                 for (var i = 0; i < data.length; i++) {
                     var file = data[i];
-                    if (file.id === getPluginData(figma.currentPage.selection[0], 'template').file.id) {
+                    if (file.id === getPluginData_1(figma.currentPage.selection[0], 'template').file.id) {
                         file.templates = addNewTemplate(figma.currentPage.selection[0], file.templates);
                     }
                 }
@@ -3281,7 +3357,7 @@ function importTemplate(nodes) {
             });
             figma.notify(`Imported ${node.name}`);
         }
-        setDefaultTemplate(getPluginData(node, 'template'));
+        setDefaultTemplate(getPluginData_1(node, 'template'));
     }
 }
 function markNode(node, element) {
@@ -3297,7 +3373,7 @@ function setTemplate(node) {
     if (node.type === "COMPONENT") {
         setPluginData_1(node, "template", {
             file: {
-                id: getPluginData(figma.root, 'fileId'),
+                id: getPluginData_1(figma.root, 'fileId'),
                 name: figma.root.name
             },
             name: node.name,
@@ -3336,12 +3412,12 @@ function setDefaultTemplate(template) {
     }
     // FIXME: Consider combining into it's own function?
     figma.clientStorage.getAsync('userPreferences').then((res) => {
-        figma.ui.postMessage(Object.assign(Object.assign({}, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
+        figma.ui.postMessage(Object.assign(Object.assign({}, res), { defaultTemplate: getPluginData_1(figma.root, 'defaultTemplate'), remoteFiles: getPluginData_1(figma.root, 'remoteFiles'), localTemplates: getPluginData_1(figma.root, 'localTemplates'), fileId: getPluginData_1(figma.root, 'fileId') }));
     });
 }
 function renameTemplateNumerically(template) {
     // Find templates locally
-    var localTemplates = figma.root.findAll((node) => getPluginData(node, "template") && node.type === "COMPONENT");
+    var localTemplates = figma.root.findAll((node) => getPluginData_1(node, "template") && node.type === "COMPONENT");
     if (localTemplates && localTemplates.length > 0) {
         localTemplates.sort((a, b) => a.name - b.name);
         localTemplates.map(node => {
@@ -3373,13 +3449,13 @@ async function createNewTemplate(opts) {
         if (recentFiles) {
             // Exclude current file
             recentFiles = recentFiles.filter(d => {
-                return !(d.id === getPluginData(figma.root, "fileId"));
+                return !(d.id === getPluginData_1(figma.root, "fileId"));
             });
             recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0);
         }
         getClientStorageAsync_1("pluginAlreadyRun").then((pluginAlreadyRun) => {
             figma.clientStorage.getAsync('userPreferences').then((res) => {
-                figma.ui.postMessage(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
+                figma.ui.postMessage(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData_1(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData_1(figma.root, 'defaultTemplate'), remoteFiles: getPluginData_1(figma.root, 'remoteFiles'), localTemplates: getPluginData_1(figma.root, 'localTemplates'), fileId: getPluginData_1(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
                 // Shouldn't be set, but lets do it just for good measure
                 setPluginData_1(figma.root, "usingRemoteTemplate", false);
                 setClientStorageAsync_1("pluginAlreadyRun", true);
@@ -3395,14 +3471,14 @@ function postCurrentSelection(templateNodeId) {
     function isInsideTemplate(node) {
         let parentComponent = node.type === "COMPONENT" ? node : getParentComponent(node);
         if ((isInsideComponent(node) || node.type === "COMPONENT") && parentComponent) {
-            if (getPluginData(parentComponent, 'template') && parentComponent.id === templateNodeId) {
+            if (getPluginData_1(parentComponent, 'template') && parentComponent.id === templateNodeId) {
                 return true;
             }
         }
     }
     if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
         selection = {
-            element: (_a = getPluginData(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
+            element: (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
             name: getSelectionName(figma.currentPage.selection[0])
         };
         figma.ui.postMessage({ type: 'current-selection', selection: selection });
@@ -3412,7 +3488,7 @@ function postCurrentSelection(templateNodeId) {
         if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
             console.log("selection changed");
             selection = {
-                element: (_a = getPluginData(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
+                element: (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
                 name: getSelectionName(figma.currentPage.selection[0])
             };
             figma.ui.postMessage({ type: 'current-selection', selection: selection });
@@ -3460,13 +3536,13 @@ dist((plugin) => {
             if (recentFiles) {
                 // Exclude current file
                 recentFiles = recentFiles.filter(d => {
-                    return !(d.id === getPluginData(figma.root, "fileId"));
+                    return !(d.id === getPluginData_1(figma.root, "fileId"));
                 });
                 recentFiles = (Array.isArray(recentFiles) && recentFiles.length > 0);
             }
             getClientStorageAsync_1("pluginAlreadyRun").then((pluginAlreadyRun) => {
                 figma.clientStorage.getAsync('userPreferences').then((res) => {
-                    ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
+                    ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { usingRemoteTemplate: getPluginData_1(figma.root, "usingRemoteTemplate"), defaultTemplate: getPluginData_1(figma.root, 'defaultTemplate'), remoteFiles: getPluginData_1(figma.root, 'remoteFiles'), localTemplates: getPluginData_1(figma.root, 'localTemplates'), fileId: getPluginData_1(figma.root, 'fileId'), pluginAlreadyRun: pluginAlreadyRun, recentFiles: recentFiles }));
                 });
             });
         });
@@ -3499,7 +3575,7 @@ dist((plugin) => {
     plugin.command('importTemplate', () => {
         var selection = figma.currentPage.selection;
         if (selection.length === 1) {
-            if (getPluginData(selection[0], 'isTable')) {
+            if (getPluginData_1(selection[0], 'isTable')) {
                 importTemplate(selection);
             }
         }
@@ -3524,7 +3600,7 @@ dist((plugin) => {
         figma.closePlugin();
     });
     plugin.command('viewNodeData', () => {
-        console.log('nodeData ->', getPluginData(figma.currentPage.selection[0], 'template'));
+        console.log('nodeData ->', getPluginData_1(figma.currentPage.selection[0], 'template'));
         figma.closePlugin();
     });
     plugin.command('linkComponents', ({ ui }) => {
@@ -3577,7 +3653,7 @@ dist((plugin) => {
     // Listen for events from UI
     plugin.on('to-create-table', (msg) => {
         figma.clientStorage.getAsync('userPreferences').then((res) => {
-            plugin.ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData(figma.root, 'defaultTemplate'), remoteFiles: getPluginData(figma.root, 'remoteFiles'), localTemplates: getPluginData(figma.root, 'localTemplates'), fileId: getPluginData(figma.root, 'fileId') }));
+            plugin.ui.show(Object.assign(Object.assign({ type: "create-table" }, res), { defaultTemplate: getPluginData_1(figma.root, 'defaultTemplate'), remoteFiles: getPluginData_1(figma.root, 'remoteFiles'), localTemplates: getPluginData_1(figma.root, 'localTemplates'), fileId: getPluginData_1(figma.root, 'fileId') }));
         });
     });
     plugin.on('update-table-instances', (msg) => {
@@ -3618,7 +3694,7 @@ dist((plugin) => {
         // 	return data
         // })
         figma.clientStorage.getAsync('preferences').then((res) => {
-            figma.ui.postMessage(Object.assign(Object.assign({}, res), { componentsExist: getPluginData(figma.root, 'components').componentsExist }));
+            figma.ui.postMessage(Object.assign(Object.assign({}, res), { componentsExist: getPluginData_1(figma.root, 'components').componentsExist }));
         });
     });
     plugin.on('restore-component', (msg) => {
@@ -3629,7 +3705,7 @@ dist((plugin) => {
     });
     plugin.on('import-template', (msg) => {
         if (figma.currentPage.selection.length === 1) {
-            if (getPluginData(figma.currentPage.selection[0], 'isTable')) {
+            if (getPluginData_1(figma.currentPage.selection[0], 'isTable')) {
                 importTemplate(figma.currentPage.selection);
             }
         }

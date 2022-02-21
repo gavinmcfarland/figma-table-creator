@@ -244,3 +244,37 @@ getClientStorageAsync('userPreferences')
     ```
     
     Returns a list of files recently visited by the plugin. This calls figma.clientStorageAsync(‘recentFiles’’) and filters out the current file.
+
+
+## New fignite helpers
+
+### setPluginData()
+
+```js
+var nodeId = figma.currentPage.selection[0].id
+
+setPluginData(figma.currentPage.selection[0], 'test', {
+	name: `{figma.getNodeById("${nodeId}").name}`,
+	width: `{figma.getNodeById("${nodeId}").width}`
+})
+```
+
+### bindPluginData()
+
+Will only work if code inside callback references node. Would need to save how node is referenced.
+
+```js
+bindPluginData(node, 'test', (data) => {
+    return Object.assign(data, {
+			file: {
+				id: getPluginData(figma.root, 'fileId'),
+				name: figma.root.name
+			},
+			name: node.name,
+			component: {
+				key: node.key,
+				id: node.id
+			}
+		})
+}, 300)
+```

@@ -2,6 +2,13 @@
 import { copyPaste, getPageNode } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
+// figma.on('run', () => {
+// 	updatePluginData(node, key, () => {
+// 		data
+// 	})
+// })
+
+
 // Move to helpers
 export function genRandomId() {
 	var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)] }).join('');
@@ -510,6 +517,60 @@ export async function updateClientStorageAsync(key, callback) {
 	// node.setPluginData(key, JSON.stringify(data))
 
 	return data
+}
+
+export function bindPluginData(node, key, data) {
+
+    setPluginData(node, key, data)
+
+	updatePluginData(figma.root, 'boundNodeData', (nodes) => {
+		nodes = nodes || []
+
+		if (nodes.length === 0) {
+			nodes.push({
+				id: node.id,
+				key,
+				data
+			})
+		}
+		else {
+			nodes.some(item => {
+				if (item.id === node.id) {
+					// If node exists then we update the data if changes in source code
+					item.data = data
+				}
+				else {
+					// If node doesn't exist then we create a new entry
+					nodes.push({
+						id: node.id,
+						key,
+						data
+					})
+				}
+			})
+		}
+
+		return nodes
+	})
+
+	return data
+}
+
+export function syncBoundPluginData() {
+	let nodes = getPluginData(figma.root, 'boundNodeData')
+	console.log(nodes)
+
+	for (var i = 0; i < nodes.length; i++) {
+		var node = nodes[i]
+
+		var string = `(() => {
+		return ` + node.data + `
+		})()`
+
+		var data = typeof node.data === 'string' ? eval(string) : node.data
+
+		setPluginData(figma.getNodeById(node.id), node.key, data)
+	}
 }
 
 export function detachInstance(instance, parent) {

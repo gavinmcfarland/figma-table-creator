@@ -1,11 +1,64 @@
 
-import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode, resize} from '@fignite/helpers'
-import { clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, getPluginData, loadFonts, isInsideComponent, getParentComponent, getSelectionName, getVariantName, isVariant, swapAxises, animateIntoView, genRandomId, swapInstance, lookForComponent} from './helpers'
+import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode, resize, getPluginData} from '@fignite/helpers'
+import { syncBoundPluginData, bindPluginData, clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, loadFonts, isInsideComponent, getParentComponent, getSelectionName, getVariantName, isVariant, swapAxises, animateIntoView, genRandomId, swapInstance, lookForComponent} from './helpers'
 import { upgradeFrom6to7 } from './upgradeFrom6to7'
 import { createDefaultComponents } from './defaultTemplate'
 import plugma from 'plugma'
 
 console.clear()
+
+// syncBoundPluginData()
+
+// if (figma.currentPage.selection[0]) {
+// 	var nodeId = figma.currentPage.selection[0].id
+// 	bindPluginData(figma.currentPage.selection[0], 'test', `{
+// 			test: figma.getNodeById("${nodeId}").name
+// 		}`)
+// }
+
+if (figma.currentPage.selection[0]) {
+	var nodeId = figma.currentPage.selection[0].id
+	setPluginData(figma.currentPage.selection[0], 'test', `>>>{
+			name: figma.getNodeById("${nodeId}").name,
+			width: figma.getNodeById("${nodeId}").width
+		}`)
+}
+
+console.log("getNodeData", getPluginData(figma.getNodeById("10:325"), 'test'))
+
+
+// function setTemplate(node) {
+
+// 	if (node.type === "COMPONENT") {
+// 		setPluginData(node, "template", {
+// 			file: {
+// 				id: getPluginData(figma.root, 'fileId'),
+// 				name: figma.root.name
+// 			},
+// 			name: node.name,
+// 			id: genRandomId(),
+// 			component: {
+// 				key: node.key,
+// 				id: node.id
+// 			}
+// 		})
+// 	}
+// }
+
+// // Updates file name and component name for template data (currently only works with local template data)
+// function updateTemplate(node) {
+
+// 	if (node.type === "COMPONENT") {
+// 		updatePluginData(node, "template", (data) => {
+// 			if (data) {
+// 				data.file.name = figma.root.name
+// 				data.name = node.name
+// 			}
+// 			return data
+// 		})
+// 	}
+// }
+
 
 
 // start the update loop
