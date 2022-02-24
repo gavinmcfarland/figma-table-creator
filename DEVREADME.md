@@ -185,6 +185,36 @@ getClientStorageAsync('userPreferences')
 }
 ```
 
+## Commands
+
+Notes
+
+1. figma.on(‘new-template’)
+    - newTemplateComponent()
+        - createDefaultComponents()
+            - setDocumentData ('defaultTemplate', template component)
+            - incrementNameNumerically()
+            - postMessage('defaultTemplate')
+2. figma.on(‘edit-template’)
+    - getComponent()
+        - animateNodeIntoView()
+        - fetchTemplateParts()
+        - postUsersCurrentSelection()
+3. figma.on(‘set-default-template’)
+    - setDefaultTemplate()
+        - postMessage('defaultTemplate')
+4. figma.on(‘refresh-tables’)
+5. figma.on(‘create-table’)
+   - createTableInstance()
+        - getUserPreferencesAsync()
+            - getRecentFilesAsync()
+6. figma.on(‘using-remote-template’)
+7. figma.on(‘set-semantics’)
+8. figma.on(‘save-user-preferences’)
+9. figma.on(‘fetch-template-parts’)
+10. figma.on(‘fetch-current-selection’)
+
+
 ## Functions
 
 ### Setting data
