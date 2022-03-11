@@ -85,7 +85,7 @@ export default [{
 	}
 },
 {
-	input: 'src/code.ts',
+	input: 'src/new-code.ts',
 	output: {
 		file: 'public/code.js',
 		format: 'cjs',

@@ -103,7 +103,7 @@
 		parent.postMessage(
 			{
 				pluginMessage: {
-					type: "create-table",
+					type: "create-table-instance",
 					remember: rememberSettings,
 					columnResizing: columnResizing,
 					columnCount: columnCount,
@@ -278,8 +278,8 @@
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
 
-
-		if (data.type === "create-table") {
+		console.log(data)
+		if (data.type === "show-create-table-ui") {
 			let store = {
 				pageState,
 				selectedFile,
@@ -301,36 +301,37 @@
 			})
 
 
-		if (data.pluginAlreadyRun) {
-			setActiveSlide(4)
-		}
-		else {
-			setActiveSlide(0)
-		}
-
-		if (data.type === "create-table") {
-			setActivePage("createTablePageActive")
-
-			if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
-				setActivePage("welcomePageActive")
+			if (data.pluginAlreadyRun) {
+				console.log("pluginalreadyrun")
+				setActiveSlide(4)
+			}
+			else {
+				setActiveSlide(0)
 			}
 
-			if ((Array.isArray(data.localTemplates) && data.localTemplates.length) || data.usingRemoteTemplate) {
+			if (data.type === "show-create-table-ui") {
 				setActivePage("createTablePageActive")
+
+				if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
+					setActivePage("welcomePageActive")
+				}
+
+				if ((Array.isArray(data.localTemplates) && data.localTemplates.length) || data.usingRemoteTemplate) {
+					setActivePage("createTablePageActive")
+				}
+
 			}
 
-		}
+			if (data.type === "settings") {
+				setActivePage("templateSettingsPageActive")
+			}
 
-		if (data.type === "settings") {
-			setActivePage("templateSettingsPageActive")
-		}
+			if (data.defaultTemplate) {
+				updateSelectedTemplate(data)
+				updateSelectedFile(data)
+			}
 
-		if (data.defaultTemplate) {
-			updateSelectedTemplate(data)
-			updateSelectedFile(data)
-		}
-
-		return data
+			return data
 		}
 
 

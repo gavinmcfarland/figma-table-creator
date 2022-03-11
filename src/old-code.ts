@@ -1,50 +1,10 @@
-import {
-	setPluginData,
-	updatePluginData,
-	updateClientStorageAsync,
-	copyPaste,
-	removeChildren,
-	getClientStorageAsync,
-	ungroup,
-	setClientStorageAsync,
-	convertToFrame,
-	convertToComponent,
-	makeComponent,
-	getNodeIndex,
-	replace,
-	getOverrides,
-	nodeToObject,
-	getPageNode,
-	resize,
-	getPluginData,
-} from '@fignite/helpers'
-import {
-	syncBoundPluginData,
-	bindPluginData,
-	clone,
-	positionInCenter,
-	compareVersion,
-	changeText,
-	findComponentById,
-	detachInstance,
-	copyPasteStyle,
-	loadFonts,
-	isInsideComponent,
-	getParentComponent,
-	getSelectionName,
-	getVariantName,
-	isVariant,
-	swapAxises,
-	animateIntoView,
-	genRandomId,
-	swapInstance,
-	lookForComponent,
-} from './helpers'
-import { upgradeFrom6to7 } from './upgradeFrom6to7'
-import { createDefaultComponents } from './defaultTemplate'
-import plugma from 'plugma'
+// import { setPluginData, updatePluginData, updateClientStorageAsync, copyPaste, removeChildren, getClientStorageAsync, ungroup, setClientStorageAsync, convertToFrame, convertToComponent, makeComponent, getNodeIndex, replace, getOverrides, nodeToObject, getPageNode, resize, getPluginData} from '@fignite/helpers'
+// import { syncBoundPluginData, bindPluginData, clone, positionInCenter, compareVersion, changeText, findComponentById, detachInstance, copyPasteStyle, loadFonts, isInsideComponent, getParentComponent, getSelectionName, getVariantName, isVariant, swapAxises, animateIntoView, genRandomId, swapInstance, lookForComponent} from './helpers'
+// import { upgradeFrom6to7 } from './upgradeFrom6to7'
+// import { createDefaultComponents } from './defaultTemplate'
+// import plugma from 'plugma'
 
-console.clear()
+// console.clear()
 
 // syncBoundPluginData()
 
@@ -57,14 +17,10 @@ console.clear()
 
 // if (figma.currentPage.selection[0]) {
 // 	var nodeId = figma.currentPage.selection[0].id
-// 	setPluginData(
-// 		figma.currentPage.selection[0],
-// 		'test',
-// 		`>>>{
+// 	setPluginData(figma.currentPage.selection[0], 'test', `>>>{
 // 			name: figma.getNodeById("${nodeId}").name,
 // 			width: figma.getNodeById("${nodeId}").width
-// 		}`
-// 	)
+// 		}`)
 // }
 
 // console.log("getNodeData", getPluginData(figma.getNodeById("10:325"), 'test'))
@@ -127,63 +83,56 @@ console.clear()
 
 // upgradeFrom6to7()
 
-let defaultRelaunchData = {
-	detachTable: 'Detaches table and rows',
-	spawnTable: 'Spawn a new table from this table',
-	toggleColumnResizing: 'Use a component to resize columns or rows',
-	toggleColumnsOrRows: 'Toggle between using columns or rows',
-}
+// let defaultRelaunchData = { detachTable: 'Detaches table and rows', spawnTable: 'Spawn a new table from this table', toggleColumnResizing: 'Use a component to resize columns or rows', toggleColumnsOrRows: 'Toggle between using columns or rows' }
 
-const capitalize = (s) => {
-	if (typeof s !== 'string') return ''
-	return s.charAt(0).toUpperCase() + s.slice(1)
-}
+// const capitalize = (s) => {
+// 	if (typeof s !== 'string') return ''
+// 	return s.charAt(0).toUpperCase() + s.slice(1)
+// }
 
-function getTableSettings(table) {
-	let rowCount = 0
-	let columnCount = 0
-	let usingColumnsOrRows = 'rows'
+// function getTableSettings(table) {
+// 	let rowCount = 0
+// 	let columnCount = 0
+// 	let usingColumnsOrRows = "rows"
 
-	for (let i = 0; i < table.children.length; i++) {
-		var node = table.children[i]
-		if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-			rowCount++
-		}
-	}
+// 	for (let i = 0; i < table.children.length; i++) {
+// 		var node = table.children[i]
+// 		if (getPluginData(node, "elementSemantics")?.is === "tr") {
+// 			rowCount++
+// 		}
+// 	}
 
-	let firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
-	let firstCell = firstRow.findOne(
-		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
-	)
+// 	let firstRow = table.findOne((node) => getPluginData(node, "elementSemantics")?.is === "tr")
+// 	let firstCell = firstRow.findOne((node) => getPluginData(node, "elementSemantics")?.is === "td" || getPluginData(node, "elementSemantics")?.is === "th")
 
-	console.log('layoutDirection', firstRow.parent.layoutMode)
+// 	console.log("layoutDirection", firstRow.parent.layoutMode)
 
-	if (firstRow.parent.layoutMode === 'VERTICAL') {
-		usingColumnsOrRows = 'rows'
-	}
+// 	if (firstRow.parent.layoutMode === "VERTICAL") {
+// 		usingColumnsOrRows = "rows"
+// 	}
 
-	if (firstRow.parent.layoutMode === 'HORIZONTAL') {
-		usingColumnsOrRows = 'columns'
-	}
+// 	if (firstRow.parent.layoutMode === "HORIZONTAL") {
+// 		usingColumnsOrRows = "columns"
+// 	}
 
-	for (let i = 0; i < firstRow.children.length; i++) {
-		var node = firstRow.children[i]
-		var cellType = getPluginData(node, 'elementSemantics')?.is
-		if (cellType === 'td' || cellType === 'th') {
-			columnCount++
-		}
-	}
+// 	for (let i = 0; i < firstRow.children.length; i++) {
+// 		var node = firstRow.children[i]
+// 		var cellType = getPluginData(node, "elementSemantics")?.is
+// 		if (cellType === "td" || cellType === "th") {
+// 			columnCount++
+// 		}
+// 	}
 
-	return {
-		columnCount,
-		rowCount,
-		columnResizing: firstRow.type === 'COMPONENT' ? true : false,
-		includeHeader: getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false,
-		cellAlignment: 'MIN',
-		usingColumnsOrRows,
-		cellWidth: firstCell.width,
-	}
-}
+// 	return {
+// 		columnCount,
+// 		rowCount,
+// 		columnResizing: firstRow.type === "COMPONENT" ? true : false,
+// 		includeHeader: getPluginData(firstCell, "elementSemantics")?.is === "th" ? true : false,
+// 		cellAlignment: "MIN",
+// 		usingColumnsOrRows,
+// 		cellWidth: firstCell.width
+// 	}
+// }
 
 async function toggleColumnsOrRows(selection) {
 	function isRow(node) {
