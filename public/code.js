@@ -1504,54 +1504,34 @@ function incrementNameNumerically(node) {
         }
     }
 }
-function setTemplateData(node) {
-    if (node.type === 'COMPONENT') {
-        setPluginData_1(node, 'template', {
-            file: {
-                id: getPluginData_1(figma.root, 'fileId'),
-                name: figma.root.name,
-            },
-            name: node.name,
-            id: genRandomId(),
-            component: {
-                key: node.key,
-                id: node.id,
-            },
-        });
-    }
-}
-function setSemantics(node, element) {
-    // Should this be split into markNode and setTemplate?
-    setPluginData_1(node, `elementSemantics`, {
-        is: element,
-    });
-    if (element === 'table') {
-        setTemplateData(node);
-    }
-}
 function geTemplateParts() { }
 function importTemplate(node) {
     // TODO: Needs to work more inteligently so that it corretly adds template if actually imported from file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
     // TODO: Check if already imported by checking id in list?
     var _a;
-    // Add file to list of files used by the document
-    // ifNotATemplateThenCreateOne
     var templateData = getPluginData_1(node, 'template');
-    // If template has same file id as current file and isn't a component
-    var isLocalButNotComponent = ((_a = templateData === null || templateData === void 0 ? void 0 : templateData.file) === null || _a === void 0 ? void 0 : _a.id) === getPluginData_1(figma.root, 'fileId') && node.type !== 'COMPONENT';
-    console.log(isLocalButNotComponent);
-    if (node.type === 'COMPONENT' || isLocalButNotComponent) {
-        if (isLocalButNotComponent) {
-            node = convertToComponent_1(node);
+    var isTemplateNode = templateData;
+    var isLocal = ((_a = templateData === null || templateData === void 0 ? void 0 : templateData.file) === null || _a === void 0 ? void 0 : _a.id) === getDocumentData_1('fileId');
+    if (isTemplateNode) {
+        if (node.type === 'COMPONENT') {
+            if (isLocal) {
+                figma.notify('Template already imported');
+            }
+            else {
+                addTemplateToRemoteFiles(node);
+                figma.notify('Imported remote template');
+            }
         }
-        setSemantics(node, 'table');
-        node.setRelaunchData(defaultRelaunchData);
+        else {
+            node = convertToComponent_1(node);
+            figma.notify('Imported template');
+            // (add to local templates)
+        }
+        setDocumentData_1('defaultTemplate', getPluginData_1(node, 'template'));
     }
     else {
-        addTemplateToRemoteFiles(node);
+        figma.notify('No template found');
     }
-    templateData = getPluginData_1(node, 'template');
-    setDocumentData_1('defaultTemplate', templateData);
 }
 function createTableInstance(templateComponent, settings) {
     // FIXME: Get it to work with parts which are not components as well
@@ -1738,16 +1718,6 @@ dist((plugin) => {
             }
         }
     }
-    async function createTable(msg) {
-        const defaultTemplate = getDocumentData_1('defaultTemplate');
-        const templateComponent = await getComponent(defaultTemplate.id);
-        const userPreferences = await getUserPreferencesAsync();
-        createTableInstance(templateComponent, userPreferences)
-            .then((tableInstance) => {
-            updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'));
-        })
-            .catch();
-    }
     plugin.command('createTable', async ({ ui }) => {
         // // Show create table UI
         // let pluginAlreadyRun = await getClientStorageAsync('pluginAlreadyRun')
@@ -1786,7 +1756,15 @@ dist((plugin) => {
     plugin.on('edit-template', editTemplateComponent);
     plugin.on('set-default-template', setDefaultTemplate);
     plugin.on('set-semantics', () => { });
-    plugin.on('create-table-instance', createTable);
+    plugin.on('create-table-instance', async (msg) => {
+        const templateComponent = await getComponent(getDocumentData_1('defaultTemplate').id);
+        const userPreferences = await getUserPreferencesAsync();
+        createTableInstance(templateComponent, userPreferences)
+            .then((tableInstance) => {
+            updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'));
+        })
+            .catch();
+    });
     plugin.on('refresh-tables', refreshTables);
     plugin.on('save-user-preferences', () => { });
     plugin.on('fetch-template-part', () => { });
