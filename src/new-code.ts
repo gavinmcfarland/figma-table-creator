@@ -24,6 +24,10 @@ import {
 	positionInCenterOfViewport,
 	unique,
 	getPublishedComponents,
+	lookForComponent,
+	getSelectionName,
+	isInsideComponent,
+	getParentComponent,
 } from './new-helpers'
 import { genRandomId } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
@@ -45,7 +49,6 @@ function File(data?) {
 	if (data) this.data = data
 }
 function Template(node) {
-	console.log(node)
 	this.id = node.id
 	this.name = node.name
 	this.component = {
@@ -176,7 +179,15 @@ function getLocalTemplateComponents() {
 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
 }
 function getLocalTemplates() {
-	var localTemplateComponents = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
+	var templates = []
+	figma.root.findAll((node) => {
+		var templateData = getPluginData(node, 'template')
+		if (templateData && node.type === 'COMPONENT') {
+			templates.push(templateData)
+		}
+	})
+
+	return templates
 }
 function createTableInstance(templateComponent, settings) {
 	// FIXME: Get it to work with parts which are not components as well
@@ -362,6 +373,83 @@ function getUserPreferencesAsync() {
 	getRecentFilesAsync()
 }
 
+function getDefaultTemplate() {
+	var defaultTemplate = getDocumentData('defaultTemplate')
+	return getComponentById(defaultTemplate?.component.id) ? defaultTemplate : undefined
+}
+
+function getTemplateParts(templateNode) {
+	// find nodes with certain pluginData
+	let elements = ['tr', 'td', 'th', 'table']
+	let results = {}
+
+	// Loop though element definitions and find them in the template
+	for (let i = 0; i < elements.length; i++) {
+		let elementName = elements[i]
+		let part = templateNode.findOne((node) => {
+			let elementSemantics = getPluginData(node, 'elementSemantics')
+
+			if (elementSemantics?.is === elementName) {
+				console.log(elementSemantics)
+				return true
+			}
+		})
+
+		results[elementName] = part
+	}
+
+	if (!results['table']) {
+		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
+			results['table'] = templateNode
+		}
+	}
+
+	// // For instances assign the mainComponent as the part
+	// for (let [key, value] of Object.entries(results)) {
+	// 	if (value.type === "INSTANCE") {
+	// 		results[key] = value.mainComponent
+	// 	}
+	// }
+
+	return results
+}
+
+function postCurrentSelection(templateNodeId) {
+	let selection
+
+	function isInsideTemplate(node) {
+		let parentComponent = node.type === 'COMPONENT' ? node : getParentComponent(node)
+		if ((isInsideComponent(node) || node.type === 'COMPONENT') && parentComponent) {
+			if (getPluginData(parentComponent, 'template') && parentComponent.id === templateNodeId) {
+				return true
+			}
+		}
+	}
+
+	if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+		selection = {
+			element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+			name: getSelectionName(figma.currentPage.selection[0]),
+		}
+
+		figma.ui.postMessage({ type: 'current-selection', selection: selection })
+	}
+
+	figma.on('selectionchange', () => {
+		if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+			console.log('selection changed')
+			selection = {
+				element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+				name: getSelectionName(figma.currentPage.selection[0]),
+			}
+
+			figma.ui.postMessage({ type: 'current-selection', selection: selection })
+		} else {
+			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
+		}
+	})
+}
+
 /**
  * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
  * @param {String} key A key to store data under
@@ -430,19 +518,49 @@ plugma((plugin) => {
 
 		// Set template data on component
 		let templateData = new Template(templateComponent)
+
 		setPluginData(templateComponent, 'template', templateData)
 		setDocumentData('defaultTemplate', templateData)
-		figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData })
+		templateComponent.setRelaunchData(defaultRelaunchData)
+		figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData, localTemplates: getLocalTemplates() })
 
 		incrementNameNumerically(templateComponent)
 		selectAndZoomIntoView(figma.currentPage.children)
 	}
 
-	function editTemplateComponent() {
-		getComponentById()
-		animateNodeIntoView()
-		fetchTemplateParts()
-		plugin.post('current-selection')
+	async function editTemplateComponent(msg) {
+		lookForComponent(msg.template).then((templateNode) => {
+			// figma.viewport.scrollAndZoomIntoView([templateNode])
+			animateNodeIntoView([templateNode])
+			figma.currentPage.selection = [templateNode]
+			let parts = getTemplateParts(templateNode)
+			let partsAsObject = {
+				table: {
+					name: getSelectionName(parts?.table),
+					element: 'table',
+					id: parts?.table?.id,
+				},
+				tr: {
+					name: getSelectionName(parts?.tr),
+					element: 'tr',
+					id: parts?.tr?.id,
+				},
+				td: {
+					name: getSelectionName(parts?.td),
+					element: 'td',
+					id: parts?.td?.id,
+				},
+				th: {
+					name: getSelectionName(parts?.th),
+					element: 'th',
+					id: parts?.th?.id,
+				},
+			}
+
+			postCurrentSelection(templateNode.id)
+
+			figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
+		})
 	}
 
 	function setDefaultTemplate(templateData) {
@@ -505,16 +623,16 @@ plugma((plugin) => {
 		const recentFiles = await getRecentFilesAsync()
 		const remoteFiles = getDocumentData('remoteFiles')
 		const fileId = getDocumentData('fileId')
-		const defaultTemplate = getDocumentData('defaultTemplate')
+		const defaultTemplate = getDefaultTemplate()
 		const localTemplates = getLocalTemplates()
 
 		ui.show({
 			type: 'show-create-table-ui',
-			userPreferences,
+			...userPreferences,
 			remoteFiles,
 			recentFiles,
 			localTemplates,
-			defaultTemplate: getComponentById(defaultTemplate.component.id) ? defaultTemplate : undefined,
+			defaultTemplate,
 			fileId,
 			usingRemoteTemplate,
 			pluginAlreadyRun,
