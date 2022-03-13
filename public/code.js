@@ -508,13 +508,28 @@ function convertToComponent(node) {
  * @param {string} key  The key under which data is stored
  * @returns Plugin Data
  */
-function getPluginData(node, key) {
+function getPluginData(node, key, opts) {
     var data;
-    if (node.getPluginData(key)) {
-        data = JSON.parse(node.getPluginData(key));
+    data = node.getPluginData(key);
+    if (data) {
+        if (data.startsWith(">>>")) {
+            data = data;
+        }
+        else {
+            data = JSON.parse(data);
+        }
     }
     else {
         data = undefined;
+    }
+    if (typeof data === "string" && data.startsWith(">>>")) {
+        data = data.slice(3);
+        var string = `(() => {
+            return ` +
+            data +
+            `
+            })()`;
+        data = eval(string);
     }
     return data;
 }
@@ -525,7 +540,12 @@ function getPluginData(node, key) {
  * @param {any} data Data to be stoed
  */
 function setPluginData(node, key, data) {
-    node.setPluginData(key, JSON.stringify(data));
+    if (data.startsWith(">>>")) {
+        node.setPluginData(key, data);
+    }
+    else {
+        node.setPluginData(key, JSON.stringify(data));
+    }
 }
 function updatePluginData(node, key, callback) {
     var data;
