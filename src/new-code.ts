@@ -651,7 +651,9 @@ plugma((plugin) => {
 	plugin.on('new-template', () => {
 		newTemplateComponent({ shouldCreatePage: true })
 	})
-	plugin.on('edit-template', editTemplateComponent)
+	plugin.on('edit-template', (msg) => {
+		editTemplateComponent(msg)
+	})
 	plugin.on('set-default-template', setDefaultTemplate)
 	plugin.on('set-semantics', () => {})
 

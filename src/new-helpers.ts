@@ -1,4 +1,5 @@
 import { getPageNode } from '@fignite/helpers'
+import { Tween, Queue, Easing } from 'tweeno'
 
 export function unique(array, value) {
 	return array.length === 0 || !array.some((item) => item.id === value)
@@ -30,7 +31,7 @@ export async function lookForComponent(template) {
 
 	var component
 
-	var localComponent = findComponentById(template.component.id)
+	var localComponent = getComponentById(template.component.id)
 
 	try {
 		if (localComponent && localComponent.key === template.component.key) {
