@@ -17,7 +17,7 @@ import {
 	updateClientStorageAsync,
 } from '@fignite/helpers'
 import {
-	getComponent,
+	getComponentById,
 	createPage,
 	animateNodeIntoView,
 	selectAndZoomIntoView,
@@ -45,10 +45,17 @@ function File(data?) {
 	if (data) this.data = data
 }
 function Template(node) {
-	this.id = getPluginData(node, 'template').id
-	this.name = getPluginData(node, 'template').name
-	this.component = getPluginData(node, 'template').component
-	this.file = getPluginData(node, 'template').file
+	console.log(node)
+	this.id = node.id
+	this.name = node.name
+	this.component = {
+		id: node.id,
+		key: node.key,
+	}
+	this.file = {
+		id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
+		name: figma.root.name,
+	}
 }
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
@@ -421,13 +428,18 @@ plugma((plugin) => {
 
 		let { templateComponent } = components
 
-		importTemplate(templateComponent)
+		// Set template data on component
+		let templateData = new Template(templateComponent)
+		setPluginData(templateComponent, 'template', templateData)
+		setDocumentData('defaultTemplate', templateData)
+		figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData })
+
 		incrementNameNumerically(templateComponent)
 		selectAndZoomIntoView(figma.currentPage.children)
 	}
 
 	function editTemplateComponent() {
-		getComponent()
+		getComponentById()
 		animateNodeIntoView()
 		fetchTemplateParts()
 		plugin.post('current-selection')
@@ -485,30 +497,28 @@ plugma((plugin) => {
 	async function createTable(msg) {}
 
 	plugin.command('createTable', async ({ ui }) => {
-		// // Show create table UI
-		// let pluginAlreadyRun = await getClientStorageAsync('pluginAlreadyRun')
-		// let userPreferences = await getClientStorageAsync('userPreferences')
-		// let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
+		// Show create table UI
+		let pluginAlreadyRun = await getClientStorageAsync('pluginAlreadyRun')
+		let userPreferences = await getClientStorageAsync('userPreferences')
+		let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
 
-		// const recentFiles = await getRecentFilesAsync()
-		// const remoteFiles = getDocumentData('remoteFiles')
-		// const fileId = getDocumentData('fileId')
-		// const defaultTemplate = getDocumentData('defaultTemplate')
-		// const localTemplates = getLocalTemplates()
+		const recentFiles = await getRecentFilesAsync()
+		const remoteFiles = getDocumentData('remoteFiles')
+		const fileId = getDocumentData('fileId')
+		const defaultTemplate = getDocumentData('defaultTemplate')
+		const localTemplates = getLocalTemplates()
 
-		// ui.show({
-		// 	type: 'show-create-table-ui',
-		// 	userPreferences,
-		// 	remoteFiles,
-		// 	recentFiles,
-		// 	localTemplates,
-		// 	defaultTemplate,
-		// 	fileId,
-		// 	usingRemoteTemplate,
-		// 	pluginAlreadyRun,
-		// })
-		// console.log('hello')
-		console.log(getDocumentData('defaultTemplate'))
+		ui.show({
+			type: 'show-create-table-ui',
+			userPreferences,
+			remoteFiles,
+			recentFiles,
+			localTemplates,
+			defaultTemplate: getComponentById(defaultTemplate.component.id) ? defaultTemplate : undefined,
+			fileId,
+			usingRemoteTemplate,
+			pluginAlreadyRun,
+		})
 	})
 	plugin.command('detachTable', detachTable)
 	plugin.command('spawnTable', spawnTable)

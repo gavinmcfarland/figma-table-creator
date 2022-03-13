@@ -25,8 +25,7 @@
 	let localTemplates
 
 	let welcomeSlides = [
-		false,
-		false,
+		true,
 		false,
 		false,
 		false
@@ -51,13 +50,23 @@
 
 	}
 
-	function setActivePage(name) {
+	function setActivePage(name, number) {
 		// Reset page state
 		Object.keys(pageState).map(function(key, index) {
   			pageState[key] = false;
 		});
 
 		pageState[name] = true
+
+		if (name === "welcomePageActive") {
+			if (number) {
+				setActiveSlide(number)
+			}
+			else {
+				setActiveSlide(0)
+			}
+
+		}
 
 		return pageState
 	}
@@ -279,6 +288,7 @@
 		data = await event.data.pluginMessage
 
 		console.log(data)
+
 		if (data.type === "show-create-table-ui") {
 			let store = {
 				pageState,
@@ -300,40 +310,30 @@
 				data = value.data
 			})
 
-
 			if (data.pluginAlreadyRun) {
-				console.log("pluginalreadyrun")
-				setActiveSlide(4)
+				// If defaultTemplate exists then show create table UI
+				if (data.defaultTemplate) {
+					setActivePage("createTablePageActive")
+					updateSelectedTemplate(data)
+					updateSelectedFile(data)
+				}
+				else {
+					setActivePage("welcomePageActive", 4)
+				}
 			}
 			else {
-				setActiveSlide(0)
+				setActivePage("welcomePageActive", 0)
 			}
-
-			if (data.type === "show-create-table-ui") {
-				setActivePage("createTablePageActive")
-
-				if ((!Array.isArray(data.remoteFiles) || !data.remoteFiles.length ) || (!Array.isArray(data.localTemplates) || !data.localTemplates.length)) {
-					setActivePage("welcomePageActive")
-				}
-
-				if ((Array.isArray(data.localTemplates) && data.localTemplates.length) || data.usingRemoteTemplate) {
-					setActivePage("createTablePageActive")
-				}
-
-			}
-
-			if (data.type === "settings") {
-				setActivePage("templateSettingsPageActive")
-			}
-
-			if (data.defaultTemplate) {
-				updateSelectedTemplate(data)
-				updateSelectedFile(data)
-			}
-
-			return data
 		}
 
+
+
+
+
+
+
+
+		return data
 
 	}
 
@@ -382,7 +382,118 @@
 	</div>
 {/if}
 
-{#if pageState.createTablePageActive && data.defaultTemplate}
+{#if pageState.welcomePageActive}
+	{#if welcomeSlides[0]}
+
+	<!-- <div class="container" style="padding: var(--size-200)">
+		<span class="table-creator-icon" width="172" height="148" />
+		<div class="svg1" style="margin: 0 -16px"></div>
+		<h6>Welcome</h6>
+		<p>
+			Table Creator lets you create custom-styled tables from templates that are easy to resize, edit and use with your design system.<br />
+		</p>
+		<span on:click={() => setActiveSlide(1)}><Button classes="secondary">Next</Button></span>
+	</div> -->
+
+	<!-- if existing user -->
+	<div class="container welcomePage" style="padding: var(--size-200)">
+		<div class="artwork">
+		<div class="svg2" style="margin: 0 -16px"></div>
+		</div>
+		<div class="content">
+			<h6>What's new</h6>
+			<p>
+				Table Creator has been rebuilt from the ground up with some new features.
+			</p>
+			<div class="buttons">
+			<span on:click={() => setActiveSlide(1)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+			</div>
+		</div>
+	</div>
+
+
+	{/if}
+	{#if welcomeSlides[1]}
+	<div class="container welcomePage" style="padding: var(--size-200)">
+		<div class="artwork">
+		<div class="svg3" style="margin: 0 -16px"></div>
+		</div>
+		<div class="content">
+		<h6>Templates</h6>
+		<p>
+			A template is a single component which the plugin uses to create tables from. Once a table is created, it's appearance can be updated from the plugin.
+		</p>
+		<div class="buttons">
+		<span on:click={() => setActiveSlide(2)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		</div>
+		</div>
+	</div>
+	{/if}
+	{#if welcomeSlides[2]}
+	<div class="container welcomePage" style="padding: var(--size-200)">
+		<div class="artwork">
+		<div class="svg4" style="margin: 0 -16px"></div>
+		</div>
+		<div class="content">
+		<h6>Multiple templates</h6>
+		<p>
+			Manage multiple table designs by creating different templates. Choose the template you want by selecting it from the dropdown when creating a table.<br />
+		</p>
+		<div class="buttons">
+			<span on:click={() => setActiveSlide(3)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		</div>
+		</div>
+	</div>
+	{/if}
+	{#if welcomeSlides[3]}
+	<div class="container welcomePage" style="padding: var(--size-200)">
+		<div class="artwork">
+		<div class="svg5" style="margin: 0 -16px"></div>
+		</div>
+		<div class="content">
+		<h6>Remote files</h6>
+		<p>
+			Use templates across different files. Make sure the template is published in the remote file, then in the other file run the plugin choose "Existing Template".
+		</p>
+		<div class="buttons">
+			<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+		</div>
+		</div>
+	</div>
+	{/if}
+	{#if welcomeSlides[4]}
+	<div class="container welcomePage" style="padding: var(--size-200)">
+		<div class="artwork">
+		<div class="svg6" style="margin: 0 -16px"></div>
+		</div>
+		<div class="content">
+		{#if data.recentFiles}
+			<h6>Get started</h6>
+		{:else}
+			<h6>Get started</h6>
+		{/if}
+		{#if data.recentFiles}
+			<p>Create a new template or choose an existing template from a remote file.</p>
+		{:else}
+			<p>Begin by creating a new template to create tables from.</p>
+		{/if}
+
+
+		<div class="buttons">
+			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
+			{#if data.recentFiles}
+				<span on:click={() => {
+					chooseRemoteTemplate()
+					}}><Button classes="secondary">Existing Template</Button></span>
+			{/if}
+		</div>
+	</div>
+		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
+	</div>
+	{/if}
+{/if}
+
+{#if pageState.createTablePageActive}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<div class=section-title>
 			<div class="SelectWrapper">
@@ -535,117 +646,6 @@
 			<span on:click={createTable}><Button id="create-table">Create table</Button></span>
 		</div>
 	</div>
-{/if}
-
-{#if pageState.welcomePageActive}
-	{#if welcomeSlides[0]}
-
-	<!-- <div class="container" style="padding: var(--size-200)">
-		<span class="table-creator-icon" width="172" height="148" />
-		<div class="svg1" style="margin: 0 -16px"></div>
-		<h6>Welcome</h6>
-		<p>
-			Table Creator lets you create custom-styled tables from templates that are easy to resize, edit and use with your design system.<br />
-		</p>
-		<span on:click={() => setActiveSlide(1)}><Button classes="secondary">Next</Button></span>
-	</div> -->
-
-	<!-- if existing user -->
-	<div class="container welcomePage" style="padding: var(--size-200)">
-		<div class="artwork">
-		<div class="svg2" style="margin: 0 -16px"></div>
-		</div>
-		<div class="content">
-			<h6>What's new</h6>
-			<p>
-				Table Creator has been rebuilt from the ground up with some new features.
-			</p>
-			<div class="buttons">
-			<span on:click={() => setActiveSlide(1)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
-			</div>
-		</div>
-	</div>
-
-
-	{/if}
-	{#if welcomeSlides[1]}
-	<div class="container welcomePage" style="padding: var(--size-200)">
-		<div class="artwork">
-		<div class="svg3" style="margin: 0 -16px"></div>
-		</div>
-		<div class="content">
-		<h6>Templates</h6>
-		<p>
-			A template is a single component which the plugin uses to create tables from. Once a table is created, it's appearance can be updated from the plugin.
-		</p>
-		<div class="buttons">
-		<span on:click={() => setActiveSlide(2)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
-		</div>
-		</div>
-	</div>
-	{/if}
-	{#if welcomeSlides[2]}
-	<div class="container welcomePage" style="padding: var(--size-200)">
-		<div class="artwork">
-		<div class="svg4" style="margin: 0 -16px"></div>
-		</div>
-		<div class="content">
-		<h6>Multiple templates</h6>
-		<p>
-			Manage multiple table designs by creating different templates. Choose the template you want by selecting it from the dropdown when creating a table.<br />
-		</p>
-		<div class="buttons">
-			<span on:click={() => setActiveSlide(3)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
-		</div>
-		</div>
-	</div>
-	{/if}
-	{#if welcomeSlides[3]}
-	<div class="container welcomePage" style="padding: var(--size-200)">
-		<div class="artwork">
-		<div class="svg5" style="margin: 0 -16px"></div>
-		</div>
-		<div class="content">
-		<h6>Remote files</h6>
-		<p>
-			Use templates across different files. Make sure the template is published in the remote file, then in the other file run the plugin choose "Existing Template".
-		</p>
-		<div class="buttons">
-			<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
-		</div>
-		</div>
-	</div>
-	{/if}
-	{#if welcomeSlides[4]}
-	<div class="container welcomePage" style="padding: var(--size-200)">
-		<div class="artwork">
-		<div class="svg6" style="margin: 0 -16px"></div>
-		</div>
-		<div class="content">
-		{#if data.recentFiles}
-			<h6>Get started</h6>
-		{:else}
-			<h6>Get started</h6>
-		{/if}
-		{#if data.recentFiles}
-			<p>Create a new template or choose an existing template from a remote file.</p>
-		{:else}
-			<p>Begin by creating a new template to create tables from.</p>
-		{/if}
-
-
-		<div class="buttons">
-			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
-			{#if data.recentFiles}
-				<span on:click={() => {
-					chooseRemoteTemplate()
-					}}><Button classes="secondary">Existing Template</Button></span>
-			{/if}
-		</div>
-	</div>
-		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
-	</div>
-	{/if}
 {/if}
 
 {#if pageState.templateSettingsPageActive}

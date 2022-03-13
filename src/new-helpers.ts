@@ -26,7 +26,36 @@ export async function getPublishedComponents(array) {
 }
 export function setDocumentData(key, data) {}
 export function getDocumentData(key) {}
-export function getComponent(id) {}
+export function getComponentById(id) {
+	// var pages = figma.root.children
+	// var component
+
+	// // Look through each page to see if matches node id
+	// for (let i = 0; i < pages.length; i++) {
+
+	// 	if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
+	// 		component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
+	// 	}
+
+	// }
+
+	// return component || false
+
+	var node = figma.getNodeById(id)
+
+	if (node) {
+		if (node.parent === null || node.parent.parent === null) {
+			figma.root.setPluginData('cellComponentState', 'exists')
+			return false
+		} else {
+			figma.root.setPluginData('cellComponentState', 'removed')
+			return node
+		}
+	} else {
+		figma.root.setPluginData('cellComponentState', 'deleted')
+		return null
+	}
+}
 export function createPage(name) {
 	var newPage = figma.createPage()
 	newPage.name = name

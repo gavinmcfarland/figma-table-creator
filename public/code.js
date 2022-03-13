@@ -176,6 +176,12 @@ function plugma(plugin) {
 
 var dist = plugma;
 
+/**
+ * Helpers which make it easier to update client storage
+ */
+async function getClientStorageAsync(key) {
+    return await figma.clientStorage.getAsync(key);
+}
 async function updateClientStorageAsync(key, callback) {
     var data = await figma.clientStorage.getAsync(key);
     data = callback(data);
@@ -560,12 +566,12 @@ function setDocumentData(key, data) {
  * @param {String} key A key to store data under
  */
 function getDocumentData(key) {
-    console.log("getDocumentData");
     return getPluginData(figma.root, key);
 }
 
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
+var getClientStorageAsync_1 = getClientStorageAsync;
 var getDocumentData_1 = getDocumentData;
 var getNodeIndex_1 = getNodeIndex;
 var getPluginData_1 = getPluginData;
@@ -575,7 +581,32 @@ var updateClientStorageAsync_1 = updateClientStorageAsync;
 var updatePluginData_1 = updatePluginData;
 
 // export getClientStorageAsync(array) {
-function getComponent(id) { }
+function getComponentById(id) {
+    // var pages = figma.root.children
+    // var component
+    // // Look through each page to see if matches node id
+    // for (let i = 0; i < pages.length; i++) {
+    // 	if (pages[i].findOne(node => node.id === id && node.type === "COMPONENT")) {
+    // 		component = pages[i].findOne(node => node.id === id && node.type === "COMPONENT")
+    // 	}
+    // }
+    // return component || false
+    var node = figma.getNodeById(id);
+    if (node) {
+        if (node.parent === null || node.parent.parent === null) {
+            figma.root.setPluginData('cellComponentState', 'exists');
+            return false;
+        }
+        else {
+            figma.root.setPluginData('cellComponentState', 'removed');
+            return node;
+        }
+    }
+    else {
+        figma.root.setPluginData('cellComponentState', 'deleted');
+        return null;
+    }
+}
 function createPage(name) {
     var newPage = figma.createPage();
     newPage.name = name;
@@ -1455,10 +1486,17 @@ function File(data) {
         this.data = data;
 }
 function Template(node) {
-    this.id = getPluginData_1(node, 'template').id;
-    this.name = getPluginData_1(node, 'template').name;
-    this.component = getPluginData_1(node, 'template').component;
-    this.file = getPluginData_1(node, 'template').file;
+    console.log(node);
+    this.id = node.id;
+    this.name = node.name;
+    this.component = {
+        id: node.id,
+        key: node.key,
+    };
+    this.file = {
+        id: getDocumentData_1('fileId') || setDocumentData_1('fileId', genRandomId()),
+        name: figma.root.name,
+    };
 }
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
@@ -1532,6 +1570,9 @@ function importTemplate(node) {
     else {
         figma.notify('No template found');
     }
+}
+function getLocalTemplates() {
+    figma.root.findAll((node) => getPluginData_1(node, 'template') && node.type === 'COMPONENT');
 }
 function createTableInstance(templateComponent, settings) {
     // FIXME: Get it to work with parts which are not components as well
@@ -1652,6 +1693,7 @@ function createTableInstance(templateComponent, settings) {
 }
 function getUserPreferencesAsync() {
 }
+function getRecentFilesAsync() { }
 // Commands
 function detachTable() { }
 function spawnTable() { }
@@ -1673,11 +1715,16 @@ dist((plugin) => {
         }
         let components = await createDefaultComponents();
         let { templateComponent } = components;
-        importTemplate(templateComponent);
+        // Set template data on component
+        let templateData = new Template(templateComponent);
+        setPluginData_1(templateComponent, 'template', templateData);
+        setDocumentData_1('defaultTemplate', templateData);
+        figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData });
         incrementNameNumerically(templateComponent);
         selectAndZoomIntoView(figma.currentPage.children);
     }
     function editTemplateComponent() {
+        getComponentById();
         plugin.post('current-selection');
     }
     function setDefaultTemplate(templateData) {
@@ -1719,28 +1766,26 @@ dist((plugin) => {
         }
     }
     plugin.command('createTable', async ({ ui }) => {
-        // // Show create table UI
-        // let pluginAlreadyRun = await getClientStorageAsync('pluginAlreadyRun')
-        // let userPreferences = await getClientStorageAsync('userPreferences')
-        // let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
-        // const recentFiles = await getRecentFilesAsync()
-        // const remoteFiles = getDocumentData('remoteFiles')
-        // const fileId = getDocumentData('fileId')
-        // const defaultTemplate = getDocumentData('defaultTemplate')
-        // const localTemplates = getLocalTemplates()
-        // ui.show({
-        // 	type: 'show-create-table-ui',
-        // 	userPreferences,
-        // 	remoteFiles,
-        // 	recentFiles,
-        // 	localTemplates,
-        // 	defaultTemplate,
-        // 	fileId,
-        // 	usingRemoteTemplate,
-        // 	pluginAlreadyRun,
-        // })
-        // console.log('hello')
-        console.log(getDocumentData_1('defaultTemplate'));
+        // Show create table UI
+        let pluginAlreadyRun = await getClientStorageAsync_1('pluginAlreadyRun');
+        let userPreferences = await getClientStorageAsync_1('userPreferences');
+        let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
+        const recentFiles = await getRecentFilesAsync();
+        const remoteFiles = getDocumentData_1('remoteFiles');
+        const fileId = getDocumentData_1('fileId');
+        const defaultTemplate = getDocumentData_1('defaultTemplate');
+        const localTemplates = getLocalTemplates();
+        ui.show({
+            type: 'show-create-table-ui',
+            userPreferences,
+            remoteFiles,
+            recentFiles,
+            localTemplates,
+            defaultTemplate: getComponentById(defaultTemplate.component.id) ? defaultTemplate : undefined,
+            fileId,
+            usingRemoteTemplate,
+            pluginAlreadyRun,
+        });
     });
     plugin.command('detachTable', detachTable);
     plugin.command('spawnTable', spawnTable);
