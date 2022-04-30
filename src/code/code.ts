@@ -150,7 +150,6 @@ function setSemantics(node, element) {
 	}
 }
 function setDefaultTemplate(template) {}
-function geTemplateParts() {}
 
 function importTemplate(node) {
 	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported from file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
@@ -767,18 +766,6 @@ function selectTableVector(type) {
 		figma.notify('One or more table cells must be selected')
 	}
 }
-// function selectRow() {
-// 	if (figma.currentPage.selection.length > 0) {
-// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'HORIZONTAL') {
-// 			selectParallelCells()
-// 		}
-// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'VERTICAL') {
-// 			selectAdjacentCells()
-// 		}
-// 	} else {
-// 		figma.notify('One or more table cells must be selected')
-// 	}
-// }
 
 plugma((plugin) => {
 	plugin.ui = {
@@ -956,14 +943,6 @@ plugma((plugin) => {
 	plugin.on('create-table-instance', async (msg) => {
 		const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 		const userPreferences = await getClientStorageAsync('userPreferences')
-
-		// createTableInstance(templateComponent, userPreferences)
-		// 	.then((tableInstance) => {
-		// 		positionInCenterOfViewport(tableInstance)
-
-		// 		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
-		// 	})
-		// 	.catch()
 
 		let tableInstance = createTableInstance(templateComponent, userPreferences)
 		positionInCenterOfViewport(tableInstance)
