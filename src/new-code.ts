@@ -41,7 +41,7 @@ let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
 	spawnTable: 'Spawn a new table from this table',
 	toggleColumnResizing: 'Use a component to resize columns or rows',
-	toggleColumnsOrRows: 'Toggle between using columns or rows',
+	switchColumnsOrRows: 'Switch between using columns or rows',
 }
 
 function File(data?) {
@@ -536,10 +536,36 @@ function selectTableCells(direction) {
 
 // Commands
 
-function detachTable() {}
+function detachTable(selection) {
+	let newSelection = []
+	for (let i = 0; i < selection.length; i++) {
+		let table = selection[i]
+
+		if (table.type === 'INSTANCE') {
+			table = table.detachInstance()
+		}
+
+		table.findAll((node) => {
+			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+				if (node.type === 'INSTANCE') {
+					// console.log(node.type, node.id)
+					node.detachInstance()
+				}
+				if (node.type === 'COMPONENT') {
+					replace(node, convertToFrame)
+				}
+			}
+		})
+
+		newSelection.push(table)
+	}
+
+	figma.currentPage.selection = newSelection
+}
 function spawnTable() {}
 function toggleColumnResizing() {}
-async function switchColumnsOrRows(selection) {
+function switchColumnsOrRows(selection) {
+	let vectorType
 	function isRow(node) {
 		return getPluginData(node, 'elementSemantics')?.is === 'tr'
 	}
@@ -555,6 +581,8 @@ async function switchColumnsOrRows(selection) {
 			figma.closePlugin('Table and rows must be detached')
 		} else {
 			let settings = getTableSettings(table)
+			console.log(settings)
+			vectorType = settings.usingColumnsOrRows
 
 			// let part: any = findTemplateParts(table)
 
@@ -721,6 +749,10 @@ async function switchColumnsOrRows(selection) {
 
 			iterateChildren()
 		}
+	}
+
+	return {
+		vectorType: vectorType,
 	}
 }
 function selectTableVector(type) {
@@ -889,21 +921,16 @@ plugma((plugin) => {
 			pluginAlreadyRun,
 		})
 	})
-	plugin.command('detachTable', detachTable)
+	plugin.command('detachTable', () => {
+		detachTable(figma.currentPage.selection)
+		figma.closePlugin()
+	})
 	plugin.command('spawnTable', spawnTable)
 	plugin.command('toggleColumnResizing', toggleColumnResizing)
 
-	if (figma.command === 'switchColumnsOrRows') {
-		console.log('hello')
-		switchColumnsOrRows(figma.currentPage.selection).then(() => {
-			figma.closePlugin('Rows and columns switched')
-		})
-	}
-
 	plugin.command('switchColumnsOrRows', () => {
-		switchColumnsOrRows(figma.currentPage.selection).then(() => {
-			figma.closePlugin('Rows and columns switched')
-		})
+		let { vectorType } = switchColumnsOrRows(figma.currentPage.selection)
+		figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`)
 	})
 	plugin.command('selectColumn', () => {
 		selectTableVector('column')
