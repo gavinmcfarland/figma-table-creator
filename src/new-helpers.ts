@@ -218,6 +218,18 @@ export function positionInCenterOfViewport(node) {
 	node.x = figma.viewport.center.x - node.width / 2
 	node.y = figma.viewport.center.y - node.height / 2
 }
+
+// Swaps auto layout axis
+export function swapAxises(node) {
+	let primary = node.primaryAxisSizingMode
+	let counter = node.counterAxisSizingMode
+
+	node.primaryAxisSizingMode = counter
+	node.counterAxisSizingMode = primary
+
+	return node
+}
+
 export function genRandomId() {
 	var randPassword = Array(10)
 		.fill('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz')
@@ -226,4 +238,9 @@ export function genRandomId() {
 		})
 		.join('')
 	return randPassword
+}
+
+// TODO: Replace with more rebost clone function
+export function clone(val) {
+	return JSON.parse(JSON.stringify(val))
 }

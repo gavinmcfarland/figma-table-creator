@@ -15,6 +15,7 @@ import {
 	updatePluginData,
 	getClientStorageAsync,
 	updateClientStorageAsync,
+	removeChildren,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -28,6 +29,8 @@ import {
 	getSelectionName,
 	isInsideComponent,
 	getParentComponent,
+	swapAxises,
+	clone,
 } from './new-helpers'
 import { genRandomId } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
@@ -488,14 +491,279 @@ async function syncRecentFiles(data) {
 }
 function getRecentFilesAsync() {}
 
+function selectParallelCells() {
+	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
+	var regex = RegExp(/\[ignore\]/, 'g')
+	var selection = figma.currentPage.selection
+
+	var newSelection = []
+
+	for (let i = 0; i < selection.length; i++) {
+		var parent = selection[i].parent?.parent
+		var children = parent?.children
+
+		var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id)
+
+		var columnIndex = children[rowIndex].children.findIndex((x) => x.id === selection[i].id)
+
+		for (let i = 0; i < children.length; i++) {
+			if (children[i].children) {
+				if (children[i].children[columnIndex] && !regex.test(children[i].children[columnIndex].parent.name)) {
+					newSelection.push(clone(children[i].children[columnIndex]))
+				}
+			}
+		}
+	}
+
+	figma.currentPage.selection = newSelection
+}
+
+function selectAdjacentCells() {
+	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
+	var regex = RegExp(/\[ignore\]/, 'g')
+	var selection = figma.currentPage.selection
+
+	var newSelection = []
+
+	for (let i = 0; i < selection.length; i++) {
+		// Table container
+		var parent = selection[i].parent?.parent
+
+		// rows or columns
+		var children = parent?.children
+
+		var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id)
+
+		// var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[i].id)
+
+		for (let i = 0; i < children.length; i++) {
+			var cell = children[rowIndex]
+
+			for (let b = 0; b < cell.children.length; b++) {
+				if (cell.children) {
+					if (cell.children[b] && !regex.test(cell.children[b].parent.name)) {
+						newSelection.push(clone(cell.children[b]))
+					}
+				}
+			}
+		}
+	}
+	figma.currentPage.selection = newSelection
+}
+
 // Commands
 
 function detachTable() {}
 function spawnTable() {}
 function toggleColumnResizing() {}
-function switchColumnsOrRows() {}
-function selectColumns() {}
-function selectRows() {}
+async function switchColumnsOrRows(selection) {
+	function isRow(node) {
+		return getPluginData(node, 'elementSemantics')?.is === 'tr'
+	}
+
+	// TODO: Fix localise component to take account of rows or columns
+
+	for (let i = 0; i < selection.length; i++) {
+		var table = selection[i]
+
+		let firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
+		if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
+			figma.closePlugin('Table and rows must be detached')
+		} else {
+			let settings = getTableSettings(table)
+
+			// let part: any = findTemplateParts(table)
+
+			function iterateChildren() {
+				var origRowlength = firstRow.parent.children.length
+
+				var rowContainer = firstRow.parent
+
+				var rowContainerObject = nodeToObject(rowContainer)
+
+				// Change the table container
+				if (settings.usingColumnsOrRows === 'rows') {
+					rowContainer.layoutMode = 'HORIZONTAL'
+				}
+
+				if (firstRow.type !== 'COMPONENT') {
+					function getIndex(node, c) {
+						var container = node.parent
+						var score = c
+						var i = -1
+						var x = -1
+						while (i < c) {
+							i++
+							x++
+							var item = container.children[x]
+							if (item && !isRow(item)) {
+								i--
+							}
+						}
+
+						return x
+					}
+
+					for (let i = 0; i < firstRow.parent.children.length; i++) {
+						var row = rowContainer.children[i]
+
+						if (isRow(row)) {
+							var rowWidth = row.width
+							var rowHeight = row.height
+
+							var cells = row.children
+
+							if (settings.usingColumnsOrRows === 'columns') {
+								row.name = row.name.replace('Col', 'Row')
+								row.layoutMode = 'HORIZONTAL'
+								row.layoutGrow = 0
+								row.counterAxisSizingMode = 'AUTO'
+							}
+
+							if (i < origRowlength) {
+								for (let c = 0; c < settings.columnCount; c++) {
+									var cell = cells[c]
+									var cellWidth = cell.width
+									// var cellLocation = [c + 1, r + 1]
+									// var columnIndex = getNodeIndex(row) + c
+
+									var oppositeIndex = getIndex(row, c)
+
+									if (cell) {
+										cell.primaryAxisSizingMode = 'AUTO'
+
+										// We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
+										if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
+											// If it's the first row and column doesn't exist then create a new column
+
+											var clonedColumn = row.clone()
+											removeChildren(clonedColumn) // Need to remove children because they are clones
+											table.appendChild(clonedColumn)
+										}
+
+										if (row.parent.children[oppositeIndex]) {
+											if (settings.usingColumnsOrRows === 'rows') {
+												row.parent.children[oppositeIndex].appendChild(cell)
+												row.parent.children[oppositeIndex].resize(
+													rowContainerObject.children[i].children[c].width,
+													row.height
+												)
+												row.parent.children[oppositeIndex].layoutGrow = rowContainerObject.children[i].children[c].layoutGrow
+												row.parent.children[oppositeIndex].layoutAlign = 'STRETCH'
+											} else {
+												row.parent.children[oppositeIndex].appendChild(cell)
+												cell.resize(row.width, cell.height)
+
+												// cell.primaryAxisSizingMode = rowContainerObject.children[i].children[c].primaryAxisSizingMode
+
+												if (rowContainerObject.children[i].layoutGrow === 1) {
+													cell.layoutGrow = 1
+													// cell.layoutAlign =  "STRETCH"
+													// cell.primaryAxisSizingMode = "AUTO"
+												} else {
+													cell.layoutGrow = 0
+													// cell.layoutAlign =  "INHERIT"
+													// cell.primaryAxisSizingMode = "FIXED"
+												}
+											}
+										}
+									}
+								}
+							}
+						} else {
+							row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
+						}
+
+						if (settings.usingColumnsOrRows === 'rows' && isRow(row)) {
+							row.name = row.name.replace('Row', 'Col')
+							row.layoutMode = 'VERTICAL'
+						}
+					}
+
+					if (settings.usingColumnsOrRows === 'columns') {
+						rowContainer.layoutMode = 'VERTICAL'
+					}
+
+					swapAxises(rowContainer)
+					resize(rowContainer, rowContainerObject.width, rowContainerObject.height)
+
+					// Because changing layout mode swaps sizingModes you need to loop children again
+					var rowlength = rowContainer.children.length
+
+					// For some reason can't remove nodes while in loop, so workaround is to add to an array.
+					let discardBucket = []
+
+					for (let i = 0; i < rowlength; i++) {
+						var row = rowContainer.children[i]
+
+						// This is the original object before rows are converted to columns, so may not always match new converted table
+						if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
+
+						if (isRow(row)) {
+							if (settings.usingColumnsOrRows === 'columns') {
+								row.counterAxisSizingMode = 'AUTO'
+								row.layoutAlign = 'STRETCH'
+
+								// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
+
+								var cells = row.children
+								var length = settings.usingColumnsOrRows === 'columns' ? firstRow.parent.children.length : firstRow.children.length
+								for (let c = 0; c < length; c++) {
+									var cell = cells[c]
+
+									if (cell) {
+										if (row.parent.children[getNodeIndex(firstRow) + c]) {
+											cell.primaryAxisSizingMode = 'FIXED'
+											cell.layoutAlign = 'STRETCH'
+											console.log(cell.layoutAlign)
+										}
+									}
+								}
+							}
+
+							// If row ends up being empty, then assume it's not needed
+							if (row.children.length === 0) {
+								console.log('remove row')
+								discardBucket.push(row)
+							}
+						}
+					}
+
+					for (let i = 0; i < discardBucket.length; i++) {
+						discardBucket[i].remove()
+					}
+				}
+			}
+
+			iterateChildren()
+		}
+	}
+}
+function selectTableVector(type) {
+	if (figma.currentPage.selection.length > 0) {
+		if (figma.currentPage.selection[0].parent?.parent.layoutMode === (type === 'column' ? 'VERTICAL' : 'HORIZONTAL')) {
+			selectParallelCells()
+		}
+		if (figma.currentPage.selection[0].parent?.parent.layoutMode === (type === 'column' ? 'HORIZONTAL' : 'VERTICAL')) {
+			selectAdjacentCells()
+		}
+	} else {
+		figma.notify('One or more table cells must be selected')
+	}
+}
+// function selectRow() {
+// 	if (figma.currentPage.selection.length > 0) {
+// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'HORIZONTAL') {
+// 			selectParallelCells()
+// 		}
+// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'VERTICAL') {
+// 			selectAdjacentCells()
+// 		}
+// 	} else {
+// 		figma.notify('One or more table cells must be selected')
+// 	}
+// }
 
 plugma((plugin) => {
 	plugin.ui = {
@@ -641,9 +909,27 @@ plugma((plugin) => {
 	plugin.command('detachTable', detachTable)
 	plugin.command('spawnTable', spawnTable)
 	plugin.command('toggleColumnResizing', toggleColumnResizing)
-	plugin.command('switchColumnsOrRows', switchColumnsOrRows)
-	plugin.command('selectColumns', selectColumns)
-	plugin.command('selectRows', selectRows)
+
+	if (figma.command === 'switchColumnsOrRows') {
+		console.log('hello')
+		switchColumnsOrRows(figma.currentPage.selection).then(() => {
+			figma.closePlugin('Rows and columns switched')
+		})
+	}
+
+	plugin.command('switchColumnsOrRows', () => {
+		switchColumnsOrRows(figma.currentPage.selection).then(() => {
+			figma.closePlugin('Rows and columns switched')
+		})
+	})
+	plugin.command('selectColumn', () => {
+		selectTableVector('column')
+		figma.closePlugin()
+	})
+	plugin.command('selectRow', () => {
+		selectTableVector('row')
+		figma.closePlugin()
+	})
 
 	plugin.command('newTemplate', newTemplateComponent)
 	plugin.command('importTemplate', importTemplate)

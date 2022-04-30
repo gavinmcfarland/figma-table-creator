@@ -66,7 +66,7 @@ var require$$0 = {
 var pkg;
 
 {
-    pkg = require$$0;
+	pkg = require$$0;
 }
 // try {
 // 	versionHistory = require("./package.json");
@@ -93,85 +93,91 @@ var pkg;
 // 	}
 // }
 function plugma(plugin) {
-    var pluginState = {
-        updateAvailable: false,
-        ui: {}
-    };
-    // console.log(pkg)
-    if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
-        pluginState.version = pkg.version;
-    }
-    // pluginState.updateAvailable = updateAvailable()
-    var eventListeners = [];
-    var menuCommands = [];
-    pluginState.on = (type, callback) => {
-        eventListeners.push({ type, callback });
-    };
-    pluginState.command = (type, callback) => {
-        menuCommands.push({ type, callback });
-    };
-    // Override default page name if set
-    var pageMannuallySet = false;
-    pluginState.setStartPage = (name) => {
-        pluginState.ui.page = name;
-        pageMannuallySet = true;
-    };
-    // pluginState.update = (callback) => {
-    // 	for (let [version, changes] of Object.entries(versionHistory)) {
-    // 		if (version === pkg.version) {
-    // 			// for (let i = 0; i < changes.length; i++) {
-    // 			// 	var change = changes[i]
-    // 			// }
-    // 			callback({ version, changes })
-    // 		}
-    // 	}
-    // }
-    var pluginCommands = plugin(pluginState);
-    // // Override default page name if set
-    // if (pageName[0]) {
-    // 	pluginState.ui.page = pageName[0]
-    // }
-    // console.log("pageName", pluginState.ui.page)
-    Object.assign({}, pluginState, { commands: pluginCommands });
-    if (pluginCommands) {
-        for (let [key, value] of Object.entries(pluginCommands)) {
-            // If command exists in manifest
-            if (figma.command === key) {
-                // Pass default page for ui
-                if (!pageMannuallySet) {
-                    pluginState.ui.page = key;
-                }
-                // Override default page name if set
-                // if (pageName[0]) {
-                // 	pluginState.ui.page = pageName[0]
-                // }
-                // Call function for that command
-                value(pluginState);
-                // Show UI?
-                if (pluginState.ui.open) {
-                    console.log("open?");
-                    figma.showUI(pluginState.ui.html);
-                }
-            }
-        }
-    }
-    figma.ui.onmessage = message => {
-        for (let eventListener of eventListeners) {
-            // console.log(message)
-            if (message.type === eventListener.type)
-                eventListener.callback(message);
-        }
-    };
-    pluginState.ui.show = (data) => {
-        figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
-        figma.ui.postMessage(data);
-    };
-    for (let command of menuCommands) {
-        if (figma.command === command.type) {
-            command.callback(pluginState);
-        }
-    }
-    // console.log(pluginObject)
+	var pluginState = {
+		updateAvailable: false,
+		ui: {}
+	};
+	// console.log(pkg)
+	if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
+		pluginState.version = pkg.version;
+	}
+	// pluginState.updateAvailable = updateAvailable()
+	var eventListeners = [];
+	var menuCommands = [];
+	pluginState.on = (type, callback) => {
+		eventListeners.push({ type, callback });
+	};
+	pluginState.command = (type, callback) => {
+		menuCommands.push({ type, callback });
+	};
+
+
+	// Override default page name if set
+	var pageMannuallySet = false;
+	pluginState.setStartPage = (name) => {
+		pluginState.ui.page = name;
+		pageMannuallySet = true;
+	};
+	// pluginState.update = (callback) => {
+	// 	for (let [version, changes] of Object.entries(versionHistory)) {
+	// 		if (version === pkg.version) {
+	// 			// for (let i = 0; i < changes.length; i++) {
+	// 			// 	var change = changes[i]
+	// 			// }
+	// 			callback({ version, changes })
+	// 		}
+	// 	}
+	// }
+
+
+	var pluginCommands = plugin(pluginState);
+
+	// // Override default page name if set
+	// if (pageName[0]) {
+	// 	pluginState.ui.page = pageName[0]
+	// }
+	// console.log("pageName", pluginState.ui.page)
+	Object.assign({}, pluginState, { commands: pluginCommands });
+
+	if (pluginCommands) {
+		for (let [key, value] of Object.entries(pluginCommands)) {
+			// If command exists in manifest
+			if (figma.command === key) {
+				// Pass default page for ui
+				if (!pageMannuallySet) {
+					pluginState.ui.page = key;
+				}
+				// Override default page name if set
+				// if (pageName[0]) {
+				// 	pluginState.ui.page = pageName[0]
+				// }
+				// Call function for that command
+				value(pluginState);
+				// Show UI?
+				if (pluginState.ui.open) {
+					console.log("open?");
+					figma.showUI(pluginState.ui.html);
+				}
+			}
+		}
+	}
+	figma.ui.onmessage = message => {
+		for (let eventListener of eventListeners) {
+			// console.log(message)
+			if (message.type === eventListener.type)
+				eventListener.callback(message);
+		}
+	};
+	pluginState.ui.show = (data) => {
+		figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
+		figma.ui.postMessage(data);
+	};
+	for (let command of menuCommands) {
+		if (figma.command === command.type) {
+			command.callback(pluginState);
+		}
+	}
+	// console.log(pluginObject)
 }
 
 var dist = plugma;
@@ -565,6 +571,45 @@ function updatePluginData(node, key, callback) {
 }
 
 /**
+ * Convinient way to delete children of a node
+ * @param {SceneNode & ChildrenMixin } node A node with children
+ */
+function removeChildren(node) {
+    var length = node.children.length;
+    if (length > 0) {
+        for (let i = 0; i < length; i++) {
+            node.children[0].remove();
+        }
+    }
+}
+
+/**
+ * Resizes a node, to allow nodes of size < 0.01
+ * A value of zero will be replaced with 1/Number.MAX_SAFE_INTEGER
+ * @param {SceneNode & LayoutMixin} node Node to resize
+ * @param {number} width
+ * @param {number} height
+ * @returns Resized Node
+ */
+function resize(node, width, height) {
+    //Workaround to resize a node, if its size is less than 0.01
+    //If 0, make it almost zero
+    width === 0 ? width = 1 / Number.MAX_SAFE_INTEGER : null;
+    height === 0 ? height = 1 / Number.MAX_SAFE_INTEGER : null;
+    let nodeParent = node.parent;
+    node.resize(width < 0.01 ? 1 : width, height < 0.01 ? 1 : height);
+    if (width < 0.01 || height < 0.01) {
+        let dummy = figma.createRectangle();
+        dummy.resize(width < 0.01 ? 1 / width : width, height < 0.01 ? 1 / height : height);
+        let group = figma.group([node, dummy], figma.currentPage);
+        group.resize(width < 0.01 ? 1 : width, height < 0.01 ? 1 : height);
+        nodeParent.appendChild(node);
+        group.remove();
+    }
+    return node;
+}
+
+/**
  * Returns the index of a node
  * @param {SceneNode} node A node
  * @returns The index of the node
@@ -572,6 +617,66 @@ function updatePluginData(node, key, callback) {
 function getNodeIndex(node) {
     return node.parent.children.indexOf(node);
 }
+
+const nodeToObject = (node, withoutRelations, removeConflicts) => {
+    const props = Object.entries(Object.getOwnPropertyDescriptors(node.__proto__));
+    const blacklist = ['parent', 'children', 'removed', 'masterComponent', 'horizontalPadding', 'verticalPadding'];
+    const obj = { id: node.id, type: node.type };
+    for (const [name, prop] of props) {
+        if (prop.get && !blacklist.includes(name)) {
+            try {
+                if (typeof obj[name] === 'symbol') {
+                    obj[name] = 'Mixed';
+                }
+                else {
+                    obj[name] = prop.get.call(node);
+                }
+            }
+            catch (err) {
+                obj[name] = undefined;
+            }
+        }
+    }
+    if (node.parent && !withoutRelations) {
+        obj.parent = { id: node.parent.id, type: node.parent.type };
+    }
+    if (node.children && !withoutRelations) {
+        obj.children = node.children.map((child) => nodeToObject(child, withoutRelations));
+    }
+    if (node.masterComponent && !withoutRelations) {
+        obj.masterComponent = nodeToObject(node.masterComponent, withoutRelations);
+    }
+    if (!removeConflicts) {
+        !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
+        !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
+        !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
+        !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
+        !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+        if (obj.textStyleId) {
+            delete obj.fontName;
+            delete obj.fontSize;
+            delete obj.letterSpacing;
+            delete obj.lineHeight;
+            delete obj.paragraphIndent;
+            delete obj.paragraphSpacing;
+            delete obj.textCase;
+            delete obj.textDecoration;
+        }
+        else {
+            delete obj.textStyleId;
+        }
+        if (obj.cornerRadius !== figma.mixed) {
+            delete obj.topLeftRadius;
+            delete obj.topRightRadius;
+            delete obj.bottomLeftRadius;
+            delete obj.bottomRightRadius;
+        }
+        else {
+            delete obj.cornerRadius;
+        }
+    }
+    return obj;
+};
 
 /**
  * Returns the page node of the selected node
@@ -610,6 +715,9 @@ var getDocumentData_1 = getDocumentData;
 var getNodeIndex_1 = getNodeIndex;
 var getPageNode_1 = getPageNode;
 var getPluginData_1 = getPluginData;
+var nodeToObject_1 = nodeToObject;
+var removeChildren_1 = removeChildren;
+var resize_1 = resize;
 var setDocumentData_1 = setDocumentData;
 var setPluginData_1 = setPluginData;
 var updateClientStorageAsync_1 = updateClientStorageAsync;
@@ -1474,6 +1582,18 @@ function selectAndZoomIntoView(nodes) {
 function positionInCenterOfViewport(node) {
     node.x = figma.viewport.center.x - node.width / 2;
     node.y = figma.viewport.center.y - node.height / 2;
+}
+// Swaps auto layout axis
+function swapAxises(node) {
+    let primary = node.primaryAxisSizingMode;
+    let counter = node.counterAxisSizingMode;
+    node.primaryAxisSizingMode = counter;
+    node.counterAxisSizingMode = primary;
+    return node;
+}
+// TODO: Replace with more rebost clone function
+function clone(val) {
+    return JSON.parse(JSON.stringify(val));
 }
 
 // figma.on('run', () => {
@@ -2554,6 +2674,42 @@ function createTableInstance(templateComponent, settings) {
     tableInstance.setRelaunchData(defaultRelaunchData);
     return tableInstance;
 }
+function getTableSettings(tableNode) {
+    var _a, _b, _c;
+    let rowCount = 0;
+    let columnCount = 0;
+    let usingColumnsOrRows = 'rows';
+    for (let i = 0; i < tableNode.children.length; i++) {
+        var node = tableNode.children[i];
+        if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
+            rowCount++;
+        }
+    }
+    let firstRow = tableNode.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
+    if (firstRow.parent.layoutMode === 'VERTICAL') {
+        usingColumnsOrRows = 'rows';
+    }
+    if (firstRow.parent.layoutMode === 'HORIZONTAL') {
+        usingColumnsOrRows = 'columns';
+    }
+    for (let i = 0; i < firstRow.children.length; i++) {
+        var node = firstRow.children[i];
+        var cellType = (_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
+        if (cellType === 'td' || cellType === 'th') {
+            columnCount++;
+        }
+    }
+    return {
+        columnCount,
+        rowCount,
+        columnResizing: firstRow.type === 'COMPONENT' ? true : false,
+        includeHeader: ((_c = getPluginData_1(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false,
+        cellAlignment: 'MIN',
+        usingColumnsOrRows,
+        cellWidth: firstCell.width,
+    };
+}
 // function getUserPreferencesAsync() {
 // 	return getRecentFilesAsync()
 // }
@@ -2624,13 +2780,233 @@ function postCurrentSelection(templateNodeId) {
     });
 }
 function getRecentFilesAsync() { }
+function selectParallelCells() {
+    var _a;
+    // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
+    var regex = RegExp(/\[ignore\]/, 'g');
+    var selection = figma.currentPage.selection;
+    var newSelection = [];
+    for (let i = 0; i < selection.length; i++) {
+        var parent = (_a = selection[i].parent) === null || _a === void 0 ? void 0 : _a.parent;
+        var children = parent === null || parent === void 0 ? void 0 : parent.children;
+        var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id);
+        var columnIndex = children[rowIndex].children.findIndex((x) => x.id === selection[i].id);
+        for (let i = 0; i < children.length; i++) {
+            if (children[i].children) {
+                if (children[i].children[columnIndex] && !regex.test(children[i].children[columnIndex].parent.name)) {
+                    newSelection.push(clone(children[i].children[columnIndex]));
+                }
+            }
+        }
+    }
+    figma.currentPage.selection = newSelection;
+}
+function selectAdjacentCells() {
+    var _a;
+    // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
+    var regex = RegExp(/\[ignore\]/, 'g');
+    var selection = figma.currentPage.selection;
+    var newSelection = [];
+    for (let i = 0; i < selection.length; i++) {
+        // Table container
+        var parent = (_a = selection[i].parent) === null || _a === void 0 ? void 0 : _a.parent;
+        // rows or columns
+        var children = parent === null || parent === void 0 ? void 0 : parent.children;
+        var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id);
+        // var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[i].id)
+        for (let i = 0; i < children.length; i++) {
+            var cell = children[rowIndex];
+            for (let b = 0; b < cell.children.length; b++) {
+                if (cell.children) {
+                    if (cell.children[b] && !regex.test(cell.children[b].parent.name)) {
+                        newSelection.push(clone(cell.children[b]));
+                    }
+                }
+            }
+        }
+    }
+    figma.currentPage.selection = newSelection;
+}
 // Commands
 function detachTable() { }
 function spawnTable() { }
 function toggleColumnResizing() { }
-function switchColumnsOrRows() { }
-function selectColumns() { }
-function selectRows() { }
+async function switchColumnsOrRows(selection) {
+    function isRow(node) {
+        var _a;
+        return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr';
+    }
+    // TODO: Fix localise component to take account of rows or columns
+    for (let i = 0; i < selection.length; i++) {
+        var table = selection[i];
+        let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+        if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
+            figma.closePlugin('Table and rows must be detached');
+        }
+        else {
+            let settings = getTableSettings(table);
+            // let part: any = findTemplateParts(table)
+            function iterateChildren() {
+                var _a;
+                var origRowlength = firstRow.parent.children.length;
+                var rowContainer = firstRow.parent;
+                var rowContainerObject = nodeToObject_1(rowContainer);
+                // Change the table container
+                if (settings.usingColumnsOrRows === 'rows') {
+                    rowContainer.layoutMode = 'HORIZONTAL';
+                }
+                if (firstRow.type !== 'COMPONENT') {
+                    function getIndex(node, c) {
+                        var container = node.parent;
+                        var i = -1;
+                        var x = -1;
+                        while (i < c) {
+                            i++;
+                            x++;
+                            var item = container.children[x];
+                            if (item && !isRow(item)) {
+                                i--;
+                            }
+                        }
+                        return x;
+                    }
+                    for (let i = 0; i < firstRow.parent.children.length; i++) {
+                        var row = rowContainer.children[i];
+                        if (isRow(row)) {
+                            row.width;
+                            row.height;
+                            var cells = row.children;
+                            if (settings.usingColumnsOrRows === 'columns') {
+                                row.name = row.name.replace('Col', 'Row');
+                                row.layoutMode = 'HORIZONTAL';
+                                row.layoutGrow = 0;
+                                row.counterAxisSizingMode = 'AUTO';
+                            }
+                            if (i < origRowlength) {
+                                for (let c = 0; c < settings.columnCount; c++) {
+                                    var cell = cells[c];
+                                    cell.width;
+                                    // var cellLocation = [c + 1, r + 1]
+                                    // var columnIndex = getNodeIndex(row) + c
+                                    var oppositeIndex = getIndex(row, c);
+                                    if (cell) {
+                                        cell.primaryAxisSizingMode = 'AUTO';
+                                        // We do this because the first row isn't always the first in the array and also the c value needs to match the index starting from where the first row starts
+                                        if (row.id === firstRow.id && !row.parent.children[oppositeIndex]) {
+                                            // If it's the first row and column doesn't exist then create a new column
+                                            var clonedColumn = row.clone();
+                                            removeChildren_1(clonedColumn); // Need to remove children because they are clones
+                                            table.appendChild(clonedColumn);
+                                        }
+                                        if (row.parent.children[oppositeIndex]) {
+                                            if (settings.usingColumnsOrRows === 'rows') {
+                                                row.parent.children[oppositeIndex].appendChild(cell);
+                                                row.parent.children[oppositeIndex].resize(rowContainerObject.children[i].children[c].width, row.height);
+                                                row.parent.children[oppositeIndex].layoutGrow = rowContainerObject.children[i].children[c].layoutGrow;
+                                                row.parent.children[oppositeIndex].layoutAlign = 'STRETCH';
+                                            }
+                                            else {
+                                                row.parent.children[oppositeIndex].appendChild(cell);
+                                                cell.resize(row.width, cell.height);
+                                                // cell.primaryAxisSizingMode = rowContainerObject.children[i].children[c].primaryAxisSizingMode
+                                                if (rowContainerObject.children[i].layoutGrow === 1) {
+                                                    cell.layoutGrow = 1;
+                                                    // cell.layoutAlign =  "STRETCH"
+                                                    // cell.primaryAxisSizingMode = "AUTO"
+                                                }
+                                                else {
+                                                    cell.layoutGrow = 0;
+                                                    // cell.layoutAlign =  "INHERIT"
+                                                    // cell.primaryAxisSizingMode = "FIXED"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width);
+                        }
+                        if (settings.usingColumnsOrRows === 'rows' && isRow(row)) {
+                            row.name = row.name.replace('Row', 'Col');
+                            row.layoutMode = 'VERTICAL';
+                        }
+                    }
+                    if (settings.usingColumnsOrRows === 'columns') {
+                        rowContainer.layoutMode = 'VERTICAL';
+                    }
+                    swapAxises(rowContainer);
+                    resize_1(rowContainer, rowContainerObject.width, rowContainerObject.height);
+                    // Because changing layout mode swaps sizingModes you need to loop children again
+                    var rowlength = rowContainer.children.length;
+                    // For some reason can't remove nodes while in loop, so workaround is to add to an array.
+                    let discardBucket = [];
+                    for (let i = 0; i < rowlength; i++) {
+                        var row = rowContainer.children[i];
+                        // This is the original object before rows are converted to columns, so may not always match new converted table
+                        if ((_a = rowContainerObject.children[i]) === null || _a === void 0 ? void 0 : _a.layoutAlign)
+                            row.layoutAlign = rowContainerObject.children[i].layoutAlign;
+                        if (isRow(row)) {
+                            if (settings.usingColumnsOrRows === 'columns') {
+                                row.counterAxisSizingMode = 'AUTO';
+                                row.layoutAlign = 'STRETCH';
+                                // We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
+                                var cells = row.children;
+                                var length = settings.usingColumnsOrRows === 'columns' ? firstRow.parent.children.length : firstRow.children.length;
+                                for (let c = 0; c < length; c++) {
+                                    var cell = cells[c];
+                                    if (cell) {
+                                        if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                            cell.primaryAxisSizingMode = 'FIXED';
+                                            cell.layoutAlign = 'STRETCH';
+                                            console.log(cell.layoutAlign);
+                                        }
+                                    }
+                                }
+                            }
+                            // If row ends up being empty, then assume it's not needed
+                            if (row.children.length === 0) {
+                                console.log('remove row');
+                                discardBucket.push(row);
+                            }
+                        }
+                    }
+                    for (let i = 0; i < discardBucket.length; i++) {
+                        discardBucket[i].remove();
+                    }
+                }
+            }
+            iterateChildren();
+        }
+    }
+}
+function selectTableVector(type) {
+    var _a, _b;
+    if (figma.currentPage.selection.length > 0) {
+        if (((_a = figma.currentPage.selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent.layoutMode) === (type === 'column' ? 'VERTICAL' : 'HORIZONTAL')) {
+            selectParallelCells();
+        }
+        if (((_b = figma.currentPage.selection[0].parent) === null || _b === void 0 ? void 0 : _b.parent.layoutMode) === (type === 'column' ? 'HORIZONTAL' : 'VERTICAL')) {
+            selectAdjacentCells();
+        }
+    }
+    else {
+        figma.notify('One or more table cells must be selected');
+    }
+}
+// function selectRow() {
+// 	if (figma.currentPage.selection.length > 0) {
+// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'HORIZONTAL') {
+// 			selectParallelCells()
+// 		}
+// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'VERTICAL') {
+// 			selectAdjacentCells()
+// 		}
+// 	} else {
+// 		figma.notify('One or more table cells must be selected')
+// 	}
+// }
 dist((plugin) => {
     plugin.ui = {
         html: __uiFiles__.main,
@@ -2746,9 +3122,25 @@ dist((plugin) => {
     plugin.command('detachTable', detachTable);
     plugin.command('spawnTable', spawnTable);
     plugin.command('toggleColumnResizing', toggleColumnResizing);
-    plugin.command('switchColumnsOrRows', switchColumnsOrRows);
-    plugin.command('selectColumns', selectColumns);
-    plugin.command('selectRows', selectRows);
+    if (figma.command === 'switchColumnsOrRows') {
+        console.log('hello');
+        switchColumnsOrRows(figma.currentPage.selection).then(() => {
+            figma.closePlugin('Rows and columns switched');
+        });
+    }
+    plugin.command('switchColumnsOrRows', () => {
+        switchColumnsOrRows(figma.currentPage.selection).then(() => {
+            figma.closePlugin('Rows and columns switched');
+        });
+    });
+    plugin.command('selectColumn', () => {
+        selectTableVector('column');
+        figma.closePlugin();
+    });
+    plugin.command('selectRow', () => {
+        selectTableVector('row');
+        figma.closePlugin();
+    });
     plugin.command('newTemplate', newTemplateComponent);
     plugin.command('importTemplate', importTemplate);
     plugin.on('new-template', () => {

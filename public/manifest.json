@@ -57,7 +57,7 @@
         {"command": "createTable", "name": "Create Table"},
         {"command": "spawnTable", "name": "Spawn Table"},
         {"command": "toggleColumnResizing", "name": "Localised Component"},
-        {"command": "toggleColumnsOrRows", "name": "Columns or Rows", "multipleSelection": true},
+        {"command": "switchColumnsOrRows", "name": "Columns or Rows", "multipleSelection": true},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
         {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
         {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
