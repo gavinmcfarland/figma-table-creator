@@ -655,32 +655,7 @@ async function updateTableInstances(template) {
 	}
 }
 
-function selectParallelCells() {
-	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
-	var regex = RegExp(/\[ignore\]/, 'g')
-	var selection = figma.currentPage.selection
 
-	var newSelection = []
-
-	for (let i = 0; i < selection.length; i++) {
-		var parent = selection[i].parent?.parent
-		var children = parent?.children
-
-		var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id)
-
-		var columnIndex = children[rowIndex].children.findIndex((x) => x.id === selection[i].id)
-
-		for (let i = 0; i < children.length; i++) {
-			if (children[i].children) {
-				if (children[i].children[columnIndex] && !regex.test(children[i].children[columnIndex].parent.name)) {
-					newSelection.push(clone(children[i].children[columnIndex]))
-				}
-			}
-		}
-	}
-
-	figma.currentPage.selection = newSelection
-}
 
 function selectAdjacentCells() {
 	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns

@@ -2780,28 +2780,7 @@ function postCurrentSelection(templateNodeId) {
     });
 }
 function getRecentFilesAsync() { }
-function selectParallelCells() {
-    var _a;
-    // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
-    var regex = RegExp(/\[ignore\]/, 'g');
-    var selection = figma.currentPage.selection;
-    var newSelection = [];
-    for (let i = 0; i < selection.length; i++) {
-        var parent = (_a = selection[i].parent) === null || _a === void 0 ? void 0 : _a.parent;
-        var children = parent === null || parent === void 0 ? void 0 : parent.children;
-        var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id);
-        var columnIndex = children[rowIndex].children.findIndex((x) => x.id === selection[i].id);
-        for (let i = 0; i < children.length; i++) {
-            if (children[i].children) {
-                if (children[i].children[columnIndex] && !regex.test(children[i].children[columnIndex].parent.name)) {
-                    newSelection.push(clone(children[i].children[columnIndex]));
-                }
-            }
-        }
-    }
-    figma.currentPage.selection = newSelection;
-}
-function selectAdjacentCells() {
+function selectTableCells(direction) {
     var _a;
     // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
     var regex = RegExp(/\[ignore\]/, 'g');
@@ -2813,13 +2792,22 @@ function selectAdjacentCells() {
         // rows or columns
         var children = parent === null || parent === void 0 ? void 0 : parent.children;
         var rowIndex = children.findIndex((x) => x.id === selection[i].parent.id);
-        // var columnIndex = children[rowIndex].children.findIndex(x => x.id === selection[i].id)
+        var columnIndex = children[rowIndex].children.findIndex((x) => x.id === selection[i].id);
         for (let i = 0; i < children.length; i++) {
-            var cell = children[rowIndex];
-            for (let b = 0; b < cell.children.length; b++) {
-                if (cell.children) {
-                    if (cell.children[b] && !regex.test(cell.children[b].parent.name)) {
-                        newSelection.push(clone(cell.children[b]));
+            if (direction === 'parallel') {
+                if (children[i].children) {
+                    if (children[i].children[columnIndex] && !regex.test(children[i].children[columnIndex].parent.name)) {
+                        newSelection.push(clone(children[i].children[columnIndex]));
+                    }
+                }
+            }
+            if (direction === 'adjacent') {
+                var cell = children[rowIndex];
+                for (let b = 0; b < cell.children.length; b++) {
+                    if (cell.children) {
+                        if (cell.children[b] && !regex.test(cell.children[b].parent.name)) {
+                            newSelection.push(clone(cell.children[b]));
+                        }
                     }
                 }
             }
@@ -2985,10 +2973,10 @@ function selectTableVector(type) {
     var _a, _b;
     if (figma.currentPage.selection.length > 0) {
         if (((_a = figma.currentPage.selection[0].parent) === null || _a === void 0 ? void 0 : _a.parent.layoutMode) === (type === 'column' ? 'VERTICAL' : 'HORIZONTAL')) {
-            selectParallelCells();
+            selectTableCells('parallel');
         }
         if (((_b = figma.currentPage.selection[0].parent) === null || _b === void 0 ? void 0 : _b.parent.layoutMode) === (type === 'column' ? 'HORIZONTAL' : 'VERTICAL')) {
-            selectAdjacentCells();
+            selectTableCells('adjacent');
         }
     }
     else {
