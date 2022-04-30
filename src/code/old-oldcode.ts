@@ -39,10 +39,7 @@ import {
 	genRandomId,
 	swapInstance,
 	lookForComponent,
-} from './helpers'
-import { upgradeFrom6to7 } from './upgradeFrom6to7'
-import { createDefaultComponents } from './defaultTemplate'
-import plugma from 'plugma'
+} from './helpersort { upgradeFrom6to7 } from './upg../upgradeFrom6to7ort { createDefaultComponents } from './cod./defaultTemplatelugma from 'plugma'
 
 console.clear()
 

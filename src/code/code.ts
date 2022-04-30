@@ -31,8 +31,8 @@ import {
 	getParentComponent,
 	swapAxises,
 	clone,
-} from './new-helpers'
-import { genRandomId } from './helpers'
+	genRandomId,
+} from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
 
 console.clear()

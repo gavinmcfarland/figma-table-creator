@@ -1,4 +1,3 @@
-import { ungroupNode } from './helpers'
 import { setPluginData, updatePluginData } from '@fignite/helpers'
 
 // Wrap in function

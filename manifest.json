@@ -2,9 +2,9 @@
   "name": "Table Creator Beta",
   "id": "beta",
   "api": "1.0.0",
-  "main": "code.js",
+  "main": "dist/code.js",
   "ui": {
-      "main": "index.html"
+      "main": "dist/index.html"
   },
   "menu": [
     {

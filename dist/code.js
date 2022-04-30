@@ -1661,20 +1661,18 @@ function swapAxises(node) {
     node.counterAxisSizingMode = primary;
     return node;
 }
+function genRandomId() {
+    var randPassword = Array(10)
+        .fill('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz')
+        .map(function (x) {
+        return x[Math.floor(Math.random() * x.length)];
+    })
+        .join('');
+    return randPassword;
+}
 // TODO: Replace with more rebost clone function
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
-}
-
-// figma.on('run', () => {
-// 	updatePluginData(node, key, () => {
-// 		data
-// 	})
-// })
-// Move to helpers
-function genRandomId() {
-    var randPassword = Array(10).fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz").map(function (x) { return x[Math.floor(Math.random() * x.length)]; }).join('');
-    return randPassword;
 }
 
 // Wrap in function

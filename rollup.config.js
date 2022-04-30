@@ -31,12 +31,13 @@ import htmlBundle from 'rollup-plugin-html-bundle';
 
 const production = !process.env.ROLLUP_WATCH;
 
+
 export default [{
-	input: 'src/main.js',
+	input: 'src/ui/main.js', // UI
 	output: {
 		format: 'iife',
 		name: 'ui',
-		file: 'src/build/bundle.js'
+		file: 'src/ui/build/bundle.js'
 	},
 	plugins: [
 		svelte({
@@ -64,7 +65,7 @@ export default [{
 		postcss(),
 		htmlBundle({
 			template: 'src/template.html',
-			target: 'public/index.html',
+			target: 'dist/index.html',
 			inline: true
 		}),
 
@@ -74,7 +75,7 @@ export default [{
 
 		// Watch the `dist` directory and refresh the
 		// browser on changes when not in production
-		!production && livereload('public'),
+		!production && livereload('dist'),
 
 		// If we're building for production (npm run build
 		// instead of npm run dev), minify
@@ -85,9 +86,9 @@ export default [{
 	}
 },
 {
-	input: 'src/new-code.ts',
+	input: 'src/code/code.ts', // Code.js
 	output: {
-		file: 'public/code.js',
+		file: 'dist/code.js',
 		format: 'cjs',
 		name: 'code'
 	},
