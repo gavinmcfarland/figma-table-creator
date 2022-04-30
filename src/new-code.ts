@@ -195,7 +195,7 @@ function createTableInstance(templateComponent, settings) {
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
 
 	let tableInstance = convertToFrame(templateComponent.clone())
-	let part = geTemplateParts(templateComponent)
+	let part = getTemplateParts(templateComponent)
 	var table
 
 	if (settings.includeHeader && !part.th) {
@@ -369,9 +369,9 @@ function getTableSettings(tableNode) {
 	}
 }
 
-function getUserPreferencesAsync() {
-	getRecentFilesAsync()
-}
+// function getUserPreferencesAsync() {
+// 	return getRecentFilesAsync()
+// }
 
 function getDefaultTemplate() {
 	var defaultTemplate = getDocumentData('defaultTemplate')
@@ -658,16 +658,21 @@ plugma((plugin) => {
 	plugin.on('set-semantics', () => {})
 
 	plugin.on('create-table-instance', async (msg) => {
-		const templateComponent = await getComponent(getDocumentData('defaultTemplate').id)
-		const userPreferences = await getUserPreferencesAsync()
+		const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
+		const userPreferences = await getClientStorageAsync('userPreferences')
 
-		createTableInstance(templateComponent, userPreferences)
-			.then((tableInstance) => {
-				positionInCenterOfViewport(tableInstance)
+		// createTableInstance(templateComponent, userPreferences)
+		// 	.then((tableInstance) => {
+		// 		positionInCenterOfViewport(tableInstance)
 
-				updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
-			})
-			.catch()
+		// 		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
+		// 	})
+		// 	.catch()
+
+		let tableInstance = createTableInstance(templateComponent, userPreferences)
+		positionInCenterOfViewport(tableInstance)
+		figma.currentPage.selection = [tableInstance]
+		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
 	})
 	plugin.on('refresh-tables', refreshTables)
 

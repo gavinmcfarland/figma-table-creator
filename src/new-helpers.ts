@@ -214,7 +214,10 @@ export function selectAndZoomIntoView(nodes) {
 	figma.currentPage.selection = nodes
 	figma.viewport.scrollAndZoomIntoView(nodes)
 }
-export function positionInCenterOfViewport(node) {}
+export function positionInCenterOfViewport(node) {
+	node.x = figma.viewport.center.x - node.width / 2
+	node.y = figma.viewport.center.y - node.height / 2
+}
 export function genRandomId() {
 	var randPassword = Array(10)
 		.fill('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz')

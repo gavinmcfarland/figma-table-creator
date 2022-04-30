@@ -1471,6 +1471,10 @@ function selectAndZoomIntoView(nodes) {
     figma.currentPage.selection = nodes;
     figma.viewport.scrollAndZoomIntoView(nodes);
 }
+function positionInCenterOfViewport(node) {
+    node.x = figma.viewport.center.x - node.width / 2;
+    node.y = figma.viewport.center.y - node.height / 2;
+}
 
 // figma.on('run', () => {
 // 	updatePluginData(node, key, () => {
@@ -2395,7 +2399,6 @@ function incrementNameNumerically(node) {
         }
     }
 }
-function geTemplateParts() { }
 function importTemplate(node) {
     // TODO: Needs to work more inteligently so that it corretly adds template if actually imported from file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
     // TODO: Check if already imported by checking id in list?
@@ -2439,7 +2442,7 @@ function createTableInstance(templateComponent, settings) {
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
     let tableInstance = convertToFrame_1(templateComponent.clone());
-    let part = geTemplateParts();
+    let part = getTemplateParts(templateComponent);
     var table;
     if (settings.includeHeader && !part.th) {
         figma.notify('No Header Cell component found');
@@ -2551,8 +2554,9 @@ function createTableInstance(templateComponent, settings) {
     tableInstance.setRelaunchData(defaultRelaunchData);
     return tableInstance;
 }
-function getUserPreferencesAsync() {
-}
+// function getUserPreferencesAsync() {
+// 	return getRecentFilesAsync()
+// }
 function getDefaultTemplate() {
     var defaultTemplate = getDocumentData_1('defaultTemplate');
     return getComponentById(defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.component.id) ? defaultTemplate : undefined;
@@ -2756,13 +2760,18 @@ dist((plugin) => {
     plugin.on('set-default-template', setDefaultTemplate);
     plugin.on('set-semantics', () => { });
     plugin.on('create-table-instance', async (msg) => {
-        const templateComponent = await getComponent(getDocumentData_1('defaultTemplate').id);
-        const userPreferences = await getUserPreferencesAsync();
-        createTableInstance(templateComponent, userPreferences)
-            .then((tableInstance) => {
-            updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'));
-        })
-            .catch();
+        const templateComponent = await getComponentById(getDocumentData_1('defaultTemplate').id);
+        const userPreferences = await getClientStorageAsync_1('userPreferences');
+        // createTableInstance(templateComponent, userPreferences)
+        // 	.then((tableInstance) => {
+        // 		positionInCenterOfViewport(tableInstance)
+        // 		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
+        // 	})
+        // 	.catch()
+        let tableInstance = createTableInstance(templateComponent, userPreferences);
+        positionInCenterOfViewport(tableInstance);
+        figma.currentPage.selection = [tableInstance];
+        updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'));
     });
     plugin.on('refresh-tables', refreshTables);
     plugin.on('save-user-preferences', () => { });
