@@ -16,6 +16,7 @@ import {
 	getClientStorageAsync,
 	updateClientStorageAsync,
 	removeChildren,
+	setClientStorageAsync,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -34,8 +35,18 @@ import {
 	genRandomId,
 } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
+import { upgradeFrom6to7 } from './upgradeFrom6to7'
 
 console.clear()
+
+// setClientStorageAsync('userPreferences', undefined).then(() => {
+// 	figma.closePlugin('User preferences reset')
+// })
+
+// FIXME: Doing this temp to fix bugs
+setClientStorageAsync('pluginAlreadyRun', true)
+
+// upgradeFrom6to7()
 
 let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
@@ -191,7 +202,7 @@ function getLocalTemplates() {
 
 	return templates
 }
-function createTableInstance(templateComponent, settings) {
+function createTableInstance(templateComponent, settings, type?) {
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -209,7 +220,12 @@ function createTableInstance(templateComponent, settings) {
 
 	if (part.table.id === templateComponent.id) {
 		console.log('table and container are the same thing')
-		table = tableInstance
+		if (type === 'COMPONENT') {
+			table = convertToComponent(tableInstance)
+			tableInstance = table
+		} else {
+			table = tableInstance
+		}
 	} else {
 		// Remove table from template
 		tableInstance.findAll((node) => {
@@ -241,7 +257,7 @@ function createTableInstance(templateComponent, settings) {
 		}
 	})
 
-	if (settings.columnResizing) {
+	if (settings.columnResizing && type !== 'COMPONENT') {
 		// First row should be a component
 		firstRow = convertToComponent(part.tr.clone())
 		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
@@ -297,7 +313,7 @@ function createTableInstance(templateComponent, settings) {
 		}
 
 		// If using columnResizing and header swap non headers to default cells
-		if (settings.columnResizing && settings.includeHeader) {
+		if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
 			for (let i = 0; i < duplicateRow.children.length; i++) {
 				var cell = duplicateRow.children[i]
 				// cell.swapComponent(part.th)
@@ -774,6 +790,21 @@ plugma((plugin) => {
 		height: 504,
 	}
 
+	// Set default preferences
+	updateClientStorageAsync('userPreferences', (data) => {
+		data = data || {
+			columnCount: 4,
+			rowCount: 4,
+			cellWidth: 100,
+			remember: true,
+			includeHeader: true,
+			columnResizing: true,
+			cellAlignment: 'MIN',
+		}
+
+		return data
+	})
+
 	// Received messages
 	async function newTemplateComponent(opts?) {
 		let { shouldCreatePage } = opts
@@ -890,6 +921,10 @@ plugma((plugin) => {
 		let userPreferences = await getClientStorageAsync('userPreferences')
 		let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
 
+		console.log('userPreferences', userPreferences)
+
+		console.log('PluginAlreadyRun?', pluginAlreadyRun)
+
 		const recentFiles = await getRecentFilesAsync()
 		const remoteFiles = getDocumentData('remoteFiles')
 		const fileId = getDocumentData('fileId')
@@ -942,12 +977,14 @@ plugma((plugin) => {
 
 	plugin.on('create-table-instance', async (msg) => {
 		const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
-		const userPreferences = await getClientStorageAsync('userPreferences')
 
-		let tableInstance = createTableInstance(templateComponent, userPreferences)
+		let tableInstance = createTableInstance(templateComponent, msg.data, 'COMPONENT')
 		positionInCenterOfViewport(tableInstance)
 		figma.currentPage.selection = [tableInstance]
-		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
+
+		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
+			figma.closePlugin('Table created')
+		})
 	})
 	plugin.on('refresh-tables', refreshTables)
 

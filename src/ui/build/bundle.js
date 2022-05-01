@@ -1,13 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <meta charset="utf-8">
-</head>
-<body>
-<script>
 
 (function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 var ui = (function () {
@@ -6150,6 +6140,3 @@ var ui = (function () {
     return app;
 
 })();
-</script>
-</body>
-</html>

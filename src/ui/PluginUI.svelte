@@ -113,13 +113,15 @@
 			{
 				pluginMessage: {
 					type: "create-table-instance",
-					remember: rememberSettings,
-					columnResizing: columnResizing,
-					columnCount: columnCount,
-					rowCount: rowCount,
-					includeHeader: includeHeader,
-					cellWidth: cellWidth,
-					cellAlignment: cellAlignment,
+					data: {
+						remember: rememberSettings,
+						columnResizing: columnResizing,
+						columnCount: columnCount,
+						rowCount: rowCount,
+						includeHeader: includeHeader,
+						cellWidth: cellWidth,
+						cellAlignment: cellAlignment
+					}
 				},
 			},
 			"*"

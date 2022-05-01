@@ -188,6 +188,9 @@ var dist = plugma;
 async function getClientStorageAsync(key) {
     return await figma.clientStorage.getAsync(key);
 }
+function setClientStorageAsync(key, data) {
+    return figma.clientStorage.setAsync(key, data);
+}
 async function updateClientStorageAsync(key, callback) {
     var data = await figma.clientStorage.getAsync(key);
     data = callback(data);
@@ -788,6 +791,7 @@ var nodeToObject_1 = nodeToObject;
 var removeChildren_1 = removeChildren;
 var replace_1 = replace;
 var resize_1 = resize;
+var setClientStorageAsync_1 = setClientStorageAsync;
 var setDocumentData_1 = setDocumentData;
 var setPluginData_1 = setPluginData;
 var updateClientStorageAsync_1 = updateClientStorageAsync;
@@ -1676,7 +1680,7 @@ function clone(val) {
 }
 
 // Wrap in function
-async function createDefaultComponents() {
+async function createDefaultComponents(opts) {
     const obj = {};
     // Load FONTS
     async function loadFonts() {
@@ -1691,6 +1695,7 @@ async function createDefaultComponents() {
             }),
         ]);
     }
+    // ----Create Table Cell----
     // Create COMPONENT
     var component_101_204 = figma.createComponent();
     component_101_204.resize(120.0, 35.0);
@@ -1845,6 +1850,7 @@ async function createDefaultComponents() {
     figma.getNodeById('I' + instance_101_198.id + ';' + frame_101_116.id);
     // Ref to SUB NODE
     figma.getNodeById('I' + instance_101_198.id + ';' + text_101_117.id);
+    // ----Create Table Header----
     // Create COMPONENT
     var component_101_265 = figma.createComponent();
     component_101_265.resize(120.0, 35.0);
@@ -1937,6 +1943,7 @@ async function createDefaultComponents() {
     componentSet_1_364.itemSpacing = 0;
     componentSet_1_364.description = '';
     componentSet_1_364.documentationLinks = [];
+    // ----Create Table Row----
     // Create COMPONENT
     var component_1_365 = figma.createComponent();
     component_1_365.resize(240.0, 35.0009994507);
@@ -2022,6 +2029,7 @@ async function createDefaultComponents() {
     figma.getNodeById(instance_I1_372_101_198.id + ';' + frame_101_116.id);
     // Ref to SUB NODE
     figma.getNodeById(instance_I1_372_101_198.id + ';' + text_101_117.id);
+    // ----Create Table----
     // Create COMPONENT
     var component_1_378 = figma.createComponent();
     component_1_378.resize(240.0, 105.0029983521);
@@ -2517,6 +2525,12 @@ async function createDefaultComponents() {
 }
 
 console.clear();
+// setClientStorageAsync('userPreferences', undefined).then(() => {
+// 	figma.closePlugin('User preferences reset')
+// })
+// FIXME: Doing this temp to fix bugs
+setClientStorageAsync_1('pluginAlreadyRun', true);
+// upgradeFrom6to7()
 let defaultRelaunchData = {
     detachTable: 'Detaches table and rows',
     spawnTable: 'Spawn a new table from this table',
@@ -2625,7 +2639,7 @@ function getLocalTemplates() {
     });
     return templates;
 }
-function createTableInstance(templateComponent, settings) {
+function createTableInstance(templateComponent, settings, type) {
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -2639,7 +2653,13 @@ function createTableInstance(templateComponent, settings) {
     }
     if (part.table.id === templateComponent.id) {
         console.log('table and container are the same thing');
-        table = tableInstance;
+        if (type === 'COMPONENT') {
+            table = convertToComponent_1(tableInstance);
+            tableInstance = table;
+        }
+        else {
+            table = tableInstance;
+        }
     }
     else {
         // Remove table from template
@@ -2667,7 +2687,7 @@ function createTableInstance(templateComponent, settings) {
             node.remove();
         }
     });
-    if (settings.columnResizing) {
+    if (settings.columnResizing && type !== 'COMPONENT') {
         // First row should be a component
         firstRow = convertToComponent_1(part.tr.clone());
         setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
@@ -2718,7 +2738,7 @@ function createTableInstance(templateComponent, settings) {
             duplicateRow = firstRow.clone();
         }
         // If using columnResizing and header swap non headers to default cells
-        if (settings.columnResizing && settings.includeHeader) {
+        if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
             for (let i = 0; i < duplicateRow.children.length; i++) {
                 var cell = duplicateRow.children[i];
                 // cell.swapComponent(part.th)
@@ -3079,24 +3099,25 @@ function selectTableVector(type) {
         figma.notify('One or more table cells must be selected');
     }
 }
-// function selectRow() {
-// 	if (figma.currentPage.selection.length > 0) {
-// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'HORIZONTAL') {
-// 			selectParallelCells()
-// 		}
-// 		if (figma.currentPage.selection[0].parent?.parent.layoutMode === 'VERTICAL') {
-// 			selectAdjacentCells()
-// 		}
-// 	} else {
-// 		figma.notify('One or more table cells must be selected')
-// 	}
-// }
 dist((plugin) => {
     plugin.ui = {
         html: __uiFiles__.main,
         width: 268,
         height: 504,
     };
+    // Set default preferences
+    updateClientStorageAsync_1('userPreferences', (data) => {
+        data = data || {
+            columnCount: 4,
+            rowCount: 4,
+            cellWidth: 100,
+            remember: true,
+            includeHeader: true,
+            columnResizing: true,
+            cellAlignment: 'MIN',
+        };
+        return data;
+    });
     // Received messages
     async function newTemplateComponent(opts) {
         let { shouldCreatePage } = opts;
@@ -3190,6 +3211,8 @@ dist((plugin) => {
         let pluginAlreadyRun = await getClientStorageAsync_1('pluginAlreadyRun');
         let userPreferences = await getClientStorageAsync_1('userPreferences');
         let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
+        console.log('userPreferences', userPreferences);
+        console.log('PluginAlreadyRun?', pluginAlreadyRun);
         const recentFiles = await getRecentFilesAsync();
         const remoteFiles = getDocumentData_1('remoteFiles');
         const fileId = getDocumentData_1('fileId');
@@ -3233,17 +3256,12 @@ dist((plugin) => {
     plugin.on('set-semantics', () => { });
     plugin.on('create-table-instance', async (msg) => {
         const templateComponent = await getComponentById(getDocumentData_1('defaultTemplate').id);
-        const userPreferences = await getClientStorageAsync_1('userPreferences');
-        // createTableInstance(templateComponent, userPreferences)
-        // 	.then((tableInstance) => {
-        // 		positionInCenterOfViewport(tableInstance)
-        // 		updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'))
-        // 	})
-        // 	.catch()
-        let tableInstance = createTableInstance(templateComponent, userPreferences);
+        let tableInstance = createTableInstance(templateComponent, msg.data, 'COMPONENT');
         positionInCenterOfViewport(tableInstance);
         figma.currentPage.selection = [tableInstance];
-        updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg)).then(figma.closePlugin('Table created'));
+        updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
+            figma.closePlugin('Table created');
+        });
     });
     plugin.on('refresh-tables', refreshTables);
     plugin.on('save-user-preferences', () => { });

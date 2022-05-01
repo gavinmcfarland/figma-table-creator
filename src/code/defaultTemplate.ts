@@ -1,7 +1,7 @@
 import { setPluginData, updatePluginData } from '@fignite/helpers'
 
 // Wrap in function
-export async function createDefaultComponents() {
+export async function createDefaultComponents(opts?) {
 	const obj: any = {}
 
 	// Load FONTS
@@ -18,6 +18,7 @@ export async function createDefaultComponents() {
 		])
 	}
 
+	// ----Create Table Cell----
 	// Create COMPONENT
 	var component_101_204 = figma.createComponent()
 	component_101_204.resize(120.0, 35.0)
@@ -190,6 +191,7 @@ export async function createDefaultComponents() {
 	// Ref to SUB NODE
 	var text_I101_198_101_117 = figma.getNodeById('I' + instance_101_198.id + ';' + text_101_117.id)
 
+	// ----Create Table Header----
 	// Create COMPONENT
 	var component_101_265 = figma.createComponent()
 	component_101_265.resize(120.0, 35.0)
@@ -292,6 +294,7 @@ export async function createDefaultComponents() {
 	componentSet_1_364.description = ''
 	componentSet_1_364.documentationLinks = []
 
+	// ----Create Table Row----
 	// Create COMPONENT
 	var component_1_365 = figma.createComponent()
 	component_1_365.resize(240.0, 35.0009994507)
@@ -398,6 +401,7 @@ export async function createDefaultComponents() {
 	// Ref to SUB NODE
 	var text_I1_372_101_198_101_117 = figma.getNodeById(instance_I1_372_101_198.id + ';' + text_101_117.id)
 
+	// ----Create Table----
 	// Create COMPONENT
 	var component_1_378 = figma.createComponent()
 	component_1_378.resize(240.0, 105.0029983521)
@@ -986,6 +990,26 @@ export async function createDefaultComponents() {
 	obj.cellSet = componentSet_1_364
 	obj.baseCell = component_101_119
 	obj.instances = [instance_1_442, instance_102_121, instance_1_438, instance_1_434]
+
+	return obj
+}
+
+export async function createDefaultComponents2(opts?) {
+	const obj: any = {}
+
+	// Load FONTS
+	async function loadFonts() {
+		await Promise.all([
+			figma.loadFontAsync({
+				family: 'Inter',
+				style: 'Regular',
+			}),
+			figma.loadFontAsync({
+				family: 'Inter',
+				style: 'Semi Bold',
+			}),
+		])
+	}
 
 	return obj
 }

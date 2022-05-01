@@ -1,4 +1,4 @@
-import { getPageNode } from '@fignite/helpers'
+import { getPageNode, getPluginData } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
 export function unique(array, value) {
@@ -243,4 +243,40 @@ export function genRandomId() {
 // TODO: Replace with more rebost clone function
 export function clone(val) {
 	return JSON.parse(JSON.stringify(val))
+}
+
+export function getTemplateParts(templateNode) {
+	// find nodes with certain pluginData
+	let elements = ['tr', 'td', 'th', 'table']
+	let results = {}
+
+	// Loop though element definitions and find them in the template
+	for (let i = 0; i < elements.length; i++) {
+		let elementName = elements[i]
+		let part = templateNode.findOne((node) => {
+			let elementSemantics = getPluginData(node, 'elementSemantics')
+
+			if (elementSemantics?.is === elementName) {
+				console.log(elementSemantics)
+				return true
+			}
+		})
+
+		results[elementName] = part
+	}
+
+	if (!results['table']) {
+		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
+			results['table'] = templateNode
+		}
+	}
+
+	// // For instances assign the mainComponent as the part
+	// for (let [key, value] of Object.entries(results)) {
+	// 	if (value.type === "INSTANCE") {
+	// 		results[key] = value.mainComponent
+	// 	}
+	// }
+
+	return results
 }

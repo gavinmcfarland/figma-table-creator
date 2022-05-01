@@ -64,7 +64,7 @@ export default [{
 		svg(),
 		postcss(),
 		htmlBundle({
-			template: 'src/template.html',
+			template: 'src/ui/template.html',
 			target: 'dist/index.html',
 			inline: true
 		}),
