@@ -36,7 +36,7 @@ import {
 } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
 import { upgradeFrom6to7 } from './upgradeFrom6to7'
-import { defaultRelaunchData, createTable } from './globals'
+import { defaultRelaunchData, createTable, updatePluginVersion } from './globals'
 
 console.clear()
 
@@ -44,10 +44,7 @@ console.clear()
 // 	figma.closePlugin('User preferences reset')
 // })
 
-// FIXME: Doing this temp to fix bugs
-setClientStorageAsync('pluginAlreadyRun', true)
-
-upgradeFrom6to7()
+// figma.clientStorage.deleteAsync('pluginVersion')
 
 let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
@@ -776,12 +773,10 @@ plugma((plugin) => {
 	plugin.command('createTable', async ({ ui }) => {
 		// Show create table UI
 		let pluginAlreadyRun = await getClientStorageAsync('pluginAlreadyRun')
+		let pluginVersion = await getClientStorageAsync('pluginVersion')
 		let userPreferences = await getClientStorageAsync('userPreferences')
 		let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
-
-		console.log('userPreferences', userPreferences)
-
-		console.log('PluginAlreadyRun?', pluginAlreadyRun)
+		let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
 
 		const recentFiles = await getRecentFilesAsync()
 		const remoteFiles = getDocumentData('remoteFiles')
@@ -799,6 +794,8 @@ plugma((plugin) => {
 			fileId,
 			usingRemoteTemplate,
 			pluginAlreadyRun,
+			pluginVersion,
+			pluginUsingOldComponents,
 		})
 	})
 	plugin.command('detachTable', () => {
@@ -836,7 +833,7 @@ plugma((plugin) => {
 	plugin.on('create-table-instance', async (msg) => {
 		const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
-		let tableInstance = createTable(getTemplateParts(templateComponent), msg.data)
+		let tableInstance = createTable(templateComponent, msg.data)
 		positionInCenterOfViewport(tableInstance)
 		figma.currentPage.selection = [tableInstance]
 
@@ -849,4 +846,12 @@ plugma((plugin) => {
 	plugin.on('save-user-preferences', () => {})
 	plugin.on('fetch-template-part', () => {})
 	plugin.on('fetch-current-selection', () => {})
+	plugin.on('upgrade-to-template', () => {
+		upgradeFrom6to7()
+		updatePluginVersion('7.0.0').then((pluginVersion) => {
+			console.log('Updated to plugin version...', pluginVersion)
+			// TODO: Don't close, instead change UI to create table UI
+			figma.closePlugin('Template created')
+		})
+	})
 })

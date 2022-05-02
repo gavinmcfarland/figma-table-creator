@@ -1,5 +1,6 @@
-import { getComponentById } from './helpers'
-import { createTable } from './globals'
+import { setPluginData } from '@fignite/helpers'
+import { getComponentById, positionInCenterOfViewport, removeChildren } from './helpers'
+import { createTable, tableFactory } from './globals'
 
 //TODO: Is it easier to ask the user to import and select their own components?
 
@@ -15,70 +16,81 @@ import { createTable } from './globals'
 // let tableInstance = createTable(getTemplateParts(templateComponent), msg.data, 'COMPONENT')
 
 export function upgradeFrom6to7() {
-	function findUsersExisitingComponents() {
-		return {
-			table: getComponentById(figma.root.getPluginData('tableComponentID')),
-			tr: getComponentById(figma.root.getPluginData('rowComponentID')),
-			td: getComponentById(figma.root.getPluginData('cellComponentID')),
-			th: getComponentById(figma.root.getPluginData('cellHeaderComponentID')),
+	function cleanupOldPluginData() {
+		let keys = ['cellComponentID', 'cellHeaderComponentID', 'rowComponentID', 'tableComponentID']
+
+		keys.forEach((element) => {
+			figma.root.setPluginData(element, '')
+		})
+	}
+	function createTemplateComponent() {
+		let cellComponent = getComponentById(figma.root.getPluginData('cellComponentID'))
+		// TODO: Set semantics
+		setPluginData(cellComponent, `elementSemantics`, { is: 'td' })
+
+		let headerComponent = getComponentById(figma.root.getPluginData('cellHeaderComponentID'))
+		if (headerComponent) setPluginData(headerComponent, `elementSemantics`, { is: 'th' })
+
+		let rowComponent = getComponentById(figma.root.getPluginData('rowComponentID')) || figma.createComponent()
+		setPluginData(rowComponent, `elementSemantics`, { is: 'tr' })
+
+		// Apply styling to row
+		removeChildren(rowComponent)
+
+		rowComponent.name = getComponentById(figma.root.getPluginData('rowComponentID')).name || '_Row'
+		rowComponent.layoutMode = 'HORIZONTAL'
+		rowComponent.primaryAxisSizingMode = 'AUTO'
+		rowComponent.counterAxisSizingMode = 'AUTO'
+		rowComponent.clipsContent = true
+
+		let cellInstance1 = cellComponent.createInstance()
+		let cellInstance2 = cellComponent.createInstance()
+
+		rowComponent.appendChild(cellInstance1)
+		rowComponent.appendChild(cellInstance2)
+
+		// We need to clone it because we don't want it to affect existing components
+		let tableComponent = getComponentById(figma.root.getPluginData('tableComponentID'))
+		let templateComponent = tableComponent ? tableComponent.clone() : figma.createComponent()
+		setPluginData(templateComponent, `elementSemantics`, { is: 'table' })
+
+		// Apply styling to table
+		removeChildren(templateComponent)
+
+		templateComponent.name = getComponentById(figma.root.getPluginData('tableComponentID')).name || 'Table 1'
+		templateComponent.layoutMode = 'VERTICAL'
+		templateComponent.primaryAxisSizingMode = 'AUTO'
+		templateComponent.counterAxisSizingMode = 'AUTO'
+
+		let rowInstance1 = rowComponent.createInstance()
+		let rowInstance2 = rowComponent.createInstance()
+		let rowInstance3 = rowComponent.createInstance()
+
+		templateComponent.appendChild(rowInstance1)
+		templateComponent.appendChild(rowInstance2)
+		templateComponent.appendChild(rowInstance3)
+
+		// Swap header cells
+		if (headerComponent) {
+			rowInstance1.children[0].swapComponent(headerComponent)
+			rowInstance1.children[1].swapComponent(headerComponent)
 		}
+
+		// Remove row component if user didn't have them
+		if (!getComponentById(figma.root.getPluginData('rowComponentID'))) rowComponent.remove()
+
+		return templateComponent
 	}
 
-	const usersExistingComponents = findUsersExisitingComponents()
+	if (getComponentById(figma.root.getPluginData('cellComponentID'))) {
+		const templateComponent = createTemplateComponent()
+		// TODO: Needs to be added to list of templates
+		// TODO: Needs to relink previously created tables
+		// TODO: Needs to create tooltip
 
-	let newComponents = Object.assign({}, usersExistingComponents) as any
+		positionInCenterOfViewport(templateComponent)
+		figma.currentPage.selection = [templateComponent]
 
-	console.log(usersExistingComponents)
-
-	if (usersExistingComponents.td) {
-		if (!usersExistingComponents.table) {
-			console.log('no table')
-
-			let tableComponent = createTable(
-				usersExistingComponents,
-				{
-					columnCount: 2,
-					rowCount: 3,
-					cellWidth: 100,
-					remember: true,
-					includeHeader: true,
-					columnResizing: true,
-					cellAlignment: 'MIN',
-				},
-				'COMPONENT'
-			)
-
-			console.log('tableComponent', tableComponent)
-		}
-		// if (!usersExistingComponents.table) {
-		// 	newComponents.table = figma.createComponent()
-		// 	newComponents.table.name = 'Table'
-
-		// 	// Leave a note to let user know how it works now
-		// } else {
-		// 	newComponents.table = usersExistingComponents.table
-		// }
-
-		// if (!usersExistingComponents.tr) {
-		// 	newComponents.tr = figma.createComponent()
-		// 	newComponents.tr.name = 'Row'
-		// 	// Add auto layout
-
-		// 	// Add cells to row component
-		// 	newComponents.tr.appendChild(newComponents.td.createInstance())
-		// 	newComponents.tr.appendChild(newComponents.td.createInstance())
-
-		// 	var rowInstance = newComponents.tr.createInstance()
-
-		// 	// Add row instance to table component
-		// 	newComponents.table.appendChild(rowInstance)
-		// } else {
-		// 	newComponents.tr = usersExistingComponents.tr
-		// }
+		cleanupOldPluginData()
 	}
-
-	// Need to set templateData on the users existing components
-	// If they don't have a table template then I need to create one
-	// Import user's old template component as a new template
-	// Tidy up data on the users template by removing old pluginData
 }

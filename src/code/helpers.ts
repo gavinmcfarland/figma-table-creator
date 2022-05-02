@@ -62,18 +62,19 @@ export function getComponentById(id) {
 	// return component || false
 
 	var node = figma.getNodeById(id)
-
-	if (node) {
-		if (node.parent === null || node.parent.parent === null) {
-			figma.root.setPluginData('cellComponentState', 'exists')
-			return false
+	if (node && node.type === 'COMPONENT') {
+		if (node) {
+			if (node.parent === null || node.parent.parent === null) {
+				figma.root.setPluginData('cellComponentState', 'exists')
+				return false
+			} else {
+				figma.root.setPluginData('cellComponentState', 'removed')
+				return node
+			}
 		} else {
-			figma.root.setPluginData('cellComponentState', 'removed')
-			return node
+			figma.root.setPluginData('cellComponentState', 'deleted')
+			return null
 		}
-	} else {
-		figma.root.setPluginData('cellComponentState', 'deleted')
-		return null
 	}
 }
 export function createPage(name) {
@@ -279,4 +280,11 @@ export function getTemplateParts(templateNode) {
 	// }
 
 	return results
+}
+
+export function removeChildren(node) {
+	let length = node.children.length
+	for (let i = length - 1; i >= 0; i--) {
+		node.children[i].remove()
+	}
 }

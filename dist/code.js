@@ -188,10 +188,7 @@ var dist = plugma;
 async function getClientStorageAsync(key) {
     return await figma.clientStorage.getAsync(key);
 }
-function setClientStorageAsync(key, data) {
-    return figma.clientStorage.setAsync(key, data);
-}
-async function updateClientStorageAsync(key, callback) {
+async function updateClientStorageAsync$1(key, callback) {
     var data = await figma.clientStorage.getAsync(key);
     data = callback(data);
     // What should happen if user doesn't return anything in callback?
@@ -577,7 +574,7 @@ function updatePluginData(node, key, callback) {
  * Convinient way to delete children of a node
  * @param {SceneNode & ChildrenMixin } node A node with children
  */
-function removeChildren(node) {
+function removeChildren$1(node) {
     var length = node.children.length;
     if (length > 0) {
         for (let i = 0; i < length; i++) {
@@ -788,13 +785,12 @@ var getNodeIndex_1 = getNodeIndex;
 var getPageNode_1 = getPageNode;
 var getPluginData_1 = getPluginData;
 var nodeToObject_1 = nodeToObject;
-var removeChildren_1 = removeChildren;
+var removeChildren_1 = removeChildren$1;
 var replace_1 = replace;
 var resize_1 = resize;
-var setClientStorageAsync_1 = setClientStorageAsync;
 var setDocumentData_1 = setDocumentData;
 var setPluginData_1 = setPluginData;
-var updateClientStorageAsync_1 = updateClientStorageAsync;
+var updateClientStorageAsync_1 = updateClientStorageAsync$1;
 var updatePluginData_1 = updatePluginData;
 
 /* istanbul ignore next */
@@ -1511,19 +1507,21 @@ function getComponentById(id) {
     // }
     // return component || false
     var node = figma.getNodeById(id);
-    if (node) {
-        if (node.parent === null || node.parent.parent === null) {
-            figma.root.setPluginData('cellComponentState', 'exists');
-            return false;
+    if (node && node.type === 'COMPONENT') {
+        if (node) {
+            if (node.parent === null || node.parent.parent === null) {
+                figma.root.setPluginData('cellComponentState', 'exists');
+                return false;
+            }
+            else {
+                figma.root.setPluginData('cellComponentState', 'removed');
+                return node;
+            }
         }
         else {
-            figma.root.setPluginData('cellComponentState', 'removed');
-            return node;
+            figma.root.setPluginData('cellComponentState', 'deleted');
+            return null;
         }
-    }
-    else {
-        figma.root.setPluginData('cellComponentState', 'deleted');
-        return null;
     }
 }
 function createPage(name) {
@@ -1677,6 +1675,41 @@ function genRandomId() {
 // TODO: Replace with more rebost clone function
 function clone(val) {
     return JSON.parse(JSON.stringify(val));
+}
+function getTemplateParts$1(templateNode) {
+    // find nodes with certain pluginData
+    let elements = ['tr', 'td', 'th', 'table'];
+    let results = {};
+    // Loop though element definitions and find them in the template
+    for (let i = 0; i < elements.length; i++) {
+        let elementName = elements[i];
+        let part = templateNode.findOne((node) => {
+            let elementSemantics = getPluginData_1(node, 'elementSemantics');
+            if ((elementSemantics === null || elementSemantics === void 0 ? void 0 : elementSemantics.is) === elementName) {
+                console.log(elementSemantics);
+                return true;
+            }
+        });
+        results[elementName] = part;
+    }
+    if (!results['table']) {
+        if (getPluginData_1(templateNode, 'elementSemantics').is === 'table') {
+            results['table'] = templateNode;
+        }
+    }
+    // // For instances assign the mainComponent as the part
+    // for (let [key, value] of Object.entries(results)) {
+    // 	if (value.type === "INSTANCE") {
+    // 		results[key] = value.mainComponent
+    // 	}
+    // }
+    return results;
+}
+function removeChildren(node) {
+    let length = node.children.length;
+    for (let i = length - 1; i >= 0; i--) {
+        node.children[i].remove();
+    }
 }
 
 // Wrap in function
@@ -2524,75 +2557,142 @@ async function createDefaultComponents(opts) {
     return obj;
 }
 
+//TODO: Is it easier to ask the user to import and select their own components?
+// 1. Hi, I'm tablo. My creator made me so I could help you upgrade to the shiny new version of Table Creator.
+// 2. I notice you don't have a table or row component. Unfortunately you won't be able to continue using this plugin, only kidding. I just need to create some
+// 1. The way table creator works is slightly different now. Instead of relying on a single cell component to create tables from. Table Creator now use a table component as a template. As part of this upgrade I'm going to hopefully successfully upgrade your existing components to work with the new version of Table Creator. Unfortunately because of the way plugins work without this making this upgrade you won't be able to continue using the plugin. You can either follow this upgrade, or start from scratch and try and link your old components.
+// 2. First I'll look to see if I can find a table component. If you don't have one I'll create one for you. This will be used as the main template that new tables are created from.
+// 3. Next I'll look to see if you have a row component. If you don't
+// let tableInstance = createTable(getTemplateParts(templateComponent), msg.data, 'COMPONENT')
+function upgradeFrom6to7() {
+    function cleanupOldPluginData() {
+        let keys = ['cellComponentID', 'cellHeaderComponentID', 'rowComponentID', 'tableComponentID'];
+        keys.forEach((element) => {
+            figma.root.setPluginData(element, '');
+        });
+    }
+    function createTemplateComponent() {
+        let cellComponent = getComponentById(figma.root.getPluginData('cellComponentID'));
+        // TODO: Set semantics
+        setPluginData_1(cellComponent, `elementSemantics`, { is: 'td' });
+        let headerComponent = getComponentById(figma.root.getPluginData('cellHeaderComponentID'));
+        if (headerComponent)
+            setPluginData_1(headerComponent, `elementSemantics`, { is: 'th' });
+        let rowComponent = getComponentById(figma.root.getPluginData('rowComponentID')) || figma.createComponent();
+        setPluginData_1(rowComponent, `elementSemantics`, { is: 'tr' });
+        // Apply styling to row
+        removeChildren(rowComponent);
+        rowComponent.name = getComponentById(figma.root.getPluginData('rowComponentID')).name || '_Row';
+        rowComponent.layoutMode = 'HORIZONTAL';
+        rowComponent.primaryAxisSizingMode = 'AUTO';
+        rowComponent.counterAxisSizingMode = 'AUTO';
+        rowComponent.clipsContent = true;
+        let cellInstance1 = cellComponent.createInstance();
+        let cellInstance2 = cellComponent.createInstance();
+        rowComponent.appendChild(cellInstance1);
+        rowComponent.appendChild(cellInstance2);
+        // We need to clone it because we don't want it to affect existing components
+        let tableComponent = getComponentById(figma.root.getPluginData('tableComponentID'));
+        let templateComponent = tableComponent ? tableComponent.clone() : figma.createComponent();
+        setPluginData_1(templateComponent, `elementSemantics`, { is: 'table' });
+        // Apply styling to table
+        removeChildren(templateComponent);
+        templateComponent.name = getComponentById(figma.root.getPluginData('tableComponentID')).name || 'Table 1';
+        templateComponent.layoutMode = 'VERTICAL';
+        templateComponent.primaryAxisSizingMode = 'AUTO';
+        templateComponent.counterAxisSizingMode = 'AUTO';
+        let rowInstance1 = rowComponent.createInstance();
+        let rowInstance2 = rowComponent.createInstance();
+        let rowInstance3 = rowComponent.createInstance();
+        templateComponent.appendChild(rowInstance1);
+        templateComponent.appendChild(rowInstance2);
+        templateComponent.appendChild(rowInstance3);
+        // Swap header cells
+        if (headerComponent) {
+            rowInstance1.children[0].swapComponent(headerComponent);
+            rowInstance1.children[1].swapComponent(headerComponent);
+        }
+        // Remove row component if user didn't have them
+        if (!getComponentById(figma.root.getPluginData('rowComponentID')))
+            rowComponent.remove();
+        return templateComponent;
+    }
+    if (getComponentById(figma.root.getPluginData('cellComponentID'))) {
+        const templateComponent = createTemplateComponent();
+        // TODO: Needs to be added to list of templates
+        // TODO: Needs to relink previously created tables
+        // TODO: Needs to create tooltip
+        positionInCenterOfViewport(templateComponent);
+        figma.currentPage.selection = [templateComponent];
+        cleanupOldPluginData();
+    }
+}
+
+async function updateClientStorageAsync(key, callback) {
+    var data = await figma.clientStorage.getAsync(key);
+    data = callback(data);
+    await figma.clientStorage.setAsync(key, data);
+    // What should happen if user doesn't return anything in callback?
+    if (!data) {
+        data = null;
+    }
+    // node.setPluginData(key, JSON.stringify(data))
+    return data;
+}
+
 let defaultRelaunchData$1 = {
     detachTable: 'Detaches table and rows',
     spawnTable: 'Spawn a new table from this table',
     toggleColumnResizing: 'Use a component to resize columns or rows',
     switchColumnsOrRows: 'Switch between using columns or rows',
 };
-function createTable(parts, settings, type) {
+async function updatePluginVersion(semver) {
+    return updateClientStorageAsync('pluginVersion', (pluginVersion) => {
+        // Remove plugin version from document for now
+        if (figma.root.getPluginData('pluginVersion'))
+            figma.root.setPluginData('pluginVersion', '');
+        return semver || pluginVersion;
+    });
+}
+function createTable(templateComponent, settings, type) {
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
-    var tableMissing;
-    var templateComponent;
-    let tableContainer;
+    let tableInstance = convertToFrame_1(templateComponent.clone());
+    let part = getTemplateParts$1(templateComponent);
     var table;
-    // If no table, create template then delete
-    if (!parts.table) {
-        parts.table = figma.createComponent();
-        parts.table.name = 'Table';
-        parts.table.layoutMode = 'VERTICAL';
-        parts.table.primaryAxisSizingMode = 'AUTO';
-        parts.table.counterAxisSizingMode = 'AUTO';
-        tableMissing = true;
-    }
-    templateComponent = parts.table;
-    tableContainer = convertToFrame_1(templateComponent.clone());
-    if (settings.includeHeader && !parts.th) {
+    if (settings.includeHeader && !part.th) {
         figma.notify('No Header Cell component found');
         // FIXME: Check for header cell sooner so table creation doesn't start
         return;
     }
-    if (parts.table.id === templateComponent.id) {
+    if (part.table.id === templateComponent.id) {
         console.log('table and container are the same thing');
         if (type === 'COMPONENT') {
-            table = convertToComponent_1(tableContainer);
-            tableContainer = table;
+            table = convertToComponent_1(tableInstance);
+            tableInstance = table;
         }
         else {
-            table = tableContainer;
+            table = tableInstance;
         }
     }
     else {
         // Remove table from template
-        tableContainer.findAll((node) => {
+        tableInstance.findAll((node) => {
             var _a;
             if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table') {
                 node.remove();
             }
         });
-        var tableIndex = getNodeIndex_1(parts.table);
+        var tableIndex = getNodeIndex_1(part.table);
         // Add table back to template
-        tableContainer.insertChild(tableIndex, table);
+        tableInstance.insertChild(tableIndex, table);
     }
     var firstRow;
-    var rowIndex;
-    if (tableMissing) {
-        rowIndex = 0;
-    }
-    else {
-        rowIndex = getNodeIndex_1(parts.tr);
-    }
-    // Find the parent of the row because might not be the table?
+    var rowIndex = getNodeIndex_1(part.tr);
     function getRowParent() {
         var row = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-        if (!row) {
-            return parts.table;
-        }
-        else {
-            return row.parent;
-        }
+        return row.parent;
     }
     var rowParent = getRowParent();
     // Remove children which are trs
@@ -2604,12 +2704,12 @@ function createTable(parts, settings, type) {
     });
     if (settings.columnResizing && type !== 'COMPONENT') {
         // First row should be a component
-        firstRow = convertToComponent_1(parts.tr.clone());
+        firstRow = convertToComponent_1(part.tr.clone());
         setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
     }
     else {
         // First row should be a frame
-        firstRow = convertToFrame_1(parts.tr.clone());
+        firstRow = convertToFrame_1(part.tr.clone());
         setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
     }
     rowParent.insertChild(rowIndex, firstRow);
@@ -2622,20 +2722,14 @@ function createTable(parts, settings, type) {
             }
         }
     });
-    if (tableMissing) {
-        let length = firstRow.children.length;
-        for (let i = length - 1; i >= 0; i--) {
-            firstRow.children[i].remove();
-        }
-    }
     // Create columns in first row
     for (let i = 0; i < settings.columnCount; i++) {
         var duplicateCell;
-        if (parts.td.type === 'COMPONENT') {
-            duplicateCell = parts.td.createInstance();
+        if (part.td.type === 'COMPONENT') {
+            duplicateCell = part.td.clone();
         }
-        if (parts.td.type === 'INSTANCE') {
-            duplicateCell = parts.td.mainComponent.createInstance();
+        if (part.td.type === 'INSTANCE') {
+            duplicateCell = part.td.mainComponent.createInstance();
         }
         if (settings.cellWidth) {
             // let origLayoutAlign = duplicateCell.layoutAlign
@@ -2644,7 +2738,7 @@ function createTable(parts, settings, type) {
         }
         setPluginData_1(duplicateCell, 'elementSemantics', { is: 'td' });
         // Figma doesn't automatically inherit this property
-        duplicateCell.layoutAlign = parts.td.layoutAlign;
+        duplicateCell.layoutAlign = part.td.layoutAlign;
         duplicateCell.primaryAxisAlignItems = settings.cellAlignment;
         firstRow.appendChild(duplicateCell);
     }
@@ -2661,103 +2755,33 @@ function createTable(parts, settings, type) {
         if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
             for (let i = 0; i < duplicateRow.children.length; i++) {
                 var cell = duplicateRow.children[i];
-                // cell.swapComponent(parts.th)
+                // cell.swapComponent(part.th)
                 // FIXME: Check if instance or main component
-                cell.mainComponent = parts.td.mainComponent;
+                cell.mainComponent = part.td.mainComponent;
                 setPluginData_1(cell, 'elementSemantics', { is: 'td' });
             }
         }
         rowParent.insertChild(rowIndex + 1, duplicateRow);
     }
     // Swap first row to use header cell
-    if (settings.includeHeader && parts.th) {
+    if (settings.includeHeader && part.th) {
         for (var i = 0; i < firstRow.children.length; i++) {
             var child = firstRow.children[i];
             // FIXME: Check if instance or main component
-            if (parts.th === 'INSTANCE') {
-                child.swapComponent(parts.th.mainComponent);
-            }
-            else {
-                child.swapComponent(parts.th);
-            }
-            // setPluginData(child, 'elementSemantics', { is: 'th' })
-            // child.mainComponent = parts.th.mainComponent
+            child.swapComponent(part.th.mainComponent);
+            setPluginData_1(child, 'elementSemantics', { is: 'th' });
+            // child.mainComponent = part.th.mainComponent
         }
     }
-    tableContainer.setRelaunchData(defaultRelaunchData$1);
-    if (tableMissing) {
-        tableContainer.remove();
-    }
-    return tableContainer;
-}
-
-//TODO: Is it easier to ask the user to import and select their own components?
-// 1. Hi, I'm tablo. My creator made me so I could help you upgrade to the shiny new version of Table Creator.
-// 2. I notice you don't have a table or row component. Unfortunately you won't be able to continue using this plugin, only kidding. I just need to create some
-// 1. The way table creator works is slightly different now. Instead of relying on a single cell component to create tables from. Table Creator now use a table component as a template. As part of this upgrade I'm going to hopefully successfully upgrade your existing components to work with the new version of Table Creator. Unfortunately because of the way plugins work without this making this upgrade you won't be able to continue using the plugin. You can either follow this upgrade, or start from scratch and try and link your old components.
-// 2. First I'll look to see if I can find a table component. If you don't have one I'll create one for you. This will be used as the main template that new tables are created from.
-// 3. Next I'll look to see if you have a row component. If you don't
-// let tableInstance = createTable(getTemplateParts(templateComponent), msg.data, 'COMPONENT')
-function upgradeFrom6to7() {
-    function findUsersExisitingComponents() {
-        return {
-            table: getComponentById(figma.root.getPluginData('tableComponentID')),
-            tr: getComponentById(figma.root.getPluginData('rowComponentID')),
-            td: getComponentById(figma.root.getPluginData('cellComponentID')),
-            th: getComponentById(figma.root.getPluginData('cellHeaderComponentID')),
-        };
-    }
-    const usersExistingComponents = findUsersExisitingComponents();
-    Object.assign({}, usersExistingComponents);
-    console.log(usersExistingComponents);
-    if (usersExistingComponents.td) {
-        if (!usersExistingComponents.table) {
-            console.log('no table');
-            let tableComponent = createTable(usersExistingComponents, {
-                columnCount: 2,
-                rowCount: 3,
-                cellWidth: 100,
-                remember: true,
-                includeHeader: true,
-                columnResizing: true,
-                cellAlignment: 'MIN',
-            }, 'COMPONENT');
-            console.log('tableComponent', tableComponent);
-        }
-        // if (!usersExistingComponents.table) {
-        // 	newComponents.table = figma.createComponent()
-        // 	newComponents.table.name = 'Table'
-        // 	// Leave a note to let user know how it works now
-        // } else {
-        // 	newComponents.table = usersExistingComponents.table
-        // }
-        // if (!usersExistingComponents.tr) {
-        // 	newComponents.tr = figma.createComponent()
-        // 	newComponents.tr.name = 'Row'
-        // 	// Add auto layout
-        // 	// Add cells to row component
-        // 	newComponents.tr.appendChild(newComponents.td.createInstance())
-        // 	newComponents.tr.appendChild(newComponents.td.createInstance())
-        // 	var rowInstance = newComponents.tr.createInstance()
-        // 	// Add row instance to table component
-        // 	newComponents.table.appendChild(rowInstance)
-        // } else {
-        // 	newComponents.tr = usersExistingComponents.tr
-        // }
-    }
-    // Need to set templateData on the users existing components
-    // If they don't have a table template then I need to create one
-    // Import user's old template component as a new template
-    // Tidy up data on the users template by removing old pluginData
+    tableInstance.setRelaunchData(defaultRelaunchData$1);
+    return tableInstance;
 }
 
 console.clear();
 // setClientStorageAsync('userPreferences', undefined).then(() => {
 // 	figma.closePlugin('User preferences reset')
 // })
-// FIXME: Doing this temp to fix bugs
-setClientStorageAsync_1('pluginAlreadyRun', true);
-upgradeFrom6to7();
+// figma.clientStorage.deleteAsync('pluginVersion')
 let defaultRelaunchData = {
     detachTable: 'Detaches table and rows',
     spawnTable: 'Spawn a new table from this table',
@@ -3313,10 +3337,10 @@ dist((plugin) => {
     plugin.command('createTable', async ({ ui }) => {
         // Show create table UI
         let pluginAlreadyRun = await getClientStorageAsync_1('pluginAlreadyRun');
+        let pluginVersion = await getClientStorageAsync_1('pluginVersion');
         let userPreferences = await getClientStorageAsync_1('userPreferences');
         let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
-        console.log('userPreferences', userPreferences);
-        console.log('PluginAlreadyRun?', pluginAlreadyRun);
+        let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
         const recentFiles = await getRecentFilesAsync();
         const remoteFiles = getDocumentData_1('remoteFiles');
         const fileId = getDocumentData_1('fileId');
@@ -3328,7 +3352,9 @@ dist((plugin) => {
             defaultTemplate,
             fileId,
             usingRemoteTemplate,
-            pluginAlreadyRun }));
+            pluginAlreadyRun,
+            pluginVersion,
+            pluginUsingOldComponents }));
     });
     plugin.command('detachTable', () => {
         detachTable(figma.currentPage.selection);
@@ -3360,7 +3386,7 @@ dist((plugin) => {
     plugin.on('set-semantics', () => { });
     plugin.on('create-table-instance', async (msg) => {
         const templateComponent = await getComponentById(getDocumentData_1('defaultTemplate').id);
-        let tableInstance = createTable(getTemplateParts(templateComponent), msg.data);
+        let tableInstance = createTable(templateComponent, msg.data);
         positionInCenterOfViewport(tableInstance);
         figma.currentPage.selection = [tableInstance];
         updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
@@ -3371,4 +3397,12 @@ dist((plugin) => {
     plugin.on('save-user-preferences', () => { });
     plugin.on('fetch-template-part', () => { });
     plugin.on('fetch-current-selection', () => { });
+    plugin.on('upgrade-to-template', () => {
+        upgradeFrom6to7();
+        updatePluginVersion('7.0.0').then((pluginVersion) => {
+            console.log('Updated to plugin version...', pluginVersion);
+            // TODO: Don't close, instead change UI to create table UI
+            figma.closePlugin('Template created');
+        });
+    });
 });

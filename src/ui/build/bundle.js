@@ -2615,25 +2615,25 @@ var ui = (function () {
 
     function get_each_context_1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[46] = list[i];
+    	child_ctx[47] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_2(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[43] = list[i];
+    	child_ctx[44] = list[i];
     	return child_ctx;
     }
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[43] = list[i];
+    	child_ctx[44] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_3(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[46] = list[i];
+    	child_ctx[47] = list[i];
     	return child_ctx;
     }
 
@@ -2648,26 +2648,26 @@ var ui = (function () {
 
     function get_each_context_4(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[46] = list[i];
+    	child_ctx[47] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_5(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[43] = list[i];
+    	child_ctx[44] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_6(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[46] = list[i];
+    	child_ctx[47] = list[i];
     	return child_ctx;
     }
 
-    // (347:0) {#if pageState.chooseRemoteTemplate}
-    function create_if_block_21(ctx) {
+    // (362:0) {#if pageState.chooseRemoteTemplate}
+    function create_if_block_22(ctx) {
     	let div;
-    	let if_block = /*data*/ ctx[0].remoteFiles && create_if_block_22(ctx);
+    	let if_block = /*data*/ ctx[0].remoteFiles && create_if_block_23(ctx);
 
     	return {
     		c() {
@@ -2685,7 +2685,7 @@ var ui = (function () {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
-    					if_block = create_if_block_22(ctx);
+    					if_block = create_if_block_23(ctx);
     					if_block.c();
     					if_block.m(div, null);
     				}
@@ -2701,8 +2701,8 @@ var ui = (function () {
     	};
     }
 
-    // (350:2) {#if data.remoteFiles}
-    function create_if_block_22(ctx) {
+    // (365:2) {#if data.remoteFiles}
+    function create_if_block_23(ctx) {
     	let p;
     	let t1;
     	let div;
@@ -2768,17 +2768,17 @@ var ui = (function () {
     	};
     }
 
-    // (353:3) {#each data.remoteFiles as file}
+    // (368:3) {#each data.remoteFiles as file}
     function create_each_block_6(ctx) {
     	let div;
     	let span;
-    	let t_value = /*file*/ ctx[46].name + "";
+    	let t_value = /*file*/ ctx[47].name + "";
     	let t;
     	let mounted;
     	let dispose;
 
     	function click_handler(...args) {
-    		return /*click_handler*/ ctx[20](/*file*/ ctx[46], ...args);
+    		return /*click_handler*/ ctx[20](/*file*/ ctx[47], ...args);
     	}
 
     	return {
@@ -2800,7 +2800,7 @@ var ui = (function () {
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty[0] & /*data*/ 1 && t_value !== (t_value = /*file*/ ctx[46].name + "")) set_data(t, t_value);
+    			if (dirty[0] & /*data*/ 1 && t_value !== (t_value = /*file*/ ctx[47].name + "")) set_data(t, t_value);
     		},
     		d(detaching) {
     			if (detaching) detach(div);
@@ -2810,12 +2810,12 @@ var ui = (function () {
     	};
     }
 
-    // (364:0) {#if pageState.chooseTemplate}
-    function create_if_block_18(ctx) {
+    // (379:0) {#if pageState.chooseTemplate}
+    function create_if_block_19(ctx) {
     	let div;
     	let p;
     	let t1;
-    	let if_block = /*data*/ ctx[0].remoteFiles && create_if_block_19(ctx);
+    	let if_block = /*data*/ ctx[0].remoteFiles && create_if_block_20(ctx);
 
     	return {
     		c() {
@@ -2838,7 +2838,7 @@ var ui = (function () {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
-    					if_block = create_if_block_19(ctx);
+    					if_block = create_if_block_20(ctx);
     					if_block.c();
     					if_block.m(div, null);
     				}
@@ -2854,8 +2854,8 @@ var ui = (function () {
     	};
     }
 
-    // (367:2) {#if data.remoteFiles}
-    function create_if_block_19(ctx) {
+    // (382:2) {#if data.remoteFiles}
+    function create_if_block_20(ctx) {
     	let each_1_anchor;
     	let each_value_4 = /*data*/ ctx[0].remoteFiles;
     	let each_blocks = [];
@@ -2910,11 +2910,11 @@ var ui = (function () {
     	};
     }
 
-    // (369:4) {#if selectedFile?.id === file.id}
-    function create_if_block_20(ctx) {
+    // (384:4) {#if selectedFile?.id === file.id}
+    function create_if_block_21(ctx) {
     	let div;
     	let t;
-    	let each_value_5 = /*file*/ ctx[46].templates;
+    	let each_value_5 = /*file*/ ctx[47].templates;
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value_5.length; i += 1) {
@@ -2943,7 +2943,7 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (dirty[0] & /*data, setActivePage*/ 4097) {
-    				each_value_5 = /*file*/ ctx[46].templates;
+    				each_value_5 = /*file*/ ctx[47].templates;
     				let i;
 
     				for (i = 0; i < each_value_5.length; i += 1) {
@@ -2972,16 +2972,16 @@ var ui = (function () {
     	};
     }
 
-    // (371:6) {#each file.templates as template}
+    // (386:6) {#each file.templates as template}
     function create_each_block_5(ctx) {
     	let div;
-    	let t_value = /*template*/ ctx[43].name + "";
+    	let t_value = /*template*/ ctx[44].name + "";
     	let t;
     	let mounted;
     	let dispose;
 
     	function click_handler_1(...args) {
-    		return /*click_handler_1*/ ctx[21](/*template*/ ctx[43], ...args);
+    		return /*click_handler_1*/ ctx[21](/*template*/ ctx[44], ...args);
     	}
 
     	return {
@@ -3001,7 +3001,7 @@ var ui = (function () {
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty[0] & /*data*/ 1 && t_value !== (t_value = /*template*/ ctx[43].name + "")) set_data(t, t_value);
+    			if (dirty[0] & /*data*/ 1 && t_value !== (t_value = /*template*/ ctx[44].name + "")) set_data(t, t_value);
     		},
     		d(detaching) {
     			if (detaching) detach(div);
@@ -3011,10 +3011,10 @@ var ui = (function () {
     	};
     }
 
-    // (368:3) {#each data.remoteFiles as file}
+    // (383:3) {#each data.remoteFiles as file}
     function create_each_block_4(ctx) {
     	let if_block_anchor;
-    	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[46].id && create_if_block_20(ctx);
+    	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id && create_if_block_21(ctx);
 
     	return {
     		c() {
@@ -3026,11 +3026,11 @@ var ui = (function () {
     			insert(target, if_block_anchor, anchor);
     		},
     		p(ctx, dirty) {
-    			if (/*selectedFile*/ ctx[7]?.id === /*file*/ ctx[46].id) {
+    			if (/*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
-    					if_block = create_if_block_20(ctx);
+    					if_block = create_if_block_21(ctx);
     					if_block.c();
     					if_block.m(if_block_anchor.parentNode, if_block_anchor);
     				}
@@ -3046,19 +3046,21 @@ var ui = (function () {
     	};
     }
 
-    // (387:0) {#if pageState.welcomePageActive}
+    // (402:0) {#if pageState.welcomePageActive}
     function create_if_block_9(ctx) {
     	let t0;
     	let t1;
     	let t2;
     	let t3;
-    	let if_block4_anchor;
+    	let t4;
+    	let if_block5_anchor;
     	let current;
-    	let if_block0 = /*welcomeSlides*/ ctx[9][0] && create_if_block_17(ctx);
-    	let if_block1 = /*welcomeSlides*/ ctx[9][1] && create_if_block_16(ctx);
-    	let if_block2 = /*welcomeSlides*/ ctx[9][2] && create_if_block_15(ctx);
-    	let if_block3 = /*welcomeSlides*/ ctx[9][3] && create_if_block_14(ctx);
-    	let if_block4 = /*welcomeSlides*/ ctx[9][4] && create_if_block_10(ctx);
+    	let if_block0 = /*welcomeSlides*/ ctx[9][0] && create_if_block_18(ctx);
+    	let if_block1 = /*welcomeSlides*/ ctx[9][1] && create_if_block_17(ctx);
+    	let if_block2 = /*welcomeSlides*/ ctx[9][2] && create_if_block_16(ctx);
+    	let if_block3 = /*welcomeSlides*/ ctx[9][3] && create_if_block_15(ctx);
+    	let if_block4 = /*welcomeSlides*/ ctx[9][4] && create_if_block_11(ctx);
+    	let if_block5 = /*welcomeSlides*/ ctx[9][5] && create_if_block_10(ctx);
 
     	return {
     		c() {
@@ -3071,7 +3073,9 @@ var ui = (function () {
     			if (if_block3) if_block3.c();
     			t3 = space();
     			if (if_block4) if_block4.c();
-    			if_block4_anchor = empty();
+    			t4 = space();
+    			if (if_block5) if_block5.c();
+    			if_block5_anchor = empty();
     		},
     		m(target, anchor) {
     			if (if_block0) if_block0.m(target, anchor);
@@ -3083,7 +3087,9 @@ var ui = (function () {
     			if (if_block3) if_block3.m(target, anchor);
     			insert(target, t3, anchor);
     			if (if_block4) if_block4.m(target, anchor);
-    			insert(target, if_block4_anchor, anchor);
+    			insert(target, t4, anchor);
+    			if (if_block5) if_block5.m(target, anchor);
+    			insert(target, if_block5_anchor, anchor);
     			current = true;
     		},
     		p(ctx, dirty) {
@@ -3095,7 +3101,7 @@ var ui = (function () {
     						transition_in(if_block0, 1);
     					}
     				} else {
-    					if_block0 = create_if_block_17(ctx);
+    					if_block0 = create_if_block_18(ctx);
     					if_block0.c();
     					transition_in(if_block0, 1);
     					if_block0.m(t0.parentNode, t0);
@@ -3118,7 +3124,7 @@ var ui = (function () {
     						transition_in(if_block1, 1);
     					}
     				} else {
-    					if_block1 = create_if_block_16(ctx);
+    					if_block1 = create_if_block_17(ctx);
     					if_block1.c();
     					transition_in(if_block1, 1);
     					if_block1.m(t1.parentNode, t1);
@@ -3141,7 +3147,7 @@ var ui = (function () {
     						transition_in(if_block2, 1);
     					}
     				} else {
-    					if_block2 = create_if_block_15(ctx);
+    					if_block2 = create_if_block_16(ctx);
     					if_block2.c();
     					transition_in(if_block2, 1);
     					if_block2.m(t2.parentNode, t2);
@@ -3164,7 +3170,7 @@ var ui = (function () {
     						transition_in(if_block3, 1);
     					}
     				} else {
-    					if_block3 = create_if_block_14(ctx);
+    					if_block3 = create_if_block_15(ctx);
     					if_block3.c();
     					transition_in(if_block3, 1);
     					if_block3.m(t3.parentNode, t3);
@@ -3187,16 +3193,39 @@ var ui = (function () {
     						transition_in(if_block4, 1);
     					}
     				} else {
-    					if_block4 = create_if_block_10(ctx);
+    					if_block4 = create_if_block_11(ctx);
     					if_block4.c();
     					transition_in(if_block4, 1);
-    					if_block4.m(if_block4_anchor.parentNode, if_block4_anchor);
+    					if_block4.m(t4.parentNode, t4);
     				}
     			} else if (if_block4) {
     				group_outros();
 
     				transition_out(if_block4, 1, 1, () => {
     					if_block4 = null;
+    				});
+
+    				check_outros();
+    			}
+
+    			if (/*welcomeSlides*/ ctx[9][5]) {
+    				if (if_block5) {
+    					if_block5.p(ctx, dirty);
+
+    					if (dirty[0] & /*welcomeSlides*/ 512) {
+    						transition_in(if_block5, 1);
+    					}
+    				} else {
+    					if_block5 = create_if_block_10(ctx);
+    					if_block5.c();
+    					transition_in(if_block5, 1);
+    					if_block5.m(if_block5_anchor.parentNode, if_block5_anchor);
+    				}
+    			} else if (if_block5) {
+    				group_outros();
+
+    				transition_out(if_block5, 1, 1, () => {
+    					if_block5 = null;
     				});
 
     				check_outros();
@@ -3209,6 +3238,7 @@ var ui = (function () {
     			transition_in(if_block2);
     			transition_in(if_block3);
     			transition_in(if_block4);
+    			transition_in(if_block5);
     			current = true;
     		},
     		o(local) {
@@ -3217,6 +3247,7 @@ var ui = (function () {
     			transition_out(if_block2);
     			transition_out(if_block3);
     			transition_out(if_block4);
+    			transition_out(if_block5);
     			current = false;
     		},
     		d(detaching) {
@@ -3229,13 +3260,15 @@ var ui = (function () {
     			if (if_block3) if_block3.d(detaching);
     			if (detaching) detach(t3);
     			if (if_block4) if_block4.d(detaching);
-    			if (detaching) detach(if_block4_anchor);
+    			if (detaching) detach(t4);
+    			if (if_block5) if_block5.d(detaching);
+    			if (detaching) detach(if_block5_anchor);
     		}
     	};
     }
 
-    // (388:1) {#if welcomeSlides[0]}
-    function create_if_block_17(ctx) {
+    // (403:1) {#if welcomeSlides[0]}
+    function create_if_block_18(ctx) {
     	let div4;
     	let div1;
     	let t0;
@@ -3255,7 +3288,7 @@ var ui = (function () {
     			props: {
     				classes: "secondary",
     				iconRight: "arrow-right",
-    				$$slots: { default: [create_default_slot_9] },
+    				$$slots: { default: [create_default_slot_10] },
     				$$scope: { ctx }
     			}
     		});
@@ -3304,7 +3337,7 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -3328,8 +3361,8 @@ var ui = (function () {
     	};
     }
 
-    // (411:44) <Button classes="secondary" iconRight="arrow-right">
-    function create_default_slot_9(ctx) {
+    // (426:44) <Button classes="secondary" iconRight="arrow-right">
+    function create_default_slot_10(ctx) {
     	let t;
 
     	return {
@@ -3345,8 +3378,8 @@ var ui = (function () {
     	};
     }
 
-    // (418:1) {#if welcomeSlides[1]}
-    function create_if_block_16(ctx) {
+    // (433:1) {#if welcomeSlides[1]}
+    function create_if_block_17(ctx) {
     	let div4;
     	let div1;
     	let t0;
@@ -3366,7 +3399,7 @@ var ui = (function () {
     			props: {
     				classes: "secondary",
     				iconRight: "arrow-right",
-    				$$slots: { default: [create_default_slot_8] },
+    				$$slots: { default: [create_default_slot_9] },
     				$$scope: { ctx }
     			}
     		});
@@ -3415,7 +3448,7 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -3439,8 +3472,8 @@ var ui = (function () {
     	};
     }
 
-    // (429:43) <Button classes="secondary" iconRight="arrow-right">
-    function create_default_slot_8(ctx) {
+    // (444:43) <Button classes="secondary" iconRight="arrow-right">
+    function create_default_slot_9(ctx) {
     	let t;
 
     	return {
@@ -3456,8 +3489,8 @@ var ui = (function () {
     	};
     }
 
-    // (434:1) {#if welcomeSlides[2]}
-    function create_if_block_15(ctx) {
+    // (449:1) {#if welcomeSlides[2]}
+    function create_if_block_16(ctx) {
     	let div4;
     	let div1;
     	let t0;
@@ -3477,7 +3510,7 @@ var ui = (function () {
     			props: {
     				classes: "secondary",
     				iconRight: "arrow-right",
-    				$$slots: { default: [create_default_slot_7] },
+    				$$slots: { default: [create_default_slot_8] },
     				$$scope: { ctx }
     			}
     		});
@@ -3526,7 +3559,7 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -3550,8 +3583,8 @@ var ui = (function () {
     	};
     }
 
-    // (445:44) <Button classes="secondary" iconRight="arrow-right">
-    function create_default_slot_7(ctx) {
+    // (460:44) <Button classes="secondary" iconRight="arrow-right">
+    function create_default_slot_8(ctx) {
     	let t;
 
     	return {
@@ -3567,8 +3600,8 @@ var ui = (function () {
     	};
     }
 
-    // (450:1) {#if welcomeSlides[3]}
-    function create_if_block_14(ctx) {
+    // (465:1) {#if welcomeSlides[3]}
+    function create_if_block_15(ctx) {
     	let div4;
     	let div1;
     	let t0;
@@ -3588,7 +3621,7 @@ var ui = (function () {
     			props: {
     				classes: "secondary",
     				iconRight: "arrow-right",
-    				$$slots: { default: [create_default_slot_6] },
+    				$$slots: { default: [create_default_slot_7] },
     				$$scope: { ctx }
     			}
     		});
@@ -3637,7 +3670,7 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -3661,8 +3694,8 @@ var ui = (function () {
     	};
     }
 
-    // (461:44) <Button classes="secondary" iconRight="arrow-right">
-    function create_default_slot_6(ctx) {
+    // (476:44) <Button classes="secondary" iconRight="arrow-right">
+    function create_default_slot_7(ctx) {
     	let t;
 
     	return {
@@ -3678,8 +3711,8 @@ var ui = (function () {
     	};
     }
 
-    // (466:1) {#if welcomeSlides[4]}
-    function create_if_block_10(ctx) {
+    // (481:1) {#if welcomeSlides[4]}
+    function create_if_block_11(ctx) {
     	let div4;
     	let div1;
     	let t0;
@@ -3695,7 +3728,7 @@ var ui = (function () {
     	let dispose;
 
     	function select_block_type(ctx, dirty) {
-    		if (/*data*/ ctx[0].recentFiles) return create_if_block_13;
+    		if (/*data*/ ctx[0].recentFiles) return create_if_block_14;
     		return create_else_block_1;
     	}
 
@@ -3703,7 +3736,7 @@ var ui = (function () {
     	let if_block0 = current_block_type(ctx);
 
     	function select_block_type_1(ctx, dirty) {
-    		if (/*data*/ ctx[0].recentFiles) return create_if_block_12;
+    		if (/*data*/ ctx[0].recentFiles) return create_if_block_13;
     		return create_else_block;
     	}
 
@@ -3713,12 +3746,12 @@ var ui = (function () {
     	button = new Button({
     			props: {
     				classes: "secondary",
-    				$$slots: { default: [create_default_slot_5] },
+    				$$slots: { default: [create_default_slot_6] },
     				$$scope: { ctx }
     			}
     		});
 
-    	let if_block2 = /*data*/ ctx[0].recentFiles && create_if_block_11(ctx);
+    	let if_block2 = /*data*/ ctx[0].recentFiles && create_if_block_12(ctx);
 
     	return {
     		c() {
@@ -3786,7 +3819,7 @@ var ui = (function () {
 
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -3800,7 +3833,7 @@ var ui = (function () {
     						transition_in(if_block2, 1);
     					}
     				} else {
-    					if_block2 = create_if_block_11(ctx);
+    					if_block2 = create_if_block_12(ctx);
     					if_block2.c();
     					transition_in(if_block2, 1);
     					if_block2.m(div2, null);
@@ -3838,7 +3871,7 @@ var ui = (function () {
     	};
     }
 
-    // (474:2) {:else}
+    // (489:2) {:else}
     function create_else_block_1(ctx) {
     	let h6;
 
@@ -3856,8 +3889,8 @@ var ui = (function () {
     	};
     }
 
-    // (472:2) {#if data.recentFiles}
-    function create_if_block_13(ctx) {
+    // (487:2) {#if data.recentFiles}
+    function create_if_block_14(ctx) {
     	let h6;
 
     	return {
@@ -3874,7 +3907,7 @@ var ui = (function () {
     	};
     }
 
-    // (479:2) {:else}
+    // (494:2) {:else}
     function create_else_block(ctx) {
     	let p;
 
@@ -3892,8 +3925,8 @@ var ui = (function () {
     	};
     }
 
-    // (477:2) {#if data.recentFiles}
-    function create_if_block_12(ctx) {
+    // (492:2) {#if data.recentFiles}
+    function create_if_block_13(ctx) {
     	let p;
 
     	return {
@@ -3910,8 +3943,8 @@ var ui = (function () {
     	};
     }
 
-    // (485:40) <Button classes="secondary">
-    function create_default_slot_5(ctx) {
+    // (500:40) <Button classes="secondary">
+    function create_default_slot_6(ctx) {
     	let t;
 
     	return {
@@ -3927,8 +3960,8 @@ var ui = (function () {
     	};
     }
 
-    // (486:3) {#if data.recentFiles}
-    function create_if_block_11(ctx) {
+    // (501:3) {#if data.recentFiles}
+    function create_if_block_12(ctx) {
     	let span;
     	let button;
     	let current;
@@ -3938,7 +3971,7 @@ var ui = (function () {
     	button = new Button({
     			props: {
     				classes: "secondary",
-    				$$slots: { default: [create_default_slot_4] },
+    				$$slots: { default: [create_default_slot_5] },
     				$$scope: { ctx }
     			}
     		});
@@ -3961,7 +3994,7 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -3985,8 +4018,8 @@ var ui = (function () {
     	};
     }
 
-    // (489:8) <Button classes="secondary">
-    function create_default_slot_4(ctx) {
+    // (504:8) <Button classes="secondary">
+    function create_default_slot_5(ctx) {
     	let t;
 
     	return {
@@ -4002,7 +4035,117 @@ var ui = (function () {
     	};
     }
 
-    // (498:0) {#if pageState.createTablePageActive}
+    // (511:1) {#if welcomeSlides[5]}
+    function create_if_block_10(ctx) {
+    	let div4;
+    	let div1;
+    	let t0;
+    	let div3;
+    	let h6;
+    	let t2;
+    	let p;
+    	let t4;
+    	let div2;
+    	let span;
+    	let button;
+    	let current;
+    	let mounted;
+    	let dispose;
+
+    	button = new Button({
+    			props: {
+    				classes: "secondary",
+    				$$slots: { default: [create_default_slot_4] },
+    				$$scope: { ctx }
+    			}
+    		});
+
+    	return {
+    		c() {
+    			div4 = element("div");
+    			div1 = element("div");
+    			div1.innerHTML = `<div class="svg6" style="margin: 0 -16px"></div>`;
+    			t0 = space();
+    			div3 = element("div");
+    			h6 = element("h6");
+    			h6.textContent = "Upgrade to template";
+    			t2 = space();
+    			p = element("p");
+    			p.textContent = "The table components in this file need to be upgraded into a template. They offer more flexibility and control. This will create a new component and won't affect your existing components.";
+    			t4 = space();
+    			div2 = element("div");
+    			span = element("span");
+    			create_component(button.$$.fragment);
+    			attr(div1, "class", "artwork");
+    			attr(div2, "class", "buttons");
+    			attr(div3, "class", "content");
+    			attr(div4, "class", "container welcomePage");
+    			set_style(div4, "padding", "var(--size-200)");
+    		},
+    		m(target, anchor) {
+    			insert(target, div4, anchor);
+    			append(div4, div1);
+    			append(div4, t0);
+    			append(div4, div3);
+    			append(div3, h6);
+    			append(div3, t2);
+    			append(div3, p);
+    			append(div3, t4);
+    			append(div3, div2);
+    			append(div2, span);
+    			mount_component(button, span, null);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = listen(span, "click", /*click_handler_8*/ ctx[28]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			const button_changes = {};
+
+    			if (dirty[1] & /*$$scope*/ 128) {
+    				button_changes.$$scope = { dirty, ctx };
+    			}
+
+    			button.$set(button_changes);
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(button.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(button.$$.fragment, local);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div4);
+    			destroy_component(button);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (520:46) <Button classes="secondary">
+    function create_default_slot_4(ctx) {
+    	let t;
+
+    	return {
+    		c() {
+    			t = text("Create Template");
+    		},
+    		m(target, anchor) {
+    			insert(target, t, anchor);
+    		},
+    		d(detaching) {
+    			if (detaching) detach(t);
+    		}
+    	};
+    }
+
+    // (528:0) {#if pageState.createTablePageActive}
     function create_if_block_1(ctx) {
     	let div7;
     	let div1;
@@ -4242,14 +4385,14 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const dropdown0_changes = {};
 
-    			if (dirty[0] & /*data, selectedFile*/ 129 | dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[0] & /*data, selectedFile*/ 129 | dirty[1] & /*$$scope*/ 128) {
     				dropdown0_changes.$$scope = { dirty, ctx };
     			}
 
     			dropdown0.$set(dropdown0_changes);
     			const dropdown1_changes = {};
 
-    			if (dirty[0] & /*columnResizing*/ 2 | dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[0] & /*columnResizing*/ 2 | dirty[1] & /*$$scope*/ 128) {
     				dropdown1_changes.$$scope = { dirty, ctx };
     			}
 
@@ -4281,7 +4424,7 @@ var ui = (function () {
     			radiobutton2.$set(radiobutton2_changes);
     			const button_changes = {};
 
-    			if (dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[1] & /*$$scope*/ 128) {
     				button_changes.$$scope = { dirty, ctx };
     			}
 
@@ -4335,11 +4478,11 @@ var ui = (function () {
     	};
     }
 
-    // (503:5) <slot slot="label">{data.defaultTemplate?.name}
+    // (533:5) <slot slot="label">{data.defaultTemplate?.name}
     function create_label_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[37], get_default_slot_context);
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[38], get_default_slot_context);
     	const default_slot_or_fallback = default_slot || fallback_block_5(ctx);
 
     	return {
@@ -4355,8 +4498,8 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (default_slot) {
-    				if (default_slot.p && dirty[1] & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[37], dirty, get_default_slot_changes, get_default_slot_context);
+    				if (default_slot.p && dirty[1] & /*$$scope*/ 128) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[38], dirty, get_default_slot_changes, get_default_slot_context);
     				}
     			} else {
     				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*data*/ 1) {
@@ -4379,7 +4522,7 @@ var ui = (function () {
     	};
     }
 
-    // (503:24) {data.defaultTemplate?.name}
+    // (533:24) {data.defaultTemplate?.name}
     function fallback_block_5(ctx) {
     	let t_value = /*data*/ ctx[0].defaultTemplate?.name + "";
     	let t;
@@ -4400,11 +4543,11 @@ var ui = (function () {
     	};
     }
 
-    // (513:9) <slot slot="label">           {selectedFile?.name}
+    // (543:9) <slot slot="label">           {selectedFile?.name}
     function create_label_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[37], get_default_slot_context_2);
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[38], get_default_slot_context_2);
     	const default_slot_or_fallback = default_slot || fallback_block_4(ctx);
 
     	return {
@@ -4420,8 +4563,8 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (default_slot) {
-    				if (default_slot.p && dirty[1] & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[37], dirty, get_default_slot_changes_2, get_default_slot_context_2);
+    				if (default_slot.p && dirty[1] & /*$$scope*/ 128) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[38], dirty, get_default_slot_changes_2, get_default_slot_context_2);
     				}
     			} else {
     				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*selectedFile*/ 128) {
@@ -4444,7 +4587,7 @@ var ui = (function () {
     	};
     }
 
-    // (513:28)            
+    // (543:28)            
     function fallback_block_4(ctx) {
     	let t_value = /*selectedFile*/ ctx[7]?.name + "";
     	let t;
@@ -4465,7 +4608,7 @@ var ui = (function () {
     	};
     }
 
-    // (523:12) {#if data.localTemplates}
+    // (553:12) {#if data.localTemplates}
     function create_if_block_8(ctx) {
     	let div;
     	let input;
@@ -4499,7 +4642,7 @@ var ui = (function () {
     			append(div, label);
 
     			if (!mounted) {
-    				dispose = listen(label, "click", /*click_handler_8*/ ctx[28]);
+    				dispose = listen(label, "click", /*click_handler_9*/ ctx[29]);
     				mounted = true;
     			}
     		},
@@ -4518,7 +4661,7 @@ var ui = (function () {
     	};
     }
 
-    // (533:12) {#if data.localTemplates && data.remoteFiles}
+    // (563:12) {#if data.localTemplates && data.remoteFiles}
     function create_if_block_7(ctx) {
     	let span;
 
@@ -4536,7 +4679,7 @@ var ui = (function () {
     	};
     }
 
-    // (536:12) {#if data.remoteFiles}
+    // (566:12) {#if data.remoteFiles}
     function create_if_block_6(ctx) {
     	let each_1_anchor;
     	let each_value_3 = /*data*/ ctx[0].remoteFiles;
@@ -4592,7 +4735,7 @@ var ui = (function () {
     	};
     }
 
-    // (537:13) {#each data.remoteFiles as file}
+    // (567:13) {#each data.remoteFiles as file}
     function create_each_block_3(ctx) {
     	let div;
     	let input;
@@ -4600,15 +4743,15 @@ var ui = (function () {
     	let input_id_value;
     	let t0;
     	let label;
-    	let t1_value = /*file*/ ctx[46].name + "";
+    	let t1_value = /*file*/ ctx[47].name + "";
     	let t1;
     	let label_for_value;
     	let t2;
     	let mounted;
     	let dispose;
 
-    	function click_handler_9(...args) {
-    		return /*click_handler_9*/ ctx[29](/*file*/ ctx[46], ...args);
+    	function click_handler_10(...args) {
+    		return /*click_handler_10*/ ctx[30](/*file*/ ctx[47], ...args);
     	}
 
     	return {
@@ -4620,14 +4763,14 @@ var ui = (function () {
     			t1 = text(t1_value);
     			t2 = space();
 
-    			input.checked = input_checked_value = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[46].id
+    			input.checked = input_checked_value = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id
     			? true
     			: false;
 
     			attr(input, "type", "radio");
-    			attr(input, "id", input_id_value = /*file*/ ctx[46].id);
+    			attr(input, "id", input_id_value = /*file*/ ctx[47].id);
     			attr(input, "name", "files");
-    			attr(label, "for", label_for_value = /*file*/ ctx[46].id);
+    			attr(label, "for", label_for_value = /*file*/ ctx[47].id);
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
@@ -4638,26 +4781,26 @@ var ui = (function () {
     			append(div, t2);
 
     			if (!mounted) {
-    				dispose = listen(label, "click", click_handler_9);
+    				dispose = listen(label, "click", click_handler_10);
     				mounted = true;
     			}
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
 
-    			if (dirty[0] & /*selectedFile, data*/ 129 && input_checked_value !== (input_checked_value = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[46].id
+    			if (dirty[0] & /*selectedFile, data*/ 129 && input_checked_value !== (input_checked_value = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id
     			? true
     			: false)) {
     				input.checked = input_checked_value;
     			}
 
-    			if (dirty[0] & /*data*/ 1 && input_id_value !== (input_id_value = /*file*/ ctx[46].id)) {
+    			if (dirty[0] & /*data*/ 1 && input_id_value !== (input_id_value = /*file*/ ctx[47].id)) {
     				attr(input, "id", input_id_value);
     			}
 
-    			if (dirty[0] & /*data*/ 1 && t1_value !== (t1_value = /*file*/ ctx[46].name + "")) set_data(t1, t1_value);
+    			if (dirty[0] & /*data*/ 1 && t1_value !== (t1_value = /*file*/ ctx[47].name + "")) set_data(t1, t1_value);
 
-    			if (dirty[0] & /*data*/ 1 && label_for_value !== (label_for_value = /*file*/ ctx[46].id)) {
+    			if (dirty[0] & /*data*/ 1 && label_for_value !== (label_for_value = /*file*/ ctx[47].id)) {
     				attr(label, "for", label_for_value);
     			}
     		},
@@ -4669,11 +4812,11 @@ var ui = (function () {
     	};
     }
 
-    // (521:9) <slot slot="content">           <div class="tooltip">             {#if data.localTemplates}
+    // (551:9) <slot slot="content">           <div class="tooltip">             {#if data.localTemplates}
     function create_content_slot_2(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[37], get_default_slot_context_3);
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[38], get_default_slot_context_3);
     	const default_slot_or_fallback = default_slot || fallback_block_3(ctx);
 
     	return {
@@ -4689,8 +4832,8 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (default_slot) {
-    				if (default_slot.p && dirty[1] & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[37], dirty, get_default_slot_changes_3, get_default_slot_context_3);
+    				if (default_slot.p && dirty[1] & /*$$scope*/ 128) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[38], dirty, get_default_slot_changes_3, get_default_slot_context_3);
     				}
     			} else {
     				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*data, selectedFile*/ 129) {
@@ -4713,7 +4856,7 @@ var ui = (function () {
     	};
     }
 
-    // (521:30)            
+    // (551:30)            
     function fallback_block_3(ctx) {
     	let div;
     	let t0;
@@ -4787,7 +4930,7 @@ var ui = (function () {
     	};
     }
 
-    // (512:8) <Dropdown id="tooltip">
+    // (542:8) <Dropdown id="tooltip">
     function create_default_slot_3(ctx) {
     	let t;
 
@@ -4807,7 +4950,7 @@ var ui = (function () {
     	};
     }
 
-    // (580:9) {#if data.remoteFiles}
+    // (610:9) {#if data.remoteFiles}
     function create_if_block_4(ctx) {
     	let div;
     	let each_value_1 = /*data*/ ctx[0].remoteFiles;
@@ -4863,7 +5006,7 @@ var ui = (function () {
     	};
     }
 
-    // (556:8) {#if selectedFile?.id === data.fileId}
+    // (586:8) {#if selectedFile?.id === data.fileId}
     function create_if_block_2(ctx) {
     	let if_block_anchor;
     	let if_block = /*data*/ ctx[0].localTemplates && create_if_block_3(ctx);
@@ -4898,11 +5041,11 @@ var ui = (function () {
     	};
     }
 
-    // (583:12) {#if selectedFile?.id === file.id}
+    // (613:12) {#if selectedFile?.id === file.id}
     function create_if_block_5(ctx) {
     	let ul;
     	let t;
-    	let each_value_2 = /*file*/ ctx[46].templates;
+    	let each_value_2 = /*file*/ ctx[47].templates;
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value_2.length; i += 1) {
@@ -4931,7 +5074,7 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (dirty[0] & /*data*/ 1) {
-    				each_value_2 = /*file*/ ctx[46].templates;
+    				each_value_2 = /*file*/ ctx[47].templates;
     				let i;
 
     				for (i = 0; i < each_value_2.length; i += 1) {
@@ -4960,10 +5103,10 @@ var ui = (function () {
     	};
     }
 
-    // (585:15) {#each file.templates as template}
+    // (615:15) {#each file.templates as template}
     function create_each_block_2(ctx) {
     	let li;
-    	let t0_value = /*template*/ ctx[43].name + "";
+    	let t0_value = /*template*/ ctx[44].name + "";
     	let t0;
     	let t1;
     	let span;
@@ -4971,12 +5114,12 @@ var ui = (function () {
     	let mounted;
     	let dispose;
 
-    	function click_handler_13() {
-    		return /*click_handler_13*/ ctx[33](/*template*/ ctx[43]);
+    	function click_handler_14() {
+    		return /*click_handler_14*/ ctx[34](/*template*/ ctx[44]);
     	}
 
-    	function click_handler_14(...args) {
-    		return /*click_handler_14*/ ctx[34](/*template*/ ctx[43], ...args);
+    	function click_handler_15(...args) {
+    		return /*click_handler_15*/ ctx[35](/*template*/ ctx[44], ...args);
     	}
 
     	return {
@@ -4989,7 +5132,7 @@ var ui = (function () {
     			set_style(span, "margin-right", "calc(-1 * var(--size-100))");
     			attr(span, "class", "refresh icon");
     			attr(span, "icon", "swap");
-    			attr(li, "class", li_class_value = "item " + (/*template*/ ctx[43].selected ? "selected" : ""));
+    			attr(li, "class", li_class_value = "item " + (/*template*/ ctx[44].selected ? "selected" : ""));
     		},
     		m(target, anchor) {
     			insert(target, li, anchor);
@@ -4999,8 +5142,8 @@ var ui = (function () {
 
     			if (!mounted) {
     				dispose = [
-    					listen(span, "click", click_handler_13),
-    					listen(li, "click", click_handler_14)
+    					listen(span, "click", click_handler_14),
+    					listen(li, "click", click_handler_15)
     				];
 
     				mounted = true;
@@ -5008,9 +5151,9 @@ var ui = (function () {
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty[0] & /*data*/ 1 && t0_value !== (t0_value = /*template*/ ctx[43].name + "")) set_data(t0, t0_value);
+    			if (dirty[0] & /*data*/ 1 && t0_value !== (t0_value = /*template*/ ctx[44].name + "")) set_data(t0, t0_value);
 
-    			if (dirty[0] & /*data*/ 1 && li_class_value !== (li_class_value = "item " + (/*template*/ ctx[43].selected ? "selected" : ""))) {
+    			if (dirty[0] & /*data*/ 1 && li_class_value !== (li_class_value = "item " + (/*template*/ ctx[44].selected ? "selected" : ""))) {
     				attr(li, "class", li_class_value);
     			}
     		},
@@ -5022,10 +5165,10 @@ var ui = (function () {
     	};
     }
 
-    // (582:11) {#each data.remoteFiles as file}
+    // (612:11) {#each data.remoteFiles as file}
     function create_each_block_1(ctx) {
     	let if_block_anchor;
-    	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[46].id && create_if_block_5(ctx);
+    	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id && create_if_block_5(ctx);
 
     	return {
     		c() {
@@ -5037,7 +5180,7 @@ var ui = (function () {
     			insert(target, if_block_anchor, anchor);
     		},
     		p(ctx, dirty) {
-    			if (/*selectedFile*/ ctx[7]?.id === /*file*/ ctx[46].id) {
+    			if (/*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
@@ -5057,7 +5200,7 @@ var ui = (function () {
     	};
     }
 
-    // (557:9) {#if data.localTemplates}
+    // (587:9) {#if data.localTemplates}
     function create_if_block_3(ctx) {
     	let ul;
     	let each_value = /*data*/ ctx[0].localTemplates;
@@ -5115,10 +5258,10 @@ var ui = (function () {
     	};
     }
 
-    // (559:10) {#each data.localTemplates as template}
+    // (589:10) {#each data.localTemplates as template}
     function create_each_block(ctx) {
     	let li;
-    	let t0_value = /*template*/ ctx[43].name + "";
+    	let t0_value = /*template*/ ctx[44].name + "";
     	let t0;
     	let t1;
     	let div;
@@ -5129,16 +5272,16 @@ var ui = (function () {
     	let mounted;
     	let dispose;
 
-    	function click_handler_10() {
-    		return /*click_handler_10*/ ctx[30](/*template*/ ctx[43]);
-    	}
-
     	function click_handler_11() {
-    		return /*click_handler_11*/ ctx[31](/*template*/ ctx[43]);
+    		return /*click_handler_11*/ ctx[31](/*template*/ ctx[44]);
     	}
 
-    	function click_handler_12(...args) {
-    		return /*click_handler_12*/ ctx[32](/*template*/ ctx[43], ...args);
+    	function click_handler_12() {
+    		return /*click_handler_12*/ ctx[32](/*template*/ ctx[44]);
+    	}
+
+    	function click_handler_13(...args) {
+    		return /*click_handler_13*/ ctx[33](/*template*/ ctx[44], ...args);
     	}
 
     	return {
@@ -5156,7 +5299,7 @@ var ui = (function () {
     			attr(span1, "icon", "swap");
     			set_style(div, "margin-left", "auto");
     			set_style(div, "margin-right", "calc(-1 * var(--size-100))");
-    			attr(li, "class", li_class_value = "item " + (/*template*/ ctx[43].selected ? "selected" : ""));
+    			attr(li, "class", li_class_value = "item " + (/*template*/ ctx[44].selected ? "selected" : ""));
     		},
     		m(target, anchor) {
     			insert(target, li, anchor);
@@ -5169,9 +5312,9 @@ var ui = (function () {
 
     			if (!mounted) {
     				dispose = [
-    					listen(span0, "click", click_handler_10),
-    					listen(span1, "click", click_handler_11),
-    					listen(li, "click", click_handler_12)
+    					listen(span0, "click", click_handler_11),
+    					listen(span1, "click", click_handler_12),
+    					listen(li, "click", click_handler_13)
     				];
 
     				mounted = true;
@@ -5179,9 +5322,9 @@ var ui = (function () {
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty[0] & /*data*/ 1 && t0_value !== (t0_value = /*template*/ ctx[43].name + "")) set_data(t0, t0_value);
+    			if (dirty[0] & /*data*/ 1 && t0_value !== (t0_value = /*template*/ ctx[44].name + "")) set_data(t0, t0_value);
 
-    			if (dirty[0] & /*data*/ 1 && li_class_value !== (li_class_value = "item " + (/*template*/ ctx[43].selected ? "selected" : ""))) {
+    			if (dirty[0] & /*data*/ 1 && li_class_value !== (li_class_value = "item " + (/*template*/ ctx[44].selected ? "selected" : ""))) {
     				attr(li, "class", li_class_value);
     			}
     		},
@@ -5193,11 +5336,11 @@ var ui = (function () {
     	};
     }
 
-    // (505:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Choose template</p>           <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
+    // (535:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Choose template</p>           <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
     function create_content_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[37], get_default_slot_context_1);
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[38], get_default_slot_context_1);
     	const default_slot_or_fallback = default_slot || fallback_block_2(ctx);
 
     	return {
@@ -5213,11 +5356,11 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (default_slot) {
-    				if (default_slot.p && dirty[1] & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[37], dirty, get_default_slot_changes_1, get_default_slot_context_1);
+    				if (default_slot.p && dirty[1] & /*$$scope*/ 128) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[38], dirty, get_default_slot_changes_1, get_default_slot_context_1);
     				}
     			} else {
-    				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*data, selectedFile*/ 129 | dirty[1] & /*$$scope*/ 64) {
+    				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*data, selectedFile*/ 129 | dirty[1] & /*$$scope*/ 128) {
     					default_slot_or_fallback.p(ctx, dirty);
     				}
     			}
@@ -5237,7 +5380,7 @@ var ui = (function () {
     	};
     }
 
-    // (505:26)        
+    // (535:26)        
     function fallback_block_2(ctx) {
     	let div2;
     	let div0;
@@ -5298,7 +5441,7 @@ var ui = (function () {
     		p(ctx, dirty) {
     			const dropdown_changes = {};
 
-    			if (dirty[0] & /*data, selectedFile*/ 129 | dirty[1] & /*$$scope*/ 64) {
+    			if (dirty[0] & /*data, selectedFile*/ 129 | dirty[1] & /*$$scope*/ 128) {
     				dropdown_changes.$$scope = { dirty, ctx };
     			}
 
@@ -5336,7 +5479,7 @@ var ui = (function () {
     	};
     }
 
-    // (502:4) <Dropdown fill icon="component" id="menu">
+    // (532:4) <Dropdown fill icon="component" id="menu">
     function create_default_slot_2(ctx) {
     	let t;
 
@@ -5356,11 +5499,11 @@ var ui = (function () {
     	};
     }
 
-    // (609:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (639:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_hitThing_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[37], get_default_slot_context_4);
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[38], get_default_slot_context_4);
     	const default_slot_or_fallback = default_slot || fallback_block_1();
 
     	return {
@@ -5376,8 +5519,8 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (default_slot) {
-    				if (default_slot.p && dirty[1] & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[37], dirty, get_default_slot_changes_4, get_default_slot_context_4);
+    				if (default_slot.p && dirty[1] & /*$$scope*/ 128) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[38], dirty, get_default_slot_changes_4, get_default_slot_context_4);
     				}
     			}
     		},
@@ -5396,7 +5539,7 @@ var ui = (function () {
     	};
     }
 
-    // (609:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
+    // (639:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
     function fallback_block_1(ctx) {
     	let span;
 
@@ -5416,11 +5559,11 @@ var ui = (function () {
     	};
     }
 
-    // (610:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (640:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_content_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
-    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[37], get_default_slot_context_5);
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[38], get_default_slot_context_5);
     	const default_slot_or_fallback = default_slot || fallback_block(ctx);
 
     	return {
@@ -5436,8 +5579,8 @@ var ui = (function () {
     		},
     		p(ctx, dirty) {
     			if (default_slot) {
-    				if (default_slot.p && dirty[1] & /*$$scope*/ 64) {
-    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[37], dirty, get_default_slot_changes_5, get_default_slot_context_5);
+    				if (default_slot.p && dirty[1] & /*$$scope*/ 128) {
+    					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[38], dirty, get_default_slot_changes_5, get_default_slot_context_5);
     				}
     			} else {
     				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*columnResizing*/ 2) {
@@ -5460,7 +5603,7 @@ var ui = (function () {
     	};
     }
 
-    // (610:26)        
+    // (640:26)        
     function fallback_block(ctx) {
     	let div1;
     	let div0;
@@ -5494,8 +5637,8 @@ var ui = (function () {
 
     			if (!mounted) {
     				dispose = [
-    					listen(input, "change", /*input_change_handler*/ ctx[35]),
-    					listen(label, "click", /*click_handler_15*/ ctx[36])
+    					listen(input, "change", /*input_change_handler*/ ctx[36]),
+    					listen(label, "click", /*click_handler_16*/ ctx[37])
     				];
 
     				mounted = true;
@@ -5514,7 +5657,7 @@ var ui = (function () {
     	};
     }
 
-    // (608:4) <Dropdown>
+    // (638:4) <Dropdown>
     function create_default_slot_1(ctx) {
     	let t;
 
@@ -5534,7 +5677,7 @@ var ui = (function () {
     	};
     }
 
-    // (648:32) <Button id="create-table">
+    // (678:32) <Button id="create-table">
     function create_default_slot(ctx) {
     	let t;
 
@@ -5551,7 +5694,7 @@ var ui = (function () {
     	};
     }
 
-    // (653:0) {#if pageState.templateSettingsPageActive}
+    // (683:0) {#if pageState.templateSettingsPageActive}
     function create_if_block(ctx) {
     	let div;
     	let templatesettings;
@@ -5606,8 +5749,8 @@ var ui = (function () {
     	let current;
     	let mounted;
     	let dispose;
-    	let if_block0 = /*pageState*/ ctx[10].chooseRemoteTemplate && create_if_block_21(ctx);
-    	let if_block1 = /*pageState*/ ctx[10].chooseTemplate && create_if_block_18(ctx);
+    	let if_block0 = /*pageState*/ ctx[10].chooseRemoteTemplate && create_if_block_22(ctx);
+    	let if_block1 = /*pageState*/ ctx[10].chooseTemplate && create_if_block_19(ctx);
     	let if_block2 = /*pageState*/ ctx[10].welcomePageActive && create_if_block_9(ctx);
     	let if_block3 = /*pageState*/ ctx[10].createTablePageActive && create_if_block_1(ctx);
     	let if_block4 = /*pageState*/ ctx[10].templateSettingsPageActive && create_if_block(ctx);
@@ -5648,7 +5791,7 @@ var ui = (function () {
     				if (if_block0) {
     					if_block0.p(ctx, dirty);
     				} else {
-    					if_block0 = create_if_block_21(ctx);
+    					if_block0 = create_if_block_22(ctx);
     					if_block0.c();
     					if_block0.m(t0.parentNode, t0);
     				}
@@ -5661,7 +5804,7 @@ var ui = (function () {
     				if (if_block1) {
     					if_block1.p(ctx, dirty);
     				} else {
-    					if_block1 = create_if_block_18(ctx);
+    					if_block1 = create_if_block_19(ctx);
     					if_block1.c();
     					if_block1.m(t1.parentNode, t1);
     				}
@@ -5810,6 +5953,15 @@ var ui = (function () {
     	);
     }
 
+    function upgradeToTemplate() {
+    	parent.postMessage(
+    		{
+    			pluginMessage: { type: "upgrade-to-template" }
+    		},
+    		"*"
+    	);
+    }
+
     function usingRemoteTemplate(boolean) {
     	parent.postMessage(
     		{
@@ -5856,7 +6008,7 @@ var ui = (function () {
     	let cellAlignment;
     	let selectedFile;
     	let editingTemplate;
-    	let welcomeSlides = [true, false, false, false];
+    	let welcomeSlides = [true, false, false, false, false];
 
     	let pageState = {
     		welcomePageActive: false,
@@ -5968,7 +6120,6 @@ var ui = (function () {
 
     	async function onLoad(event) {
     		$$invalidate(0, data = await event.data.pluginMessage);
-    		console.log(data);
 
     		if (data.type === "show-create-table-ui") {
     			let store = { pageState, selectedFile, data, ...data };
@@ -5986,7 +6137,7 @@ var ui = (function () {
     				$$invalidate(0, data = value.data);
     			});
 
-    			if (data.pluginAlreadyRun) {
+    			if (data.pluginVersion === "7.0.0") {
     				// If defaultTemplate exists then show create table UI
     				if (data.defaultTemplate) {
     					setActivePage("createTablePageActive");
@@ -5997,6 +6148,10 @@ var ui = (function () {
     				}
     			} else {
     				setActivePage("welcomePageActive", 0);
+
+    				if (data.pluginUsingOldComponents) {
+    					setActivePage("welcomePageActive", 5);
+    				}
     			}
     		}
 
@@ -6027,25 +6182,27 @@ var ui = (function () {
     		chooseRemoteTemplate();
     	};
 
-    	const click_handler_8 = event => {
+    	const click_handler_8 = () => upgradeToTemplate();
+
+    	const click_handler_9 = event => {
     		updateSelectedFile(data, { name: "Local templates", id: data.fileId });
 
     		// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
     		getDropdown("tooltip").close();
     	};
 
-    	const click_handler_9 = (file, event) => {
+    	const click_handler_10 = (file, event) => {
     		updateSelectedFile(data, file);
     		getDropdown("tooltip").close();
     	}; // event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 
-    	const click_handler_10 = template => {
+    	const click_handler_11 = template => {
     		editTemplate(template);
     	};
 
-    	const click_handler_11 = template => updateTableInstances(template);
+    	const click_handler_12 = template => updateTableInstances(template);
 
-    	const click_handler_12 = (template, event) => {
+    	const click_handler_13 = (template, event) => {
     		// Only trigger if clicking on the element itself
     		if (event.target !== event.currentTarget) return;
 
@@ -6057,9 +6214,9 @@ var ui = (function () {
     		getDropdown("menu").close();
     	};
 
-    	const click_handler_13 = template => updateTableInstances(template);
+    	const click_handler_14 = template => updateTableInstances(template);
 
-    	const click_handler_14 = (template, event) => {
+    	const click_handler_15 = (template, event) => {
     		// Only trigger if clicking on the element itself
     		if (event.target !== event.currentTarget) return;
 
@@ -6076,12 +6233,12 @@ var ui = (function () {
     		$$invalidate(1, columnResizing);
     	}
 
-    	const click_handler_15 = event => {
+    	const click_handler_16 = event => {
     		saveUserPreferences({ columnResizing: !columnResizing });
     	};
 
     	$$self.$$set = $$props => {
-    		if ("$$scope" in $$props) $$invalidate(37, $$scope = $$props.$$scope);
+    		if ("$$scope" in $$props) $$invalidate(38, $$scope = $$props.$$scope);
     	};
 
     	return [
@@ -6120,8 +6277,9 @@ var ui = (function () {
     		click_handler_12,
     		click_handler_13,
     		click_handler_14,
-    		input_change_handler,
     		click_handler_15,
+    		input_change_handler,
+    		click_handler_16,
     		$$scope
     	];
     }

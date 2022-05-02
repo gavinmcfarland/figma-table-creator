@@ -28,6 +28,7 @@
 		true,
 		false,
 		false,
+		false,
 		false
 	]
 
@@ -120,7 +121,7 @@
 						rowCount: rowCount,
 						includeHeader: includeHeader,
 						cellWidth: cellWidth,
-						cellAlignment: cellAlignment
+					cellAlignment: cellAlignment,
 					}
 				},
 			},
@@ -147,6 +148,17 @@
 			{
 				pluginMessage: {
 					type: "new-template",
+				},
+			},
+			"*"
+		)
+	}
+
+	function upgradeToTemplate() {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "upgrade-to-template"
 				},
 			},
 			"*"
@@ -289,8 +301,6 @@
 	async function onLoad(event) {
 		data = await event.data.pluginMessage
 
-		console.log(data)
-
 		if (data.type === "show-create-table-ui") {
 			let store = {
 				pageState,
@@ -312,19 +322,24 @@
 				data = value.data
 			})
 
-			if (data.pluginAlreadyRun) {
+
+			if (data.pluginVersion === "7.0.0") {
 				// If defaultTemplate exists then show create table UI
 				if (data.defaultTemplate) {
-					setActivePage("createTablePageActive")
-					updateSelectedTemplate(data)
-					updateSelectedFile(data)
+				setActivePage("createTablePageActive")
+				updateSelectedTemplate(data)
+				updateSelectedFile(data)
 				}
 				else {
 					setActivePage("welcomePageActive", 4)
 				}
+
 			}
 			else {
 				setActivePage("welcomePageActive", 0)
+				if(data.pluginUsingOldComponents) {
+					setActivePage("welcomePageActive", 5)
+				}
 			}
 		}
 
@@ -488,6 +503,21 @@
 					chooseRemoteTemplate()
 					}}><Button classes="secondary">Existing Template</Button></span>
 			{/if}
+		</div>
+	</div>
+		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
+	</div>
+	{/if}
+	{#if welcomeSlides[5]}
+	<div class="container welcomePage" style="padding: var(--size-200)">
+		<div class="artwork">
+		<div class="svg6" style="margin: 0 -16px"></div>
+		</div>
+		<div class="content">
+			<h6>Upgrade to template</h6>
+			<p>The table components in this file need to be upgraded into a template. They offer more flexibility and control. This will create a new component and won't affect your existing components.</p>
+		<div class="buttons">
+			<span on:click={() => upgradeToTemplate()}><Button classes="secondary">Create Template</Button></span>
 		</div>
 	</div>
 		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->

@@ -1,5 +1,14 @@
-import { convertToFrame, convertToComponent, getPluginData, getNodeIndex, setPluginData } from '@fignite/helpers'
-import { removeChildren } from './old-helpers'
+import {
+	convertToFrame,
+	convertToComponent,
+	getPluginData,
+	getNodeIndex,
+	setPluginData,
+	setClientStorageAsync,
+	getClientStorageAsync,
+} from '@fignite/helpers'
+import { removeChildren, getTemplateParts } from './helpers'
+import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
@@ -8,76 +17,58 @@ export let defaultRelaunchData = {
 	switchColumnsOrRows: 'Switch between using columns or rows',
 }
 
-export function createTable(parts, settings, type?) {
+export async function updatePluginVersion(semver) {
+	return updateClientStorageAsync('pluginVersion', (pluginVersion) => {
+		// Remove plugin version from document for now
+		if (figma.root.getPluginData('pluginVersion')) figma.root.setPluginData('pluginVersion', '')
+		return semver || pluginVersion
+	})
+}
+
+export function createTable(templateComponent, settings, type?) {
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
 
-	var tableMissing
-	var templateComponent
-	let tableContainer
+	let tableInstance = convertToFrame(templateComponent.clone())
+	let part = getTemplateParts(templateComponent)
 	var table
 
-	// If no table, create template then delete
-	if (!parts.table) {
-		parts.table = figma.createComponent()
-		parts.table.name = 'Table'
-		parts.table.layoutMode = 'VERTICAL'
-		parts.table.primaryAxisSizingMode = 'AUTO'
-		parts.table.counterAxisSizingMode = 'AUTO'
-		tableMissing = true
-	}
-
-	templateComponent = parts.table
-	tableContainer = convertToFrame(templateComponent.clone())
-
-	if (settings.includeHeader && !parts.th) {
+	if (settings.includeHeader && !part.th) {
 		figma.notify('No Header Cell component found')
 
 		// FIXME: Check for header cell sooner so table creation doesn't start
 		return
 	}
 
-	if (parts.table.id === templateComponent.id) {
+	if (part.table.id === templateComponent.id) {
 		console.log('table and container are the same thing')
 		if (type === 'COMPONENT') {
-			table = convertToComponent(tableContainer)
-			tableContainer = table
+			table = convertToComponent(tableInstance)
+			tableInstance = table
 		} else {
-			table = tableContainer
+			table = tableInstance
 		}
 	} else {
 		// Remove table from template
-		tableContainer.findAll((node) => {
+		tableInstance.findAll((node) => {
 			if (getPluginData(node, 'elementSemantics')?.is === 'table') {
 				node.remove()
 			}
 		})
 
-		var tableIndex = getNodeIndex(parts.table)
+		var tableIndex = getNodeIndex(part.table)
 
 		// Add table back to template
-		tableContainer.insertChild(tableIndex, table)
+		tableInstance.insertChild(tableIndex, table)
 	}
 
 	var firstRow
-	var rowIndex
-
-	if (tableMissing) {
-		rowIndex = 0
-	} else {
-		rowIndex = getNodeIndex(parts.tr)
-	}
-
-	// Find the parent of the row because might not be the table?
+	var rowIndex = getNodeIndex(part.tr)
 	function getRowParent() {
 		var row = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
-		if (!row) {
-			return parts.table
-		} else {
-			return row.parent
-		}
+		return row.parent
 	}
 
 	var rowParent = getRowParent()
@@ -91,11 +82,11 @@ export function createTable(parts, settings, type?) {
 
 	if (settings.columnResizing && type !== 'COMPONENT') {
 		// First row should be a component
-		firstRow = convertToComponent(parts.tr.clone())
+		firstRow = convertToComponent(part.tr.clone())
 		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 	} else {
 		// First row should be a frame
-		firstRow = convertToFrame(parts.tr.clone())
+		firstRow = convertToFrame(part.tr.clone())
 		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 	}
 
@@ -110,21 +101,15 @@ export function createTable(parts, settings, type?) {
 		}
 	})
 
-	if (tableMissing) {
-		let length = firstRow.children.length
-		for (let i = length - 1; i >= 0; i--) {
-			firstRow.children[i].remove()
-		}
-	}
-
 	// Create columns in first row
+
 	for (let i = 0; i < settings.columnCount; i++) {
 		var duplicateCell
-		if (parts.td.type === 'COMPONENT') {
-			duplicateCell = parts.td.createInstance()
+		if (part.td.type === 'COMPONENT') {
+			duplicateCell = part.td.clone()
 		}
-		if (parts.td.type === 'INSTANCE') {
-			duplicateCell = parts.td.mainComponent.createInstance()
+		if (part.td.type === 'INSTANCE') {
+			duplicateCell = part.td.mainComponent.createInstance()
 		}
 		if (settings.cellWidth) {
 			// let origLayoutAlign = duplicateCell.layoutAlign
@@ -134,7 +119,7 @@ export function createTable(parts, settings, type?) {
 
 		setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
 		// Figma doesn't automatically inherit this property
-		duplicateCell.layoutAlign = parts.td.layoutAlign
+		duplicateCell.layoutAlign = part.td.layoutAlign
 		duplicateCell.primaryAxisAlignItems = settings.cellAlignment
 		firstRow.appendChild(duplicateCell)
 	}
@@ -153,10 +138,10 @@ export function createTable(parts, settings, type?) {
 		if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
 			for (let i = 0; i < duplicateRow.children.length; i++) {
 				var cell = duplicateRow.children[i]
-				// cell.swapComponent(parts.th)
+				// cell.swapComponent(part.th)
 				// FIXME: Check if instance or main component
 
-				cell.mainComponent = parts.td.mainComponent
+				cell.mainComponent = part.td.mainComponent
 				setPluginData(cell, 'elementSemantics', { is: 'td' })
 			}
 		}
@@ -165,27 +150,146 @@ export function createTable(parts, settings, type?) {
 	}
 
 	// Swap first row to use header cell
-	if (settings.includeHeader && parts.th) {
+	if (settings.includeHeader && part.th) {
 		for (var i = 0; i < firstRow.children.length; i++) {
 			var child = firstRow.children[i]
 			// FIXME: Check if instance or main component
 
-			if (parts.th === 'INSTANCE') {
-				child.swapComponent(parts.th.mainComponent)
-			} else {
-				child.swapComponent(parts.th)
-			}
-
-			// setPluginData(child, 'elementSemantics', { is: 'th' })
-			// child.mainComponent = parts.th.mainComponent
+			child.swapComponent(part.th.mainComponent)
+			setPluginData(child, 'elementSemantics', { is: 'th' })
+			// child.mainComponent = part.th.mainComponent
 		}
 	}
 
-	tableContainer.setRelaunchData(defaultRelaunchData)
+	tableInstance.setRelaunchData(defaultRelaunchData)
 
-	if (tableMissing) {
-		tableContainer.remove()
+	return tableInstance
+}
+
+let defaultParts = {
+	table: () => {
+		let node = figma.createComponent()
+		let obj = {
+			layoutMode: 'VERTICAL',
+			counterAxisSizingMode: 'AUTO',
+			primaryAxisSizingMode: 'AUTO',
+		}
+		return Object.assign(node, obj)
+	},
+	tr: () => {
+		let node = figma.createComponent()
+		let obj = {
+			layoutMode: 'VERTICAL',
+			counterAxisSizingMode: 'AUTO',
+			primaryAxisSizingMode: 'AUTO',
+		}
+		return Object.assign(node, obj)
+	},
+}
+
+export function tableFactory(templateComponent) {
+	let parts = getTemplateParts(templateComponent)
+
+	// Find the parent of the row because row might be in another frame inside table
+	let rowParent = !parts.tr ? parts.table : parts.tr.parent
+
+	function checkForHeaderComponent() {
+		if (opts.settings.includeHeader && !opts.parts.th) {
+			figma.notify('No Header Cell component found')
+
+			// FIXME: Check for header cell sooner so table creation doesn't start
+			return
+		}
+	}
+	function checkIfTableSameAsContainer() {
+		if (parts.table.id === templateComponent.id) {
+			console.log('table and container are the same thing')
+			if (type === 'COMPONENT') {
+				table = convertToComponent(tableContainer)
+				tableContainer = table
+			} else {
+				table = tableContainer
+			}
+		} else {
+			// Remove table from template
+			tableContainer.findAll((node) => {
+				if (getPluginData(node, 'elementSemantics')?.is === 'table') {
+					node.remove()
+				}
+			})
+
+			var tableIndex = getNodeIndex(parts.table)
+
+			// Add table back to template
+			tableContainer.insertChild(tableIndex, table)
+		}
+	}
+	function createFirstRow() {
+		let firstRow
+
+		if (opts.settings.columnResizing && opts.type !== 'COMPONENT') {
+			firstRow = convertToComponent(parts.tr.clone())
+		} else {
+			firstRow = convertToFrame(parts.tr.clone())
+		}
+
+		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
+
+		// Remove table cells from row so that they can prepopulated
+		firstRow.findAll((node) => {
+			if (node) {
+				if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
+					node.remove()
+				}
+			}
+		})
+
+		if (tableMissing) {
+			removeChildren(firstRow)
+		}
+
+		return firstRow
+	}
+	function createColumnCells() {
+		let firstRow = createFirstRow()
+
+		// Only remove the rows
+		rowParent.findAll((node) => {
+			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+				node.remove()
+			}
+		})
+
+		// If a row part can't be found then this needs to inserted at 0
+		rowParent.insertChild(!parts.tr ? 0 : getNodeIndex(parts.tr), firstRow)
+
+		// Create columns in first row
+		for (let i = 0; i < settings.columnCount; i++) {
+			var duplicateCell
+			if (parts.td.type === 'COMPONENT') {
+				duplicateCell = parts.td.createInstance()
+			}
+			if (parts.td.type === 'INSTANCE') {
+				duplicateCell = parts.td.mainComponent.createInstance()
+			}
+			if (settings.cellWidth) {
+				// let origLayoutAlign = duplicateCell.layoutAlign
+				duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height)
+				// duplicateCell.layoutAlign = origLayoutAlign
+			}
+
+			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
+			// Figma doesn't automatically inherit this property
+			duplicateCell.layoutAlign = parts.td.layoutAlign
+			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
+			firstRow.appendChild(duplicateCell)
+		}
 	}
 
-	return tableContainer
+	// !parts.table ? (parts.table = defaultParts.table()) : null
+	// !parts.tr ? (parts.tr = defaultParts.tr()) : null
+
+	checkForHeaderComponent()
+	// checkIfTableSameAsContainer()
+	createColumnCells()
 }
