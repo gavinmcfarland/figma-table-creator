@@ -123,7 +123,7 @@
 		border-spacing: 0;
 		border-collapse: collapse;
 		margin-top: 8px;
-		margin-bottom: 3px;
+		margin-bottom: 8px;
 	}
 
 	/* tr > *:last-child label {
@@ -138,7 +138,7 @@
 	label {
 		display: block;
 		width: auto;
-		border: 1px solid rgba(0, 0, 0, 0.1);
+		border: 1px solid var(--figma-color-border, var(--color-black-10));
 		margin: 0;
 		/* 		padding: 1px; */
 		/* 		padding-top: 81%; */

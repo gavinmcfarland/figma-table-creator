@@ -51,20 +51,20 @@
 	}
 
 	.TextField:hover {
-		border-color: var(--color-black-10);
+		border-color: var(--figma-color-border, var(--color-black-10));
 		border-width: 1px;
 		padding-inline: calc(var(--padding-100) - 1px);
 	}
 
 	.TextField:focus-within {
-		border-color: var(--color-blue);
+		border-color: var(--figma-color-border-selected, var(--color-blue));
 		border-width: 2px;
 		padding-inline: calc(var(--padding-100) - 2px);
 	}
 
 	.TextField span {
 		/* margin-right: var(--margin-200); */
-		color: var(--color-black-30);
+		color: var(--figma-color-text-tertiary, var(--color-black-30));
 		min-width: 32px;
 		text-align: center;
 		margin-left: -8px;

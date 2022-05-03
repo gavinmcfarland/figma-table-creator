@@ -114,7 +114,7 @@
 
 	.Select:hover > .label {
 		/* padding-top: 1px; */
-		border-color: var(--color-black-10);
+		border-color: var(--figma-color-border, var(--color-black-10));
 		border-width: 1px;
 		padding-inline: calc(var(--padding-100) - 1px);
 	}
@@ -125,7 +125,7 @@
 	}
 
 	.Select.show > .label {
-		border-color: var(--color-black-10);
+		border-color: var(--figma-color-border, var(--color-black-10));
 		border-width: 1px;
 		padding-inline: calc(var(--padding-100) - 1px);
 	}

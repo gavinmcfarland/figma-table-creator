@@ -57,6 +57,8 @@ body {
 input {
 	border: none;
 	font: inherit;
+	background-color: transparent;
+	color: var(--figma-color-text, black)
 }
 
 input:focus {
