@@ -169,11 +169,11 @@
 	}
 
 	.selected label {
-		border-width: 2px;
+		border-width: 1.5px;
 		padding: 0px;
 		/* padding-top: 76%; */
-		border-color: rgba(24, 160, 251, 1);
-		background: rgba(24, 160, 251, 0.2);
+		border-color: var(--figma-color-bg-brand, --color-blue);
+		background: var(--figma-color-bg-brand-tertiary, rgba(24, 160, 251, 0.2));
 	}
 
 	.hover label {
@@ -183,7 +183,8 @@
 	.selected.hover label {
 		padding: 0px;
 		/* padding-top: 76%; */
-		background: rgba(24, 160, 251, 0.4);
+		/* background: rgba(24, 160, 251, 0.4); */
+		background-color: #16375A;
 	}
 
 	input {

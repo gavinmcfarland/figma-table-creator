@@ -1618,7 +1618,7 @@ var ui = (function () {
     	}
     }
 
-    var css_248z$3 = ":root{\n\t--fgp-has-polyfil_gap-container: 0px;\n\t--fgp-has-polyfil_gap-item: 0px}.svelte-obiaqp.svelte-obiaqp{box-sizing:border-box}table.svelte-obiaqp.svelte-obiaqp{border:0 solid transparent;border-spacing:0;border-collapse:collapse;margin-top:8px;margin-bottom:8px}td.svelte-obiaqp.svelte-obiaqp{padding:0}label.svelte-obiaqp.svelte-obiaqp > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}label.svelte-obiaqp.svelte-obiaqp > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}label.svelte-obiaqp.svelte-obiaqp{\n\tdisplay:block;\n\twidth:auto;\n\tborder:1px solid var(--figma-color-border, var(--color-black-10));\n\tmargin:0;\n\twidth:24px;\n\theight:24px;\n\tpadding:1px;\n\tmargin-right:5px;\n\tmargin-bottom:5px;\n\tborder-radius:2px;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(24px - var(--fgp-gap_container_column, 0%)) !important;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-height: calc(24px - var(--fgp-gap_container_row, 0%)) !important}table.svelte-obiaqp.svelte-obiaqp > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}table.svelte-obiaqp.svelte-obiaqp{\n\twidth:calc(100% + 6px);\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * calc(100% + 6px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * calc(100% + 6px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(calc(100% + 6px) - var(--fgp-gap_container_column, 0%)) !important}@supports (aspect-ratio: 1){table.svelte-obiaqp.svelte-obiaqp > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}table.svelte-obiaqp.svelte-obiaqp{\n\twidth:calc(100% + 5px);\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * calc(100% + 5px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * calc(100% + 5px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(calc(100% + 5px) - var(--fgp-gap_container_column, 0%)) !important}label.svelte-obiaqp.svelte-obiaqp{width:auto;height:auto;aspect-ratio:1}}.selected.svelte-obiaqp label.svelte-obiaqp{border-width:2px;padding:0px;border-color:rgba(24, 160, 251, 1);background:rgba(24, 160, 251, 0.2)}.hover.svelte-obiaqp label.svelte-obiaqp{background:rgba(0, 0, 0, 0.06)}.selected.hover.svelte-obiaqp label.svelte-obiaqp{padding:0px;background:rgba(24, 160, 251, 0.4)}input.svelte-obiaqp.svelte-obiaqp > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}input.svelte-obiaqp.svelte-obiaqp > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}input.svelte-obiaqp.svelte-obiaqp{\n\twidth:0px;\n\theight:0px;\n\topacity:0;\n\tmargin:0;\n\tpadding:0;\n\tposition:absolute;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(0px - var(--fgp-gap_container_column, 0%)) !important;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-height: calc(0px - var(--fgp-gap_container_row, 0%)) !important}";
+    var css_248z$3 = ":root{\n\t--fgp-has-polyfil_gap-container: 0px;\n\t--fgp-has-polyfil_gap-item: 0px}.svelte-k99qi0.svelte-k99qi0{box-sizing:border-box}table.svelte-k99qi0.svelte-k99qi0{border:0 solid transparent;border-spacing:0;border-collapse:collapse;margin-top:8px;margin-bottom:8px}td.svelte-k99qi0.svelte-k99qi0{padding:0}label.svelte-k99qi0.svelte-k99qi0 > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}label.svelte-k99qi0.svelte-k99qi0 > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}label.svelte-k99qi0.svelte-k99qi0{\n\tdisplay:block;\n\twidth:auto;\n\tborder:1px solid var(--figma-color-border, var(--color-black-10));\n\tmargin:0;\n\twidth:24px;\n\theight:24px;\n\tpadding:1px;\n\tmargin-right:5px;\n\tmargin-bottom:5px;\n\tborder-radius:2px;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(24px - var(--fgp-gap_container_column, 0%)) !important;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 24px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-height: calc(24px - var(--fgp-gap_container_row, 0%)) !important}table.svelte-k99qi0.svelte-k99qi0 > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}table.svelte-k99qi0.svelte-k99qi0{\n\twidth:calc(100% + 6px);\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * calc(100% + 6px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * calc(100% + 6px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(calc(100% + 6px) - var(--fgp-gap_container_column, 0%)) !important}@supports (aspect-ratio: 1){table.svelte-k99qi0.svelte-k99qi0 > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}table.svelte-k99qi0.svelte-k99qi0{\n\twidth:calc(100% + 5px);\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * calc(100% + 5px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * calc(100% + 5px) * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(calc(100% + 5px) - var(--fgp-gap_container_column, 0%)) !important}label.svelte-k99qi0.svelte-k99qi0{width:auto;height:auto;aspect-ratio:1}}.selected.svelte-k99qi0 label.svelte-k99qi0{border-width:1.5px;padding:0px;border-color:var(--figma-color-bg-brand, --color-blue);background:var(--figma-color-bg-brand-tertiary, rgba(24, 160, 251, 0.2))}.hover.svelte-k99qi0 label.svelte-k99qi0{background:rgba(0, 0, 0, 0.06)}.selected.hover.svelte-k99qi0 label.svelte-k99qi0{padding:0px;background-color:#16375A}input.svelte-k99qi0.svelte-k99qi0 > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}input.svelte-k99qi0.svelte-k99qi0 > *{\n\t--fgp-gap_percentage-to-pixels_column: initial;\n\t--fgp-gap_percentage-to-pixels_row: initial}input.svelte-k99qi0.svelte-k99qi0{\n\twidth:0px;\n\theight:0px;\n\topacity:0;\n\tmargin:0;\n\tpadding:0;\n\tposition:absolute;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_column)) !important;\n\t--fgp-width: calc(0px - var(--fgp-gap_container_column, 0%)) !important;\n\t--fgp-gap_percentage-to-pixels_column: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-gap_percentage-to-pixels_row: calc(-1 * 0px * var(--fgp-gap_percentage-decimal_row)) !important;\n\t--fgp-height: calc(0px - var(--fgp-gap_container_row, 0%)) !important}";
     styleInject(css_248z$3);
 
     /* src/ui/Matrix.svelte generated by Svelte v3.31.2 */
@@ -1667,14 +1667,14 @@ var ui = (function () {
     			input = element("input");
     			attr(label, "for", "" + (/*x*/ ctx[18] + "of" + /*y*/ ctx[20]));
     			attr(label, "tabindex", "-1");
-    			attr(label, "class", "svelte-obiaqp");
+    			attr(label, "class", "svelte-k99qi0");
     			attr(input, "id", "" + (/*x*/ ctx[18] + "of" + /*y*/ ctx[20]));
     			attr(input, "type", "radio");
     			input.value = "" + (/*x*/ ctx[18] + "of" + /*y*/ ctx[20]);
     			attr(input, "name", "selection");
     			input.checked = input_checked_value = /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].checked;
-    			attr(input, "class", "svelte-obiaqp");
-    			attr(td, "class", "svelte-obiaqp");
+    			attr(input, "class", "svelte-k99qi0");
+    			attr(td, "class", "svelte-k99qi0");
     			toggle_class(td, "hover", /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].hover);
     			toggle_class(td, "selected", /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].selected);
     		},
@@ -1738,7 +1738,7 @@ var ui = (function () {
     			}
 
     			t = space();
-    			attr(tr, "class", "svelte-obiaqp");
+    			attr(tr, "class", "svelte-k99qi0");
     		},
     		m(target, anchor) {
     			insert(target, tr, anchor);
@@ -1797,7 +1797,7 @@ var ui = (function () {
     				each_blocks[i].c();
     			}
 
-    			attr(table, "class", "svelte-obiaqp");
+    			attr(table, "class", "svelte-k99qi0");
     		},
     		m(target, anchor) {
     			insert(target, table, anchor);
@@ -2664,7 +2664,7 @@ var ui = (function () {
     	return child_ctx;
     }
 
-    // (365:0) {#if pageState.chooseRemoteTemplate}
+    // (364:0) {#if pageState.chooseRemoteTemplate}
     function create_if_block_22(ctx) {
     	let div;
     	let if_block = /*data*/ ctx[0].remoteFiles && create_if_block_23(ctx);
@@ -2701,7 +2701,7 @@ var ui = (function () {
     	};
     }
 
-    // (368:2) {#if data.remoteFiles}
+    // (367:2) {#if data.remoteFiles}
     function create_if_block_23(ctx) {
     	let p;
     	let t1;
@@ -2768,7 +2768,7 @@ var ui = (function () {
     	};
     }
 
-    // (371:3) {#each data.remoteFiles as file}
+    // (370:3) {#each data.remoteFiles as file}
     function create_each_block_6(ctx) {
     	let div;
     	let span;
@@ -2810,7 +2810,7 @@ var ui = (function () {
     	};
     }
 
-    // (382:0) {#if pageState.chooseTemplate}
+    // (381:0) {#if pageState.chooseTemplate}
     function create_if_block_19(ctx) {
     	let div;
     	let p;
@@ -2854,7 +2854,7 @@ var ui = (function () {
     	};
     }
 
-    // (385:2) {#if data.remoteFiles}
+    // (384:2) {#if data.remoteFiles}
     function create_if_block_20(ctx) {
     	let each_1_anchor;
     	let each_value_4 = /*data*/ ctx[0].remoteFiles;
@@ -2910,7 +2910,7 @@ var ui = (function () {
     	};
     }
 
-    // (387:4) {#if selectedFile?.id === file.id}
+    // (386:4) {#if selectedFile?.id === file.id}
     function create_if_block_21(ctx) {
     	let div;
     	let t;
@@ -2972,7 +2972,7 @@ var ui = (function () {
     	};
     }
 
-    // (389:6) {#each file.templates as template}
+    // (388:6) {#each file.templates as template}
     function create_each_block_5(ctx) {
     	let div;
     	let t_value = /*template*/ ctx[44].name + "";
@@ -3011,7 +3011,7 @@ var ui = (function () {
     	};
     }
 
-    // (386:3) {#each data.remoteFiles as file}
+    // (385:3) {#each data.remoteFiles as file}
     function create_each_block_4(ctx) {
     	let if_block_anchor;
     	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id && create_if_block_21(ctx);
@@ -3046,7 +3046,7 @@ var ui = (function () {
     	};
     }
 
-    // (405:0) {#if pageState.welcomePageActive}
+    // (404:0) {#if pageState.welcomePageActive}
     function create_if_block_9(ctx) {
     	let t0;
     	let t1;
@@ -3234,7 +3234,7 @@ var ui = (function () {
     	};
     }
 
-    // (406:1) {#if welcomeSlides[0]}
+    // (405:1) {#if welcomeSlides[0]}
     function create_if_block_18(ctx) {
     	let div4;
     	let div1;
@@ -3328,7 +3328,7 @@ var ui = (function () {
     	};
     }
 
-    // (429:44) <Button classes="secondary" iconRight="arrow-right">
+    // (428:44) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_10(ctx) {
     	let t;
 
@@ -3345,7 +3345,7 @@ var ui = (function () {
     	};
     }
 
-    // (436:1) {#if welcomeSlides[1]}
+    // (435:1) {#if welcomeSlides[1]}
     function create_if_block_17(ctx) {
     	let div4;
     	let div1;
@@ -3439,7 +3439,7 @@ var ui = (function () {
     	};
     }
 
-    // (447:43) <Button classes="secondary" iconRight="arrow-right">
+    // (446:43) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_9(ctx) {
     	let t;
 
@@ -3456,7 +3456,7 @@ var ui = (function () {
     	};
     }
 
-    // (452:1) {#if welcomeSlides[2]}
+    // (451:1) {#if welcomeSlides[2]}
     function create_if_block_16(ctx) {
     	let div4;
     	let div1;
@@ -3550,7 +3550,7 @@ var ui = (function () {
     	};
     }
 
-    // (463:44) <Button classes="secondary" iconRight="arrow-right">
+    // (462:44) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_8(ctx) {
     	let t;
 
@@ -3567,7 +3567,7 @@ var ui = (function () {
     	};
     }
 
-    // (468:1) {#if welcomeSlides[3]}
+    // (467:1) {#if welcomeSlides[3]}
     function create_if_block_15(ctx) {
     	let div4;
     	let div1;
@@ -3661,7 +3661,7 @@ var ui = (function () {
     	};
     }
 
-    // (479:44) <Button classes="secondary" iconRight="arrow-right">
+    // (478:44) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_7(ctx) {
     	let t;
 
@@ -3678,7 +3678,7 @@ var ui = (function () {
     	};
     }
 
-    // (484:1) {#if welcomeSlides[4]}
+    // (483:1) {#if welcomeSlides[4]}
     function create_if_block_10(ctx) {
     	let div;
     	let current_block_type_index;
@@ -3750,7 +3750,7 @@ var ui = (function () {
     	};
     }
 
-    // (497:2) {:else}
+    // (496:2) {:else}
     function create_else_block(ctx) {
     	let div1;
     	let t0;
@@ -3907,7 +3907,7 @@ var ui = (function () {
     	};
     }
 
-    // (486:2) {#if data.pluginUsingOldComponents}
+    // (485:2) {#if data.pluginUsingOldComponents}
     function create_if_block_11(ctx) {
     	let div1;
     	let t0;
@@ -3997,7 +3997,7 @@ var ui = (function () {
     	};
     }
 
-    // (504:3) {:else}
+    // (503:3) {:else}
     function create_else_block_2(ctx) {
     	let h6;
 
@@ -4015,7 +4015,7 @@ var ui = (function () {
     	};
     }
 
-    // (502:3) {#if data.recentFiles}
+    // (501:3) {#if data.recentFiles}
     function create_if_block_14(ctx) {
     	let h6;
 
@@ -4033,7 +4033,7 @@ var ui = (function () {
     	};
     }
 
-    // (509:3) {:else}
+    // (508:3) {:else}
     function create_else_block_1(ctx) {
     	let p;
 
@@ -4051,7 +4051,7 @@ var ui = (function () {
     	};
     }
 
-    // (507:3) {#if data.recentFiles}
+    // (506:3) {#if data.recentFiles}
     function create_if_block_13(ctx) {
     	let p;
 
@@ -4069,7 +4069,7 @@ var ui = (function () {
     	};
     }
 
-    // (515:41) <Button classes="secondary">
+    // (514:41) <Button classes="secondary">
     function create_default_slot_6(ctx) {
     	let t;
 
@@ -4086,7 +4086,7 @@ var ui = (function () {
     	};
     }
 
-    // (516:4) {#if data.recentFiles}
+    // (515:4) {#if data.recentFiles}
     function create_if_block_12(ctx) {
     	let span;
     	let button;
@@ -4144,7 +4144,7 @@ var ui = (function () {
     	};
     }
 
-    // (519:9) <Button classes="secondary">
+    // (518:9) <Button classes="secondary">
     function create_default_slot_5(ctx) {
     	let t;
 
@@ -4161,7 +4161,7 @@ var ui = (function () {
     	};
     }
 
-    // (494:47) <Button classes="secondary">
+    // (493:47) <Button classes="secondary">
     function create_default_slot_4(ctx) {
     	let t;
 
@@ -4178,7 +4178,7 @@ var ui = (function () {
     	};
     }
 
-    // (529:0) {#if pageState.createTablePageActive}
+    // (528:0) {#if pageState.createTablePageActive}
     function create_if_block_1(ctx) {
     	let div7;
     	let div1;
@@ -4511,7 +4511,7 @@ var ui = (function () {
     	};
     }
 
-    // (534:5) <slot slot="label">{data.defaultTemplate?.name}
+    // (533:5) <slot slot="label">{data.defaultTemplate?.name}
     function create_label_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
@@ -4555,7 +4555,7 @@ var ui = (function () {
     	};
     }
 
-    // (534:24) {data.defaultTemplate?.name}
+    // (533:24) {data.defaultTemplate?.name}
     function fallback_block_5(ctx) {
     	let t_value = /*data*/ ctx[0].defaultTemplate?.name + "";
     	let t;
@@ -4576,7 +4576,7 @@ var ui = (function () {
     	};
     }
 
-    // (544:9) <slot slot="label">           {selectedFile?.name}
+    // (543:9) <slot slot="label">           {selectedFile?.name}
     function create_label_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
@@ -4620,7 +4620,7 @@ var ui = (function () {
     	};
     }
 
-    // (544:28)            
+    // (543:28)            
     function fallback_block_4(ctx) {
     	let t_value = /*selectedFile*/ ctx[7]?.name + "";
     	let t;
@@ -4641,7 +4641,7 @@ var ui = (function () {
     	};
     }
 
-    // (554:12) {#if data.localTemplates}
+    // (553:12) {#if data.localTemplates}
     function create_if_block_8(ctx) {
     	let div;
     	let input;
@@ -4694,7 +4694,7 @@ var ui = (function () {
     	};
     }
 
-    // (564:12) {#if data.localTemplates && data.remoteFiles}
+    // (563:12) {#if data.localTemplates && data.remoteFiles}
     function create_if_block_7(ctx) {
     	let span;
 
@@ -4712,7 +4712,7 @@ var ui = (function () {
     	};
     }
 
-    // (567:12) {#if data.remoteFiles}
+    // (566:12) {#if data.remoteFiles}
     function create_if_block_6(ctx) {
     	let each_1_anchor;
     	let each_value_3 = /*data*/ ctx[0].remoteFiles;
@@ -4768,7 +4768,7 @@ var ui = (function () {
     	};
     }
 
-    // (568:13) {#each data.remoteFiles as file}
+    // (567:13) {#each data.remoteFiles as file}
     function create_each_block_3(ctx) {
     	let div;
     	let input;
@@ -4845,7 +4845,7 @@ var ui = (function () {
     	};
     }
 
-    // (552:9) <slot slot="content">           <div class="tooltip">             {#if data.localTemplates}
+    // (551:9) <slot slot="content">           <div class="tooltip">             {#if data.localTemplates}
     function create_content_slot_2(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
@@ -4889,7 +4889,7 @@ var ui = (function () {
     	};
     }
 
-    // (552:30)            
+    // (551:30)            
     function fallback_block_3(ctx) {
     	let div;
     	let t0;
@@ -4963,7 +4963,7 @@ var ui = (function () {
     	};
     }
 
-    // (543:8) <Dropdown id="tooltip">
+    // (542:8) <Dropdown id="tooltip">
     function create_default_slot_3(ctx) {
     	let t;
 
@@ -4983,7 +4983,7 @@ var ui = (function () {
     	};
     }
 
-    // (611:9) {#if data.remoteFiles}
+    // (610:9) {#if data.remoteFiles}
     function create_if_block_4(ctx) {
     	let div;
     	let each_value_1 = /*data*/ ctx[0].remoteFiles;
@@ -5039,7 +5039,7 @@ var ui = (function () {
     	};
     }
 
-    // (587:8) {#if selectedFile?.id === data.fileId}
+    // (586:8) {#if selectedFile?.id === data.fileId}
     function create_if_block_2(ctx) {
     	let if_block_anchor;
     	let if_block = /*data*/ ctx[0].localTemplates && create_if_block_3(ctx);
@@ -5074,7 +5074,7 @@ var ui = (function () {
     	};
     }
 
-    // (614:12) {#if selectedFile?.id === file.id}
+    // (613:12) {#if selectedFile?.id === file.id}
     function create_if_block_5(ctx) {
     	let ul;
     	let t;
@@ -5136,7 +5136,7 @@ var ui = (function () {
     	};
     }
 
-    // (616:15) {#each file.templates as template}
+    // (615:15) {#each file.templates as template}
     function create_each_block_2(ctx) {
     	let li;
     	let t0_value = /*template*/ ctx[44].name + "";
@@ -5198,7 +5198,7 @@ var ui = (function () {
     	};
     }
 
-    // (613:11) {#each data.remoteFiles as file}
+    // (612:11) {#each data.remoteFiles as file}
     function create_each_block_1(ctx) {
     	let if_block_anchor;
     	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[47].id && create_if_block_5(ctx);
@@ -5233,7 +5233,7 @@ var ui = (function () {
     	};
     }
 
-    // (588:9) {#if data.localTemplates}
+    // (587:9) {#if data.localTemplates}
     function create_if_block_3(ctx) {
     	let ul;
     	let each_value = /*data*/ ctx[0].localTemplates;
@@ -5291,7 +5291,7 @@ var ui = (function () {
     	};
     }
 
-    // (590:10) {#each data.localTemplates as template}
+    // (589:10) {#each data.localTemplates as template}
     function create_each_block(ctx) {
     	let li;
     	let t0_value = /*template*/ ctx[44].name + "";
@@ -5369,7 +5369,7 @@ var ui = (function () {
     	};
     }
 
-    // (536:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Choose template</p>           <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
+    // (535:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Choose template</p>           <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
     function create_content_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
@@ -5413,7 +5413,7 @@ var ui = (function () {
     	};
     }
 
-    // (536:26)        
+    // (535:26)        
     function fallback_block_2(ctx) {
     	let div2;
     	let div0;
@@ -5512,7 +5512,7 @@ var ui = (function () {
     	};
     }
 
-    // (533:4) <Dropdown fill icon="component" id="menu">
+    // (532:4) <Dropdown fill icon="component" id="menu">
     function create_default_slot_2(ctx) {
     	let t;
 
@@ -5532,7 +5532,7 @@ var ui = (function () {
     	};
     }
 
-    // (640:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (639:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_hitThing_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
@@ -5572,7 +5572,7 @@ var ui = (function () {
     	};
     }
 
-    // (640:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
+    // (639:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
     function fallback_block_1(ctx) {
     	let span;
 
@@ -5592,7 +5592,7 @@ var ui = (function () {
     	};
     }
 
-    // (641:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (640:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_content_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[19].default;
@@ -5636,7 +5636,7 @@ var ui = (function () {
     	};
     }
 
-    // (641:26)        
+    // (640:26)        
     function fallback_block(ctx) {
     	let div1;
     	let div0;
@@ -5690,7 +5690,7 @@ var ui = (function () {
     	};
     }
 
-    // (639:4) <Dropdown>
+    // (638:4) <Dropdown>
     function create_default_slot_1(ctx) {
     	let t;
 
@@ -5710,7 +5710,7 @@ var ui = (function () {
     	};
     }
 
-    // (679:32) <Button id="create-table">
+    // (678:32) <Button id="create-table">
     function create_default_slot(ctx) {
     	let t;
 
@@ -5727,7 +5727,7 @@ var ui = (function () {
     	};
     }
 
-    // (684:0) {#if pageState.templateSettingsPageActive}
+    // (683:0) {#if pageState.templateSettingsPageActive}
     function create_if_block(ctx) {
     	let div;
     	let templatesettings;
@@ -6177,18 +6177,16 @@ var ui = (function () {
 
     			if (data.pluginVersion === "7.0.0") {
     				// If defaultTemplate exists then show create table UI
-    				// if (data.defaultTemplate) {
-    				setActivePage("createTablePageActive");
-
-    				updateSelectedTemplate(data);
-    				updateSelectedFile(data);
-    			} else // else {
-    			// 	console.log("pluginUsingOldComponents", data.pluginUsingOldComponents)
-    			// 	// If the user is using old components in this file, we ask them to upgrade
-    			// 	setActivePage("welcomePageActive", 4)
-    			// }
-    			{
-    				setActivePage("welcomePageActive", 0); // }
+    				if (data.defaultTemplate) {
+    					setActivePage("createTablePageActive");
+    					updateSelectedTemplate(data);
+    					updateSelectedFile(data);
+    				} else {
+    					// Shows page to either convert old components to template, or create new template
+    					setActivePage("welcomePageActive", 4);
+    				}
+    			} else {
+    				setActivePage("welcomePageActive", 0);
     			}
     		}
 

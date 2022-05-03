@@ -329,16 +329,15 @@
 			console.log("pluginVersion", data.pluginVersion)
 			if (data.pluginVersion === "7.0.0") {
 				// If defaultTemplate exists then show create table UI
-				// if (data.defaultTemplate) {
+				if (data.defaultTemplate) {
 				setActivePage("createTablePageActive")
 				updateSelectedTemplate(data)
 				updateSelectedFile(data)
-				// }
-				// else {
-				// 	console.log("pluginUsingOldComponents", data.pluginUsingOldComponents)
-				// 	// If the user is using old components in this file, we ask them to upgrade
-				// 	setActivePage("welcomePageActive", 4)
-				// }
+				}
+				else {
+					// Shows page to either convert old components to template, or create new template
+					setActivePage("welcomePageActive", 4)
+				}
 
 			}
 			else {
