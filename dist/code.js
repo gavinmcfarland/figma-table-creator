@@ -3345,7 +3345,12 @@ dist((plugin) => {
         const fileId = getDocumentData_1('fileId');
         const defaultTemplate = getDefaultTemplate();
         const localTemplates = getLocalTemplates();
-        ui.show(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles,
+        figma.showUI(__uiFiles__.main, {
+            width: 268,
+            height: 504,
+            themeColors: true,
+        });
+        figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles,
             recentFiles,
             localTemplates,
             defaultTemplate,

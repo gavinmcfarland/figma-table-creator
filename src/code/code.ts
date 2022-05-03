@@ -783,7 +783,12 @@ plugma((plugin) => {
 		const defaultTemplate = getDefaultTemplate()
 		const localTemplates = getLocalTemplates()
 
-		ui.show({
+		figma.showUI(__uiFiles__.main, {
+			width: 268,
+			height: 504,
+			themeColors: true,
+		})
+		figma.ui.postMessage({
 			type: 'show-create-table-ui',
 			...userPreferences,
 			remoteFiles,

@@ -30,8 +30,8 @@
 	button {
 		line-height: 24px;
 		padding: var(--padding-0) var(--padding-150);
-		border: 2px solid var(--color-blue);
-		background-color: var(--color-blue);
+		border: 2px solid var(--figma-color-bg-brand, var(--color-blue));
+		background-color: var(--figma-color-bg-brand, var(--color-blue));
 		color: white;
 		border-radius: var(--border-radius-75);
 		font-weight: 500;
@@ -41,7 +41,6 @@
 
 	.Button {
 		border-radius: var(--border-radius-75);
-		background-color: var(--color-blue);
 		display: flex;
 		place-items: center;
 	}
@@ -60,8 +59,8 @@
 	}
 
 	.secondary {
-		background-color: var(--color-white);
-		color: var(--color-black-100);
-		border: 1px solid var(--color-black-100);
+		background-color: transparent;
+		color: var(--figma-color-text, black);
+		border: 1px solid var(--figma-color-border-strong, white);
 	}
 </style>

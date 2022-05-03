@@ -1,6 +1,7 @@
 html {
 	height: 100%;
 }
+
 /* body {
 		display: flex;
 		place-items: center;
@@ -44,6 +45,8 @@ td {
 }
 
 body {
+	background: var(--figma-color-bg, white);
+	color: var(--figma-color-text, black);
 	font-family: Inter, sans-serif;
 	font-size: 11px;
 	line-height: 1.454545;
@@ -84,12 +87,6 @@ p {
 
 button {
 	/* margin-top: var(--size-200); */
-}
-
-body {
-	font-family: Inter, sans-serif;
-	font-size: 11px;
-	color: var(--black);
 }
 
 :root {
