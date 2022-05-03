@@ -35,7 +35,7 @@ import {
 	genRandomId,
 } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
-import { upgradeFrom6to7 } from './upgradeFrom6to7'
+import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
 import { defaultRelaunchData, createTable, updatePluginVersion } from './globals'
 
 console.clear()
@@ -772,7 +772,6 @@ plugma((plugin) => {
 
 	plugin.command('createTable', async ({ ui }) => {
 		// Show create table UI
-		let pluginAlreadyRun = await getClientStorageAsync('pluginAlreadyRun')
 		let pluginVersion = await getClientStorageAsync('pluginVersion')
 		let userPreferences = await getClientStorageAsync('userPreferences')
 		let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
@@ -793,10 +792,12 @@ plugma((plugin) => {
 			defaultTemplate,
 			fileId,
 			usingRemoteTemplate,
-			pluginAlreadyRun,
 			pluginVersion,
 			pluginUsingOldComponents,
 		})
+
+		// We update plugin version after UI opened for the first time so user can see the whats new message
+		updatePluginVersion('7.0.0')
 	})
 	plugin.command('detachTable', () => {
 		detachTable(figma.currentPage.selection)
@@ -847,11 +848,8 @@ plugma((plugin) => {
 	plugin.on('fetch-template-part', () => {})
 	plugin.on('fetch-current-selection', () => {})
 	plugin.on('upgrade-to-template', () => {
-		upgradeFrom6to7()
-		updatePluginVersion('7.0.0').then((pluginVersion) => {
-			console.log('Updated to plugin version...', pluginVersion)
-			// TODO: Don't close, instead change UI to create table UI
-			figma.closePlugin('Template created')
-		})
+		upgradeOldComponentsToTemplate()
+		// TODO: Don't close, instead change UI to create table UI
+		figma.closePlugin('Template created')
 	})
 })

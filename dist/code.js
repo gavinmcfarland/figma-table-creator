@@ -2564,7 +2564,7 @@ async function createDefaultComponents(opts) {
 // 2. First I'll look to see if I can find a table component. If you don't have one I'll create one for you. This will be used as the main template that new tables are created from.
 // 3. Next I'll look to see if you have a row component. If you don't
 // let tableInstance = createTable(getTemplateParts(templateComponent), msg.data, 'COMPONENT')
-function upgradeFrom6to7() {
+function upgradeOldComponentsToTemplate() {
     function cleanupOldPluginData() {
         let keys = ['cellComponentID', 'cellHeaderComponentID', 'rowComponentID', 'tableComponentID'];
         keys.forEach((element) => {
@@ -3336,7 +3336,6 @@ dist((plugin) => {
     }
     plugin.command('createTable', async ({ ui }) => {
         // Show create table UI
-        let pluginAlreadyRun = await getClientStorageAsync_1('pluginAlreadyRun');
         let pluginVersion = await getClientStorageAsync_1('pluginVersion');
         let userPreferences = await getClientStorageAsync_1('userPreferences');
         let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
@@ -3352,9 +3351,10 @@ dist((plugin) => {
             defaultTemplate,
             fileId,
             usingRemoteTemplate,
-            pluginAlreadyRun,
             pluginVersion,
             pluginUsingOldComponents }));
+        // We update plugin version after UI opened for the first time so user can see the whats new message
+        updatePluginVersion('7.0.0');
     });
     plugin.command('detachTable', () => {
         detachTable(figma.currentPage.selection);
@@ -3398,11 +3398,8 @@ dist((plugin) => {
     plugin.on('fetch-template-part', () => { });
     plugin.on('fetch-current-selection', () => { });
     plugin.on('upgrade-to-template', () => {
-        upgradeFrom6to7();
-        updatePluginVersion('7.0.0').then((pluginVersion) => {
-            console.log('Updated to plugin version...', pluginVersion);
-            // TODO: Don't close, instead change UI to create table UI
-            figma.closePlugin('Template created');
-        });
+        upgradeOldComponentsToTemplate();
+        // TODO: Don't close, instead change UI to create table UI
+        figma.closePlugin('Template created');
     });
 });

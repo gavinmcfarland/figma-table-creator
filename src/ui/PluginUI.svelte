@@ -322,7 +322,11 @@
 				data = value.data
 			})
 
+			// if (data.pluginUsingOldComponents) {
+			// 	setActivePage("createTablePageActive")
+			// }
 
+			console.log("pluginVersion", data.pluginVersion)
 			if (data.pluginVersion === "7.0.0") {
 				// If defaultTemplate exists then show create table UI
 				if (data.defaultTemplate) {
@@ -331,15 +335,14 @@
 				updateSelectedFile(data)
 				}
 				else {
+					console.log("pluginUsingOldComponents", data.pluginUsingOldComponents)
+					// If the user is using old components in this file, we ask them to upgrade
 					setActivePage("welcomePageActive", 4)
 				}
 
 			}
 			else {
 				setActivePage("welcomePageActive", 0)
-				if(data.pluginUsingOldComponents) {
-					setActivePage("welcomePageActive", 5)
-				}
 			}
 		}
 
@@ -480,48 +483,46 @@
 	{/if}
 	{#if welcomeSlides[4]}
 	<div class="container welcomePage" style="padding: var(--size-200)">
+		{#if data.pluginUsingOldComponents}
 		<div class="artwork">
-		<div class="svg6" style="margin: 0 -16px"></div>
+			<div class="svg6" style="margin: 0 -16px"></div>
+			</div>
+			<div class="content">
+				<h6>Upgrade to template</h6>
+				<p>The table components in this file need to be upgraded into a template. They offer more flexibility and control. This will create a new component and won't affect your existing components.</p>
+			<div class="buttons">
+				<span on:click={() => upgradeToTemplate()}><Button classes="secondary">Create Template</Button></span>
+			</div>
 		</div>
-		<div class="content">
-		{#if data.recentFiles}
-			<h6>Get started</h6>
 		{:else}
-			<h6>Get started</h6>
-		{/if}
-		{#if data.recentFiles}
-			<p>Create a new template or choose an existing template from a remote file.</p>
-		{:else}
-			<p>Begin by creating a new template to create tables from.</p>
-		{/if}
-
-
-		<div class="buttons">
-			<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
+		<div class="artwork">
+			<div class="svg6" style="margin: 0 -16px"></div>
+			</div>
+			<div class="content">
 			{#if data.recentFiles}
-				<span on:click={() => {
-					chooseRemoteTemplate()
-					}}><Button classes="secondary">Existing Template</Button></span>
+				<h6>Get started</h6>
+			{:else}
+				<h6>Get started</h6>
 			{/if}
+			{#if data.recentFiles}
+				<p>Create a new template or choose an existing template from a remote file.</p>
+			{:else}
+				<p>Begin by creating a new template to create tables from.</p>
+			{/if}
+
+
+			<div class="buttons">
+				<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
+				{#if data.recentFiles}
+					<span on:click={() => {
+						chooseRemoteTemplate()
+						}}><Button classes="secondary">Existing Template</Button></span>
+				{/if}
+			</div>
 		</div>
+		{/if}
 	</div>
-		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
-	</div>
-	{/if}
-	{#if welcomeSlides[5]}
-	<div class="container welcomePage" style="padding: var(--size-200)">
-		<div class="artwork">
-		<div class="svg6" style="margin: 0 -16px"></div>
-		</div>
-		<div class="content">
-			<h6>Upgrade to template</h6>
-			<p>The table components in this file need to be upgraded into a template. They offer more flexibility and control. This will create a new component and won't affect your existing components.</p>
-		<div class="buttons">
-			<span on:click={() => upgradeToTemplate()}><Button classes="secondary">Create Template</Button></span>
-		</div>
-	</div>
-		<!-- <span on:click={chooseComponents}><Button classes="secondary">Import Template</Button></span> -->
-	</div>
+
 	{/if}
 {/if}
 

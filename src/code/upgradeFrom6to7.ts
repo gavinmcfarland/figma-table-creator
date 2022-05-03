@@ -15,7 +15,7 @@ import { createTable, tableFactory } from './globals'
 
 // let tableInstance = createTable(getTemplateParts(templateComponent), msg.data, 'COMPONENT')
 
-export function upgradeFrom6to7() {
+export function upgradeOldComponentsToTemplate() {
 	function cleanupOldPluginData() {
 		let keys = ['cellComponentID', 'cellHeaderComponentID', 'rowComponentID', 'tableComponentID']
 
