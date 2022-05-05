@@ -177,14 +177,14 @@
 	}
 
 	.hover label {
-		background: rgba(0, 0, 0, 0.06);
+		background: var(--figma-color-bg-hover, var(--color-black-10));
 	}
 
 	.selected.hover label {
 		padding: 0px;
 		/* padding-top: 76%; */
 		/* background: rgba(24, 160, 251, 0.4); */
-		background-color: #16375A;
+		background-color: rgba(13, 153, 255, 0.4);
 	}
 
 	input {

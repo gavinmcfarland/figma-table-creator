@@ -160,4 +160,9 @@ button {
 	--padding-600: var(--size-600);
 	--padding-800: var(--size-800);
 	--padding-1000: var(--size-1000);
+
+
+	/* Figma */
+	--elevation-400-menu-panel: 0px 10px 16px rgba(0, 0, 0, .35), 0px 2px 5px rgba(0, 0, 0, .35), inset 0px .5px 0px rgba(255, 255, 255, .08), inset 0px 0px .5px rgba(255, 255, 255, .35);
+	--modal-box-shadow: var(--elevation-400-menu-panel, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
 }

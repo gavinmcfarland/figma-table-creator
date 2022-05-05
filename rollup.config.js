@@ -10,6 +10,7 @@ import replace from '@rollup/plugin-replace';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json'
 import nodePolyfills from 'rollup-plugin-node-polyfills'
+import strip from '@rollup/plugin-strip';
 
 /* Post CSS */
 import postcss from 'rollup-plugin-postcss';
@@ -48,6 +49,10 @@ export default [{
 					// stylup,
 					globalStyle()]
 		}),
+		strip({
+			labels: ['unittest'],
+			functions: ['console.*']
+		}),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -68,6 +73,7 @@ export default [{
 			target: 'dist/index.html',
 			inline: true
 		}),
+
 
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated
@@ -96,13 +102,14 @@ export default [{
 		typescript(),
 		nodePolyfills(),
 		nodeResolve(),
+		strip(),
 		replace({
 			'process.env.PKG_PATH': JSON.stringify(process.cwd() + '/package.json'),
 			'process.env.VERSIONS_PATH': JSON.stringify(process.cwd() + '/.plugma/versions.json')
 		}),
 		json(),
 		commonjs(),
-		production && terser()
+		production && terser(),
 	]
 }];
 

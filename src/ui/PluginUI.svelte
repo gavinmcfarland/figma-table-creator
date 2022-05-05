@@ -326,7 +326,7 @@
 			// 	setActivePage("createTablePageActive")
 			// }
 
-			console.log("pluginVersion", data.pluginVersion)
+			console.log("recentFiles", data.recentFiles)
 			if (data.pluginVersion === "7.0.0") {
 				// If defaultTemplate exists then show create table UI
 				if (data.defaultTemplate) {
@@ -948,10 +948,10 @@
 	.menu {
 		display: none;
 		position: absolute;
-		background: #FFFFFF;
+		background: var(--figma-color-bg, white);
 		/* border: 0.5px solid rgba(0, 0, 0, 0.1); */
 		/* box-shadow: 0px 3px 14px rgba(0, 0, 0, 0.1); */
-		box-shadow: 0 2px 14px rgba(0,0,0,.15), 0 0 0 0.5px rgba(0,0,0,.2);
+		box-shadow: var(--modal-box-shadow);
 		border-radius: 2px;
 		/* top: 0; */
 		padding: var(--size-200);
@@ -1008,21 +1008,19 @@
 		margin-left: calc(-1 * var(--margin-200));
     	margin-right: calc(-1 * var(--margin-200));
 	}
-
-
 	.menu li:hover {
-		background-color: var(--color-hover-fill)
+		background-color: var(--figma-color-bg-hover, var(--color-hover-fill));
 	}
 
 	.menu li.selected {
-		background-color: var(--color-selection-a);
+		background-color: var(--figma-color-bg-selected, var(--color-selection-a));
 	}
 
 
 
 	.Title {
 		padding: var(--margin-100) var(--margin-200);
-		border-bottom: 1px solid var(--color-black-10);
+		border-bottom: 1px solid var(--figma-color-border, var(--color-black-10));
 		min-height: 40px;
 		display: flex;
 		place-items: center;
@@ -1156,7 +1154,7 @@
 	}
 
 	.refresh:hover {
-		background-color: var(--color-hover-fill);
+		background-color: var(--figma-color-bg-selected-hover, var(--color-selection-a));
 		border-radius: 2px;
 	}
 

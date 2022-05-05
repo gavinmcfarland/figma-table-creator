@@ -79,10 +79,10 @@
 				close()
 			}
 
-			window.addEventListener("blur", () => {
-				// parentElement.classList.remove("show")
-				close()
-			});
+			// window.addEventListener("blur", () => {
+			// 	// parentElement.classList.remove("show")
+			// 	close()
+			// });
 	}}>
 			{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label"> </slot></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
 

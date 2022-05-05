@@ -247,7 +247,7 @@
 <style global>
 
 	.description {
-		color: var(--color-black-30)
+		color: var(--figma-color-text-secondary, var(--color-black-30))
 	}
 
 	.SectionTitle {

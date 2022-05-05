@@ -2640,7 +2640,7 @@ async function updateClientStorageAsync(key, callback) {
     return data;
 }
 
-let defaultRelaunchData = {
+let defaultRelaunchData$1 = {
     detachTable: 'Detaches table and rows',
     spawnTable: 'Spawn a new table from this table',
     toggleColumnResizing: 'Use a component to resize columns or rows',
@@ -2773,7 +2773,7 @@ function createTable(templateComponent, settings, type) {
             // child.mainComponent = part.th.mainComponent
         }
     }
-    tableInstance.setRelaunchData(defaultRelaunchData);
+    tableInstance.setRelaunchData(defaultRelaunchData$1);
     return tableInstance;
 }
 
@@ -2782,6 +2782,12 @@ console.clear();
 // 	figma.closePlugin('User preferences reset')
 // })
 // figma.clientStorage.deleteAsync('pluginVersion')
+let defaultRelaunchData = {
+    detachTable: 'Detaches table and rows',
+    spawnTable: 'Spawn a new table from this table',
+    toggleColumnResizing: 'Use a component to resize columns or rows',
+    switchColumnsOrRows: 'Switch between using columns or rows',
+};
 function File(data) {
     // TODO: if fileId doesn't exist then create random ID and set fileId
     this.id = getDocumentData_1('fileId') || setDocumentData_1('fileId', genRandomId());
@@ -2874,9 +2880,6 @@ function importTemplate(node) {
         figma.notify('No template found');
     }
 }
-// function getLocalTemplateComponents() {
-// 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
-// }
 function getLocalTemplates() {
     var templates = [];
     figma.root.findAll((node) => {
@@ -2992,49 +2995,7 @@ function postCurrentSelection(templateNodeId) {
         }
     });
 }
-/**
- * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
- * @param {String} key A key to store data under
- * @param {any} data Data to be stored
- */
-async function syncRecentFilesAsync(data) {
-    // const publishedComponents = await getPublishedComponents(data)
-    updateClientStorageAsync_1('recentFiles', (recentFiles) => {
-        recentFiles = recentFiles || [];
-        const newFile = new File(data);
-        // We have to check if the array is empty because we can't filter an empty array
-        if (recentFiles.length === 0) {
-            recentFiles.push(newFile);
-        }
-        else {
-            recentFiles.filter((item) => {
-                if (item.id === newFile.id) {
-                    item.data = data;
-                }
-                else {
-                    recentFiles.push(newFile);
-                }
-            });
-        }
-        return recentFiles;
-    });
-    // Needs to know what data set
-    // Then will check if any of the set has been published
-    // Check if current file matches any in recents list
-    // If it doesn't, add to list of recent files
-    // If it does and no published things in set then remove from list
-    // getLocalTemplates()
-    // getPublishedLocalTemplates()
-    // if local templates and recent files
-    // If file has published templates
-    // createNewFile
-    // addFileToRecentFiles()
-    // Else if not
-    // Remove file
-}
-async function getRecentFilesAsync() {
-    return await getClientStorageAsync_1('recentFiles');
-}
+function getRecentFilesAsync() { }
 function selectTableCells(direction) {
     var _a;
     // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
@@ -3266,9 +3227,14 @@ function selectTableVector(type) {
         figma.notify('One or more table cells must be selected');
     }
 }
-async function main() {
+dist((plugin) => {
+    plugin.ui = {
+        html: __uiFiles__.main,
+        width: 268,
+        height: 504,
+    };
     // Set default preferences
-    await updateClientStorageAsync_1('userPreferences', (data) => {
+    updateClientStorageAsync_1('userPreferences', (data) => {
         data = data || {
             columnCount: 4,
             rowCount: 4,
@@ -3280,170 +3246,165 @@ async function main() {
         };
         return data;
     });
-    // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-    await syncRecentFilesAsync(getLocalTemplates());
-    dist((plugin) => {
-        plugin.ui = {
-            html: __uiFiles__.main,
-            width: 268,
-            height: 504,
-        };
-        // Received messages
-        async function newTemplateComponent(opts) {
-            let { shouldCreatePage } = opts;
-            if (shouldCreatePage) {
-                createPage('Table Creator');
-            }
-            let components = await createDefaultComponents();
-            let { templateComponent } = components;
-            setDefaultTemplate(templateComponent);
-            incrementNameNumerically(templateComponent);
-            selectAndZoomIntoView(figma.currentPage.children);
+    // Received messages
+    async function newTemplateComponent(opts) {
+        let { shouldCreatePage } = opts;
+        if (shouldCreatePage) {
+            createPage('Table Creator');
         }
-        async function editTemplateComponent(msg) {
-            lookForComponent(msg.template).then((templateNode) => {
-                var _a, _b, _c, _d;
-                // figma.viewport.scrollAndZoomIntoView([templateNode])
-                animateNodeIntoView([templateNode]);
-                figma.currentPage.selection = [templateNode];
-                let parts = getTemplateParts(templateNode);
-                let partsAsObject = {
-                    table: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.table),
-                        element: 'table',
-                        id: (_a = parts === null || parts === void 0 ? void 0 : parts.table) === null || _a === void 0 ? void 0 : _a.id,
-                    },
-                    tr: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.tr),
-                        element: 'tr',
-                        id: (_b = parts === null || parts === void 0 ? void 0 : parts.tr) === null || _b === void 0 ? void 0 : _b.id,
-                    },
-                    td: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.td),
-                        element: 'td',
-                        id: (_c = parts === null || parts === void 0 ? void 0 : parts.td) === null || _c === void 0 ? void 0 : _c.id,
-                    },
-                    th: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
-                        element: 'th',
-                        id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
-                    },
-                };
-                postCurrentSelection(templateNode.id);
-                figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
-            });
-        }
-        function setDefaultTemplate(templateComponent) {
-            let templateData = new Template(templateComponent);
-            setPluginData_1(templateComponent, 'template', templateData);
-            setDocumentData_1('defaultTemplate', templateData);
-            templateComponent.setRelaunchData(defaultRelaunchData);
-            figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData, localTemplates: getLocalTemplates() });
+        let components = await createDefaultComponents();
+        let { templateComponent } = components;
+        setDefaultTemplate(templateComponent);
+        incrementNameNumerically(templateComponent);
+        selectAndZoomIntoView(figma.currentPage.children);
+    }
+    async function editTemplateComponent(msg) {
+        lookForComponent(msg.template).then((templateNode) => {
+            var _a, _b, _c, _d;
+            // figma.viewport.scrollAndZoomIntoView([templateNode])
+            animateNodeIntoView([templateNode]);
+            figma.currentPage.selection = [templateNode];
+            let parts = getTemplateParts(templateNode);
+            let partsAsObject = {
+                table: {
+                    name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.table),
+                    element: 'table',
+                    id: (_a = parts === null || parts === void 0 ? void 0 : parts.table) === null || _a === void 0 ? void 0 : _a.id,
+                },
+                tr: {
+                    name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.tr),
+                    element: 'tr',
+                    id: (_b = parts === null || parts === void 0 ? void 0 : parts.tr) === null || _b === void 0 ? void 0 : _b.id,
+                },
+                td: {
+                    name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.td),
+                    element: 'td',
+                    id: (_c = parts === null || parts === void 0 ? void 0 : parts.td) === null || _c === void 0 ? void 0 : _c.id,
+                },
+                th: {
+                    name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
+                    element: 'th',
+                    id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
+                },
+            };
+            postCurrentSelection(templateNode.id);
+            figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
+        });
+    }
+    function setDefaultTemplate(templateComponent) {
+        let templateData = new Template(templateComponent);
+        setPluginData_1(templateComponent, 'template', templateData);
+        setDocumentData_1('defaultTemplate', templateData);
+        templateComponent.setRelaunchData(defaultRelaunchData);
+        figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData, localTemplates: getLocalTemplates() });
+        {
             console.log('setDeafultTemplate', templateData);
         }
-        async function refreshTables() {
-            // FIXME: Template file name not up to date for some reason
-            var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
-            // getAllTableInstances()
-            var tableTemplate = await lookForComponent(template);
-            var rowTemplate = tableTemplate.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-            for (let b = 0; b < tables.length; b++) {
-                var table = tables[b];
-                // Don't apply if an instance
-                if (table.type !== 'INSTANCE') {
-                    console.log('tableTemplate', tableTemplate);
-                    copyPasteStyle(tableTemplate, table, { exclude: ['name'] });
-                    // for (let x = 0; x < table.children.length; x++) {
-                    // 	var row = table.children[x]
-                    // 	if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
-                    // 		copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
-                    // 	}
-                    // 	// // Only need to loop through cells if has been changed by user
-                    // 	// if (row.children && getPluginData(row, "isRow") === true) {
-                    // 	// 	for (let k = 0; k < row.children.length; k++) {
-                    // 	// 		var cell = row.children[k]
-                    // 	// 	}
-                    // 	// }
-                    // }
-                    table.findAll((node) => {
-                        var _a;
-                        if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
-                            copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
-                        }
-                    });
-                }
+    }
+    async function refreshTables() {
+        // FIXME: Template file name not up to date for some reason
+        var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
+        // getAllTableInstances()
+        var tableTemplate = await lookForComponent(template);
+        var rowTemplate = tableTemplate.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+        for (let b = 0; b < tables.length; b++) {
+            var table = tables[b];
+            // Don't apply if an instance
+            if (table.type !== 'INSTANCE') {
+                console.log('tableTemplate', tableTemplate);
+                copyPasteStyle(tableTemplate, table, { exclude: ['name'] });
+                // for (let x = 0; x < table.children.length; x++) {
+                // 	var row = table.children[x]
+                // 	if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
+                // 		copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
+                // 	}
+                // 	// // Only need to loop through cells if has been changed by user
+                // 	// if (row.children && getPluginData(row, "isRow") === true) {
+                // 	// 	for (let k = 0; k < row.children.length; k++) {
+                // 	// 		var cell = row.children[k]
+                // 	// 	}
+                // 	// }
+                // }
+                table.findAll((node) => {
+                    var _a;
+                    if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
+                        copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
+                    }
+                });
             }
         }
-        plugin.command('createTable', async ({ ui }) => {
-            // Show create table UI
-            let pluginVersion = await getClientStorageAsync_1('pluginVersion');
-            let userPreferences = await getClientStorageAsync_1('userPreferences');
-            let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
-            let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
-            const remoteFiles = getDocumentData_1('remoteFiles');
-            const fileId = getDocumentData_1('fileId');
-            const defaultTemplate = getDefaultTemplate();
-            const localTemplates = getLocalTemplates();
-            figma.showUI(__uiFiles__.main, {
-                width: 268,
-                height: 504,
-                themeColors: true,
-            });
-            figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync(), localTemplates,
-                defaultTemplate,
-                fileId,
-                usingRemoteTemplate,
-                pluginVersion,
-                pluginUsingOldComponents }));
-            // We update plugin version after UI opened for the first time so user can see the whats new message
-            updatePluginVersion('7.0.0');
+    }
+    plugin.command('createTable', async ({ ui }) => {
+        // Show create table UI
+        let pluginVersion = await getClientStorageAsync_1('pluginVersion');
+        let userPreferences = await getClientStorageAsync_1('userPreferences');
+        let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
+        let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
+        const recentFiles = await getRecentFilesAsync();
+        const remoteFiles = getDocumentData_1('remoteFiles');
+        const fileId = getDocumentData_1('fileId');
+        const defaultTemplate = getDefaultTemplate();
+        const localTemplates = getLocalTemplates();
+        figma.showUI(__uiFiles__.main, {
+            width: 268,
+            height: 504,
+            themeColors: true,
         });
-        plugin.command('detachTable', () => {
-            detachTable(figma.currentPage.selection);
-            figma.closePlugin();
-        });
-        plugin.command('spawnTable', spawnTable);
-        plugin.command('toggleColumnResizing', toggleColumnResizing);
-        plugin.command('switchColumnsOrRows', () => {
-            let { vectorType } = switchColumnsOrRows(figma.currentPage.selection);
-            figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`);
-        });
-        plugin.command('selectColumn', () => {
-            selectTableVector('column');
-            figma.closePlugin();
-        });
-        plugin.command('selectRow', () => {
-            selectTableVector('row');
-            figma.closePlugin();
-        });
-        plugin.command('newTemplate', newTemplateComponent);
-        plugin.command('importTemplate', importTemplate);
-        plugin.on('new-template', () => {
-            newTemplateComponent({ shouldCreatePage: true });
-        });
-        plugin.on('edit-template', (msg) => {
-            editTemplateComponent(msg);
-        });
-        plugin.on('set-default-template', setDefaultTemplate);
-        plugin.on('set-semantics', () => { });
-        plugin.on('create-table-instance', async (msg) => {
-            const templateComponent = await getComponentById(getDocumentData_1('defaultTemplate').id);
-            let tableInstance = createTable(templateComponent, msg.data);
-            positionInCenterOfViewport(tableInstance);
-            figma.currentPage.selection = [tableInstance];
-            updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
-                figma.closePlugin('Table created');
-            });
-        });
-        plugin.on('refresh-tables', refreshTables);
-        plugin.on('save-user-preferences', () => { });
-        plugin.on('fetch-template-part', () => { });
-        plugin.on('fetch-current-selection', () => { });
-        plugin.on('upgrade-to-template', () => {
-            upgradeOldComponentsToTemplate();
-            // TODO: Don't close, instead change UI to create table UI
-            figma.closePlugin('Template created');
+        figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles,
+            recentFiles,
+            localTemplates,
+            defaultTemplate,
+            fileId,
+            usingRemoteTemplate,
+            pluginVersion,
+            pluginUsingOldComponents }));
+        // We update plugin version after UI opened for the first time so user can see the whats new message
+        updatePluginVersion('7.0.0');
+    });
+    plugin.command('detachTable', () => {
+        detachTable(figma.currentPage.selection);
+        figma.closePlugin();
+    });
+    plugin.command('spawnTable', spawnTable);
+    plugin.command('toggleColumnResizing', toggleColumnResizing);
+    plugin.command('switchColumnsOrRows', () => {
+        let { vectorType } = switchColumnsOrRows(figma.currentPage.selection);
+        figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`);
+    });
+    plugin.command('selectColumn', () => {
+        selectTableVector('column');
+        figma.closePlugin();
+    });
+    plugin.command('selectRow', () => {
+        selectTableVector('row');
+        figma.closePlugin();
+    });
+    plugin.command('newTemplate', newTemplateComponent);
+    plugin.command('importTemplate', importTemplate);
+    plugin.on('new-template', () => {
+        newTemplateComponent({ shouldCreatePage: true });
+    });
+    plugin.on('edit-template', (msg) => {
+        editTemplateComponent(msg);
+    });
+    plugin.on('set-default-template', setDefaultTemplate);
+    plugin.on('set-semantics', () => { });
+    plugin.on('create-table-instance', async (msg) => {
+        const templateComponent = await getComponentById(getDocumentData_1('defaultTemplate').id);
+        let tableInstance = createTable(templateComponent, msg.data);
+        positionInCenterOfViewport(tableInstance);
+        figma.currentPage.selection = [tableInstance];
+        updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
+            figma.closePlugin('Table created');
         });
     });
-}
-main();
+    plugin.on('refresh-tables', refreshTables);
+    plugin.on('save-user-preferences', () => { });
+    plugin.on('fetch-template-part', () => { });
+    plugin.on('fetch-current-selection', () => { });
+    plugin.on('upgrade-to-template', () => {
+        upgradeOldComponentsToTemplate();
+        // TODO: Don't close, instead change UI to create table UI
+        figma.closePlugin('Template created');
+    });
+});
