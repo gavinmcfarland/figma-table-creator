@@ -1,4 +1,4 @@
-import { getPageNode, getPluginData } from '@fignite/helpers'
+import { getPageNode, getPluginData, copyPaste } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
 export function unique(array, value) {
@@ -287,4 +287,47 @@ export function removeChildren(node) {
 	for (let i = length - 1; i >= 0; i--) {
 		node.children[i].remove()
 	}
+}
+
+export function copyPasteStyle(source, target, options: any = {}) {
+	// exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
+
+	const styleProps = [
+		'opacity',
+		'blendMode',
+		'effects',
+		'effectStyleId',
+		'backgrounds',
+		'backgroundStyleId',
+		'fills',
+		'strokes',
+		'strokeWeight',
+		'strokeMiterLimit',
+		'strokeAlign',
+		'strokeCap',
+		'strokeJoin',
+		'dashPattern',
+		'fillStyleId',
+		'strokeStyleId',
+		'cornerRadius',
+		'cornerSmoothing',
+		'topLeftRadius',
+		'topRightRadius',
+		'bottomLeftRadius',
+		'bottomRightRadius',
+		'paddingLeft',
+		'paddingRight',
+		'paddingTop',
+		'paddingBottom',
+		'itemSpacing',
+		'clipsContent',
+	]
+
+	if (options.include) {
+		options.include = options.include.concat(styleProps)
+	} else {
+		options.include = styleProps
+	}
+
+	return copyPaste(source, target, options)
 }

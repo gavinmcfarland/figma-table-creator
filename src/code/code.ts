@@ -33,6 +33,7 @@ import {
 	swapAxises,
 	clone,
 	genRandomId,
+	copyPasteStyle,
 } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
@@ -48,6 +49,7 @@ console.clear()
 
 function File(data?) {
 	// TODO: if fileId doesn't exist then create random ID and set fileId
+
 	this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
 	// this.name = `{figma.getNodeById("0:1").name}`
 	this.name = figma.root.name
@@ -323,6 +325,7 @@ function postCurrentSelection(templateNodeId) {
  * @param {any} data Data to be stored
  */
 async function syncRecentFilesAsync(data) {
+	// NOTE: Should function add file, when there is no data?
 	// const publishedComponents = await getPublishedComponents(data)
 
 	updateClientStorageAsync('recentFiles', (recentFiles) => {
@@ -728,7 +731,7 @@ async function main() {
 			console.log('setDeafultTemplate', templateData)
 		}
 
-		async function refreshTables() {
+		async function updateTables(template) {
 			// FIXME: Template file name not up to date for some reason
 
 			var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
@@ -745,21 +748,6 @@ async function main() {
 				if (table.type !== 'INSTANCE') {
 					console.log('tableTemplate', tableTemplate)
 					copyPasteStyle(tableTemplate, table, { exclude: ['name'] })
-
-					// for (let x = 0; x < table.children.length; x++) {
-					// 	var row = table.children[x]
-
-					// 	if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
-					// 		copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
-					// 	}
-
-					// 	// // Only need to loop through cells if has been changed by user
-					// 	// if (row.children && getPluginData(row, "isRow") === true) {
-					// 	// 	for (let k = 0; k < row.children.length; k++) {
-					// 	// 		var cell = row.children[k]
-					// 	// 	}
-					// 	// }
-					// }
 
 					table.findAll((node) => {
 						if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
@@ -846,7 +834,12 @@ async function main() {
 				figma.closePlugin('Table created')
 			})
 		})
-		plugin.on('refresh-tables', refreshTables)
+
+		plugin.on('update-tables', (msg) => {
+			updateTables(msg.template).then(() => {
+				figma.notify('Tables updated', { timeout: 1500 })
+			})
+		})
 
 		plugin.on('save-user-preferences', () => {})
 		plugin.on('fetch-template-part', () => {})

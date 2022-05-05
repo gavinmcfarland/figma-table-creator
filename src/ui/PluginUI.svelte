@@ -262,11 +262,11 @@
 		)
 	}
 
-	function updateTableInstances(template) {
+	function updateTables(template) {
 		parent.postMessage(
 			{
 				pluginMessage: {
-					type: "update-table-instances",
+					type: "update-tables",
 					template: template
 				}
 			},
@@ -602,7 +602,7 @@
 
 												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"><span class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
-													}}></span> <span class="refresh icon" icon="swap" on:click={() => updateTableInstances(template)}></span></div></li>
+													}}></span> <span class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></div></li>
 										{/each}
 										</ul>
 									{/if}
@@ -622,7 +622,7 @@
 																// Hide menu when template set
 																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																getDropdown('menu').close()
-																}}>{template.name} <span style="margin-left: auto; margin-right: calc(-1 * var(--size-100))" class="refresh icon" icon="swap" on:click={() => updateTableInstances(template)}></span></li>
+																}}>{template.name} <span style="margin-left: auto; margin-right: calc(-1 * var(--size-100))" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></li>
 															{/each}
 													</ul>
 												{/if}

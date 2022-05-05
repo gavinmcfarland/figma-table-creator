@@ -548,9 +548,11 @@ function getPluginData(node, key, opts) {
 function setPluginData(node, key, data) {
     if (typeof data === "string" && data.startsWith(">>>")) {
         node.setPluginData(key, data);
+        return data;
     }
     else {
         node.setPluginData(key, JSON.stringify(data));
+        return JSON.stringify(data);
     }
 }
 function updatePluginData(node, key, callback) {
@@ -779,6 +781,7 @@ function getDocumentData(key) {
 
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
+var copyPaste_1 = copyPaste;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getDocumentData_1 = getDocumentData;
 var getNodeIndex_1 = getNodeIndex;
@@ -1710,6 +1713,46 @@ function removeChildren(node) {
     for (let i = length - 1; i >= 0; i--) {
         node.children[i].remove();
     }
+}
+function copyPasteStyle(source, target, options = {}) {
+    // exclude: ['layoutMode', 'counterAxisSizingMode', 'primaryAxisSizingMode', 'layoutAlign', 'rotation', 'constrainProportions']
+    const styleProps = [
+        'opacity',
+        'blendMode',
+        'effects',
+        'effectStyleId',
+        'backgrounds',
+        'backgroundStyleId',
+        'fills',
+        'strokes',
+        'strokeWeight',
+        'strokeMiterLimit',
+        'strokeAlign',
+        'strokeCap',
+        'strokeJoin',
+        'dashPattern',
+        'fillStyleId',
+        'strokeStyleId',
+        'cornerRadius',
+        'cornerSmoothing',
+        'topLeftRadius',
+        'topRightRadius',
+        'bottomLeftRadius',
+        'bottomRightRadius',
+        'paddingLeft',
+        'paddingRight',
+        'paddingTop',
+        'paddingBottom',
+        'itemSpacing',
+        'clipsContent',
+    ];
+    if (options.include) {
+        options.include = options.include.concat(styleProps);
+    }
+    else {
+        options.include = styleProps;
+    }
+    return copyPaste_1(source, target, options);
 }
 
 // Wrap in function
@@ -2998,6 +3041,7 @@ function postCurrentSelection(templateNodeId) {
  * @param {any} data Data to be stored
  */
 async function syncRecentFilesAsync(data) {
+    // NOTE: Should function add file, when there is no data?
     // const publishedComponents = await getPublishedComponents(data)
     updateClientStorageAsync_1('recentFiles', (recentFiles) => {
         recentFiles = recentFiles || [];
@@ -3341,7 +3385,7 @@ async function main() {
             figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData, localTemplates: getLocalTemplates() });
             console.log('setDeafultTemplate', templateData);
         }
-        async function refreshTables() {
+        async function updateTables(template) {
             // FIXME: Template file name not up to date for some reason
             var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
             // getAllTableInstances()
@@ -3353,18 +3397,6 @@ async function main() {
                 if (table.type !== 'INSTANCE') {
                     console.log('tableTemplate', tableTemplate);
                     copyPasteStyle(tableTemplate, table, { exclude: ['name'] });
-                    // for (let x = 0; x < table.children.length; x++) {
-                    // 	var row = table.children[x]
-                    // 	if (getPluginData(row, 'elementSemantics')?.is === "tr" === true && row.type !== "INSTANCE") {
-                    // 		copyPasteStyle(rowTemplate, row, { exclude: ['name'] })
-                    // 	}
-                    // 	// // Only need to loop through cells if has been changed by user
-                    // 	// if (row.children && getPluginData(row, "isRow") === true) {
-                    // 	// 	for (let k = 0; k < row.children.length; k++) {
-                    // 	// 		var cell = row.children[k]
-                    // 	// 	}
-                    // 	// }
-                    // }
                     table.findAll((node) => {
                         var _a;
                         if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
@@ -3435,7 +3467,11 @@ async function main() {
                 figma.closePlugin('Table created');
             });
         });
-        plugin.on('refresh-tables', refreshTables);
+        plugin.on('update-tables', (msg) => {
+            updateTables(msg.template).then(() => {
+                figma.notify('Tables updated', { timeout: 1500 });
+            });
+        });
         plugin.on('save-user-preferences', () => { });
         plugin.on('fetch-template-part', () => { });
         plugin.on('fetch-current-selection', () => { });

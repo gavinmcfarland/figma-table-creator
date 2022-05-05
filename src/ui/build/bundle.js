@@ -1214,8 +1214,12 @@ var ui = (function () {
     		} else {
     			close();
     		}
-    	}; // window.addEventListener("blur", () => {
-    	// 	// parentElement.classList.remove("show")
+
+    		window.addEventListener("blur", () => {
+    			// parentElement.classList.remove("show")
+    			close();
+    		});
+    	};
 
     	const clickOutside_function = (event, element) => {
     		close();
@@ -6017,10 +6021,10 @@ var ui = (function () {
     	);
     }
 
-    function updateTableInstances(template) {
+    function updateTables(template) {
     	parent.postMessage(
     		{
-    			pluginMessage: { type: "update-table-instances", template }
+    			pluginMessage: { type: "update-tables", template }
     		},
     		"*"
     	);
@@ -6230,7 +6234,7 @@ var ui = (function () {
     		editTemplate(template);
     	};
 
-    	const click_handler_12 = template => updateTableInstances(template);
+    	const click_handler_12 = template => updateTables(template);
 
     	const click_handler_13 = (template, event) => {
     		// Only trigger if clicking on the element itself
@@ -6244,7 +6248,7 @@ var ui = (function () {
     		getDropdown("menu").close();
     	};
 
-    	const click_handler_14 = template => updateTableInstances(template);
+    	const click_handler_14 = template => updateTables(template);
 
     	const click_handler_15 = (template, event) => {
     		// Only trigger if clicking on the element itself
