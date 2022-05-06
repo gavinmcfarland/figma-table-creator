@@ -88,10 +88,10 @@
 
 		// }
 		for (let i in data.remoteFiles) {
-			var file = data.remoteFiles[i]
-			for (let b in file.templates) {
-				if (template.component.key === file.templates[b].component.key) {
-					file.templates[b].selected = true
+			let file = data.remoteFiles[i]
+			for (let b in data.remoteFiles[i].data) {
+				if (template.component.key === file.data[b].component.key) {
+					file.data[b].selected = true
 				}
 			}
 		}
@@ -217,6 +217,8 @@
 
 	function updateSelectedFile(data, file) {
 
+		console.log("updating selected file in UI")
+
 		// file = file || data.defaultTemplate.file
 
 		if (file) {
@@ -299,9 +301,10 @@
 	}
 
 	async function onLoad(event) {
-		data = await event.data.pluginMessage
+		var message = await event.data.pluginMessage
 
-		if (data.type === "show-create-table-ui") {
+		if (message.type === "show-create-table-ui") {
+			data = message
 			let store = {
 				pageState,
 				selectedFile,
@@ -322,17 +325,13 @@
 				data = value.data
 			})
 
-			// if (data.pluginUsingOldComponents) {
-			// 	setActivePage("createTablePageActive")
-			// }
-
-			console.log("recentFiles", data.recentFiles)
 			if (data.pluginVersion === "7.0.0") {
 				// If defaultTemplate exists then show create table UI
+				console.log("defaultTemplate", data.defaultTemplate)
 				if (data.defaultTemplate) {
-				setActivePage("createTablePageActive")
-				updateSelectedTemplate(data)
-				updateSelectedFile(data)
+					setActivePage("createTablePageActive")
+					updateSelectedTemplate(data)
+					updateSelectedFile(data)
 				}
 				else {
 					// Shows page to either convert old components to template, or create new template
@@ -345,14 +344,9 @@
 			}
 		}
 
-
-
-
-
-
-
-
-		return data
+		if (message.type === "post-default-template") {
+			data = Object.assign(data, message)
+		}
 
 	}
 
@@ -364,8 +358,8 @@
 {#if pageState.chooseRemoteTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 
-		{#if data.remoteFiles}
-		<p>Choose a template</p>
+		{#if data.remoteFiles.length > 0}
+		<p>Choose a file</p>
 		<div class="List">
 			{#each data.remoteFiles as file}
 				<div class="ListItem" on:click={(event) => {
@@ -381,11 +375,14 @@
 {#if pageState.chooseTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<p>Choose a template</p>
-		{#if data.remoteFiles}
+
+		{#if data.remoteFiles.length > 0}
+
 			{#each data.remoteFiles as file}
+
 				{#if selectedFile?.id === file.id}
 					<div class="List">
-						{#each file.templates as template}
+						{#each file.data as template}
 						<div class="ListItem" on:click={(event) => {
 							// Only trigger if clicking on the element itself
 							if(event.target !== event.currentTarget) return;
@@ -498,12 +495,9 @@
 			<div class="svg6" style="margin: 0 -16px"></div>
 			</div>
 			<div class="content">
-			{#if data.recentFiles}
-				<h6>Get started</h6>
-			{:else}
-				<h6>Get started</h6>
-			{/if}
-			{#if data.recentFiles}
+			<h6>Get started</h6>
+
+			{#if data.remoteFiles.length > 0}
 				<p>Create a new template or choose an existing template from a remote file.</p>
 			{:else}
 				<p>Begin by creating a new template to create tables from.</p>
@@ -512,7 +506,7 @@
 
 			<div class="buttons">
 				<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
-				{#if data.recentFiles}
+				{#if data.remoteFiles.length > 0}
 					<span on:click={() => {
 						chooseRemoteTemplate()
 						}}><Button classes="secondary">Existing Template</Button></span>
@@ -538,7 +532,6 @@
 
 								<p style="font-weight: 600">Choose template</p>
 
-
 								<Dropdown id="tooltip">
 									<slot slot="label">
 										{selectedFile?.name}
@@ -550,7 +543,7 @@
 									</slot>
 									<slot slot="content">
 										<div class="tooltip">
-												{#if data.localTemplates}
+												{#if data.localTemplates.length > 0}
 													<div>
 														<input checked="{selectedFile?.id === data.fileId ? true : false}" type="radio" id="localTemplates" name="files">
 														<label on:click={(event) => {
@@ -560,10 +553,10 @@
 														}} for="localTemplates">Local templates</label>
 													</div>
 												{/if}
-												{#if data.localTemplates && data.remoteFiles}
+												{#if data.localTemplates.length > 0 && data.remoteFiles.length > 0}
 													<span class="tooltip-divider"></span>
 												{/if}
-												{#if data.remoteFiles}
+												{#if data.remoteFiles.length > 0}
 													{#each data.remoteFiles as file}
 															<div>
 																<input checked="{selectedFile?.id === file.id ? true : false}" type="radio" id={file.id} name="files">
@@ -584,7 +577,7 @@
 							</div>
 							<div class="menu__content">
 								{#if selectedFile?.id === data.fileId}
-									{#if data.localTemplates}
+									{#if data.localTemplates.length > 0}
 										<ul class="local-templates">
 										{#each data.localTemplates as template}
 											<li class="item {template.selected ? 'selected' : ''}" on:click={(event) => {
@@ -607,12 +600,12 @@
 										</ul>
 									{/if}
 								{:else}
-									{#if data.remoteFiles}
+									{#if data.remoteFiles.length > 0}
 										<div>
 											{#each data.remoteFiles as file}
 												{#if selectedFile?.id === file.id}
 													<ul class="remote-file">
-															{#each file.templates as template}
+															{#each file.data as template}
 															<li class="item {template.selected ? 'selected' : ''}" on:click={(event) => {
 
 																// Only trigger if clicking on the element itself

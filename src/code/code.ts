@@ -243,8 +243,15 @@ function getTableSettings(tableNode) {
 // }
 
 function getDefaultTemplate() {
+	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
 	var defaultTemplate = getDocumentData('defaultTemplate')
-	return getComponentById(defaultTemplate?.component.id) ? defaultTemplate : undefined
+
+	// FIXME: Should I be doing more, like checking if the component has been published at this point?
+	if (usingRemoteTemplate) {
+		return defaultTemplate
+	} else {
+		return getComponentById(defaultTemplate?.component.id) ? defaultTemplate : undefined
+	}
 }
 
 function getTemplateParts(templateNode) {
@@ -334,35 +341,77 @@ async function syncRecentFilesAsync(data) {
 
 		// We have to check if the array is empty because we can't filter an empty array
 		if (recentFiles.length === 0) {
-			recentFiles.push(newFile)
+			if (data.length > 0) recentFiles.push(newFile)
 		} else {
 			recentFiles.filter((item) => {
 				if (item.id === newFile.id) {
 					item.data = data
 				} else {
-					recentFiles.push(newFile)
+					if (data.length > 0) recentFiles.push(newFile)
 				}
 			})
 		}
 
 		return recentFiles
 	})
-	// Needs to know what data set
-	// Then will check if any of the set has been published
-	// Check if current file matches any in recents list
-	// If it doesn't, add to list of recent files
-	// If it does and no published things in set then remove from list
-	// getLocalTemplates()
-	// getPublishedLocalTemplates()
-	// if local templates and recent files
-	// If file has published templates
-	// createNewFile
-	// addFileToRecentFiles()
-	// Else if not
-	// Remove file
 }
 async function getRecentFilesAsync() {
 	return await getClientStorageAsync('recentFiles')
+}
+
+// This makes sure the list of local and remote templates are up to date
+async function syncRemoteFilesAsync() {
+	var recentFiles = await getClientStorageAsync('recentFiles')
+
+	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+		remoteFiles = remoteFiles || []
+
+		// remoteFiles = recentFiles
+
+		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
+		if (recentFiles.length > 0) {
+			// if (!remoteFiles) remoteFiles = []
+
+			// I think this is a method of merging files, maybe removing duplicates?
+			var ids = new Set(remoteFiles.map((file) => file.id))
+			var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))]
+
+			// Exclude current file (because we want remote files to this file only)
+			merged = merged.filter((file) => {
+				return !(file.id === getPluginData(figma.root, 'fileId'))
+			})
+
+			remoteFiles = merged
+		}
+
+		// Then I check to see if the file name has changed and make sure it's up to date
+		// For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
+		if (remoteFiles.length > 0) {
+			for (var i = 0; i < remoteFiles.length; i++) {
+				var file = remoteFiles[i]
+				figma
+					.importComponentByKeyAsync(file.data[0].component.key)
+					.then((component) => {
+						var remoteTemplate = getPluginData(component, 'template')
+						updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+							remoteFiles.map((file) => {
+								if (file.id === remoteTemplate.file.id) {
+									file.name = remoteTemplate.file.name
+								}
+							})
+							return remoteFiles
+						})
+					})
+					.catch((error) => {
+						console.log(error)
+						// FIXME: Do I need to do something here if component is deleted?
+						// FIXME: Is this the wrong time to check if component is published?
+						// figma.notify("Please check component is published")
+					})
+			}
+		}
+		return remoteFiles
+	})
 }
 
 function selectTableCells(direction) {
@@ -660,6 +709,8 @@ async function main() {
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
 	await syncRecentFilesAsync(getLocalTemplates())
+	var remoteFiles = await syncRemoteFilesAsync()
+	console.log('remoteFiles', remoteFiles)
 
 	plugma((plugin) => {
 		plugin.ui = {
@@ -680,7 +731,12 @@ async function main() {
 
 			let { templateComponent } = components
 
-			setDefaultTemplate(templateComponent)
+			// Add template data and relaunch data to templateComponent
+			let templateData = new Template(templateComponent)
+			setPluginData(templateComponent, 'template', templateData)
+			templateComponent.setRelaunchData(defaultRelaunchData)
+
+			setDefaultTemplate(templateData)
 
 			incrementNameNumerically(templateComponent)
 			selectAndZoomIntoView(figma.currentPage.children)
@@ -721,14 +777,10 @@ async function main() {
 			})
 		}
 
-		function setDefaultTemplate(templateComponent) {
-			let templateData = new Template(templateComponent)
-
-			setPluginData(templateComponent, 'template', templateData)
+		function setDefaultTemplate(templateData) {
 			setDocumentData('defaultTemplate', templateData)
-			templateComponent.setRelaunchData(defaultRelaunchData)
-			figma.ui.postMessage({ type: 'post-default-component', defaultTemplate: templateData, localTemplates: getLocalTemplates() })
-			console.log('setDeafultTemplate', templateData)
+			figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: templateData, localTemplates: getLocalTemplates() })
+			console.log('setDefaultTemplate', templateData)
 		}
 
 		async function updateTables(template) {
@@ -820,7 +872,9 @@ async function main() {
 		plugin.on('edit-template', (msg) => {
 			editTemplateComponent(msg)
 		})
-		plugin.on('set-default-template', setDefaultTemplate)
+		plugin.on('set-default-template', (msg) => {
+			setDefaultTemplate(msg.template)
+		})
 		plugin.on('set-semantics', () => {})
 
 		plugin.on('create-table-instance', async (msg) => {
@@ -848,6 +902,14 @@ async function main() {
 			upgradeOldComponentsToTemplate()
 			// TODO: Don't close, instead change UI to create table UI
 			figma.closePlugin('Template created')
+		})
+
+		// plugin.on('existing-template', (msg) => {
+		// 	figma.notify('Using remote template')
+		// })
+
+		plugin.on('using-remote-template', (msg) => {
+			setDocumentData('usingRemoteTemplate', msg.usingRemoteTemplate)
 		})
 	})
 }

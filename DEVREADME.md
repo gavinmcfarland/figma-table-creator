@@ -82,7 +82,7 @@ getDocumentData('localTemplates')
 
 ### Remote Files
 
-A list of files stored on the `document` used by the plugin. This is so the user can select a new default template to create tables from.
+A list of files stored on the `document` used by the plugin. This is so the user can select a new default template to create tables from. These files are taken from clientStorage and therefore makes one person's recent files with data visible to another user.
 
 ```js
 getDocumentData('remoteFiles')
