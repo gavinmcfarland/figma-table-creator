@@ -64,7 +64,14 @@
 ---
 
 1. Update to dark/light UI (ALMOST DONE)
-2. Script to migrate existing tables to sync to new template
-3. Sync recent files, set default template
+2. Script to migrate existing tables to sync to new template DONE
+3. Sync recent files, set default template DONE
+4. Fix post current selection (DONE)
+5. Fix add/remove element in UI (DONE)
+6. Import component if remote
+7. Set default template when components converted to template DONE
+8. Fix bug where defaultTemplate is undefined in UI after creating new template DONE
+9. Local templates not showing when first converting template DONE
+10. Create new artwork for dark and light themes
 
 

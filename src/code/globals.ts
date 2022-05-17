@@ -6,8 +6,10 @@ import {
 	setPluginData,
 	setClientStorageAsync,
 	getClientStorageAsync,
+	getDocumentData,
+	setDocumentData,
 } from '@fignite/helpers'
-import { removeChildren, getTemplateParts } from './helpers'
+import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle } from './helpers'
 import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
@@ -292,4 +294,74 @@ export function tableFactory(templateComponent) {
 	checkForHeaderComponent()
 	// checkIfTableSameAsContainer()
 	createColumnCells()
+}
+
+export function File(data?) {
+	// TODO: if fileId doesn't exist then create random ID and set fileId
+
+	this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
+	// this.name = `{figma.getNodeById("0:1").name}`
+	this.name = figma.root.name
+	if (data) this.data = data
+}
+
+export function Template(node) {
+	this.id = node.id
+	this.name = node.name
+	this.component = {
+		id: node.id,
+		key: node.key,
+	}
+	this.file = {
+		id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
+		name: figma.root.name,
+	}
+}
+
+// function getLocalTemplateComponents() {
+// 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
+// }
+export function getLocalTemplates() {
+	var templates = []
+	figma.root.findAll((node) => {
+		var templateData = getPluginData(node, 'template')
+		if (templateData && node.type === 'COMPONENT') {
+			templates.push(templateData)
+		}
+	})
+
+	return templates
+}
+
+export function setDefaultTemplate(templateData) {
+	setDocumentData('defaultTemplate', templateData)
+	figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: templateData, localTemplates: getLocalTemplates() })
+	console.log('setDefaultTemplate', templateData)
+}
+
+export async function updateTables(template) {
+	// FIXME: Template file name not up to date for some reason
+
+	var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
+	// getAllTableInstances()
+
+	var tableTemplate = await lookForComponent(template)
+
+	var rowTemplate = tableTemplate.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
+	for (let b = 0; b < tables.length; b++) {
+		var table = tables[b]
+
+		// Don't apply if an instance
+		if (table.type !== 'INSTANCE') {
+			console.log('tableTemplate', tableTemplate)
+			copyPasteStyle(tableTemplate, table, { exclude: ['name'] })
+
+			table.findAll((node) => {
+				if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
+					copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
+				}
+			})
+		}
+	}
 }

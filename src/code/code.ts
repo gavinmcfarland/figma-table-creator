@@ -37,7 +37,7 @@ import {
 } from './helpers'
 import { createDefaultComponents } from './defaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
-import { defaultRelaunchData, createTable, updatePluginVersion } from './globals'
+import { defaultRelaunchData, createTable, updatePluginVersion, Template, getLocalTemplates, File, updateTables, setDefaultTemplate } from './globals'
 
 console.clear()
 
@@ -45,28 +45,9 @@ console.clear()
 // 	figma.closePlugin('User preferences reset')
 // })
 
+figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
 
-function File(data?) {
-	// TODO: if fileId doesn't exist then create random ID and set fileId
-
-	this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
-	// this.name = `{figma.getNodeById("0:1").name}`
-	this.name = figma.root.name
-	if (data) this.data = data
-}
-function Template(node) {
-	this.id = node.id
-	this.name = node.name
-	this.component = {
-		id: node.id,
-		key: node.key,
-	}
-	this.file = {
-		id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
-		name: figma.root.name,
-	}
-}
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
 	var index = array.findIndex((x) => x.id === object.id)
@@ -154,6 +135,37 @@ function setSemantics(node, element) {
 	}
 }
 
+function addElement(element) {
+	let node = figma.currentPage.selection[0]
+	if (node.type === 'INSTANCE') {
+		setPluginData(node.mainComponent, 'elementSemantics', { is: element })
+		// TODO: Add relaunch data for selecting row or column if td
+	} else {
+		setPluginData(node, 'elementSemantics', { is: element })
+	}
+}
+
+function removeElement(nodeId, element) {
+	let node = figma.getNodeById(nodeId)
+	let templateContainer = node.type === 'COMPONENT' ? node : getParentComponent(node)
+
+	templateContainer.findAll((node) => {
+		if (getPluginData(node, 'elementSemantics')?.is === element) {
+			if (node.type === 'INSTANCE') {
+				setPluginData(node.mainComponent, 'elementSemantics', '')
+			} else {
+				setPluginData(node, 'elementSemantics', '')
+			}
+		}
+	})
+
+	// TODO: Remove relaunch data for selecting row or column if td
+
+	if (element === 'table') {
+		setPluginData(templateContainer, 'elementSemantics', '')
+	}
+}
+
 function importTemplate(node) {
 	// TODO: Needs to work more inteligently so that it corretly adds template if actually imported from file. Try to import first, if doesn't work then it must be local. Check to see if component published also.
 	// TODO: Check if already imported by checking id in list?
@@ -180,20 +192,7 @@ function importTemplate(node) {
 		figma.notify('No template found')
 	}
 }
-// function getLocalTemplateComponents() {
-// 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
-// }
-function getLocalTemplates() {
-	var templates = []
-	figma.root.findAll((node) => {
-		var templateData = getPluginData(node, 'template')
-		if (templateData && node.type === 'COMPONENT') {
-			templates.push(templateData)
-		}
-	})
 
-	return templates
-}
 function getTableSettings(tableNode) {
 	let rowCount = 0
 	let columnCount = 0
@@ -335,7 +334,7 @@ async function syncRecentFilesAsync(data) {
 	// NOTE: Should function add file, when there is no data?
 	// const publishedComponents = await getPublishedComponents(data)
 
-	updateClientStorageAsync('recentFiles', (recentFiles) => {
+	return updateClientStorageAsync('recentFiles', (recentFiles) => {
 		recentFiles = recentFiles || []
 		const newFile = new File(data)
 
@@ -365,8 +364,6 @@ async function syncRemoteFilesAsync() {
 
 	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
 		remoteFiles = remoteFiles || []
-
-		// remoteFiles = recentFiles
 
 		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
 		if (recentFiles.length > 0) {
@@ -708,9 +705,10 @@ async function main() {
 	})
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	await syncRecentFilesAsync(getLocalTemplates())
+	var recentFiles = await syncRecentFilesAsync(getLocalTemplates())
 	var remoteFiles = await syncRemoteFilesAsync()
 	console.log('remoteFiles', remoteFiles)
+	console.log('recentFiles', recentFiles)
 
 	plugma((plugin) => {
 		plugin.ui = {
@@ -748,6 +746,7 @@ async function main() {
 				animateNodeIntoView([templateNode])
 				figma.currentPage.selection = [templateNode]
 				let parts = getTemplateParts(templateNode)
+
 				let partsAsObject = {
 					table: {
 						name: getSelectionName(parts?.table),
@@ -775,39 +774,6 @@ async function main() {
 
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})
-		}
-
-		function setDefaultTemplate(templateData) {
-			setDocumentData('defaultTemplate', templateData)
-			figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: templateData, localTemplates: getLocalTemplates() })
-			console.log('setDefaultTemplate', templateData)
-		}
-
-		async function updateTables(template) {
-			// FIXME: Template file name not up to date for some reason
-
-			var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
-			// getAllTableInstances()
-
-			var tableTemplate = await lookForComponent(template)
-
-			var rowTemplate = tableTemplate.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
-
-			for (let b = 0; b < tables.length; b++) {
-				var table = tables[b]
-
-				// Don't apply if an instance
-				if (table.type !== 'INSTANCE') {
-					console.log('tableTemplate', tableTemplate)
-					copyPasteStyle(tableTemplate, table, { exclude: ['name'] })
-
-					table.findAll((node) => {
-						if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
-							copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
-						}
-					})
-				}
-			}
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
@@ -875,7 +841,14 @@ async function main() {
 		plugin.on('set-default-template', (msg) => {
 			setDefaultTemplate(msg.template)
 		})
-		plugin.on('set-semantics', () => {})
+
+		plugin.on('remove-element', (msg) => {
+			removeElement(msg.id, msg.element)
+		})
+
+		plugin.on('add-element', (msg) => {
+			addElement(msg.element)
+		})
 
 		plugin.on('create-table-instance', async (msg) => {
 			const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
@@ -897,11 +870,48 @@ async function main() {
 
 		plugin.on('save-user-preferences', () => {})
 		plugin.on('fetch-template-part', () => {})
-		plugin.on('fetch-current-selection', () => {})
+		plugin.on('fetch-current-selection', (msg) => {
+			lookForComponent(msg.template).then((templateNode) => {
+				postCurrentSelection(templateNode.id)
+			})
+		})
+		plugin.on('fetch-template-parts', (msg) => {
+			lookForComponent(msg.template).then((templateNode) => {
+				// figma.viewport.scrollAndZoomIntoView([templateNode])
+				// figma.currentPage.selection = [templateNode]
+				let parts = getTemplateParts(templateNode)
+				let partsAsObject = {
+					table: {
+						name: getSelectionName(parts?.table),
+						element: 'table',
+						id: parts?.table?.id,
+					},
+					tr: {
+						name: getSelectionName(parts?.tr),
+						element: 'tr',
+						id: parts?.tr?.id,
+					},
+					td: {
+						name: getSelectionName(parts?.td),
+						element: 'td',
+						id: parts?.td?.id,
+					},
+					th: {
+						name: getSelectionName(parts?.th),
+						element: 'th',
+						id: parts?.th?.id,
+					},
+				}
+
+				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
+			})
+		})
 		plugin.on('upgrade-to-template', () => {
 			upgradeOldComponentsToTemplate()
-			// TODO: Don't close, instead change UI to create table UI
-			figma.closePlugin('Template created')
+
+			figma.notify('Template created')
+			figma.ui.postMessage({ type: 'show-create-table-page' })
+			figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: getDefaultTemplate(), localTemplates: getLocalTemplates() })
 		})
 
 		// plugin.on('existing-template', (msg) => {

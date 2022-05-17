@@ -346,6 +346,14 @@
 
 		if (message.type === "post-default-template") {
 			data = Object.assign(data, message)
+			if (data.defaultTemplate) {
+				updateSelectedTemplate(data)
+				updateSelectedFile(data)
+			}
+		}
+
+		if (message.type === "show-create-table-page") {
+			setActivePage("createTablePageActive")
 		}
 
 	}
@@ -1140,15 +1148,21 @@
 		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
+	.iconB {}
+
 
 	.refresh {
 		height: 32px;
 		width: 32px;
+		border-radius: 2px;
 	}
 
 	.refresh:hover {
+		background-color: var(--figma-color-bg-tertiary, var(--color-selection-a));
+	}
+
+	.selected .refresh:hover {
 		background-color: var(--figma-color-bg-selected-hover, var(--color-selection-a));
-		border-radius: 2px;
 	}
 
 	.item > div {
@@ -1192,7 +1206,7 @@
 	}
 
 	.ListItem:hover {
-		background-color: var(--color-hover-fill)
+		background-color: var(--figma-color-bg-hover, var(--color-selection-a));
 	}
 
 	.ListItem:hover > .buttons {

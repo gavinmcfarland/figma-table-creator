@@ -8,8 +8,8 @@
 	let parts = {}
 	let message
 	let artworkTarget
-	let currentSelection
-	let previousSelection
+	let currentSelection = {}
+	let previousSelection = {}
 	let currentlyHovering = false
 
 	function updateTables() {
@@ -25,9 +25,9 @@
 		parent.postMessage({ pluginMessage: { type: "edit-template", template } }, "*")
 	}
 
-	function findTemplateParts(template) {
+	function fetchTemplateParts(template) {
 		// Todo: Needs to be seperated into two
-		parent.postMessage({ pluginMessage: { type: "find-template-parts", template } }, "*")
+		parent.postMessage({ pluginMessage: { type: "fetch-template-parts", template } }, "*")
 	}
 
 	function fetchCurrentSelection(template) {
@@ -35,7 +35,7 @@
 		parent.postMessage({ pluginMessage: { type: "fetch-current-selection"}, template}, "*")
 	}
 
-	findTemplateParts(template)
+	fetchTemplateParts(template)
 	editTemplate(template)
 
 
@@ -77,7 +77,7 @@
 		}
 
 		fetchCurrentSelection(template)
-		findTemplateParts(template)
+		fetchTemplateParts(template)
 	}
 
 	async function onMessage(event) {
@@ -293,7 +293,7 @@
 	.EditTemplate .target.currentlySelected {
 		margin-bottom: 24px; text-align: center;
 		margin-left: -4px;
-		color: var(--color-black-30)
+		color: var(--figma-color-text-tertiary, var(--color-black-30));
 	}
 
 	.ListItem.currentlySelected {
@@ -307,7 +307,7 @@
 
 	.ListItem .currentSelectionName {
 		display: none;
-		color: var(--color-black-30)
+		color: var(--figma-color-text-tertiary, var(--color-black-30));
 	}
 
 	.ListItem:hover .currentSelectionName {
@@ -406,7 +406,7 @@
 	}
 
 	.ListItem:hover {
-		background-color: var(--color-hover-fill)
+		background-color: var(--figma-color-bg-hover, var(--color-hover-fill));
 	}
 
 	.ListItem:hover > .buttons {

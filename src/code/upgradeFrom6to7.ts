@@ -1,6 +1,6 @@
 import { setPluginData } from '@fignite/helpers'
 import { getComponentById, positionInCenterOfViewport, removeChildren } from './helpers'
-import { createTable, tableFactory } from './globals'
+import { createTable, tableFactory, defaultRelaunchData, Template, setDefaultTemplate, updateTables } from './globals'
 
 //TODO: Is it easier to ask the user to import and select their own components?
 
@@ -14,6 +14,59 @@ import { createTable, tableFactory } from './globals'
 // 3. Next I'll look to see if you have a row component. If you don't
 
 // let tableInstance = createTable(getTemplateParts(templateComponent), msg.data, 'COMPONENT')
+
+export function upgradeOldTablesToNewTables(templateData) {
+	// Get all the old tables
+	var tables = figma.root.findAll((node) => node.getPluginData('isTable') === 'true' && node.type !== 'COMPONENT')
+	var rows = figma.root.findAll((node) => node.getPluginData('isRow') === 'true')
+	var cells = figma.root.findAll((node) => node.getPluginData('isCell') === 'true')
+	var headerCells = figma.root.findAll((node) => node.getPluginData('isHeaderCell') === 'true')
+
+	// Remap all pluginData
+	for (var i = 0; i < tables.length; i++) {
+		var node = tables[i]
+		// Remove old plugin data from table
+		node.setPluginData(`isTable`, '')
+		// Add template details to table
+		setPluginData(node, `template`, templateData)
+
+		// Add new plugin data to table
+		// TODO: Do we need to check if instance, component, frame etc?
+		setPluginData(node, `elementSemantics`, { is: 'table' })
+	}
+
+	for (var i = 0; i < rows.length; i++) {
+		var node = rows[i]
+		// Remove old plugin data from row
+		node.setPluginData(`isRow`, '')
+
+		// Add new plugin data to row
+		// TODO: Do we need to check if instance, component, frame etc?
+		setPluginData(node, `elementSemantics`, { is: 'tr' })
+	}
+
+	for (var i = 0; i < cells.length; i++) {
+		var node = cells[i]
+		// Remove old plugin data from row
+		node.setPluginData(`isCell`, '')
+
+		// Add new plugin data to row
+		// TODO: Do we need to check if instance, component, frame etc?
+		setPluginData(node, `elementSemantics`, { is: 'td' })
+	}
+
+	for (var i = 0; i < headerCells.length; i++) {
+		var node = headerCells[i]
+		// Remove old plugin data from row
+		node.setPluginData(`isCellHeader`, '')
+
+		// Add new plugin data to row
+		// TODO: Do we need to check if instance, component, frame etc?
+		setPluginData(node, `elementSemantics`, { is: 'th' })
+	}
+
+	// Probably don't need to update look as won't change while upgrading?
+}
 
 export function upgradeOldComponentsToTemplate() {
 	function cleanupOldPluginData() {
@@ -88,9 +141,18 @@ export function upgradeOldComponentsToTemplate() {
 		// TODO: Needs to relink previously created tables
 		// TODO: Needs to create tooltip
 
+		// Add template data and relaunch data to templateComponent
+		let templateData = new Template(templateComponent)
+		setPluginData(templateComponent, 'template', templateData)
+		templateComponent.setRelaunchData(defaultRelaunchData)
+
+		setDefaultTemplate(templateData)
+
 		positionInCenterOfViewport(templateComponent)
 		figma.currentPage.selection = [templateComponent]
 
 		cleanupOldPluginData()
+
+		upgradeOldTablesToNewTables(templateData)
 	}
 }
