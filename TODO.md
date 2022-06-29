@@ -64,14 +64,23 @@
 ---
 
 1. Update to dark/light UI (ALMOST DONE)
-2. Script to migrate existing tables to sync to new template DONE
-3. Sync recent files, set default template DONE
+2. Script to migrate existing tables to sync to new template (DONE)
+3. Sync recent files, set default template (DONE)
 4. Fix post current selection (DONE)
 5. Fix add/remove element in UI (DONE)
 6. Import component if remote
-7. Set default template when components converted to template DONE
-8. Fix bug where defaultTemplate is undefined in UI after creating new template DONE
-9. Local templates not showing when first converting template DONE
-10. Create new artwork for dark and light themes
+7. Set default template when components converted to template (DONE)
+8. Fix bug where defaultTemplate is undefined in UI after creating new template (DONE)
+9. Local templates not showing when first converting template (DONE)
+10. Create new artwork for dark and light themes (DONE)
+11. Create artwork for update components
+12. Make it so templates get created based on the canvas colour DONE
+13. BUG Column height fixed when switching to columns
+14. BUG See if base component is causing sluggish-ness in resizing columns
+15. Redesign new template and instructions DONE
+16. Create upgraded template tooltip DONE
+17. Add remote files functions from library DONE
+18. Fix image in editing template for light and dark
+19. Failsafe if parts of template aren't defined
 
 

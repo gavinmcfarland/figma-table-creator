@@ -577,11 +577,10 @@ function updatePluginData(node, key, callback) {
  * @param {SceneNode & ChildrenMixin } node A node with children
  */
 function removeChildren$1(node) {
-    var length = node.children.length;
-    if (length > 0) {
-        for (let i = 0; i < length; i++) {
-            node.children[0].remove();
-        }
+    let length = node.children.length;
+    // Has to happen in reverse because of order layers are listed
+    for (let i = length - 1; i >= 0; i--) {
+        node.children[i].remove();
     }
 }
 
@@ -779,6 +778,134 @@ function getDocumentData(key) {
     return getPluginData(figma.root, key);
 }
 
+/**
+ * Generates a Unique ID
+ * @returns A unique identifier
+ */
+// TODO: Use with figma.activeUser session ID
+function genUID() {
+    // var randPassword = Array(10)
+    //   .fill("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+    //   .map(function (x) {
+    //     return x[Math.floor(Math.random() * x.length)];
+    //   })
+    //   .join("");
+    return `${figma.currentUser.id + figma.currentUser.sessionId + new Date().valueOf()}`;
+}
+
+/**
+ * Saves recently visited files to a list in clientStorage and keeps . Saves recently visited files to clientStorage with associated data
+ * @param {any} fileData Any data you want to be associated with the file
+ * @returns An array of files
+ */
+function addUniqueToArray$1(object, array) {
+    // // Only add new template if unique
+    var index = array.findIndex((x) => x.id === object.id);
+    index === -1 ? array.push(object) : console.log("object already exists");
+    return array;
+}
+function File$1(data) {
+    this.id =
+        getDocumentData("fileId") ||
+            setDocumentData("fileId", genUID()).replace(/['"]+/g, "");
+    // TODO: When getPluginData has been updated to evaluate expressions at runtime replace with below
+    // this.name = `{figma.getNodeById("0:1").name}`
+    this.name = figma.root.name;
+    if (data) {
+        this.data = data;
+        setDocumentData("fileData", data);
+    }
+}
+async function getRecentFilesAsync(fileData) {
+    // Should it include an option top only add published components/data?
+    // const publishedComponents = await getPublishedComponents(fileData)
+    fileData = fileData || getDocumentData("fileData");
+    return updateClientStorageAsync$1("recentFiles", (recentFiles) => {
+        recentFiles = recentFiles || [];
+        const newFile = new File$1(fileData);
+        // We have to check if the array is empty because we can't filter an empty array
+        if (recentFiles.length === 0) {
+            if (fileData.length > 0)
+                recentFiles.push(newFile);
+        }
+        else {
+            // If unique then add to array
+            addUniqueToArray$1(newFile, recentFiles);
+            // If not, then update
+            recentFiles.filter((item) => {
+                if (item.id === newFile.id) {
+                    item.name = newFile.name;
+                    item.data = newFile.data;
+                    setDocumentData("fileData", newFile.data);
+                }
+            });
+        }
+        return recentFiles;
+    });
+}
+
+/**
+ * Returns any remote files used by the plugin. It merges any files stored on clientStorage with those collected by the plugin on the file. It also tries to update the file name.
+ * @returns An array of files
+ */
+async function getRemoteFilesAsync() {
+    var recentFiles = await getClientStorageAsync("recentFiles");
+    return updatePluginData(figma.root, "remoteFiles", (remoteFiles) => {
+        remoteFiles = remoteFiles || [];
+        // Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
+        if (recentFiles.length > 0) {
+            // Update all remote files with recent files
+            for (let i = 0; i < remoteFiles.length; i++) {
+                var remoteFile = remoteFiles[i];
+                for (let x = 0; x < recentFiles.length; x++) {
+                    var recentFile = recentFiles[x];
+                    if (recentFile.id === remoteFile.id) {
+                        remoteFile = recentFile;
+                    }
+                }
+            }
+            // I think this is a method of merging files, maybe removing duplicates?
+            var ids = new Set(remoteFiles.map((file) => file.id));
+            var merged = [
+                ...remoteFiles,
+                ...recentFiles.filter((file) => !ids.has(file.id)),
+            ];
+            // Exclude current file (because we want remote files to this file only)
+            merged = merged.filter((file) => {
+                return !(file.id === getPluginData(figma.root, "fileId"));
+            });
+            remoteFiles = merged;
+        }
+        // Then I check to see if the file name has changed and make sure it's up to date
+        // For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
+        if (remoteFiles.length > 0) {
+            for (var i = 0; i < remoteFiles.length; i++) {
+                var file = remoteFiles[i];
+                figma
+                    .importComponentByKeyAsync(file.data[0].component.key)
+                    .then((component) => {
+                    var remoteTemplate = getPluginData(component, "template");
+                    updatePluginData(figma.root, "remoteFiles", (remoteFiles) => {
+                        remoteFiles.map((file) => {
+                            if (file.id === remoteTemplate.file.id) {
+                                file.name = remoteTemplate.file.name;
+                            }
+                        });
+                        return remoteFiles;
+                    });
+                })
+                    .catch((error) => {
+                    console.log(error);
+                    // FIXME: Do I need to do something here if component is deleted?
+                    // FIXME: Is this the wrong time to check if component is published?
+                    // figma.notify("Please check component is published")
+                });
+            }
+        }
+        return remoteFiles;
+    });
+}
+
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
 var copyPaste_1 = copyPaste;
@@ -787,6 +914,8 @@ var getDocumentData_1 = getDocumentData;
 var getNodeIndex_1 = getNodeIndex;
 var getPageNode_1 = getPageNode;
 var getPluginData_1 = getPluginData;
+var getRecentFilesAsync_1 = getRecentFilesAsync;
+var getRemoteFilesAsync_1 = getRemoteFilesAsync;
 var nodeToObject_1 = nodeToObject;
 var removeChildren_1 = removeChildren$1;
 var replace_1 = replace;
@@ -1755,9 +1884,229 @@ function copyPasteStyle(source, target, options = {}) {
     return copyPaste_1(source, target, options);
 }
 
-// Wrap in function
-async function createDefaultComponents(opts) {
-    const obj = {};
+function isTheme(color) {
+    /*
+    From this W3C document: http://www.webmasterworld.com/r.cgi?f=88&d=9769&url=http://www.w3.org/TR/AERT#color-contrast
+    Color brightness is determined by the following formula:
+    ((Red value X 299) + (Green value X 587) + (Blue value X 114)) / 1000
+    */
+    var threshold = 160; /* about half of 256. Lower threshold equals more dark text on dark background  */
+    var cBrightness = (color.r * 255 * 299 + color.g * 255 * 587 + color.b * 255 * 114) / 1000;
+    if (cBrightness > threshold || figma.editorType === 'figjam') {
+        return 'light';
+    }
+    else {
+        return 'dark';
+    }
+}
+async function createTooltip(text, color) {
+    let theme = 'light';
+    if (isTheme(color || figma.currentPage.backgrounds[0].color) === 'dark') {
+        theme = 'dark';
+    }
+    // Load FONTS
+    async function loadFonts() {
+        await Promise.all([
+            figma.loadFontAsync({
+                family: 'Inter',
+                style: 'Regular',
+            }),
+        ]);
+    }
+    await loadFonts();
+    // Create COMPONENT
+    var component_305_199 = figma.createComponent();
+    component_305_199.resize(457.0, 53.0);
+    component_305_199.counterAxisSizingMode = 'AUTO';
+    component_305_199.name = '.Tooltip';
+    component_305_199.relativeTransform = [
+        [1, 0, 13222],
+        [0, 1, 7008],
+    ];
+    component_305_199.x = 13222;
+    component_305_199.y = 7008;
+    component_305_199.fills = [];
+    component_305_199.cornerRadius = 8;
+    component_305_199.primaryAxisSizingMode = 'FIXED';
+    component_305_199.strokeTopWeight = 1;
+    component_305_199.strokeBottomWeight = 1;
+    component_305_199.strokeLeftWeight = 1;
+    component_305_199.strokeRightWeight = 1;
+    component_305_199.backgrounds = [];
+    component_305_199.expanded = false;
+    component_305_199.layoutMode = 'HORIZONTAL';
+    component_305_199.counterAxisSizingMode = 'AUTO';
+    // Create FRAME
+    var frame_305_200 = figma.createFrame();
+    component_305_199.appendChild(frame_305_200);
+    frame_305_200.resize(457.0, 53.0);
+    frame_305_200.primaryAxisSizingMode = 'AUTO';
+    frame_305_200.name = 'Artwork';
+    frame_305_200.layoutPositioning = 'ABSOLUTE';
+    frame_305_200.fills = [];
+    frame_305_200.strokeTopWeight = 1;
+    frame_305_200.strokeBottomWeight = 1;
+    frame_305_200.strokeLeftWeight = 1;
+    frame_305_200.strokeRightWeight = 1;
+    frame_305_200.backgrounds = [];
+    frame_305_200.clipsContent = false;
+    frame_305_200.expanded = false;
+    frame_305_200.constraints = { horizontal: 'STRETCH', vertical: 'STRETCH' };
+    // Create RECTANGLE
+    var rectangle_305_201 = figma.createRectangle();
+    frame_305_200.appendChild(rectangle_305_201);
+    rectangle_305_201.resize(15.5563220978, 15.5563220978);
+    rectangle_305_201.name = 'Rectangle 1';
+    rectangle_305_201.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    rectangle_305_201.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    rectangle_305_201.relativeTransform = [
+        [0.7071068287, -0.7071068287, 0],
+        [0.7071068287, 0.7071068287, 16],
+    ];
+    rectangle_305_201.y = 16;
+    rectangle_305_201.rotation = -45;
+    rectangle_305_201.constrainProportions = true;
+    rectangle_305_201.strokeTopWeight = 1;
+    rectangle_305_201.strokeBottomWeight = 1;
+    rectangle_305_201.strokeLeftWeight = 1;
+    rectangle_305_201.strokeRightWeight = 1;
+    // Create RECTANGLE
+    var rectangle_305_280 = figma.createRectangle();
+    frame_305_200.appendChild(rectangle_305_280);
+    rectangle_305_280.resize(457.0, 53.0);
+    rectangle_305_280.name = 'Rectangle 2';
+    rectangle_305_280.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    rectangle_305_280.constraints = { horizontal: 'MIN', vertical: 'STRETCH' };
+    rectangle_305_280.cornerRadius = 8;
+    rectangle_305_280.strokeTopWeight = 1;
+    rectangle_305_280.strokeBottomWeight = 1;
+    rectangle_305_280.strokeLeftWeight = 1;
+    rectangle_305_280.strokeRightWeight = 1;
+    // Create BOOLEAN_OPERATION
+    var booleanOperation_305_620 = figma.union([rectangle_305_201, rectangle_305_280], frame_305_200);
+    booleanOperation_305_620.name = 'Union';
+    booleanOperation_305_620.visible = true;
+    booleanOperation_305_620.locked = false;
+    booleanOperation_305_620.opacity = 1;
+    booleanOperation_305_620.blendMode = 'PASS_THROUGH';
+    booleanOperation_305_620.isMask = false;
+    booleanOperation_305_620.effects = [
+        {
+            type: 'DROP_SHADOW',
+            color: { r: 0, g: 0, b: 0, a: 0.07000000029802322 },
+            offset: { x: 0, y: 4 },
+            radius: 12,
+            spread: 0,
+            visible: true,
+            blendMode: 'NORMAL',
+            showShadowBehindNode: false,
+        },
+    ];
+    booleanOperation_305_620.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    booleanOperation_305_620.strokes = [
+        { type: 'SOLID', visible: true, opacity: 0.10000000149011612, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
+    ];
+    booleanOperation_305_620.strokeWeight = 1;
+    booleanOperation_305_620.strokeAlign = 'INSIDE';
+    booleanOperation_305_620.strokeJoin = 'MITER';
+    booleanOperation_305_620.dashPattern = [];
+    booleanOperation_305_620.strokeCap = 'NONE';
+    booleanOperation_305_620.strokeMiterLimit = 4;
+    booleanOperation_305_620.layoutAlign = 'INHERIT';
+    booleanOperation_305_620.constrainProportions = false;
+    booleanOperation_305_620.layoutGrow = 0;
+    booleanOperation_305_620.layoutPositioning = 'AUTO';
+    booleanOperation_305_620.exportSettings = [];
+    booleanOperation_305_620.cornerRadius = 0;
+    booleanOperation_305_620.cornerSmoothing = 0;
+    booleanOperation_305_620.expanded = false;
+    booleanOperation_305_620.reactions = [];
+    // Create TEXT
+    var text_305_202 = figma.createText();
+    component_305_199.appendChild(text_305_202);
+    text_305_202.resize(417.0, 21.0);
+    text_305_202.name =
+        "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
+    text_305_202.relativeTransform = [
+        [1, 0, 20],
+        [0, 1, 16],
+    ];
+    text_305_202.x = 20;
+    text_305_202.y = 16;
+    text_305_202.layoutGrow = 1;
+    text_305_202.autoRename = false;
+    // Font properties
+    text_305_202.listSpacing = 0;
+    text_305_202.characters = 'Text';
+    text_305_202.fontSize = 14;
+    text_305_202.lineHeight = { unit: 'PERCENT', value: 150 };
+    text_305_202.fontName = { family: 'Inter', style: 'Regular' };
+    text_305_202.textAutoResize = 'HEIGHT';
+    component_305_199.remove();
+    // Create INSTANCE
+    var instance_305_196 = component_305_199.createInstance();
+    figma.currentPage.appendChild(instance_305_196);
+    instance_305_196.relativeTransform = [
+        [1, 0, 13222],
+        [0, 1, 7163],
+    ];
+    instance_305_196.y = 7163;
+    // Swap COMPONENT
+    instance_305_196.swapComponent(component_305_199);
+    // Ref to SUB NODE
+    var frame_I305_196_305_200 = figma.getNodeById('I' + instance_305_196.id + ';' + frame_305_200.id);
+    frame_I305_196_305_200.resize(457.0, 116.0);
+    frame_I305_196_305_200.primaryAxisSizingMode = 'AUTO';
+    // Ref to SUB NODE
+    var booleanOperation_I305_196_305_620 = figma.getNodeById('I' + instance_305_196.id + ';' + booleanOperation_305_620.id);
+    // Ref to SUB NODE
+    figma.getNodeById('I' + instance_305_196.id + ';' + rectangle_305_201.id);
+    // Ref to SUB NODE
+    var rectangle_I305_196_305_280 = figma.getNodeById('I' + instance_305_196.id + ';' + rectangle_305_280.id);
+    rectangle_I305_196_305_280.resize(457.0, 116.0);
+    // Ref to SUB NODE
+    var text_I305_196_305_202 = figma.getNodeById('I' + instance_305_196.id + ';' + text_305_202.id);
+    text_I305_196_305_202.resize(417.0, 84.0);
+    text_I305_196_305_202.characters = text;
+    // Add padding at the end
+    component_305_199.paddingLeft = 20;
+    component_305_199.paddingRight = 20;
+    component_305_199.paddingTop = 16;
+    component_305_199.paddingBottom = 16;
+    if (theme === 'dark') {
+        text_I305_196_305_202.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+        booleanOperation_I305_196_305_620.fills = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.21250000596046448, g: 0.21250000596046448, b: 0.21250000596046448 },
+            },
+        ];
+        booleanOperation_I305_196_305_620.strokes = [
+            { type: 'SOLID', visible: true, opacity: 0.10000000149011612, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } },
+        ];
+        booleanOperation_I305_196_305_620.effects = [
+            {
+                type: 'DROP_SHADOW',
+                color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
+                offset: { x: 0, y: 4 },
+                radius: 12,
+                spread: 0,
+                visible: true,
+                blendMode: 'NORMAL',
+                showShadowBehindNode: false,
+            },
+        ];
+    }
+    return instance_305_196;
+}
+async function createTemplateComponents() {
+    let theme = 'light';
+    if (isTheme(figma.currentPage.backgrounds[0].color) === 'dark') {
+        theme = 'dark';
+    }
     // Load FONTS
     async function loadFonts() {
         await Promise.all([
@@ -1771,348 +2120,308 @@ async function createDefaultComponents(opts) {
             }),
         ]);
     }
-    // ----Create Table Cell----
+    await loadFonts();
     // Create COMPONENT
-    var component_101_204 = figma.createComponent();
-    component_101_204.resize(120.0, 35.0);
-    component_101_204.name = 'Type=Default';
-    component_101_204.layoutAlign = 'STRETCH';
-    component_101_204.fills = [{ type: 'SOLID', visible: true, opacity: 0.000009999999747378752, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
-    component_101_204.primaryAxisSizingMode = 'FIXED';
-    component_101_204.backgrounds = [
-        { type: 'SOLID', visible: true, opacity: 0.000009999999747378752, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } },
+    var component_305_178 = figma.createComponent();
+    component_305_178.resize(120.0, 35.0);
+    component_305_178.name = 'Type=Default';
+    component_305_178.relativeTransform = [
+        [1, 0, 16],
+        [0, 1, 16],
     ];
-    component_101_204.layoutMode = 'VERTICAL';
-    component_101_204.description = '';
-    component_101_204.documentationLinks = [];
-    // Create COMPONENT
-    var component_101_119 = figma.createComponent();
-    component_101_119.resize(120.0, 35.0);
-    component_101_119.name = '_BaseCell';
-    component_101_119.relativeTransform = [
-        [1, 0, 8760],
-        [0, 1, 5164],
+    component_305_178.x = 16;
+    component_305_178.y = 16;
+    component_305_178.layoutAlign = 'STRETCH';
+    component_305_178.fills = [{ type: 'SOLID', visible: true, opacity: 0.0020000000949949026, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    if (theme === 'dark') {
+        component_305_178.strokes = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.3583333194255829, g: 0.3583333194255829, b: 0.3583333194255829 },
+            },
+        ];
+    }
+    else {
+        component_305_178.strokes = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
+            },
+        ];
+    }
+    component_305_178.primaryAxisSizingMode = 'FIXED';
+    component_305_178.strokeTopWeight = 1;
+    component_305_178.strokeBottomWeight = 0;
+    component_305_178.strokeLeftWeight = 1;
+    component_305_178.strokeRightWeight = 0;
+    component_305_178.backgrounds = [
+        { type: 'SOLID', visible: true, opacity: 0.0020000000949949026, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } },
     ];
-    component_101_119.x = 8760;
-    component_101_119.y = 5164;
-    component_101_119.layoutAlign = 'STRETCH';
-    component_101_119.fills = [];
-    component_101_119.primaryAxisSizingMode = 'FIXED';
-    component_101_119.backgrounds = [];
-    component_101_119.expanded = false;
-    component_101_119.layoutMode = 'VERTICAL';
-    component_101_119.description = '';
-    component_101_119.documentationLinks = [];
+    component_305_178.expanded = false;
+    component_305_178.layoutMode = 'VERTICAL';
     // Create FRAME
-    var frame_101_114 = figma.createFrame();
-    frame_101_114.resizeWithoutConstraints(120.0, 0.01);
-    frame_101_114.primaryAxisSizingMode = 'AUTO';
-    frame_101_114.locked = true;
-    frame_101_114.layoutAlign = 'STRETCH';
-    frame_101_114.fills = [];
-    frame_101_114.backgrounds = [];
-    frame_101_114.clipsContent = false;
-    frame_101_114.expanded = false;
-    component_101_119.appendChild(frame_101_114);
-    // Create COMPONENT
-    var component_1_351 = figma.createComponent();
-    component_1_351.name = '_TableBorder';
-    component_1_351.relativeTransform = [
-        [1, 0, 8476],
-        [0, 1, 5168],
-    ];
-    component_1_351.x = 8476;
-    component_1_351.y = 5168;
-    component_1_351.expanded = false;
-    component_1_351.constraints = { horizontal: 'STRETCH', vertical: 'STRETCH' };
-    component_1_351.description = '';
-    component_1_351.documentationLinks = [];
-    // Create LINE
-    var line_1_352 = figma.createLine();
-    line_1_352.resizeWithoutConstraints(500.0, 0.0);
-    line_1_352.strokes = [
-        {
-            type: 'SOLID',
-            visible: true,
-            opacity: 1,
-            blendMode: 'NORMAL',
-            color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
-        },
-    ];
-    line_1_352.relativeTransform = [
-        [-4.37e-8, -1, 0],
-        [1, -4.37e-8, 0],
-    ];
-    line_1_352.rotation = -90.00000250447827;
-    line_1_352.constraints = { horizontal: 'STRETCH', vertical: 'STRETCH' };
-    component_1_351.appendChild(line_1_352);
-    // Create INSTANCE
-    var instance_102_493 = component_1_351.createInstance();
-    instance_102_493.relativeTransform = [
-        [1, 0, 0],
-        [0, 1, -250],
-    ];
-    instance_102_493.y = -250;
-    frame_101_114.appendChild(instance_102_493);
-    // Swap COMPONENT
-    instance_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_102_493.id + ';' + line_1_352.id);
-    // Create FRAME
-    var frame_101_116 = figma.createFrame();
-    frame_101_116.resize(120.0, 35.0);
-    frame_101_116.primaryAxisSizingMode = 'AUTO';
-    frame_101_116.name = 'Content';
-    frame_101_116.relativeTransform = [
-        [1, 0, 0],
-        [0, 1, 0.001],
-    ];
-    frame_101_116.y = 0.0010000000474974513;
-    frame_101_116.layoutAlign = 'STRETCH';
-    frame_101_116.fills = [];
-    frame_101_116.paddingLeft = 12;
-    frame_101_116.paddingRight = 12;
-    frame_101_116.paddingTop = 10;
-    frame_101_116.paddingBottom = 10;
-    frame_101_116.backgrounds = [];
-    frame_101_116.expanded = false;
-    frame_101_116.layoutMode = 'VERTICAL';
-    component_101_119.appendChild(frame_101_116);
+    var frame_305_179 = figma.createFrame();
+    component_305_178.appendChild(frame_305_179);
+    frame_305_179.resize(120.0, 35.0);
+    frame_305_179.primaryAxisSizingMode = 'AUTO';
+    frame_305_179.name = 'Content';
+    frame_305_179.layoutAlign = 'STRETCH';
+    frame_305_179.fills = [];
+    frame_305_179.paddingLeft = 12;
+    frame_305_179.paddingRight = 12;
+    frame_305_179.paddingTop = 10;
+    frame_305_179.paddingBottom = 10;
+    frame_305_179.strokeTopWeight = 1;
+    frame_305_179.strokeBottomWeight = 1;
+    frame_305_179.strokeLeftWeight = 1;
+    frame_305_179.strokeRightWeight = 1;
+    frame_305_179.backgrounds = [];
+    frame_305_179.expanded = false;
+    frame_305_179.layoutMode = 'VERTICAL';
     // Create TEXT
-    var text_101_117 = figma.createText();
-    text_101_117.resize(96.0, 15.0);
-    text_101_117.relativeTransform = [
+    var text_305_180 = figma.createText();
+    frame_305_179.appendChild(text_305_180);
+    text_305_180.resize(96.0, 15.0);
+    text_305_180.relativeTransform = [
         [1, 0, 12],
         [0, 1, 10],
     ];
-    text_101_117.x = 12;
-    text_101_117.y = 10;
-    text_101_117.layoutAlign = 'STRETCH';
-    text_101_117.hyperlink = null;
-    loadFonts().then((res) => {
-        text_101_117.fontName = {
-            family: 'Inter',
-            style: 'Regular',
-        };
-        text_101_117.listSpacing = 0;
-        text_101_117.characters = '';
-        text_101_117.lineHeight = { unit: 'PERCENT', value: 125 };
-        text_101_117.fontName = { family: 'Inter', style: 'Regular' };
-        text_101_117.textAutoResize = 'HEIGHT';
-    });
-    frame_101_116.appendChild(text_101_117);
-    // Create INSTANCE
-    var instance_101_198 = component_101_119.createInstance();
-    instance_101_198.resize(120.0, 35.0009994507);
-    instance_101_198.primaryAxisSizingMode = 'AUTO';
-    instance_101_198.relativeTransform = [
-        [1, 0, 0],
-        [0, 1, 0],
-    ];
-    instance_101_198.primaryAxisSizingMode = 'AUTO';
-    instance_101_198.constraints = { horizontal: 'SCALE', vertical: 'CENTER' };
-    component_101_204.appendChild(instance_101_198);
-    // Swap COMPONENT
-    instance_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_101_198.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I101_198_102_493 = figma.getNodeById('I' + instance_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_101_198.id + ';' + text_101_117.id);
-    // ----Create Table Header----
+    text_305_180.x = 12;
+    text_305_180.y = 10;
+    text_305_180.layoutAlign = 'STRETCH';
+    // Font properties
+    text_305_180.fontName = {
+        family: 'Inter',
+        style: 'Regular',
+    };
+    text_305_180.listSpacing = 0;
+    text_305_180.characters = '';
+    text_305_180.lineHeight = { unit: 'PERCENT', value: 125 };
+    text_305_180.fontName = { family: 'Inter', style: 'Regular' };
+    text_305_180.textAutoResize = 'HEIGHT';
+    if (theme === 'dark') {
+        text_305_180.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    }
     // Create COMPONENT
-    var component_101_265 = figma.createComponent();
-    component_101_265.resize(120.0, 35.0);
-    component_101_265.name = 'Type=Header';
-    component_101_265.relativeTransform = [
-        [1, 0, 120],
-        [0, 1, 0],
+    var component_305_181 = figma.createComponent();
+    component_305_181.resize(120.0, 35.0);
+    component_305_181.name = 'Type=Header';
+    component_305_181.relativeTransform = [
+        [1, 0, 136],
+        [0, 1, 16],
     ];
-    component_101_265.x = 120;
-    component_101_265.layoutAlign = 'STRETCH';
-    component_101_265.fills = [{ type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } }];
-    component_101_265.primaryAxisSizingMode = 'FIXED';
-    component_101_265.backgrounds = [{ type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } }];
-    component_101_265.layoutMode = 'VERTICAL';
-    component_101_265.description = '';
-    component_101_265.documentationLinks = [];
-    // Create INSTANCE
-    var instance_101_266 = component_101_119.createInstance();
-    instance_101_266.resize(120.0, 35.0009994507);
-    instance_101_266.primaryAxisSizingMode = 'AUTO';
-    instance_101_266.relativeTransform = [
-        [1, 0, 0],
-        [0, 1, 0],
+    component_305_181.x = 136;
+    component_305_181.y = 16;
+    component_305_181.layoutAlign = 'STRETCH';
+    if (theme === 'dark') {
+        component_305_181.fills = [{ type: 'SOLID', visible: true, opacity: 0.05, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+        component_305_181.strokes = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.3583333194255829, g: 0.3583333194255829, b: 0.3583333194255829 },
+            },
+        ];
+    }
+    else {
+        component_305_181.fills = [{ type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } }];
+        component_305_181.strokes = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
+            },
+        ];
+    }
+    component_305_181.primaryAxisSizingMode = 'FIXED';
+    component_305_181.strokeTopWeight = 1;
+    component_305_181.strokeBottomWeight = 0;
+    component_305_181.strokeLeftWeight = 1;
+    component_305_181.strokeRightWeight = 0;
+    component_305_181.expanded = false;
+    component_305_181.layoutMode = 'VERTICAL';
+    // Create FRAME
+    var frame_305_182 = figma.createFrame();
+    component_305_181.appendChild(frame_305_182);
+    frame_305_182.resize(120.0, 35.0);
+    frame_305_182.primaryAxisSizingMode = 'AUTO';
+    frame_305_182.name = 'Content';
+    frame_305_182.layoutAlign = 'STRETCH';
+    frame_305_182.fills = [];
+    frame_305_182.paddingLeft = 12;
+    frame_305_182.paddingRight = 12;
+    frame_305_182.paddingTop = 10;
+    frame_305_182.paddingBottom = 10;
+    frame_305_182.strokeTopWeight = 1;
+    frame_305_182.strokeBottomWeight = 1;
+    frame_305_182.strokeLeftWeight = 1;
+    frame_305_182.strokeRightWeight = 1;
+    frame_305_182.backgrounds = [];
+    frame_305_182.expanded = false;
+    frame_305_182.layoutMode = 'VERTICAL';
+    // Create TEXT
+    var text_305_183 = figma.createText();
+    frame_305_182.appendChild(text_305_183);
+    text_305_183.resize(96.0, 15.0);
+    text_305_183.relativeTransform = [
+        [1, 0, 12],
+        [0, 1, 10],
     ];
-    instance_101_266.primaryAxisSizingMode = 'AUTO';
-    instance_101_266.constraints = { horizontal: 'SCALE', vertical: 'CENTER' };
-    component_101_265.appendChild(instance_101_266);
-    // Swap COMPONENT
-    instance_101_266.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_101_266.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I101_266_102_493 = figma.getNodeById('I' + instance_101_266.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I101_266_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I101_266_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_101_266.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    var text_I101_266_101_117 = figma.getNodeById('I' + instance_101_266.id + ';' + text_101_117.id);
+    text_305_183.x = 12;
+    text_305_183.y = 10;
+    text_305_183.layoutAlign = 'STRETCH';
+    // Font properties
+    text_305_183.fontName = {
+        family: 'Inter',
+        style: 'Semi Bold',
+    };
+    text_305_183.listSpacing = 0;
+    text_305_183.characters = '';
+    text_305_183.lineHeight = { unit: 'PERCENT', value: 125 };
+    text_305_183.fontName = { family: 'Inter', style: 'Semi Bold' };
+    text_305_183.textAutoResize = 'HEIGHT';
+    if (theme === 'dark') {
+        text_305_183.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    }
+    // >>>>>>>>>>>>>>>>> Cells
     // Create COMPONENT_SET
-    var componentSet_1_364 = figma.combineAsVariants([component_101_204, component_101_265], figma.currentPage);
-    componentSet_1_364.resize(240.0, 35.0);
-    componentSet_1_364.primaryAxisSizingMode = 'AUTO';
-    componentSet_1_364.name = '_Cell';
-    componentSet_1_364.visible = true;
-    componentSet_1_364.locked = false;
-    componentSet_1_364.opacity = 1;
-    componentSet_1_364.blendMode = 'PASS_THROUGH';
-    componentSet_1_364.isMask = false;
-    componentSet_1_364.effects = [];
-    componentSet_1_364.relativeTransform = [
-        [1, 0, 8760],
-        [0, 1, 5009],
+    var componentSet_305_177 = figma.combineAsVariants([component_305_178, component_305_181], figma.currentPage);
+    componentSet_305_177.resize(272.0, 67.0);
+    componentSet_305_177.primaryAxisSizingMode = 'AUTO';
+    componentSet_305_177.counterAxisSizingMode = 'AUTO';
+    componentSet_305_177.name = '.Cell';
+    componentSet_305_177.visible = true;
+    componentSet_305_177.locked = false;
+    componentSet_305_177.opacity = 1;
+    componentSet_305_177.blendMode = 'PASS_THROUGH';
+    componentSet_305_177.isMask = false;
+    componentSet_305_177.effects = [];
+    componentSet_305_177.relativeTransform = [
+        [1, 0, 11673],
+        [0, 1, 7538],
     ];
-    componentSet_1_364.x = 8760;
-    componentSet_1_364.y = 5009;
-    componentSet_1_364.rotation = 0;
-    componentSet_1_364.layoutAlign = 'INHERIT';
-    componentSet_1_364.constrainProportions = false;
-    componentSet_1_364.layoutGrow = 0;
-    componentSet_1_364.fills = [];
-    componentSet_1_364.strokes = [
+    componentSet_305_177.x = 11673;
+    componentSet_305_177.y = 7538;
+    componentSet_305_177.rotation = 0;
+    componentSet_305_177.layoutAlign = 'INHERIT';
+    componentSet_305_177.constrainProportions = false;
+    componentSet_305_177.layoutGrow = 0;
+    componentSet_305_177.layoutPositioning = 'AUTO';
+    componentSet_305_177.exportSettings = [];
+    componentSet_305_177.fills = [];
+    componentSet_305_177.strokes = [
         { type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 0.48235294222831726, g: 0.3803921639919281, b: 1 } },
     ];
-    componentSet_1_364.strokeWeight = 1;
-    componentSet_1_364.strokeAlign = 'INSIDE';
-    componentSet_1_364.strokeJoin = 'MITER';
-    componentSet_1_364.dashPattern = [10, 5];
-    componentSet_1_364.strokeCap = 'NONE';
-    componentSet_1_364.strokeMiterLimit = 4;
-    componentSet_1_364.cornerRadius = 5;
-    componentSet_1_364.cornerSmoothing = 0;
-    componentSet_1_364.paddingLeft = 0;
-    componentSet_1_364.paddingRight = 0;
-    componentSet_1_364.paddingTop = 0;
-    componentSet_1_364.paddingBottom = 0;
-    componentSet_1_364.primaryAxisAlignItems = 'MIN';
-    componentSet_1_364.counterAxisAlignItems = 'MIN';
-    componentSet_1_364.primaryAxisSizingMode = 'AUTO';
-    componentSet_1_364.layoutGrids = [];
-    componentSet_1_364.backgrounds = [];
-    componentSet_1_364.clipsContent = true;
-    componentSet_1_364.guides = [];
-    componentSet_1_364.expanded = true;
-    componentSet_1_364.constraints = { horizontal: 'MIN', vertical: 'MIN' };
-    componentSet_1_364.layoutMode = 'HORIZONTAL';
-    componentSet_1_364.counterAxisSizingMode = 'FIXED';
-    componentSet_1_364.itemSpacing = 0;
-    componentSet_1_364.description = '';
-    componentSet_1_364.documentationLinks = [];
-    // ----Create Table Row----
+    componentSet_305_177.strokeWeight = 1;
+    componentSet_305_177.strokeAlign = 'INSIDE';
+    componentSet_305_177.strokeJoin = 'MITER';
+    componentSet_305_177.dashPattern = [10, 5];
+    componentSet_305_177.strokeCap = 'NONE';
+    componentSet_305_177.strokeMiterLimit = 4;
+    componentSet_305_177.cornerRadius = 5;
+    componentSet_305_177.cornerSmoothing = 0;
+    componentSet_305_177.paddingLeft = 16;
+    componentSet_305_177.paddingRight = 16;
+    componentSet_305_177.paddingTop = 16;
+    componentSet_305_177.paddingBottom = 16;
+    componentSet_305_177.primaryAxisAlignItems = 'MIN';
+    componentSet_305_177.counterAxisAlignItems = 'MIN';
+    componentSet_305_177.primaryAxisSizingMode = 'AUTO';
+    componentSet_305_177.strokeTopWeight = 1;
+    componentSet_305_177.strokeBottomWeight = 1;
+    componentSet_305_177.strokeLeftWeight = 1;
+    componentSet_305_177.strokeRightWeight = 1;
+    componentSet_305_177.layoutGrids = [];
+    componentSet_305_177.backgrounds = [];
+    componentSet_305_177.clipsContent = true;
+    componentSet_305_177.guides = [];
+    componentSet_305_177.expanded = false;
+    componentSet_305_177.constraints = { horizontal: 'MIN', vertical: 'MIN' };
+    componentSet_305_177.layoutMode = 'HORIZONTAL';
+    componentSet_305_177.counterAxisSizingMode = 'AUTO';
+    componentSet_305_177.itemSpacing = 0;
+    componentSet_305_177.overflowDirection = 'NONE';
+    componentSet_305_177.numberOfFixedChildren = 0;
+    componentSet_305_177.itemReverseZIndex = false;
+    componentSet_305_177.strokesIncludedInLayout = false;
+    componentSet_305_177.description = '';
+    componentSet_305_177.documentationLinks = [];
+    // >>>>>>>>>>>>>>>>> Row
     // Create COMPONENT
-    var component_1_365 = figma.createComponent();
-    component_1_365.resize(240.0, 35.0009994507);
-    component_1_365.primaryAxisSizingMode = 'AUTO';
-    component_1_365.counterAxisSizingMode = 'AUTO';
-    component_1_365.name = '_Row';
-    component_1_365.effects = [
-        {
-            type: 'INNER_SHADOW',
-            color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907, a: 1 },
-            offset: { x: 0, y: 1 },
-            radius: 0,
-            spread: 0,
-            visible: true,
-            blendMode: 'NORMAL',
-        },
+    var component_305_184 = figma.createComponent();
+    figma.currentPage.appendChild(component_305_184);
+    component_305_184.resize(240.0, 35.0);
+    component_305_184.primaryAxisSizingMode = 'AUTO';
+    component_305_184.counterAxisSizingMode = 'AUTO';
+    component_305_184.name = '.Row';
+    component_305_184.relativeTransform = [
+        [1, 0, 11689],
+        [0, 1, 7399],
     ];
-    component_1_365.relativeTransform = [
-        [1, 0, 8760],
-        [0, 1, 4854],
-    ];
-    component_1_365.x = 8760;
-    component_1_365.y = 4854;
-    component_1_365.fills = [{ type: 'SOLID', visible: true, opacity: 0.00009999999747378752, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
-    component_1_365.backgrounds = [
+    component_305_184.x = 11689;
+    component_305_184.y = 7399;
+    component_305_184.fills = [{ type: 'SOLID', visible: true, opacity: 0.00009999999747378752, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+    component_305_184.strokeTopWeight = 1;
+    component_305_184.strokeBottomWeight = 1;
+    component_305_184.strokeLeftWeight = 1;
+    component_305_184.strokeRightWeight = 1;
+    component_305_184.backgrounds = [
         { type: 'SOLID', visible: true, opacity: 0.00009999999747378752, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } },
     ];
-    component_1_365.clipsContent = true;
-    component_1_365.layoutMode = 'HORIZONTAL';
-    component_1_365.counterAxisSizingMode = 'AUTO';
-    component_1_365.description = '';
-    component_1_365.documentationLinks = [];
-    figma.currentPage.appendChild(component_1_365);
+    component_305_184.clipsContent = true;
+    component_305_184.expanded = false;
+    component_305_184.layoutMode = 'HORIZONTAL';
+    component_305_184.counterAxisSizingMode = 'AUTO';
     // Create INSTANCE
-    var instance_1_366 = component_101_204.createInstance();
-    instance_1_366.resize(120.0, 35.0009994507);
-    instance_1_366.name = '_Cell';
-    instance_1_366.expanded = false;
-    component_1_365.appendChild(instance_1_366);
+    var instance_305_185 = component_305_178.createInstance();
+    component_305_184.appendChild(instance_305_185);
+    instance_305_185.name = '.Cell';
+    instance_305_185.relativeTransform = [
+        [1, 0, 0],
+        [0, 1, 0],
+    ];
+    instance_305_185.layoutAlign = 'STRETCH';
     // Swap COMPONENT
-    instance_1_366.swapComponent(component_101_204);
+    instance_305_185.swapComponent(component_305_178);
     // Ref to SUB NODE
-    var instance_I1_366_101_198 = figma.getNodeById('I' + instance_1_366.id + ';' + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_366_101_198.swapComponent(component_101_119);
+    figma.getNodeById('I' + instance_305_185.id + ';' + frame_305_179.id);
     // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_366_101_198_102_493 = figma.getNodeById(instance_I1_366_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_366_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_366_101_198.id + ';' + text_101_117.id);
+    figma.getNodeById('I' + instance_305_185.id + ';' + text_305_180.id);
     // Create INSTANCE
-    var instance_1_372 = component_101_204.createInstance();
-    instance_1_372.resize(120.0, 35.0009994507);
-    instance_1_372.name = '_Cell';
-    instance_1_372.relativeTransform = [
+    var instance_305_186 = component_305_178.createInstance();
+    component_305_184.appendChild(instance_305_186);
+    instance_305_186.name = '.Cell';
+    instance_305_186.relativeTransform = [
         [1, 0, 120],
         [0, 1, 0],
     ];
-    instance_1_372.x = 120;
-    component_1_365.appendChild(instance_1_372);
+    instance_305_186.x = 120;
+    instance_305_186.layoutAlign = 'STRETCH';
     // Swap COMPONENT
-    instance_1_372.swapComponent(component_101_204);
+    instance_305_186.swapComponent(component_305_178);
     // Ref to SUB NODE
-    var instance_I1_372_101_198 = figma.getNodeById('I' + instance_1_372.id + ';' + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_372_101_198.swapComponent(component_101_119);
+    figma.getNodeById('I' + instance_305_186.id + ';' + frame_305_179.id);
     // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_372_101_198_102_493 = figma.getNodeById(instance_I1_372_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_372_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_372_101_198.id + ';' + text_101_117.id);
-    // ----Create Table----
+    figma.getNodeById('I' + instance_305_186.id + ';' + text_305_180.id);
+    // >>>>>>>>>>>>>>>>> Template
     // Create COMPONENT
-    var component_1_378 = figma.createComponent();
-    component_1_378.resize(240.0, 105.0029983521);
-    component_1_378.primaryAxisSizingMode = 'AUTO';
-    component_1_378.counterAxisSizingMode = 'AUTO';
-    component_1_378.name = 'Table 1';
-    component_1_378.effects = [
+    var component_305_187 = figma.createComponent();
+    figma.currentPage.appendChild(component_305_187);
+    component_305_187.resize(240.0, 105.0);
+    component_305_187.primaryAxisSizingMode = 'AUTO';
+    component_305_187.counterAxisSizingMode = 'AUTO';
+    component_305_187.name = 'Table 1';
+    component_305_187.effects = [
         {
             type: 'DROP_SHADOW',
             color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
@@ -2124,480 +2433,153 @@ async function createDefaultComponents(opts) {
             showShadowBehindNode: false,
         },
     ];
-    component_1_378.relativeTransform = [
-        [1, 0, 8760],
-        [0, 1, 4629],
+    component_305_187.relativeTransform = [
+        [1, 0, 11689],
+        [0, 1, 7174],
     ];
-    component_1_378.x = 8760;
-    component_1_378.y = 4629;
-    component_1_378.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
-    component_1_378.strokes = [
-        {
-            type: 'SOLID',
-            visible: true,
-            opacity: 1,
-            blendMode: 'NORMAL',
-            color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
-        },
-    ];
-    component_1_378.cornerRadius = 4;
-    component_1_378.backgrounds = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
-    component_1_378.clipsContent = true;
-    component_1_378.layoutMode = 'VERTICAL';
-    component_1_378.counterAxisSizingMode = 'AUTO';
-    component_1_378.description = '';
-    component_1_378.documentationLinks = [];
-    figma.currentPage.appendChild(component_1_378);
+    component_305_187.x = 11689;
+    component_305_187.y = 7174;
+    if (theme === 'dark') {
+        component_305_187.fills = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.21250000596046448, g: 0.21250000596046448, b: 0.21250000596046448 },
+            },
+        ];
+        component_305_187.strokes = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.3583333194255829, g: 0.3583333194255829, b: 0.3583333194255829 },
+            },
+        ];
+    }
+    else {
+        component_305_187.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+        component_305_187.strokes = [
+            {
+                type: 'SOLID',
+                visible: true,
+                opacity: 1,
+                blendMode: 'NORMAL',
+                color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
+            },
+        ];
+    }
+    component_305_187.cornerRadius = 4;
+    component_305_187.strokeTopWeight = 1;
+    component_305_187.strokeBottomWeight = 1;
+    component_305_187.strokeLeftWeight = 1;
+    component_305_187.strokeRightWeight = 1;
+    component_305_187.clipsContent = true;
+    component_305_187.expanded = false;
+    component_305_187.layoutMode = 'VERTICAL';
+    component_305_187.counterAxisSizingMode = 'AUTO';
     // Create INSTANCE
-    var instance_1_379 = component_1_365.createInstance();
-    instance_1_379.relativeTransform = [
+    var instance_305_188 = component_305_184.createInstance();
+    component_305_187.appendChild(instance_305_188);
+    instance_305_188.relativeTransform = [
         [1, 0, 0],
         [0, 1, 0],
     ];
-    component_1_378.appendChild(instance_1_379);
     // Swap COMPONENT
-    instance_1_379.swapComponent(component_1_365);
+    instance_305_188.swapComponent(component_305_184);
     // Ref to SUB NODE
-    var instance_I1_379_1_366 = figma.getNodeById('I' + instance_1_379.id + ';' + instance_1_366.id);
-    instance_I1_379_1_366.fills = [{ type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } }];
-    instance_I1_379_1_366.backgrounds = [
+    var instance_I305_188_305_185 = figma.getNodeById('I' + instance_305_188.id + ';' + instance_305_185.id);
+    instance_I305_188_305_185.fills = [
+        { type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
+    ];
+    instance_I305_188_305_185.backgrounds = [
         { type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
     ];
     // Swap COMPONENT
-    instance_I1_379_1_366.swapComponent(component_101_265);
+    instance_I305_188_305_185.swapComponent(component_305_181);
     // Ref to SUB NODE
-    var instance_I1_379_1_366_101_266 = figma.getNodeById(instance_I1_379_1_366.id + ';' + instance_101_266.id);
-    // Swap COMPONENT
-    instance_I1_379_1_366_101_266.swapComponent(component_101_119);
+    figma.getNodeById(instance_I305_188_305_185.id + ';' + frame_305_182.id);
     // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266.id + ';' + frame_101_114.id);
+    figma.getNodeById(instance_I305_188_305_185.id + ';' + text_305_183.id);
     // Ref to SUB NODE
-    var instance_I1_379_1_366_101_266_102_493 = figma.getNodeById(instance_I1_379_1_366_101_266.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_379_1_366_101_266_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_366_101_266.id + ';' + text_101_117.id);
-    // Ref to SUB NODE
-    var instance_I1_379_1_372 = figma.getNodeById('I' + instance_1_379.id + ';' + instance_1_372.id);
-    instance_I1_379_1_372.fills = [{ type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } }];
-    instance_I1_379_1_372.backgrounds = [
+    var instance_I305_188_305_186 = figma.getNodeById('I' + instance_305_188.id + ';' + instance_305_186.id);
+    instance_I305_188_305_186.fills = [
+        { type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
+    ];
+    instance_I305_188_305_186.backgrounds = [
         { type: 'SOLID', visible: true, opacity: 0.05999999865889549, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
     ];
     // Swap COMPONENT
-    instance_I1_379_1_372.swapComponent(component_101_265);
+    instance_I305_188_305_186.swapComponent(component_305_181);
     // Ref to SUB NODE
-    var instance_I1_379_1_372_101_266 = figma.getNodeById(instance_I1_379_1_372.id + ';' + instance_101_266.id);
-    // Swap COMPONENT
-    instance_I1_379_1_372_101_266.swapComponent(component_101_119);
+    figma.getNodeById(instance_I305_188_305_186.id + ';' + frame_305_182.id);
     // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_379_1_372_101_266_102_493 = figma.getNodeById(instance_I1_379_1_372_101_266.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_379_1_372_101_266_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_379_1_372_101_266.id + ';' + text_101_117.id);
+    figma.getNodeById(instance_I305_188_305_186.id + ';' + text_305_183.id);
     // Create INSTANCE
-    var instance_1_398 = component_1_365.createInstance();
-    instance_1_398.relativeTransform = [
+    var instance_305_189 = component_305_184.createInstance();
+    component_305_187.appendChild(instance_305_189);
+    instance_305_189.relativeTransform = [
         [1, 0, 0],
-        [0, 1, 35.0009994507],
+        [0, 1, 35],
     ];
-    instance_1_398.y = 35.000999450683594;
-    instance_1_398.expanded = false;
-    component_1_378.appendChild(instance_1_398);
+    instance_305_189.y = 35;
     // Swap COMPONENT
-    instance_1_398.swapComponent(component_1_365);
+    instance_305_189.swapComponent(component_305_184);
     // Ref to SUB NODE
-    var instance_I1_398_1_366 = figma.getNodeById('I' + instance_1_398.id + ';' + instance_1_366.id);
+    var instance_I305_189_305_185 = figma.getNodeById('I' + instance_305_189.id + ';' + instance_305_185.id);
     // Swap COMPONENT
-    instance_I1_398_1_366.swapComponent(component_101_204);
+    instance_I305_189_305_185.swapComponent(component_305_178);
     // Ref to SUB NODE
-    var instance_I1_398_1_366_101_198 = figma.getNodeById(instance_I1_398_1_366.id + ';' + instance_101_198.id);
+    figma.getNodeById(instance_I305_189_305_185.id + ';' + frame_305_179.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I305_189_305_185.id + ';' + text_305_180.id);
+    // Ref to SUB NODE
+    var instance_I305_189_305_186 = figma.getNodeById('I' + instance_305_189.id + ';' + instance_305_186.id);
     // Swap COMPONENT
-    instance_I1_398_1_366_101_198.swapComponent(component_101_119);
+    instance_I305_189_305_186.swapComponent(component_305_178);
     // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198.id + ';' + frame_101_114.id);
+    figma.getNodeById(instance_I305_189_305_186.id + ';' + frame_305_179.id);
     // Ref to SUB NODE
-    var instance_I1_398_1_366_101_198_102_493 = figma.getNodeById(instance_I1_398_1_366_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_398_1_366_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_366_101_198.id + ';' + text_101_117.id);
-    // Ref to SUB NODE
-    var instance_I1_398_1_372 = figma.getNodeById('I' + instance_1_398.id + ';' + instance_1_372.id);
-    instance_I1_398_1_372.expanded = false;
-    // Swap COMPONENT
-    instance_I1_398_1_372.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_398_1_372_101_198 = figma.getNodeById(instance_I1_398_1_372.id + ';' + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_398_1_372_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_398_1_372_101_198_102_493 = figma.getNodeById(instance_I1_398_1_372_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_398_1_372_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_398_1_372_101_198.id + ';' + text_101_117.id);
+    figma.getNodeById(instance_I305_189_305_186.id + ';' + text_305_180.id);
     // Create INSTANCE
-    var instance_1_417 = component_1_365.createInstance();
-    instance_1_417.relativeTransform = [
+    var instance_305_190 = component_305_184.createInstance();
+    component_305_187.appendChild(instance_305_190);
+    instance_305_190.relativeTransform = [
         [1, 0, 0],
-        [0, 1, 70.0019989014],
+        [0, 1, 70],
     ];
-    instance_1_417.y = 70.00199890136719;
-    instance_1_417.expanded = false;
-    component_1_378.appendChild(instance_1_417);
+    instance_305_190.y = 70;
     // Swap COMPONENT
-    instance_1_417.swapComponent(component_1_365);
+    instance_305_190.swapComponent(component_305_184);
     // Ref to SUB NODE
-    var instance_I1_417_1_366 = figma.getNodeById('I' + instance_1_417.id + ';' + instance_1_366.id);
+    var instance_I305_190_305_185 = figma.getNodeById('I' + instance_305_190.id + ';' + instance_305_185.id);
     // Swap COMPONENT
-    instance_I1_417_1_366.swapComponent(component_101_204);
+    instance_I305_190_305_185.swapComponent(component_305_178);
     // Ref to SUB NODE
-    var instance_I1_417_1_366_101_198 = figma.getNodeById(instance_I1_417_1_366.id + ';' + instance_101_198.id);
+    figma.getNodeById(instance_I305_190_305_185.id + ';' + frame_305_179.id);
+    // Ref to SUB NODE
+    figma.getNodeById(instance_I305_190_305_185.id + ';' + text_305_180.id);
+    // Ref to SUB NODE
+    var instance_I305_190_305_186 = figma.getNodeById('I' + instance_305_190.id + ';' + instance_305_186.id);
     // Swap COMPONENT
-    instance_I1_417_1_366_101_198.swapComponent(component_101_119);
+    instance_I305_190_305_186.swapComponent(component_305_178);
     // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198.id + ';' + frame_101_114.id);
+    figma.getNodeById(instance_I305_190_305_186.id + ';' + frame_305_179.id);
     // Ref to SUB NODE
-    var instance_I1_417_1_366_101_198_102_493 = figma.getNodeById(instance_I1_417_1_366_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_417_1_366_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_366_101_198.id + ';' + text_101_117.id);
-    // Ref to SUB NODE
-    var instance_I1_417_1_372 = figma.getNodeById('I' + instance_1_417.id + ';' + instance_1_372.id);
-    instance_I1_417_1_372.expanded = false;
-    // Swap COMPONENT
-    instance_I1_417_1_372.swapComponent(component_101_204);
-    // Ref to SUB NODE
-    var instance_I1_417_1_372_101_198 = figma.getNodeById(instance_I1_417_1_372.id + ';' + instance_101_198.id);
-    // Swap COMPONENT
-    instance_I1_417_1_372_101_198.swapComponent(component_101_119);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198.id + ';' + frame_101_114.id);
-    // Ref to SUB NODE
-    var instance_I1_417_1_372_101_198_102_493 = figma.getNodeById(instance_I1_417_1_372_101_198.id + ';' + instance_102_493.id);
-    // Swap COMPONENT
-    instance_I1_417_1_372_101_198_102_493.swapComponent(component_1_351);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198_102_493.id + ';' + line_1_352.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198.id + ';' + frame_101_116.id);
-    // Ref to SUB NODE
-    figma.getNodeById(instance_I1_417_1_372_101_198.id + ';' + text_101_117.id);
-    // Create COMPONENT
-    var component_1_430 = figma.createComponent();
-    component_1_430.resize(457.0, 179.0);
-    component_1_430.counterAxisSizingMode = 'AUTO';
-    component_1_430.name = '_Tooltip';
-    component_1_430.effects = [
-        {
-            type: 'DROP_SHADOW',
-            color: { r: 0.9666666388511658, g: 0.15708333253860474, b: 0.15708333253860474, a: 0.09000000357627869 },
-            offset: { x: 0, y: 16 },
-            radius: 8,
-            spread: 0,
-            visible: false,
-            blendMode: 'NORMAL',
-            showShadowBehindNode: true,
-        },
-    ];
-    component_1_430.relativeTransform = [
-        [1, 0, 9080],
-        [0, 1, 4316],
-    ];
-    component_1_430.x = 9080;
-    component_1_430.y = 4316;
-    component_1_430.fills = [
-        { type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
-        {
-            type: 'GRADIENT_LINEAR',
-            visible: true,
-            opacity: 1,
-            blendMode: 'NORMAL',
-            gradientStops: [
-                { color: { r: 0, g: 0, b: 0, a: 1 }, position: 0 },
-                { color: { r: 0.26249998807907104, g: 0.26249998807907104, b: 0.26249998807907104, a: 1 }, position: 1 },
-            ],
-            gradientTransform: [
-                [0.37368255853652954, 0.4259088337421417, 0.21073251962661743],
-                [-0.0000021187263428146252, 0.0000018692335288506001, 0.5000001788139343],
-            ],
-        },
-    ];
-    component_1_430.cornerRadius = 8;
-    component_1_430.paddingLeft = 20;
-    component_1_430.paddingRight = 20;
-    component_1_430.paddingTop = 16;
-    component_1_430.paddingBottom = 16;
-    component_1_430.primaryAxisSizingMode = 'FIXED';
-    component_1_430.backgrounds = [
-        { type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 0, g: 0, b: 0 } },
-        {
-            type: 'GRADIENT_LINEAR',
-            visible: true,
-            opacity: 1,
-            blendMode: 'NORMAL',
-            gradientStops: [
-                { color: { r: 0, g: 0, b: 0, a: 1 }, position: 0 },
-                { color: { r: 0.26249998807907104, g: 0.26249998807907104, b: 0.26249998807907104, a: 1 }, position: 1 },
-            ],
-            gradientTransform: [
-                [0.37368255853652954, 0.4259088337421417, 0.21073251962661743],
-                [-0.0000021187263428146252, 0.0000018692335288506001, 0.5000001788139343],
-            ],
-        },
-    ];
-    component_1_430.expanded = false;
-    component_1_430.layoutMode = 'HORIZONTAL';
-    component_1_430.counterAxisSizingMode = 'AUTO';
-    component_1_430.description = '';
-    component_1_430.documentationLinks = [];
-    // Create FRAME
-    var frame_1_431 = figma.createFrame();
-    frame_1_431.resizeWithoutConstraints(0.01, 0.01);
-    frame_1_431.primaryAxisSizingMode = 'AUTO';
-    frame_1_431.name = 'Frame 2';
-    frame_1_431.relativeTransform = [
-        [1, 0, 20],
-        [0, 1, 16],
-    ];
-    frame_1_431.x = 20;
-    frame_1_431.y = 16;
-    frame_1_431.fills = [];
-    frame_1_431.backgrounds = [];
-    frame_1_431.clipsContent = false;
-    frame_1_431.expanded = false;
-    component_1_430.appendChild(frame_1_431);
-    // Create RECTANGLE
-    var rectangle_1_432 = figma.createRectangle();
-    rectangle_1_432.resize(15.5563220978, 15.5563220978);
-    rectangle_1_432.name = 'Rectangle 1';
-    rectangle_1_432.fills = [
-        {
-            type: 'SOLID',
-            visible: true,
-            opacity: 1,
-            blendMode: 'NORMAL',
-            color: { r: 0.0784313753247261, g: 0.0784313753247261, b: 0.0784313753247261 },
-        },
-    ];
-    rectangle_1_432.relativeTransform = [
-        [0.7071068287, -0.7071068287, -19.1801757812],
-        [0.7071068287, 0.7071068287, 1.8198242188],
-    ];
-    rectangle_1_432.x = -19.18017578125;
-    rectangle_1_432.y = 1.81982421875;
-    rectangle_1_432.rotation = -45;
-    rectangle_1_432.constrainProportions = true;
-    frame_1_431.appendChild(rectangle_1_432);
-    // Create TEXT
-    var text_1_433 = figma.createText();
-    text_1_433.resize(416.9899902344, 147.0);
-    text_1_433.name =
-        "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
-    text_1_433.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
-    text_1_433.relativeTransform = [
-        [1, 0, 20.0100002289],
-        [0, 1, 16],
-    ];
-    text_1_433.x = 20.010000228881836;
-    text_1_433.y = 16;
-    text_1_433.layoutGrow = 1;
-    text_1_433.hyperlink = null;
-    text_1_433.autoRename = false;
-    loadFonts().then((res) => {
-        text_1_433.fontName = {
-            family: 'Inter',
-            style: 'Regular',
-        };
-        text_1_433.listSpacing = 0;
-        text_1_433.characters =
-            "Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables";
-        text_1_433.fontSize = 14;
-        text_1_433.lineHeight = { unit: 'PERCENT', value: 150 };
-        text_1_433.fontName = { family: 'Inter', style: 'Regular' };
-        text_1_433.textAutoResize = 'HEIGHT';
-    });
-    component_1_430.appendChild(text_1_433);
-    // Create INSTANCE
-    var instance_1_434 = component_1_430.createInstance();
-    instance_1_434.relativeTransform = [
-        [1, 0, 9080],
-        [0, 1, 4618],
-    ];
-    instance_1_434.y = 4618;
-    figma.currentPage.appendChild(instance_1_434);
-    // Swap COMPONENT
-    instance_1_434.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_1_434.id + ';' + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_1_434.id + ';' + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I1_434_1_433 = figma.getNodeById('I' + instance_1_434.id + ';' + text_1_433.id);
-    text_I1_434_1_433.resize(416.9899902344, 63.0);
-    loadFonts().then((res) => {
-        text_I1_434_1_433.fontName = {
-            family: 'Inter',
-            style: 'Regular',
-        };
-        text_I1_434_1_433.characters =
-            'This component is the template used by the plugin to create tables from. You can customise the appearance of your tables by customising these components.';
-    });
-    // Create INSTANCE
-    var instance_1_438 = component_1_430.createInstance();
-    instance_1_438.relativeTransform = [
-        [1, 0, 9080],
-        [0, 1, 4843],
-    ];
-    instance_1_438.y = 4843;
-    figma.currentPage.appendChild(instance_1_438);
-    // Swap COMPONENT
-    instance_1_438.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_1_438.id + ';' + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_1_438.id + ';' + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I1_438_1_433 = figma.getNodeById('I' + instance_1_438.id + ';' + text_1_433.id);
-    text_I1_438_1_433.resize(416.9899902344, 42.0);
-    loadFonts().then((res) => {
-        text_I1_438_1_433.fontName = {
-            family: 'Inter',
-            style: 'Regular',
-        };
-        text_I1_438_1_433.characters = ' To customise the horizontal borders change the shadow colour.';
-    });
-    // Create INSTANCE
-    var instance_1_442 = component_1_430.createInstance();
-    instance_1_442.relativeTransform = [
-        [1, 0, 9080],
-        [0, 1, 4998],
-    ];
-    instance_1_442.y = 4998;
-    figma.currentPage.appendChild(instance_1_442);
-    // Swap COMPONENT
-    instance_1_442.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_1_442.id + ';' + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_1_442.id + ';' + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I1_442_1_433 = figma.getNodeById('I' + instance_1_442.id + ';' + text_1_433.id);
-    text_I1_442_1_433.resize(416.9899902344, 42.0);
-    loadFonts().then((res) => {
-        text_I1_442_1_433.fontName = {
-            family: 'Inter',
-            style: 'Regular',
-        };
-        text_I1_442_1_433.characters = 'Change the appearance of each cell type by customising these variants.';
-    });
-    // Create INSTANCE
-    var instance_102_121 = component_1_430.createInstance();
-    instance_102_121.relativeTransform = [
-        [1, 0, 9080],
-        [0, 1, 5152],
-    ];
-    instance_102_121.y = 5152;
-    figma.currentPage.appendChild(instance_102_121);
-    // Swap COMPONENT
-    instance_102_121.swapComponent(component_1_430);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_102_121.id + ';' + frame_1_431.id);
-    // Ref to SUB NODE
-    figma.getNodeById('I' + instance_102_121.id + ';' + rectangle_1_432.id);
-    // Ref to SUB NODE
-    var text_I102_121_1_433 = figma.getNodeById('I' + instance_102_121.id + ';' + text_1_433.id);
-    text_I102_121_1_433.resize(416.9899902344, 42.0);
-    loadFonts().then((res) => {
-        text_I102_121_1_433.fontName = {
-            family: 'Inter',
-            style: 'Regular',
-        };
-        text_I102_121_1_433.characters = 'Change the deafult appearance of all cells by customising this base component.';
-    });
-    // Remove table border component from canvas
-    component_1_351.remove();
-    // Remove tooltip component from canvas
-    component_1_430.remove();
-    setPluginData_1(component_1_378, 'elementSemantics', { is: 'table' });
-    setPluginData_1(component_1_365, 'elementSemantics', { is: 'tr' });
-    setPluginData_1(component_101_204, 'elementSemantics', { is: 'td' });
-    setPluginData_1(component_101_265, 'elementSemantics', { is: 'th' });
-    // does it need to be on base component?
-    component_101_204.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
-    component_101_265.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
-    // Manually add properties so cells will fill row height
-    instance_1_372.layoutAlign = 'STRETCH';
-    instance_1_366.layoutAlign = 'STRETCH';
-    instance_101_198.layoutAlign = 'STRETCH';
-    instance_101_266.layoutAlign = 'STRETCH';
-    // Manually add shadow to cells for when used in column mode
-    component_101_265.effects = [
-        {
-            type: 'INNER_SHADOW',
-            color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907, a: 1 },
-            offset: { x: 0, y: 1 },
-            radius: 0,
-            spread: 0,
-            visible: true,
-            blendMode: 'NORMAL',
-        },
-    ];
-    component_101_204.effects = [
-        {
-            type: 'INNER_SHADOW',
-            color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907, a: 1 },
-            offset: { x: 0, y: 1 },
-            radius: 0,
-            spread: 0,
-            visible: true,
-            blendMode: 'NORMAL',
-        },
-    ];
-    component_101_204.backgrounds = [
-        { type: 'SOLID', visible: true, opacity: 0.0020000000949949026, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } },
-    ];
-    // Manually add bold font weight to header cell
-    loadFonts().then((res) => {
-        text_I101_266_101_117.fontName = {
-            family: 'Inter',
-            style: 'Semi Bold',
-        };
-    });
-    obj.templateComponent = component_1_378;
-    obj.row = component_1_365;
-    obj.cell = component_101_204;
-    obj.headerCell = component_101_265;
-    obj.cellSet = componentSet_1_364;
-    obj.baseCell = component_101_119;
-    obj.instances = [instance_1_442, instance_102_121, instance_1_438, instance_1_434];
-    return obj;
+    figma.getNodeById(instance_I305_190_305_186.id + ';' + text_305_180.id);
+    setPluginData_1(component_305_187, 'elementSemantics', { is: 'table' });
+    setPluginData_1(component_305_184, 'elementSemantics', { is: 'tr' });
+    setPluginData_1(component_305_178, 'elementSemantics', { is: 'td' });
+    setPluginData_1(component_305_181, 'elementSemantics', { is: 'th' });
+    component_305_178.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    component_305_181.setRelaunchData({ selectColumn: 'Select all cells in column', selectRow: 'Select all cells in row' });
+    return {
+        templateComponent: component_305_187,
+        rowComponent: component_305_184,
+        cellComponentSet: componentSet_305_177,
+    };
 }
 
 async function updateClientStorageAsync(key, callback) {
@@ -2858,11 +2840,36 @@ function upgradeOldTablesToNewTables(templateData) {
     }
     // Probably don't need to update look as won't change while upgrading?
 }
-function upgradeOldComponentsToTemplate() {
+async function upgradeOldComponentsToTemplate() {
     function cleanupOldPluginData() {
         let keys = ['cellComponentID', 'cellHeaderComponentID', 'rowComponentID', 'tableComponentID'];
         keys.forEach((element) => {
             figma.root.setPluginData(element, '');
+        });
+    }
+    function cleanUpOldTooltips() {
+        figma.root.findOne((node) => {
+            if (node.characters ===
+                'Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Settings. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.') {
+                node.remove();
+            }
+        });
+        figma.root.findOne((node) => {
+            if (node.characters ===
+                'The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Settings.') {
+                node.remove();
+            }
+        });
+        figma.root.findOne((node) => {
+            if (node.characters === 'Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.') {
+                node.remove();
+            }
+        });
+        figma.root.findOne((node) => {
+            if (node.characters ===
+                `Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables`) {
+                node.remove();
+            }
         });
     }
     function createTemplateComponent() {
@@ -2887,7 +2894,22 @@ function upgradeOldComponentsToTemplate() {
         rowComponent.appendChild(cellInstance2);
         // We need to clone it because we don't want it to affect existing components
         let tableComponent = getComponentById(figma.root.getPluginData('tableComponentID'));
-        let templateComponent = tableComponent ? tableComponent.clone() : figma.createComponent();
+        let templateComponent;
+        if (tableComponent) {
+            templateComponent = tableComponent;
+        }
+        else {
+            templateComponent = figma.createComponent();
+            if (getComponentById(figma.root.getPluginData('rowComponentID'))) {
+                templateComponent.y = rowComponent.y + rowComponent.height + 120;
+                templateComponent.x = rowComponent.x;
+            }
+            else {
+                templateComponent.y = cellComponent.parent.y + cellComponent.height + 120;
+                templateComponent.x = cellComponent.x;
+            }
+        }
+        // let templateComponent = tableComponent ? tableComponent.clone() : figma.createComponent()
         setPluginData_1(templateComponent, `elementSemantics`, { is: 'table' });
         // Apply styling to table
         removeChildren(templateComponent);
@@ -2915,25 +2937,51 @@ function upgradeOldComponentsToTemplate() {
         const templateComponent = createTemplateComponent();
         // TODO: Needs to be added to list of templates
         // TODO: Needs to relink previously created tables
-        // TODO: Needs to create tooltip
         // Add template data and relaunch data to templateComponent
         let templateData = new Template(templateComponent);
         setPluginData_1(templateComponent, 'template', templateData);
         templateComponent.setRelaunchData(defaultRelaunchData);
         setDefaultTemplate(templateData);
-        positionInCenterOfViewport(templateComponent);
-        figma.currentPage.selection = [templateComponent];
+        // positionInCenterOfViewport(templateComponent)
+        // // Create new page and add template to it
+        // let newPage = figma.createPage()
+        // newPage.name = 'Table Creator Template'
+        // newPage.appendChild(templateComponent)
+        let tooltip = await createTooltip('Your table components have been converted into a template. A template is single component used by Table Creator to create tables from. Only this component is required by the plugin.', figma.currentPage.backgrounds[0].color);
+        tooltip.x = templateComponent.x + templateComponent.width + 80;
+        tooltip.y = templateComponent.y - 10;
+        let componentPage = getPageNode_1(templateComponent);
+        componentPage.appendChild(tooltip);
+        // figma.currentPage.selection = [templateComponent, tooltip]
+        // let group = figma.group([templateComponent, tooltip], componentPage)
+        // figma.currentPage = componentPage
+        // figma.viewport.scrollAndZoomIntoView([templateComponent, tooltip])
+        // figma.currentPage.selection = [templateComponent]
         cleanupOldPluginData();
+        cleanUpOldTooltips();
         upgradeOldTablesToNewTables(templateData);
     }
 }
 
+// FIXME: Recent files not adding unique files only
 console.clear();
+// createTooltip(
+// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
+// ).then((tooltip) => {
+// 	positionInCenterOfViewport(tooltip)
+// })
+// createTemplateComponents().then((array) => {
+// 	let group = figma.group(array, figma.currentPage)
+// 	positionInCenterOfViewport(group)
+// 	figma.ungroup(group)
+// })
 // setClientStorageAsync('userPreferences', undefined).then(() => {
 // 	figma.closePlugin('User preferences reset')
 // })
-figma.clientStorage.deleteAsync('recentFiles');
+// figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
+// figma.root.setPluginData('remoteFiles', '')
+// figma.root.setPluginData('fileId', '')
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
     var index = array.findIndex((x) => x.id === object.id);
@@ -3147,85 +3195,81 @@ function postCurrentSelection(templateNodeId) {
         }
     });
 }
-/**
- * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
- * @param {String} key A key to store data under
- * @param {any} data Data to be stored
- */
-async function syncRecentFilesAsync(data) {
-    // NOTE: Should function add file, when there is no data?
-    // const publishedComponents = await getPublishedComponents(data)
-    return updateClientStorageAsync_1('recentFiles', (recentFiles) => {
-        recentFiles = recentFiles || [];
-        const newFile = new File(data);
-        // We have to check if the array is empty because we can't filter an empty array
-        if (recentFiles.length === 0) {
-            if (data.length > 0)
-                recentFiles.push(newFile);
-        }
-        else {
-            recentFiles.filter((item) => {
-                if (item.id === newFile.id) {
-                    item.data = data;
-                }
-                else {
-                    if (data.length > 0)
-                        recentFiles.push(newFile);
-                }
-            });
-        }
-        return recentFiles;
-    });
-}
-async function getRecentFilesAsync() {
-    return await getClientStorageAsync_1('recentFiles');
-}
-// This makes sure the list of local and remote templates are up to date
-async function syncRemoteFilesAsync() {
-    var recentFiles = await getClientStorageAsync_1('recentFiles');
-    return updatePluginData_1(figma.root, 'remoteFiles', (remoteFiles) => {
-        remoteFiles = remoteFiles || [];
-        // Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
-        if (recentFiles.length > 0) {
-            // if (!remoteFiles) remoteFiles = []
-            // I think this is a method of merging files, maybe removing duplicates?
-            var ids = new Set(remoteFiles.map((file) => file.id));
-            var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))];
-            // Exclude current file (because we want remote files to this file only)
-            merged = merged.filter((file) => {
-                return !(file.id === getPluginData_1(figma.root, 'fileId'));
-            });
-            remoteFiles = merged;
-        }
-        // Then I check to see if the file name has changed and make sure it's up to date
-        // For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
-        if (remoteFiles.length > 0) {
-            for (var i = 0; i < remoteFiles.length; i++) {
-                var file = remoteFiles[i];
-                figma
-                    .importComponentByKeyAsync(file.data[0].component.key)
-                    .then((component) => {
-                    var remoteTemplate = getPluginData_1(component, 'template');
-                    updatePluginData_1(figma.root, 'remoteFiles', (remoteFiles) => {
-                        remoteFiles.map((file) => {
-                            if (file.id === remoteTemplate.file.id) {
-                                file.name = remoteTemplate.file.name;
-                            }
-                        });
-                        return remoteFiles;
-                    });
-                })
-                    .catch((error) => {
-                    console.log(error);
-                    // FIXME: Do I need to do something here if component is deleted?
-                    // FIXME: Is this the wrong time to check if component is published?
-                    // figma.notify("Please check component is published")
-                });
-            }
-        }
-        return remoteFiles;
-    });
-}
+// /**
+//  * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
+//  * @param {String} key A key to store data under
+//  * @param {any} data Data to be stored
+//  */
+// async function syncRecentFilesAsync(data) {
+// 	// NOTE: Should function add file, when there is no data?
+// 	// const publishedComponents = await getPublishedComponents(data)
+// 	return updateClientStorageAsync('recentFiles', (recentFiles) => {
+// 		recentFiles = recentFiles || []
+// 		const newFile = new File(data)
+// 		// We have to check if the array is empty because we can't filter an empty array
+// 		if (recentFiles.length === 0) {
+// 			if (data.length > 0) recentFiles.push(newFile)
+// 		} else {
+// 			recentFiles.filter((item) => {
+// 				if (item.id === newFile.id) {
+// 					item.data = data
+// 				} else {
+// 					if (data.length > 0) recentFiles.push(newFile)
+// 				}
+// 			})
+// 		}
+// 		return recentFiles
+// 	})
+// }
+// async function getRecentFilesAsync() {
+// 	return await getClientStorageAsync('recentFiles')
+// }
+// // This makes sure the list of local and remote templates are up to date
+// async function syncRemoteFilesAsync() {
+// 	var recentFiles = await getClientStorageAsync('recentFiles')
+// 	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+// 		remoteFiles = remoteFiles || []
+// 		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
+// 		if (recentFiles.length > 0) {
+// 			// if (!remoteFiles) remoteFiles = []
+// 			// I think this is a method of merging files, maybe removing duplicates?
+// 			var ids = new Set(remoteFiles.map((file) => file.id))
+// 			var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))]
+// 			// Exclude current file (because we want remote files to this file only)
+// 			merged = merged.filter((file) => {
+// 				return !(file.id === getPluginData(figma.root, 'fileId'))
+// 			})
+// 			remoteFiles = merged
+// 		}
+// 		// Then I check to see if the file name has changed and make sure it's up to date
+// 		// For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
+// 		if (remoteFiles.length > 0) {
+// 			for (var i = 0; i < remoteFiles.length; i++) {
+// 				var file = remoteFiles[i]
+// 				figma
+// 					.importComponentByKeyAsync(file.data[0].component.key)
+// 					.then((component) => {
+// 						var remoteTemplate = getPluginData(component, 'template')
+// 						updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+// 							remoteFiles.map((file) => {
+// 								if (file.id === remoteTemplate.file.id) {
+// 									file.name = remoteTemplate.file.name
+// 								}
+// 							})
+// 							return remoteFiles
+// 						})
+// 					})
+// 					.catch((error) => {
+// 						console.log(error)
+// 						// FIXME: Do I need to do something here if component is deleted?
+// 						// FIXME: Is this the wrong time to check if component is published?
+// 						// figma.notify("Please check component is published")
+// 					})
+// 			}
+// 		}
+// 		return remoteFiles
+// 	})
+// }
 function selectTableCells(direction) {
     var _a;
     // Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
@@ -3472,8 +3516,8 @@ async function main() {
         return data;
     });
     // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-    var recentFiles = await syncRecentFilesAsync(getLocalTemplates());
-    var remoteFiles = await syncRemoteFilesAsync();
+    var recentFiles = await getRecentFilesAsync_1(getLocalTemplates());
+    var remoteFiles = await getRemoteFilesAsync_1();
     console.log('remoteFiles', remoteFiles);
     console.log('recentFiles', recentFiles);
     dist((plugin) => {
@@ -3484,17 +3528,27 @@ async function main() {
         };
         // Received messages
         async function newTemplateComponent(opts) {
+            console.log('Create new template?');
             let { shouldCreatePage } = opts;
             if (shouldCreatePage) {
                 createPage('Table Creator');
             }
-            let components = await createDefaultComponents();
-            let { templateComponent } = components;
+            let components = await createTemplateComponents();
+            let { templateComponent, rowComponent, cellComponentSet } = components;
             // Add template data and relaunch data to templateComponent
             let templateData = new Template(templateComponent);
             setPluginData_1(templateComponent, 'template', templateData);
             templateComponent.setRelaunchData(defaultRelaunchData);
             setDefaultTemplate(templateData);
+            let tooltip1 = await createTooltip('This component is the template used by Table Creator to create tables from. You can customise the appearance of your tables by customising this template. It’s made up of the components below.');
+            tooltip1.x = templateComponent.x + templateComponent.width + 80;
+            tooltip1.y = templateComponent.y - 10;
+            let tooltip2 = await createTooltip('Customise rows by changing this component.');
+            tooltip2.x = rowComponent.x + rowComponent.width + 80;
+            tooltip2.y = rowComponent.y - 10;
+            let tooltip3 = await createTooltip('Change the appearance of each cell type by customising these variants. Create more variants to add to your design system.');
+            tooltip3.x = cellComponentSet.x + cellComponentSet.width + 80 - 16;
+            tooltip3.y = cellComponentSet.y - 10 + 16;
             incrementNameNumerically(templateComponent);
             selectAndZoomIntoView(figma.currentPage.children);
         }
@@ -3546,7 +3600,7 @@ async function main() {
                 height: 504,
                 themeColors: true,
             });
-            figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync(), localTemplates,
+            figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(), localTemplates,
                 defaultTemplate,
                 fileId,
                 usingRemoteTemplate,

@@ -1,6 +1,7 @@
-import { setPluginData } from '@fignite/helpers'
+import { setPluginData, getPageNode } from '@fignite/helpers'
 import { getComponentById, positionInCenterOfViewport, removeChildren } from './helpers'
 import { createTable, tableFactory, defaultRelaunchData, Template, setDefaultTemplate, updateTables } from './globals'
+import { createTooltip } from './newDefaultTemplate'
 
 //TODO: Is it easier to ask the user to import and select their own components?
 
@@ -68,12 +69,46 @@ export function upgradeOldTablesToNewTables(templateData) {
 	// Probably don't need to update look as won't change while upgrading?
 }
 
-export function upgradeOldComponentsToTemplate() {
+export async function upgradeOldComponentsToTemplate() {
 	function cleanupOldPluginData() {
 		let keys = ['cellComponentID', 'cellHeaderComponentID', 'rowComponentID', 'tableComponentID']
 
 		keys.forEach((element) => {
 			figma.root.setPluginData(element, '')
+		})
+	}
+	function cleanUpOldTooltips() {
+		figma.root.findOne((node) => {
+			if (
+				node.characters ===
+				'Customise the following components to create bespoke tables. Or to link using your own components go to Plugins > Table Creator > Settings. You can move and rename the components as you wish. The only component which must exist for the plugin to work is the Cell component.'
+			) {
+				node.remove()
+			}
+		})
+
+		figma.root.findOne((node) => {
+			if (
+				node.characters ===
+				'The Cell component is the only component required for Table Creator to create tables from. You can cutomise this component, or link the plugin to a different Cell component by running Plugins > Table Creator > Settings.'
+			) {
+				node.remove()
+			}
+		})
+
+		figma.root.findOne((node) => {
+			if (node.characters === 'Only layer styles such as: background, color, border radius etc will be used for rows when creating tables.') {
+				node.remove()
+			}
+		})
+
+		figma.root.findOne((node) => {
+			if (
+				node.characters ===
+				`Only layer styles such as: background, color, border radius etc will be used to create tables. You don't have to create tables using the plugin. You can also create tables by creating an instance of this component and detaching them and their rows. If you change the styles used on the table or row components you can update existing tables by going to Plugins > Table Creator > Settings and select Refresh Tables`
+			) {
+				node.remove()
+			}
 		})
 	}
 	function createTemplateComponent() {
@@ -104,7 +139,22 @@ export function upgradeOldComponentsToTemplate() {
 
 		// We need to clone it because we don't want it to affect existing components
 		let tableComponent = getComponentById(figma.root.getPluginData('tableComponentID'))
-		let templateComponent = tableComponent ? tableComponent.clone() : figma.createComponent()
+		let templateComponent
+
+		if (tableComponent) {
+			templateComponent = tableComponent
+		} else {
+			templateComponent = figma.createComponent()
+			if (getComponentById(figma.root.getPluginData('rowComponentID'))) {
+				templateComponent.y = rowComponent.y + rowComponent.height + 120
+				templateComponent.x = rowComponent.x
+			} else {
+				templateComponent.y = cellComponent.parent.y + cellComponent.height + 120
+				templateComponent.x = cellComponent.x
+			}
+		}
+
+		// let templateComponent = tableComponent ? tableComponent.clone() : figma.createComponent()
 		setPluginData(templateComponent, `elementSemantics`, { is: 'table' })
 
 		// Apply styling to table
@@ -139,7 +189,6 @@ export function upgradeOldComponentsToTemplate() {
 		const templateComponent = createTemplateComponent()
 		// TODO: Needs to be added to list of templates
 		// TODO: Needs to relink previously created tables
-		// TODO: Needs to create tooltip
 
 		// Add template data and relaunch data to templateComponent
 		let templateData = new Template(templateComponent)
@@ -148,10 +197,35 @@ export function upgradeOldComponentsToTemplate() {
 
 		setDefaultTemplate(templateData)
 
-		positionInCenterOfViewport(templateComponent)
-		figma.currentPage.selection = [templateComponent]
+		// positionInCenterOfViewport(templateComponent)
+
+		// // Create new page and add template to it
+		// let newPage = figma.createPage()
+		// newPage.name = 'Table Creator Template'
+		// newPage.appendChild(templateComponent)
+
+		let tooltip = await createTooltip(
+			'Your table components have been converted into a template. A template is single component used by Table Creator to create tables from. Only this component is required by the plugin.',
+			figma.currentPage.backgrounds[0].color
+		)
+
+		tooltip.x = templateComponent.x + templateComponent.width + 80
+		tooltip.y = templateComponent.y - 10
+
+		let componentPage = getPageNode(templateComponent)
+
+		componentPage.appendChild(tooltip)
+
+		// figma.currentPage.selection = [templateComponent, tooltip]
+		// let group = figma.group([templateComponent, tooltip], componentPage)
+		// figma.currentPage = componentPage
+		// figma.viewport.scrollAndZoomIntoView([templateComponent, tooltip])
+
+		// figma.currentPage.selection = [templateComponent]
 
 		cleanupOldPluginData()
+
+		cleanUpOldTooltips()
 
 		upgradeOldTablesToNewTables(templateData)
 	}

@@ -6,6 +6,9 @@
   "ui": {
       "main": "dist/index.html"
   },
+  "permissions": [
+    "currentuser"
+  ],
   "menu": [
     {
       "name": "Create Table",
@@ -21,37 +24,7 @@
     {
       "name": "Select Row",
       "command": "selectRow"
-    },
-    {
-        "separator": true
-    },
-    {
-      "name": "New Template",
-      "command": "newTemplate"
-    },
-    {
-      "name": "Import Template",
-      "command": "importTemplate"
-    },
-    {
-        "separator": true
-    },
-    {
-      "name": "View Node Data",
-      "command": "viewNodeData"
-    },
-    {
-      "name": "Reset Remote Data",
-      "command": "resetRemoteData"
-    },
-    {
-      "name": "Reset User Preferences",
-      "command": "resetUserPreferences"
-    },
-    {
-        "name": "Reset Onboarding",
-        "command": "resetOnboarding"
-      }
+    }
   ],
   "relaunchButtons": [
         {"command": "createTable", "name": "Create Table"},
@@ -63,4 +36,5 @@
         {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
     ],
     "editorType": ["figma"]
+
 }

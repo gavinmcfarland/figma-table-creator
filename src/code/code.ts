@@ -17,6 +17,8 @@ import {
 	updateClientStorageAsync,
 	removeChildren,
 	setClientStorageAsync,
+	getRecentFilesAsync,
+	getRemoteFilesAsync,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -35,18 +37,35 @@ import {
 	genRandomId,
 	copyPasteStyle,
 } from './helpers'
+import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
 import { createDefaultComponents } from './defaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
 import { defaultRelaunchData, createTable, updatePluginVersion, Template, getLocalTemplates, File, updateTables, setDefaultTemplate } from './globals'
 
+// FIXME: Recent files not adding unique files only
+
 console.clear()
+
+// createTooltip(
+// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
+// ).then((tooltip) => {
+// 	positionInCenterOfViewport(tooltip)
+// })
+
+// createTemplateComponents().then((array) => {
+// 	let group = figma.group(array, figma.currentPage)
+// 	positionInCenterOfViewport(group)
+// 	figma.ungroup(group)
+// })
 
 // setClientStorageAsync('userPreferences', undefined).then(() => {
 // 	figma.closePlugin('User preferences reset')
 // })
 
-figma.clientStorage.deleteAsync('recentFiles')
+// figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
+// figma.root.setPluginData('remoteFiles', '')
+// figma.root.setPluginData('fileId', '')
 
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
@@ -325,91 +344,91 @@ function postCurrentSelection(templateNodeId) {
 	})
 }
 
-/**
- * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
- * @param {String} key A key to store data under
- * @param {any} data Data to be stored
- */
-async function syncRecentFilesAsync(data) {
-	// NOTE: Should function add file, when there is no data?
-	// const publishedComponents = await getPublishedComponents(data)
+// /**
+//  * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
+//  * @param {String} key A key to store data under
+//  * @param {any} data Data to be stored
+//  */
+// async function syncRecentFilesAsync(data) {
+// 	// NOTE: Should function add file, when there is no data?
+// 	// const publishedComponents = await getPublishedComponents(data)
 
-	return updateClientStorageAsync('recentFiles', (recentFiles) => {
-		recentFiles = recentFiles || []
-		const newFile = new File(data)
+// 	return updateClientStorageAsync('recentFiles', (recentFiles) => {
+// 		recentFiles = recentFiles || []
+// 		const newFile = new File(data)
 
-		// We have to check if the array is empty because we can't filter an empty array
-		if (recentFiles.length === 0) {
-			if (data.length > 0) recentFiles.push(newFile)
-		} else {
-			recentFiles.filter((item) => {
-				if (item.id === newFile.id) {
-					item.data = data
-				} else {
-					if (data.length > 0) recentFiles.push(newFile)
-				}
-			})
-		}
+// 		// We have to check if the array is empty because we can't filter an empty array
+// 		if (recentFiles.length === 0) {
+// 			if (data.length > 0) recentFiles.push(newFile)
+// 		} else {
+// 			recentFiles.filter((item) => {
+// 				if (item.id === newFile.id) {
+// 					item.data = data
+// 				} else {
+// 					if (data.length > 0) recentFiles.push(newFile)
+// 				}
+// 			})
+// 		}
 
-		return recentFiles
-	})
-}
-async function getRecentFilesAsync() {
-	return await getClientStorageAsync('recentFiles')
-}
+// 		return recentFiles
+// 	})
+// }
+// async function getRecentFilesAsync() {
+// 	return await getClientStorageAsync('recentFiles')
+// }
 
-// This makes sure the list of local and remote templates are up to date
-async function syncRemoteFilesAsync() {
-	var recentFiles = await getClientStorageAsync('recentFiles')
+// // This makes sure the list of local and remote templates are up to date
+// async function syncRemoteFilesAsync() {
+// 	var recentFiles = await getClientStorageAsync('recentFiles')
 
-	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-		remoteFiles = remoteFiles || []
+// 	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+// 		remoteFiles = remoteFiles || []
 
-		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
-		if (recentFiles.length > 0) {
-			// if (!remoteFiles) remoteFiles = []
+// 		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
+// 		if (recentFiles.length > 0) {
+// 			// if (!remoteFiles) remoteFiles = []
 
-			// I think this is a method of merging files, maybe removing duplicates?
-			var ids = new Set(remoteFiles.map((file) => file.id))
-			var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))]
+// 			// I think this is a method of merging files, maybe removing duplicates?
+// 			var ids = new Set(remoteFiles.map((file) => file.id))
+// 			var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))]
 
-			// Exclude current file (because we want remote files to this file only)
-			merged = merged.filter((file) => {
-				return !(file.id === getPluginData(figma.root, 'fileId'))
-			})
+// 			// Exclude current file (because we want remote files to this file only)
+// 			merged = merged.filter((file) => {
+// 				return !(file.id === getPluginData(figma.root, 'fileId'))
+// 			})
 
-			remoteFiles = merged
-		}
+// 			remoteFiles = merged
+// 		}
 
-		// Then I check to see if the file name has changed and make sure it's up to date
-		// For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
-		if (remoteFiles.length > 0) {
-			for (var i = 0; i < remoteFiles.length; i++) {
-				var file = remoteFiles[i]
-				figma
-					.importComponentByKeyAsync(file.data[0].component.key)
-					.then((component) => {
-						var remoteTemplate = getPluginData(component, 'template')
-						updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-							remoteFiles.map((file) => {
-								if (file.id === remoteTemplate.file.id) {
-									file.name = remoteTemplate.file.name
-								}
-							})
-							return remoteFiles
-						})
-					})
-					.catch((error) => {
-						console.log(error)
-						// FIXME: Do I need to do something here if component is deleted?
-						// FIXME: Is this the wrong time to check if component is published?
-						// figma.notify("Please check component is published")
-					})
-			}
-		}
-		return remoteFiles
-	})
-}
+// 		// Then I check to see if the file name has changed and make sure it's up to date
+// 		// For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
+// 		if (remoteFiles.length > 0) {
+// 			for (var i = 0; i < remoteFiles.length; i++) {
+// 				var file = remoteFiles[i]
+// 				figma
+// 					.importComponentByKeyAsync(file.data[0].component.key)
+// 					.then((component) => {
+// 						var remoteTemplate = getPluginData(component, 'template')
+// 						updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
+// 							remoteFiles.map((file) => {
+// 								if (file.id === remoteTemplate.file.id) {
+// 									file.name = remoteTemplate.file.name
+// 								}
+// 							})
+// 							return remoteFiles
+// 						})
+// 					})
+// 					.catch((error) => {
+// 						console.log(error)
+// 						// FIXME: Do I need to do something here if component is deleted?
+// 						// FIXME: Is this the wrong time to check if component is published?
+// 						// figma.notify("Please check component is published")
+// 					})
+// 			}
+// 		}
+// 		return remoteFiles
+// 	})
+// }
 
 function selectTableCells(direction) {
 	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
@@ -705,8 +724,8 @@ async function main() {
 	})
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	var recentFiles = await syncRecentFilesAsync(getLocalTemplates())
-	var remoteFiles = await syncRemoteFilesAsync()
+	var recentFiles = await getRecentFilesAsync(getLocalTemplates())
+	var remoteFiles = await getRemoteFilesAsync()
 	console.log('remoteFiles', remoteFiles)
 	console.log('recentFiles', recentFiles)
 
@@ -719,15 +738,16 @@ async function main() {
 
 		// Received messages
 		async function newTemplateComponent(opts?) {
+			console.log('Create new template?')
 			let { shouldCreatePage } = opts
 
 			if (shouldCreatePage) {
 				let newPage = createPage('Table Creator')
 			}
 
-			let components = await createDefaultComponents()
+			let components = await createTemplateComponents()
 
-			let { templateComponent } = components
+			let { templateComponent, rowComponent, cellComponentSet } = components
 
 			// Add template data and relaunch data to templateComponent
 			let templateData = new Template(templateComponent)
@@ -735,6 +755,22 @@ async function main() {
 			templateComponent.setRelaunchData(defaultRelaunchData)
 
 			setDefaultTemplate(templateData)
+
+			let tooltip1 = await createTooltip(
+				'This component is the template used by Table Creator to create tables from. You can customise the appearance of your tables by customising this template. It’s made up of the components below.'
+			)
+			tooltip1.x = templateComponent.x + templateComponent.width + 80
+			tooltip1.y = templateComponent.y - 10
+
+			let tooltip2 = await createTooltip('Customise rows by changing this component.')
+			tooltip2.x = rowComponent.x + rowComponent.width + 80
+			tooltip2.y = rowComponent.y - 10
+
+			let tooltip3 = await createTooltip(
+				'Change the appearance of each cell type by customising these variants. Create more variants to add to your design system.'
+			)
+			tooltip3.x = cellComponentSet.x + cellComponentSet.width + 80 - 16
+			tooltip3.y = cellComponentSet.y - 10 + 16
 
 			incrementNameNumerically(templateComponent)
 			selectAndZoomIntoView(figma.currentPage.children)
