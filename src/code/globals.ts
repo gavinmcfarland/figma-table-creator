@@ -1,3 +1,4 @@
+import { getRemoteFilesAsync, getRecentFilesAsync } from '@fignite/helpers'
 import {
 	convertToFrame,
 	convertToComponent,
@@ -333,10 +334,17 @@ export function getLocalTemplates() {
 	return templates
 }
 
-export function setDefaultTemplate(templateData) {
+export async function setDefaultTemplate(templateData) {
+	await getRemoteFilesAsync()
+	await getRecentFilesAsync(getLocalTemplates())
 	setDocumentData('defaultTemplate', templateData)
-	figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: templateData, localTemplates: getLocalTemplates() })
+	figma.ui.postMessage({
+		type: 'post-default-template',
+		defaultTemplate: templateData,
+		localTemplates: getLocalTemplates(),
+	})
 	console.log('setDefaultTemplate', templateData)
+	console.log('remote data set')
 }
 
 export async function updateTables(template) {

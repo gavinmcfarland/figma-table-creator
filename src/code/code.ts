@@ -638,6 +638,8 @@ function switchColumnsOrRows(selection) {
 					swapAxises(rowContainer)
 					resize(rowContainer, rowContainerObject.width, rowContainerObject.height)
 
+					rowContainer.primaryAxisSizingMode = 'AUTO'
+
 					// Because changing layout mode swaps sizingModes you need to loop children again
 					var rowlength = rowContainer.children.length
 
@@ -651,6 +653,7 @@ function switchColumnsOrRows(selection) {
 						if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
 
 						if (isRow(row)) {
+							// Settings is original settings, not new settings
 							if (settings.usingColumnsOrRows === 'columns') {
 								row.counterAxisSizingMode = 'AUTO'
 								row.layoutAlign = 'STRETCH'
@@ -670,6 +673,8 @@ function switchColumnsOrRows(selection) {
 										}
 									}
 								}
+							} else {
+								row.layoutAlign = 'STRETCH'
 							}
 
 							// If row ends up being empty, then assume it's not needed
@@ -723,12 +728,6 @@ async function main() {
 		return data
 	})
 
-	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	var recentFiles = await getRecentFilesAsync(getLocalTemplates())
-	var remoteFiles = await getRemoteFilesAsync()
-	console.log('remoteFiles', remoteFiles)
-	console.log('recentFiles', recentFiles)
-
 	plugma((plugin) => {
 		plugin.ui = {
 			html: __uiFiles__.main,
@@ -738,7 +737,6 @@ async function main() {
 
 		// Received messages
 		async function newTemplateComponent(opts?) {
-			console.log('Create new template?')
 			let { shouldCreatePage } = opts
 
 			if (shouldCreatePage) {
@@ -813,13 +811,19 @@ async function main() {
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
+			// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
+			var recentFiles = await getRecentFilesAsync(getLocalTemplates())
+			var remoteFiles = await getRemoteFilesAsync()
+			console.log('recentFiles', recentFiles)
+			console.log('remoteFiles', remoteFiles)
+
 			// Show create table UI
 			let pluginVersion = await getClientStorageAsync('pluginVersion')
 			let userPreferences = await getClientStorageAsync('userPreferences')
 			let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
 			let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
 
-			const remoteFiles = getDocumentData('remoteFiles')
+			// const remoteFiles = getDocumentData('remoteFiles')
 			const fileId = getDocumentData('fileId')
 			const defaultTemplate = getDefaultTemplate()
 			const localTemplates = getLocalTemplates()
@@ -833,7 +837,7 @@ async function main() {
 				type: 'show-create-table-ui',
 				...userPreferences,
 				remoteFiles,
-				recentFiles: await getRecentFilesAsync(),
+				recentFiles: await getRecentFilesAsync(localTemplates),
 				localTemplates,
 				defaultTemplate,
 				fileId,

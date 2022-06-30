@@ -881,25 +881,27 @@ async function getRemoteFilesAsync() {
         if (remoteFiles.length > 0) {
             for (var i = 0; i < remoteFiles.length; i++) {
                 var file = remoteFiles[i];
-                figma
-                    .importComponentByKeyAsync(file.data[0].component.key)
-                    .then((component) => {
-                    var remoteTemplate = getPluginData(component, "template");
-                    updatePluginData(figma.root, "remoteFiles", (remoteFiles) => {
-                        remoteFiles.map((file) => {
-                            if (file.id === remoteTemplate.file.id) {
-                                file.name = remoteTemplate.file.name;
-                            }
+                if (file.data[0]) {
+                    figma
+                        .importComponentByKeyAsync(file.data[0].component.key)
+                        .then((component) => {
+                        var remoteTemplate = getPluginData(component, "template");
+                        updatePluginData(figma.root, "remoteFiles", (remoteFiles) => {
+                            remoteFiles.map((file) => {
+                                if (file.id === remoteTemplate.file.id) {
+                                    file.name = remoteTemplate.file.name;
+                                }
+                            });
+                            return remoteFiles;
                         });
-                        return remoteFiles;
+                    })
+                        .catch((error) => {
+                        console.log(error);
+                        // FIXME: Do I need to do something here if component is deleted?
+                        // FIXME: Is this the wrong time to check if component is published?
+                        // figma.notify("Please check component is published")
                     });
-                })
-                    .catch((error) => {
-                    console.log(error);
-                    // FIXME: Do I need to do something here if component is deleted?
-                    // FIXME: Is this the wrong time to check if component is published?
-                    // figma.notify("Please check component is published")
-                });
+                }
             }
         }
         return remoteFiles;
@@ -2763,10 +2765,17 @@ function getLocalTemplates() {
     });
     return templates;
 }
-function setDefaultTemplate(templateData) {
+async function setDefaultTemplate(templateData) {
+    await getRemoteFilesAsync_1();
+    await getRecentFilesAsync_1(getLocalTemplates());
     setDocumentData_1('defaultTemplate', templateData);
-    figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: templateData, localTemplates: getLocalTemplates() });
+    figma.ui.postMessage({
+        type: 'post-default-template',
+        defaultTemplate: templateData,
+        localTemplates: getLocalTemplates(),
+    });
     console.log('setDefaultTemplate', templateData);
+    console.log('remote data set');
 }
 async function updateTables(template) {
     // FIXME: Template file name not up to date for some reason
@@ -3441,6 +3450,7 @@ function switchColumnsOrRows(selection) {
                     }
                     swapAxises(rowContainer);
                     resize_1(rowContainer, rowContainerObject.width, rowContainerObject.height);
+                    rowContainer.primaryAxisSizingMode = 'AUTO';
                     // Because changing layout mode swaps sizingModes you need to loop children again
                     var rowlength = rowContainer.children.length;
                     // For some reason can't remove nodes while in loop, so workaround is to add to an array.
@@ -3451,6 +3461,7 @@ function switchColumnsOrRows(selection) {
                         if ((_a = rowContainerObject.children[i]) === null || _a === void 0 ? void 0 : _a.layoutAlign)
                             row.layoutAlign = rowContainerObject.children[i].layoutAlign;
                         if (isRow(row)) {
+                            // Settings is original settings, not new settings
                             if (settings.usingColumnsOrRows === 'columns') {
                                 row.counterAxisSizingMode = 'AUTO';
                                 row.layoutAlign = 'STRETCH';
@@ -3467,6 +3478,9 @@ function switchColumnsOrRows(selection) {
                                         }
                                     }
                                 }
+                            }
+                            else {
+                                row.layoutAlign = 'STRETCH';
                             }
                             // If row ends up being empty, then assume it's not needed
                             if (row.children.length === 0) {
@@ -3515,11 +3529,6 @@ async function main() {
         };
         return data;
     });
-    // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-    var recentFiles = await getRecentFilesAsync_1(getLocalTemplates());
-    var remoteFiles = await getRemoteFilesAsync_1();
-    console.log('remoteFiles', remoteFiles);
-    console.log('recentFiles', recentFiles);
     dist((plugin) => {
         plugin.ui = {
             html: __uiFiles__.main,
@@ -3528,7 +3537,6 @@ async function main() {
         };
         // Received messages
         async function newTemplateComponent(opts) {
-            console.log('Create new template?');
             let { shouldCreatePage } = opts;
             if (shouldCreatePage) {
                 createPage('Table Creator');
@@ -3586,12 +3594,17 @@ async function main() {
             });
         }
         plugin.command('createTable', async ({ ui }) => {
+            // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
+            var recentFiles = await getRecentFilesAsync_1(getLocalTemplates());
+            var remoteFiles = await getRemoteFilesAsync_1();
+            console.log('recentFiles', recentFiles);
+            console.log('remoteFiles', remoteFiles);
             // Show create table UI
             let pluginVersion = await getClientStorageAsync_1('pluginVersion');
             let userPreferences = await getClientStorageAsync_1('userPreferences');
             let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
             let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
-            const remoteFiles = getDocumentData_1('remoteFiles');
+            // const remoteFiles = getDocumentData('remoteFiles')
             const fileId = getDocumentData_1('fileId');
             const defaultTemplate = getDefaultTemplate();
             const localTemplates = getLocalTemplates();
@@ -3600,7 +3613,7 @@ async function main() {
                 height: 504,
                 themeColors: true,
             });
-            figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(), localTemplates,
+            figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(localTemplates), localTemplates,
                 defaultTemplate,
                 fileId,
                 usingRemoteTemplate,

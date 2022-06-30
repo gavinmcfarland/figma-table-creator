@@ -217,8 +217,6 @@
 
 	function updateSelectedFile(data, file) {
 
-		console.log("updating selected file in UI")
-
 		// file = file || data.defaultTemplate.file
 
 		if (file) {

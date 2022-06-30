@@ -80,7 +80,13 @@
 15. Redesign new template and instructions DONE
 16. Create upgraded template tooltip DONE
 17. Add remote files functions from library DONE
-18. Fix image in editing template for light and dark
+18. Fix image in editing template for light and dark DONE
 19. Failsafe if parts of template aren't defined
+
+---
+
+1. Add relaunch data to open table plugin
+2. Check relaunch buttons
+3. Enable importing
 
 
