@@ -1302,11 +1302,22 @@ function renameTemplateNumerically(template) {
 	var localTemplates = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
 
 	if (localTemplates && localTemplates.length > 0) {
-		localTemplates.sort((a, b) => a.name - b.name)
+		localTemplates.sort((a, b) => {
+			// if(a[1].data === '' || a[1].data === null) return 1;
+			// if(b[1].data === '' || b[1].data === null) return -1;
+
+			if(a.name === b.name) return 0;
+
+			return a.name < b.name ? -1 : 1
+		})
+
+		let testArray = []
 
 		localTemplates.map((node) => {
-			console.log(node.name)
+			testArray.push(node.name)
 		})
+
+		console.log("testArray", testArray)
 
 		if (localTemplates[localTemplates.length - 1].name.startsWith('Table')) {
 			let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/)

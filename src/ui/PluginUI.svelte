@@ -23,6 +23,7 @@
 	let defaultTemplate
 	let remoteFiles
 	let localTemplates
+	let showToggles
 
 	let welcomeSlides = [
 		true,
@@ -141,13 +142,27 @@
 		)
 	}
 
-	function newTemplate() {
+	function newTemplate(options) {
 		setActivePage("createTablePageActive")
 
 		parent.postMessage(
 			{
 				pluginMessage: {
 					type: "new-template",
+					options
+				},
+			},
+			"*"
+		)
+	}
+
+	function removeTemplate(template, file) {
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "remove-template",
+					template,
+					file
 				},
 			},
 			"*"
@@ -193,7 +208,14 @@
 		)
 	}
 
-	function chooseRemoteTemplate() {
+	function chooseRemoteTemplate(opts) {
+
+		opts = opts || {}
+		let {entry} = opts
+
+		if (entry === "MANAGE_LIBRARIES") {
+			showToggles = true
+		}
 		setActivePage("chooseRemoteTemplate")
 	}
 
@@ -215,11 +237,41 @@
 		)
 	}
 
+	function addRemoteFile(file) {
+
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "add-remote-file",
+					file: file,
+				},
+			},
+			"*"
+		)
+	}
+
+	function removeRemoteFile(file) {
+
+		parent.postMessage(
+			{
+				pluginMessage: {
+					type: "remove-remote-file",
+					file: file,
+				},
+			},
+			"*"
+		)
+	}
+
 	function updateSelectedFile(data, file) {
 
 		// file = file || data.defaultTemplate.file
 
-		if (file) {
+		if (!data && !file) {
+			selectedFile = data.defaultTemplate.file
+		}
+		else {
+			if (file) {
 			selectedFile = file
 		}
 		else {
@@ -246,6 +298,9 @@
 				}
 			}
 		}
+		}
+
+
 
 		return data
 	}
@@ -324,9 +379,8 @@
 			})
 
 			if (data.pluginVersion === "7.0.0") {
-				// If defaultTemplate exists then show create table UI
-				console.log("defaultTemplate", data.defaultTemplate)
-				if (data.defaultTemplate) {
+				// If localTemplates or remoteFiles exist then show create table page
+				if (data.localTemplates.length > 0 || data.remoteFiles.length > 0) {
 					setActivePage("createTablePageActive")
 					updateSelectedTemplate(data)
 					updateSelectedFile(data)
@@ -348,6 +402,28 @@
 				updateSelectedTemplate(data)
 				updateSelectedFile(data)
 			}
+			else {
+				// FIXME: Need a solution for when no deafult template
+				selectedFile.id = null
+				selectedFile.name = "Local templates"
+			}
+		}
+
+		if (message.type === "remote-files") {
+			data = Object.assign(data, message)
+			// if (data.defaultTemplate) {
+			// 	updateSelectedTemplate(data)
+			// 	updateSelectedFile(data)
+			// }
+		}
+
+		if (message.type === "local-templates") {
+			data = Object.assign(data, message)
+
+			if (data.defaultTemplate) {
+				updateSelectedTemplate(data)
+				updateSelectedFile(data)
+			}
 		}
 
 		if (message.type === "show-create-table-page") {
@@ -364,15 +440,32 @@
 {#if pageState.chooseRemoteTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 
-		{#if data.remoteFiles.length > 0}
-		<p>Choose a file</p>
+		{#if data.recentFiles.length > 0}
+		<p>Choose a library</p>
 		<div class="List">
-			{#each data.remoteFiles as file}
+			{#each data.recentFiles as file}
+				{#if showToggles}
 				<div class="ListItem" on:click={(event) => {
 					updateSelectedFile(data, file)
-					setActivePage("chooseTemplate")
+					usingRemoteTemplate(true)
+					setDefaultTemplate(file.data[0], data)
+					addRemoteFile(file)
+					setActivePage("createTablePageActive")
 				}}><span>{file.name}</span></div>
+				{:else}
+					<div class="ListItem" on:click={(event) => {
+						updateSelectedFile(data, file)
+						setActivePage("chooseTemplate")
+					}}><span>{file.name}</span></div>
+				{/if}
+
 			{/each}
+		</div>
+		{/if}
+
+		{#if showToggles}
+		<div class="BottomBar">
+			<span on:click={() => setActivePage("createTablePageActive")}><Button id="create-table">Done</Button></span>
 		</div>
 		{/if}
 	</div>
@@ -382,9 +475,9 @@
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
 		<p>Choose a template</p>
 
-		{#if data.remoteFiles.length > 0}
+		{#if data.recentFiles.length > 0}
 
-			{#each data.remoteFiles as file}
+			{#each data.recentFiles as file}
 
 				{#if selectedFile?.id === file.id}
 					<div class="List">
@@ -394,6 +487,7 @@
 							if(event.target !== event.currentTarget) return;
 							usingRemoteTemplate(true)
 							setDefaultTemplate(template, data)
+							addRemoteFile(file)
 							setActivePage("createTablePageActive")
 							}}>{template.name}</div>
 						{/each}
@@ -475,7 +569,7 @@
 		<div class="content">
 		<h6>Libraries</h6>
 		<p>
-			Create tables based on templates from libraries. First published the template, then in the other file run the plugin and choose "Existing Template".
+			Create tables based on templates from libraries. First published the template, then in another file run the plugin and choose "Existing Template".
 		</p>
 		<div class="buttons">
 			<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
@@ -503,7 +597,7 @@
 			<div class="content">
 			<h6>Get started</h6>
 
-			{#if data.remoteFiles.length > 0}
+			{#if data.recentFiles.length > 0}
 				<p>Create a new template or choose an existing template from a remote file.</p>
 			{:else}
 				<p>Begin by creating a new template to create tables from.</p>
@@ -511,8 +605,8 @@
 
 
 			<div class="buttons">
-				<span on:click={() => newTemplate()}><Button classes="secondary">New Template</Button></span>
-				{#if data.remoteFiles.length > 0}
+				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New Template</Button></span>
+				{#if data.recentFiles.length > 0}
 					<span on:click={() => {
 						chooseRemoteTemplate()
 						}}><Button classes="secondary">Existing Template</Button></span>
@@ -549,7 +643,7 @@
 									</slot>
 									<slot slot="content">
 										<div class="tooltip">
-												{#if data.localTemplates.length > 0}
+												<!-- {#if data.localTemplates.length > 0} -->
 													<div>
 														<input checked="{selectedFile?.id === data.fileId ? true : false}" type="radio" id="localTemplates" name="files">
 														<label on:click={(event) => {
@@ -558,8 +652,8 @@
 															getDropdown('tooltip').close()
 														}} for="localTemplates">Local templates</label>
 													</div>
-												{/if}
-												{#if data.localTemplates.length > 0 && data.remoteFiles.length > 0}
+												<!-- {/if} -->
+												{#if data.remoteFiles.length > 0}
 													<span class="tooltip-divider"></span>
 												{/if}
 												{#if data.remoteFiles.length > 0}
@@ -574,6 +668,16 @@
 															</div>
 													{/each}
 												{/if}
+												<span class="tooltip-divider"></span>
+												<div>
+													<input checked="{false}" type="radio" id="linkLibrary" name="linkLibrary">
+													<label on:click={(event) => {
+														getDropdown('tooltip').close()
+														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+														chooseRemoteTemplate({entry: "MANAGE_LIBRARIES"})
+														}} for="linkLibrary">Link Libaray</label>
+												</div>
+
 
 										</div>
 									</slot>
@@ -599,15 +703,16 @@
 												getDropdown('menu').close()
 
 
-												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"><span class="refresh icon" icon="pencil" on:click={() => {
+												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"><span style="margin-left: auto;" class="refresh icon" icon="minus" on:click={() => removeTemplate(template)}></span> <span class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
 													}}></span> <span class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></div></li>
 										{/each}
 										</ul>
 									{/if}
+									<div class="toolbar"><span class="refresh icon" icon="plus" on:click={() => newTemplate({ subComponents: false, tooltips: false})}></span></div>
 								{:else}
 									{#if data.remoteFiles.length > 0}
-										<div>
+										<!-- <div> -->
 											{#each data.remoteFiles as file}
 												{#if selectedFile?.id === file.id}
 													<ul class="remote-file">
@@ -621,12 +726,16 @@
 																// Hide menu when template set
 																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																getDropdown('menu').close()
-																}}>{template.name} <span style="margin-left: auto; margin-right: calc(-1 * var(--size-100))" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></li>
+																}}>{template.name} <span style="margin-left: auto;" class="refresh icon" icon="minus" on:click={() => removeTemplate(template, file)}></span> <span class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></li>
 															{/each}
 													</ul>
+													<div class="toolbar"><span class="refresh icon" icon="break" on:click={() => {
+														removeRemoteFile(file)
+														updateSelectedFile()
+														}}></span></div>
 												{/if}
 											{/each}
-										</div>
+										<!-- </div> -->
 									{/if}
 								{/if}
 							</div>
@@ -926,6 +1035,13 @@
 		background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M22 16.5H10V15.5H22V16.5Z' fill='white' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
+	.figma-light [icon="break"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M4.00024 0V3H5.00024V0H4.00024ZM13.1033 0.896443C11.9416 -0.265323 10.058 -0.265315 8.8962 0.896458L6.14629 3.64641L6.8534 4.35351L9.60331 1.60356C10.3745 0.832315 11.625 0.83231 12.3962 1.60355C13.1674 2.37478 13.1675 3.6252 12.3962 4.39643L9.64629 7.14641L10.3534 7.85351L13.1033 5.10354C14.2651 3.94177 14.2651 2.0582 13.1033 0.896443ZM0.896386 13.1035C-0.265375 11.9418 -0.265377 10.0582 0.896384 8.89643L3.64639 6.14642L4.35349 6.85353L1.60349 9.60353C0.832255 10.3748 0.832256 11.6252 1.60349 12.3964C2.37473 13.1677 3.62515 13.1677 4.39639 12.3964L7.14639 9.64642L7.85349 10.3535L5.10349 13.1035C3.94173 14.2653 2.05815 14.2653 0.896386 13.1035ZM13.9998 10H10.9998V9H13.9998V10ZM10.0004 11V14H9.00037V11H10.0004ZM2.99976 4H-0.000244141V5H2.99976V4Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+	.figma-dark [icon="break"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M4.00024 0V3H5.00024V0H4.00024ZM13.1033 0.896443C11.9416 -0.265323 10.058 -0.265315 8.8962 0.896458L6.14629 3.64641L6.8534 4.35351L9.60331 1.60356C10.3745 0.832315 11.625 0.83231 12.3962 1.60355C13.1674 2.37478 13.1675 3.6252 12.3962 4.39643L9.64629 7.14641L10.3534 7.85351L13.1033 5.10354C14.2651 3.94177 14.2651 2.0582 13.1033 0.896443ZM0.896386 13.1035C-0.265375 11.9418 -0.265377 10.0582 0.896384 8.89643L3.64639 6.14642L4.35349 6.85353L1.60349 9.60353C0.832255 10.3748 0.832256 11.6252 1.60349 12.3964C2.37473 13.1677 3.62515 13.1677 4.39639 12.3964L7.14639 9.64642L7.85349 10.3535L5.10349 13.1035C3.94173 14.2653 2.05815 14.2653 0.896386 13.1035ZM13.9998 10H10.9998V9H13.9998V10ZM10.0004 11V14H9.00037V11H10.0004ZM2.99976 4H-0.000244141V5H2.99976V4Z' fill='white' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
 	.figma-light [icon="swap"]::before {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M14.6096 5.68765L13.4349 7.15603C13.4268 7.10387 13.418 7.05185 13.4084 7C13.2569 6.18064 12.9203 5.40189 12.419 4.72539C11.7169 3.77797 10.7289 3.08128 9.60075 2.73808C8.47259 2.39489 7.264 2.42337 6.15326 2.81933C5.36015 3.10206 4.64691 3.56145 4.06479 4.15764C3.83166 4.3964 3.61956 4.6571 3.43178 4.93718L3.43192 4.93728L4.26237 5.49406L4.26252 5.49416C4.79977 4.69282 5.58035 4.08538 6.4891 3.76143C7.39785 3.43748 8.38666 3.41418 9.30967 3.69496C10.2327 3.97574 11.041 4.54574 11.6154 5.32088C12.1002 5.97502 12.3966 6.74603 12.4774 7.55063L10.2774 6.08398L9.7227 6.91603L12.7227 8.91603L13.1041 9.1703L13.3905 8.81235L15.3905 6.31235L14.6096 5.68765ZM2.60962 7.18765L0.609619 9.68765L1.39049 10.3123L2.56519 8.84397C2.57329 8.89614 2.58213 8.94815 2.59172 9C2.74323 9.81936 3.07981 10.5981 3.58113 11.2746C4.2832 12.222 5.27119 12.9187 6.39935 13.2619C7.52751 13.6051 8.7361 13.5766 9.84684 13.1807C10.64 12.8979 11.3532 12.4386 11.9353 11.8424C12.168 11.6041 12.3797 11.344 12.5672 11.0646L12.5683 11.0628L12.5682 11.0627L11.7377 10.5059L11.7376 10.5058L11.7365 10.5074C11.1993 11.308 10.4192 11.9148 9.51101 12.2386C8.60225 12.5625 7.61344 12.5858 6.69044 12.305C5.76744 12.0243 4.95911 11.4543 4.38471 10.6791C3.89996 10.025 3.60346 9.25397 3.52271 8.44937L5.7227 9.91603L6.2774 9.08398L3.2774 7.08398L2.89598 6.8297L2.60962 7.18765Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
@@ -973,13 +1089,16 @@
 		width: auto;
 		min-width: 242px;
 		margin-top: 1px;
-
 	}
 
 	.menu__content {
-		min-height: calc(4.5 * var(--size-400));
-		max-height: calc(4.5 * var(--size-400));
+		min-height: calc(8 * var(--size-400));
+		max-height: calc(8 * var(--size-400));
 		overflow-y: auto;
+	}
+
+	.local-templates {
+		margin-bottom: calc(6 * var(--size-100));
 	}
 
 	.menu > * {
@@ -1027,6 +1146,16 @@
 
 	.menu li.selected {
 		background-color: var(--figma-color-bg-selected, var(--color-selection-a));
+	}
+
+	.menu__content .toolbar {
+		position: absolute;
+		bottom: 0;
+		border-top: 1px solid var(--figma-color-border);
+		left: 0;
+		width: 100%;
+		padding: 8px;
+		background-color: var(--figma-color-bg);
 	}
 
 

@@ -85,8 +85,42 @@
 
 ---
 
-1. Add relaunch data to open table plugin
-2. Check relaunch buttons
-3. Enable importing
+1. Add relaunch data to open table plugin DONE
+2. Check relaunch buttons DONE
+3. Enable importing DONE
+4. Decide whether to publish cell/row or not
+5. A way to maintain files (delete them when data doesn't exist)
+    1. Automatically delete file when no fileData found
+    2. Escape hatch for when someone duplicates a file
+    3. Don't add file to list unless component published, then remove when can't be imported
+    4. Some way to expire recent files over time
+6. Change the way remote files work, to add them manually DONE
+7. Do I need a way to remove remote files, or templates?
+8. Crazy idea, store a version of the imported table template inside the newly created table, hidden, so that when updates are published, you get a reminder?
+9. Add option to create a new template from plugin DONE
+10. Options to taylor how new template is created DONE
+11. Need to reset current file selected in UI when table is local table is deleted so that previously selected table is used
+12. Option to delete template from UI DONE
+13. BUG: Fixed zoome and center selection DONE
+14. Decied between "Table" or "Template" for name of template component DONE
+15. Redesign icon DONE
+16. What to do if defaultTemplate doesn't exist but there are templates DONE
+17. Add ability to add existing template
+18. BUG: Weird bug when 8 rows selected TEMP_FIX
+19. Customise difference between first time creating template and second time creating template?
+20. Add option to navigate back on welcome screens
+21. Add dot on welcome screens
+22. Should remove button be at the end or right click?
 
+
+1. Put a timestamp on recent files so that I can delete them after X time and order by most recently visited, created?
+2. BUG: When first run the plugin in another file and shoose remote file it doesn't show the remote file in the dropdown FIXED
+3. Disable option to delete templates
+4. Enable option to delete remote file
+5. Ability to add a new file
+
+I think this appears when trying to import from same file:
+Cannot import component with key "d77030703f0f63fd564aeb19d7eecda54dd91505" since it is unpublished
+
+'Could not find a published component with the key'
 

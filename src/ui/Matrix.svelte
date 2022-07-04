@@ -148,8 +148,8 @@
 		padding: 1px;
 		/* padding-top: calc(76% + 1px); */
 
-		margin-right: 5px;
-		margin-bottom: 5px;
+		margin-right: 6px;
+		margin-bottom: 6px;
 		border-radius: 2px;
 	}
 
@@ -161,10 +161,12 @@
 		table {
 			width: calc(100% + 5px);
 		}
+
 		label {
-			width: auto;
+			/* disabled for now due to bug can't figure out */
+			/* width: auto;
 			height: auto;
-			aspect-ratio: 1;
+			aspect-ratio: 1; */
 		}
 	}
 

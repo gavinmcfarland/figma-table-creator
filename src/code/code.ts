@@ -19,6 +19,9 @@ import {
 	setClientStorageAsync,
 	getRecentFilesAsync,
 	getRemoteFilesAsync,
+	ungroup,
+	incrementName,
+	removeRemoteFile,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -38,11 +41,22 @@ import {
 	copyPasteStyle,
 } from './helpers'
 import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
-import { createDefaultComponents } from './defaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
-import { defaultRelaunchData, createTable, updatePluginVersion, Template, getLocalTemplates, File, updateTables, setDefaultTemplate } from './globals'
+import {
+	defaultRelaunchData,
+	createTable,
+	updatePluginVersion,
+	Template,
+	getLocalTemplates,
+	File,
+	updateTables,
+	setDefaultTemplate,
+	setPreviousTemplate,
+} from './globals'
+import { swapInstance } from './helpers'
 
-// FIXME: Recent files not adding unique files only
+// FIXME: Recent files not adding unique files only DONE
+// FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 
 console.clear()
 
@@ -66,11 +80,22 @@ console.clear()
 // figma.clientStorage.deleteAsync('pluginVersion')
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
+// figma.root.setPluginData('defaultTemplate', '')
+
+function isEmpty(obj) {
+	for (var prop in obj) {
+		if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+			return false
+		}
+	}
+
+	return JSON.stringify(obj) === JSON.stringify({})
+}
 
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
 	var index = array.findIndex((x) => x.id === object.id)
-	index === -1 ? array.push(object) : console.log('object already exists')
+	index === -1 ? array.push(object) : false
 
 	return array
 }
@@ -95,33 +120,76 @@ function addTemplateToRemoteFiles(node) {
 	figma.notify(`Imported ${node.name}`)
 }
 function removeTemplateFromFile() {}
+// function incrementName(name, array?) {
+// 	let nameToMatch = name
+
+// 	if (array && array.length > 1) {
+// 		array.sort((a, b) => {
+// 			if (a.name === b.name) return 0
+
+// 			return a.name > b.name ? -1 : 1
+// 		})
+
+// 		nameToMatch = array[0].name
+// 	}
+
+// 	let matches = nameToMatch.match(/^(.*\S)(\s*)(\d+)$/)
+
+// 	// And increment by 1
+// 	// Ignores if array is empty
+// 	if (matches && !(array && array.length === 0)) {
+// 		name = `${matches[1]}${matches[2]}${parseInt(matches[3], 10) + 1}`
+// 	}
+
+// 	return name
+// }
 function incrementNameNumerically(node) {
 	// TODO: Update to support any type of node
 
 	var nodeType = node.type
+	let templateData = getPluginData(node, 'template')
 
-	if (nodeType === 'COMPONENT' && getPluginData(node, 'template')) nodeType === 'TEMPLATE_COMPONENT'
+	if (nodeType === 'COMPONENT' && templateData) {
+		nodeType = 'TEMPLATE_COMPONENT'
+	}
 
 	// Find templates locally
 	if (nodeType === 'TEMPLATE_COMPONENT') {
-		var localTemplates = figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
+		var localTemplates = getLocalTemplates()
 
-		if (localTemplates && localTemplates.length > 0) {
-			localTemplates.sort((a, b) => a.name - b.name)
+		// Only do it if there is more than one template
+		if (localTemplates && localTemplates.length > 1) {
+			localTemplates.sort((a, b) => {
+				if (a.name === b.name) return 0
 
-			localTemplates.map((node) => {
-				console.log(node.name)
+				return a.name > b.name ? -1 : 1
 			})
 
-			if (localTemplates[localTemplates.length - 1].name.startsWith('Table')) {
-				let matches = localTemplates[localTemplates.length - 1].name.match(/\d+$/)
+			// If the first template in the array starts with Table
+			// if (localTemplates[0].name.startsWith('Table')) {
+			// Get the number
+			let matches = localTemplates[0].name.match(/^(.*\S)(\s*)(\d+)$/)
 
-				console.log(matches)
+			let temp = []
+			localTemplates.map((item) => {
+				temp.push(item.name)
+			})
+			console.log(temp)
 
-				if (matches) {
-					node.name = `Table ${parseInt(matches[0], 10) + 1}`
-				}
+			console.log('matches', localTemplates[0].name, matches)
+
+			// And increment by 1
+			if (matches) {
+				node.name = `${matches[1]}${matches[2]}${parseInt(matches[3], 10) + 1}`
+				templateData.name = node.name
+				setPluginData(node, 'template', templateData)
+				figma.ui.postMessage({
+					type: 'post-default-template',
+					defaultTemplate: templateData,
+					localTemplates,
+				})
 			}
+			// }
 		}
 	}
 }
@@ -268,7 +336,7 @@ function getDefaultTemplate() {
 	if (usingRemoteTemplate) {
 		return defaultTemplate
 	} else {
-		return getComponentById(defaultTemplate?.component.id) ? defaultTemplate : undefined
+		return getComponentById(defaultTemplate?.component?.id) ? defaultTemplate : undefined
 	}
 }
 
@@ -502,7 +570,60 @@ function detachTable(selection) {
 	figma.currentPage.selection = newSelection
 }
 function spawnTable() {}
-function toggleColumnResizing() {}
+async function toggleColumnResizing(selection) {
+	console.log('start')
+
+	for (let i = 0; i < selection.length; i++) {
+		var oldTable = selection[i]
+
+		let settings = getTableSettings(oldTable)
+
+		console.log('settings', settings)
+
+		if (settings.columnResizing) {
+			detachTable(selection)
+		} else {
+			settings.columnResizing = !settings.columnResizing
+
+			let newTable = await createTable(oldTable, settings)
+
+			// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
+
+			// Loop new table and replace with cells from old table
+
+			let rowLength = oldTable.children.length
+
+			for (let a = 0; a < rowLength; a++) {
+				let nodeA = oldTable.children[a]
+				if (getPluginData(nodeA, 'elementSemantics')?.is === 'tr') {
+					let columnLength = nodeA.children.length
+
+					for (let b = 0; b < columnLength; b++) {
+						let nodeB = nodeA.children[b]
+
+						if (getPluginData(nodeB, 'elementSemantics')?.is === 'td' || getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
+							let newTableCell = newTable.children[a].children[b]
+
+							let oldTableCell = nodeB
+
+							await swapInstance(oldTableCell, newTableCell)
+							// console.log('tableCell', oldTableCell.width, newTableCell)
+							// replace(newTableCell, oldTableCell)
+							// newTableCell.swapComponent(oldTableCell.mainComponent)
+							resize(newTableCell, oldTableCell.width, oldTableCell.height)
+						}
+					}
+				}
+			}
+
+			figma.currentPage.selection = [newTable]
+
+			oldTable.remove()
+		}
+	}
+
+	console.log('end')
+}
 function switchColumnsOrRows(selection) {
 	let vectorType
 	function isRow(node) {
@@ -737,11 +858,13 @@ async function main() {
 
 		// Received messages
 		async function newTemplateComponent(opts?) {
-			let { shouldCreatePage } = opts
+			let { newPage, tooltips, subComponents } = opts
 
-			if (shouldCreatePage) {
-				let newPage = createPage('Table Creator')
+			if (newPage) {
+				createPage('Table Creator')
 			}
+
+			let newSelection = []
 
 			let components = await createTemplateComponents()
 
@@ -749,29 +872,58 @@ async function main() {
 
 			// Add template data and relaunch data to templateComponent
 			let templateData = new Template(templateComponent)
+
+			// Increment name
+			// Before first template data set
+			let localTemplates = getLocalTemplates()
+			localTemplates = localTemplates.filter((item) => item.name.startsWith('Table'))
+			console.log(templateComponent.name, localTemplates)
+			templateComponent.name = incrementName(templateComponent.name, localTemplates)
+			templateData.name = templateComponent.name
 			setPluginData(templateComponent, 'template', templateData)
 			templateComponent.setRelaunchData(defaultRelaunchData)
 
 			setDefaultTemplate(templateData)
 
-			let tooltip1 = await createTooltip(
-				'This component is the template used by Table Creator to create tables from. You can customise the appearance of your tables by customising this template. It’s made up of the components below.'
-			)
-			tooltip1.x = templateComponent.x + templateComponent.width + 80
-			tooltip1.y = templateComponent.y - 10
+			if (tooltips !== false) {
+				let tooltip1 = await createTooltip(
+					'This component is a template used by Table Creator to create tables from. You can customise the appearance of your tables by customising this template. It’s made up of the components below.'
+				)
+				tooltip1.x = templateComponent.x + templateComponent.width + 80
+				tooltip1.y = templateComponent.y - 10
 
-			let tooltip2 = await createTooltip('Customise rows by changing this component.')
-			tooltip2.x = rowComponent.x + rowComponent.width + 80
-			tooltip2.y = rowComponent.y - 10
+				let tooltip2 = await createTooltip('Customise rows by changing this component.')
+				tooltip2.x = rowComponent.x + rowComponent.width + 80
+				tooltip2.y = rowComponent.y - 10
 
-			let tooltip3 = await createTooltip(
-				'Change the appearance of each cell type by customising these variants. Create more variants to add to your design system.'
-			)
-			tooltip3.x = cellComponentSet.x + cellComponentSet.width + 80 - 16
-			tooltip3.y = cellComponentSet.y - 10 + 16
+				let tooltip3 = await createTooltip(
+					'Change the appearance of each cell type by customising these variants. Create more variants to add to your design system.'
+				)
+				tooltip3.x = cellComponentSet.x + cellComponentSet.width + 80 - 16
+				tooltip3.y = cellComponentSet.y - 10 + 16
 
-			incrementNameNumerically(templateComponent)
-			selectAndZoomIntoView(figma.currentPage.children)
+				newSelection.push(tooltip1, tooltip2, tooltip3)
+			}
+
+			if (subComponents === false) {
+				rowComponent.remove()
+				cellComponentSet.remove()
+			} else {
+				newSelection.push(rowComponent, cellComponentSet)
+			}
+
+			newSelection.push(templateComponent)
+
+			let tempGroup = figma.group(newSelection, figma.currentPage)
+			positionInCenterOfViewport(tempGroup)
+			ungroup(tempGroup, figma.currentPage)
+
+			// animateNodeIntoView(newSelection)
+			figma.currentPage.selection = newSelection
+
+			figma.notify('Template created')
+
+			return templateComponent
 		}
 
 		async function editTemplateComponent(msg) {
@@ -811,6 +963,12 @@ async function main() {
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
+			figma.root.setRelaunchData({
+				createTable: '',
+			})
+
+			// Whenever plugin run
+
 			// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
 			var recentFiles = await getRecentFilesAsync(getLocalTemplates())
 			var remoteFiles = await getRemoteFilesAsync()
@@ -825,8 +983,24 @@ async function main() {
 
 			// const remoteFiles = getDocumentData('remoteFiles')
 			const fileId = getDocumentData('fileId')
-			const defaultTemplate = getDefaultTemplate()
+			let defaultTemplate = getDefaultTemplate()
 			const localTemplates = getLocalTemplates()
+
+			// Check for defaultTemplate
+			let previousTemplate = getDocumentData('previousTemplate')
+
+			// If can't find current template, but can find previous, then set it as the default
+			if (!defaultTemplate && !isEmpty(previousTemplate)) {
+				console.log('prev', previousTemplate)
+				defaultTemplate = setDefaultTemplate(previousTemplate)
+			}
+
+			const fileData = getDocumentData('fileData')
+			console.log('fileData', fileData)
+
+			if (!localTemplates) {
+				// deleteRecentFile(fileId)
+			}
 
 			figma.showUI(__uiFiles__.main, {
 				width: 268,
@@ -854,7 +1028,11 @@ async function main() {
 			figma.closePlugin()
 		})
 		plugin.command('spawnTable', spawnTable)
-		plugin.command('toggleColumnResizing', toggleColumnResizing)
+		plugin.command('toggleColumnResizing', () => {
+			toggleColumnResizing(figma.currentPage.selection).then(() => {
+				figma.closePlugin()
+			})
+		})
 
 		plugin.command('switchColumnsOrRows', () => {
 			let { vectorType } = switchColumnsOrRows(figma.currentPage.selection)
@@ -872,14 +1050,87 @@ async function main() {
 		plugin.command('newTemplate', newTemplateComponent)
 		plugin.command('importTemplate', importTemplate)
 
-		plugin.on('new-template', () => {
-			newTemplateComponent({ shouldCreatePage: true })
+		plugin.on('new-template', async (msg) => {
+			let templateComponent = await newTemplateComponent(msg.options)
+			let templateData = getPluginData(templateComponent, 'template')
+			setDefaultTemplate(templateData)
+		})
+		plugin.on('remove-template', (msg) => {
+			let currentTemplate = getDefaultTemplate()
+			let previousTemplate = getDocumentData('previousTemplate')
+
+			if (msg.file) {
+				let remoteFiles = getDocumentData('remoteFiles')
+				let currentFileIndex = remoteFiles.findIndex((file) => file.id === msg.file.id)
+				let currentFile = remoteFiles[currentFileIndex]
+
+				let templateIndex = currentFile.data.findIndex((template) => template.id === msg.template.id)
+
+				currentFile.data.splice(templateIndex, 1)
+
+				console.log(remoteFiles)
+
+				// If no data, then remove file from list
+				if (currentFile.data.length === 0) {
+					remoteFiles.splice(currentFileIndex, 1)
+				}
+
+				setDocumentData('remoteFiles', remoteFiles)
+
+				figma.ui.postMessage({
+					type: 'remote-files',
+					remoteFiles: remoteFiles,
+				})
+			} else {
+				let templateComponent = getComponentById(msg.template.id)
+
+				templateComponent.remove()
+
+				let localTemplates = getLocalTemplates()
+
+				figma.ui.postMessage({
+					type: 'local-templates',
+					localTemplates: localTemplates,
+				})
+			}
+
+			if (currentTemplate.id === msg.template.id) {
+				let localTemplates = getLocalTemplates()
+				console.log('localTemplates', localTemplates)
+				setDefaultTemplate(localTemplates[localTemplates.length - 1])
+			}
 		})
 		plugin.on('edit-template', (msg) => {
 			editTemplateComponent(msg)
 		})
 		plugin.on('set-default-template', (msg) => {
 			setDefaultTemplate(msg.template)
+		})
+		plugin.on('add-remote-file', async (msg) => {
+			console.log(msg.file)
+			const remoteFiles = await getRemoteFilesAsync(msg.file.id)
+			figma.ui.postMessage({ type: 'remote-files', remoteFiles })
+		})
+
+		plugin.on('remove-remote-file', async (msg) => {
+			console.log('fileId', msg.file.id)
+			removeRemoteFile(msg.file.id)
+			const remoteFiles = await getRemoteFilesAsync()
+			const localTemplates = getLocalTemplates()
+
+			if (remoteFiles.length > 0) {
+				setDefaultTemplate(remoteFiles[0].data[0])
+			} else {
+				console.log('>>>>', localTemplates)
+				if (localTemplates.length > 0) {
+					setDefaultTemplate(localTemplates[0])
+				} else {
+					figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: null })
+				}
+			}
+
+			figma.ui.postMessage({ type: 'remote-files', remoteFiles })
+			console.log('remoteFiles', remoteFiles)
 		})
 
 		plugin.on('remove-element', (msg) => {
@@ -891,15 +1142,19 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
+			const remoteFiles = await getRemoteFilesAsync()
+			const templateComponent = await lookForComponent(getDocumentData('defaultTemplate'))
+			// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
-			let tableInstance = createTable(templateComponent, msg.data)
-			positionInCenterOfViewport(tableInstance)
-			figma.currentPage.selection = [tableInstance]
+			if (templateComponent) {
+				let tableInstance = createTable(templateComponent, msg.data)
+				positionInCenterOfViewport(tableInstance)
+				figma.currentPage.selection = [tableInstance]
 
-			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
-				figma.closePlugin('Table created')
-			})
+				updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
+					figma.closePlugin('Table created')
+				})
+			}
 		})
 
 		plugin.on('update-tables', (msg) => {
@@ -958,8 +1213,10 @@ async function main() {
 		// 	figma.notify('Using remote template')
 		// })
 
-		plugin.on('using-remote-template', (msg) => {
+		plugin.on('using-remote-template', async (msg) => {
+			const remoteFiles = await getRemoteFilesAsync()
 			setDocumentData('usingRemoteTemplate', msg.usingRemoteTemplate)
+			figma.ui.postMessage({ type: 'remote-files', remoteFiles })
 		})
 	})
 }

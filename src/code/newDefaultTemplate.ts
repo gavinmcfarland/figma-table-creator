@@ -457,7 +457,7 @@ export async function createTemplateComponents() {
 	componentSet_305_177.resize(272.0, 67.0)
 	componentSet_305_177.primaryAxisSizingMode = 'AUTO'
 	componentSet_305_177.counterAxisSizingMode = 'AUTO'
-	componentSet_305_177.name = '.Cell'
+	componentSet_305_177.name = 'Cell'
 	componentSet_305_177.visible = true
 	componentSet_305_177.locked = false
 	componentSet_305_177.opacity = 1
@@ -523,7 +523,7 @@ export async function createTemplateComponents() {
 	component_305_184.resize(240.0, 35.0)
 	component_305_184.primaryAxisSizingMode = 'AUTO'
 	component_305_184.counterAxisSizingMode = 'AUTO'
-	component_305_184.name = '.Row'
+	component_305_184.name = 'Row'
 	component_305_184.relativeTransform = [
 		[1, 0, 11689],
 		[0, 1, 7399],

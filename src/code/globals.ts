@@ -15,7 +15,6 @@ import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
-	spawnTable: 'Spawn a new table from this table',
 	toggleColumnResizing: 'Use a component to resize columns or rows',
 	switchColumnsOrRows: 'Switch between using columns or rows',
 }
@@ -327,6 +326,8 @@ export function getLocalTemplates() {
 	figma.root.findAll((node) => {
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
+			templateData.name = node.name
+			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 		}
 	})
@@ -335,6 +336,9 @@ export function getLocalTemplates() {
 }
 
 export async function setDefaultTemplate(templateData) {
+	// Only set prevoious template if default template has been set once
+	let previousTemplate = getDocumentData('defaultTemplate') ? getDocumentData('defaultTemplate') : null
+
 	await getRemoteFilesAsync()
 	await getRecentFilesAsync(getLocalTemplates())
 	setDocumentData('defaultTemplate', templateData)
@@ -343,8 +347,17 @@ export async function setDefaultTemplate(templateData) {
 		defaultTemplate: templateData,
 		localTemplates: getLocalTemplates(),
 	})
-	console.log('setDefaultTemplate', templateData)
-	console.log('remote data set')
+
+	if (previousTemplate) {
+		setPreviousTemplate(previousTemplate)
+	}
+}
+
+export async function setPreviousTemplate(templateData) {
+	// await getRemoteFilesAsync()
+	// await getRecentFilesAsync(getLocalTemplates())
+	setDocumentData('previousTemplate', templateData)
+	return templateData
 }
 
 export async function updateTables(template) {
@@ -353,23 +366,24 @@ export async function updateTables(template) {
 	var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
 	// getAllTableInstances()
 
-	var tableTemplate = await lookForComponent(template)
+	var templateComponent = await lookForComponent(template)
 
-	var rowTemplate = tableTemplate.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+	if (templateComponent) {
+		var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
-	for (let b = 0; b < tables.length; b++) {
-		var table = tables[b]
+		for (let b = 0; b < tables.length; b++) {
+			var table = tables[b]
 
-		// Don't apply if an instance
-		if (table.type !== 'INSTANCE') {
-			console.log('tableTemplate', tableTemplate)
-			copyPasteStyle(tableTemplate, table, { exclude: ['name'] })
+			// Don't apply if an instance
+			if (table.type !== 'INSTANCE') {
+				copyPasteStyle(templateComponent, table, { exclude: ['name'] })
 
-			table.findAll((node) => {
-				if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
-					copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
-				}
-			})
+				table.findAll((node) => {
+					if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
+						copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
+					}
+				})
+			}
 		}
 	}
 }

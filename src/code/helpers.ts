@@ -40,8 +40,13 @@ export async function lookForComponent(template) {
 			throw 'error'
 		}
 	} catch {
-		console.log('get remote', localComponent)
-		component = await figma.importComponentByKeyAsync(template.component.key)
+		try {
+			component = await figma.importComponentByKeyAsync(template.component.key)
+		} catch (e) {
+			if (e.startsWith('Could not find a published component with the key')) {
+				figma.notify('Check component is published', { error: true })
+			}
+		}
 	}
 
 	return component
@@ -330,4 +335,99 @@ export function copyPasteStyle(source, target, options: any = {}) {
 	}
 
 	return copyPaste(source, target, options)
+}
+
+export async function changeText(node, text, weight?) {
+	if (node.fontName === figma.mixed) {
+		await figma.loadFontAsync(node.getRangeFontName(0, 1) as FontName)
+	} else {
+		await figma.loadFontAsync({
+			family: node.fontName.family,
+			style: weight || node.fontName.style,
+		})
+	}
+
+	if (weight) {
+		node.fontName = {
+			family: node.fontName.family,
+			style: weight,
+		}
+	}
+
+	if (text) {
+		node.characters = text
+	}
+
+	if (text === '') {
+		// Fixes issue where spaces are ignored and node has zero width
+		node.resize(10, node.height)
+	}
+
+	node.textAutoResize = 'HEIGHT'
+	node.layoutAlign = 'STRETCH'
+}
+
+// Must pass in both the source/target and their matching main components
+async function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
+	for (let a = 0; a < targetChildren.length; a++) {
+		for (let b = 0; b < sourceChildren.length; b++) {
+			// If layer has children then run function again
+			if (
+				sourceComponentChildren[a].children &&
+				targetComponentChildren[a].children &&
+				targetChildren[a].children &&
+				sourceChildren[a].children
+			) {
+				overrideChildrenChars(
+					sourceComponentChildren[a].children,
+					targetComponentChildren[b].children,
+					sourceChildren[b].children,
+					targetChildren[b].children
+				)
+			}
+
+			// If layer is a text node then check if the main components share the same name
+			else if (sourceChildren[a].type === 'TEXT') {
+				if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
+					await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
+					// loadFonts(targetChildren[a]).then(() => {
+					// 	targetChildren[a].characters = sourceChildren[a].characters
+					// 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
+					// })
+				}
+			}
+		}
+	}
+}
+
+async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren?, targetComponentChildren?) {
+	for (let a = 0; a < sourceChildren.length; a++) {
+		if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
+			targetChildren[a].name = sourceChildren[a].name
+			// targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
+		}
+		// If layer has children then run function again
+		if (targetChildren[a].children && sourceChildren[a].children) {
+			await overrideChildrenChars2(
+				sourceChildren[a].children,
+				targetChildren[a].children,
+				sourceComponentChildren[a].children,
+				targetComponentChildren[a].children
+			)
+		}
+
+		// If layer is a text node then check if the main components share the same name
+		else if (sourceChildren[a].type === 'TEXT') {
+			// if (sourceChildren[a].name === targetChildren[b].name) {
+
+			await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
+		}
+	}
+}
+
+export async function swapInstance(target, source) {
+	// await overrideChildrenChars(source.mainComponent.children, source.mainComponent.children, source.children, target.children)
+	// replace(newTableCell, oldTableCell.clone())
+	// target.swapComponent(source.mainComponent)
+	await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children)
 }
