@@ -542,11 +542,12 @@ export async function createTemplateComponents() {
 	component_305_184.expanded = false
 	component_305_184.layoutMode = 'HORIZONTAL'
 	component_305_184.counterAxisSizingMode = 'AUTO'
+	component_305_184.layoutAlign = 'STRETCH'
+	component_305_184.primaryAxisSizingMode = 'FIXED'
 
 	// Create INSTANCE
 	var instance_305_185 = component_305_178.createInstance()
 	component_305_184.appendChild(instance_305_185)
-	instance_305_185.name = '.Cell'
 	instance_305_185.relativeTransform = [
 		[1, 0, 0],
 		[0, 1, 0],
@@ -565,7 +566,6 @@ export async function createTemplateComponents() {
 	// Create INSTANCE
 	var instance_305_186 = component_305_178.createInstance()
 	component_305_184.appendChild(instance_305_186)
-	instance_305_186.name = '.Cell'
 	instance_305_186.relativeTransform = [
 		[1, 0, 120],
 		[0, 1, 0],
@@ -659,6 +659,8 @@ export async function createTemplateComponents() {
 		[1, 0, 0],
 		[0, 1, 0],
 	]
+	instance_305_188.layoutAlign = 'STRETCH'
+	instance_305_188.primaryAxisSizingMode = 'FIXED'
 
 	// Swap COMPONENT
 	instance_305_188.swapComponent(component_305_184)
@@ -707,6 +709,8 @@ export async function createTemplateComponents() {
 		[0, 1, 35],
 	]
 	instance_305_189.y = 35
+	instance_305_189.layoutAlign = 'STRETCH'
+	instance_305_189.primaryAxisSizingMode = 'FIXED'
 
 	// Swap COMPONENT
 	instance_305_189.swapComponent(component_305_184)
@@ -743,6 +747,8 @@ export async function createTemplateComponents() {
 		[0, 1, 70],
 	]
 	instance_305_190.y = 70
+	instance_305_190.layoutAlign = 'STRETCH'
+	instance_305_190.primaryAxisSizingMode = 'FIXED'
 
 	// Swap COMPONENT
 	instance_305_190.swapComponent(component_305_184)

@@ -17,6 +17,7 @@ export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
 	toggleColumnResizing: 'Use a component to resize columns or rows',
 	switchColumnsOrRows: 'Switch between using columns or rows',
+	updateTables: 'Refresh tables already created',
 }
 
 export async function updatePluginVersion(semver) {
@@ -82,9 +83,13 @@ export function createTable(templateComponent, settings, type?) {
 		}
 	})
 
+	console.log('inpsect part', part.tr)
+
 	if (settings.columnResizing && type !== 'COMPONENT') {
 		// First row should be a component
 		firstRow = convertToComponent(part.tr.clone())
+		firstRow.layoutAlign = part.tr.layoutAlign
+		firstRow.primaryAxisSizingMode = part.tr.primaryAxisSizingMode
 		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 	} else {
 		// First row should be a frame
@@ -114,9 +119,13 @@ export function createTable(templateComponent, settings, type?) {
 			duplicateCell = part.td.mainComponent.createInstance()
 		}
 		if (settings.cellWidth) {
+			// if (settings.cellWidth === 'FILL') {
+			// 	duplicateCell.layoutGrow = 1
+			// } else {
 			// let origLayoutAlign = duplicateCell.layoutAlign
 			duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height)
 			// duplicateCell.layoutAlign = origLayoutAlign
+			// }
 		}
 
 		setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
@@ -132,6 +141,9 @@ export function createTable(templateComponent, settings, type?) {
 
 		if (firstRow.type === 'COMPONENT') {
 			duplicateRow = firstRow.createInstance()
+			// BUG: isn't copying across layoutAlign, so we have to do it manually
+			duplicateRow.layoutAlign = firstRow.layoutAlign
+			console.log('duplicate', duplicateRow.layoutAlign)
 		} else {
 			duplicateRow = firstRow.clone()
 		}
@@ -368,8 +380,10 @@ export async function updateTables(template) {
 
 	var templateComponent = await lookForComponent(template)
 
-	if (templateComponent) {
+	if (templateComponent && tables) {
 		var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
+		console.log('rowTemplate', rowTemplate.name)
 
 		for (let b = 0; b < tables.length; b++) {
 			var table = tables[b]
@@ -380,6 +394,7 @@ export async function updateTables(template) {
 
 				table.findAll((node) => {
 					if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
+						console.log('copyPaste')
 						copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
 					}
 				})

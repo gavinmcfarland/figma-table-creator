@@ -331,6 +331,7 @@ function getTableSettings(tableNode) {
 function getDefaultTemplate() {
 	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
 	var defaultTemplate = getDocumentData('defaultTemplate')
+	console.log('defaultT', defaultTemplate)
 
 	// FIXME: Should I be doing more, like checking if the component has been published at this point?
 	if (usingRemoteTemplate) {
@@ -839,7 +840,7 @@ async function main() {
 		data = data || {
 			columnCount: 4,
 			rowCount: 4,
-			cellWidth: 100,
+			cellWidth: 120,
 			remember: true,
 			includeHeader: true,
 			columnResizing: true,
@@ -972,8 +973,6 @@ async function main() {
 			// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
 			var recentFiles = await getRecentFilesAsync(getLocalTemplates())
 			var remoteFiles = await getRemoteFilesAsync()
-			console.log('recentFiles', recentFiles)
-			console.log('remoteFiles', remoteFiles)
 
 			// Show create table UI
 			let pluginVersion = await getClientStorageAsync('pluginVersion')
@@ -988,10 +987,11 @@ async function main() {
 
 			// Check for defaultTemplate
 			let previousTemplate = getDocumentData('previousTemplate')
+			let previousTemplateComponent = getComponentById(previousTemplate?.id)
+			let defaultTemplateComponent = getComponentById(defaultTemplate?.id)
 
 			// If can't find current template, but can find previous, then set it as the default
-			if (!defaultTemplate && !isEmpty(previousTemplate)) {
-				console.log('prev', previousTemplate)
+			if (!defaultTemplateComponent && previousTemplateComponent) {
 				defaultTemplate = setDefaultTemplate(previousTemplate)
 			}
 
@@ -1096,7 +1096,6 @@ async function main() {
 
 			if (currentTemplate.id === msg.template.id) {
 				let localTemplates = getLocalTemplates()
-				console.log('localTemplates', localTemplates)
 				setDefaultTemplate(localTemplates[localTemplates.length - 1])
 			}
 		})
@@ -1125,6 +1124,8 @@ async function main() {
 				if (localTemplates.length > 0) {
 					setDefaultTemplate(localTemplates[0])
 				} else {
+					setDefaultTemplate(null)
+					console.log(getDefaultTemplate())
 					figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: null })
 				}
 			}
@@ -1155,6 +1156,14 @@ async function main() {
 					figma.closePlugin('Table created')
 				})
 			}
+		})
+
+		plugin.command('updateTables', () => {
+			let templateData = getPluginData(figma.currentPage.selection[0], 'template')
+			updateTables(templateData).then(() => {
+				figma.notify('Tables updated', { timeout: 1500 })
+				figma.closePlugin()
+			})
 		})
 
 		plugin.on('update-tables', (msg) => {
@@ -1222,3 +1231,5 @@ async function main() {
 }
 
 main()
+
+// figma.clientStorage.deleteAsync('pluginVersion')

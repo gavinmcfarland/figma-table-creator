@@ -108,16 +108,27 @@
 17. Add ability to add existing template
 18. BUG: Weird bug when 8 rows selected TEMP_FIX
 19. Customise difference between first time creating template and second time creating template?
-20. Add option to navigate back on welcome screens
-21. Add dot on welcome screens
 22. Should remove button be at the end or right click?
 
 
 1. Put a timestamp on recent files so that I can delete them after X time and order by most recently visited, created?
 2. BUG: When first run the plugin in another file and shoose remote file it doesn't show the remote file in the dropdown FIXED
-3. Disable option to delete templates
-4. Enable option to delete remote file
-5. Ability to add a new file
+3. Disable option to delete templates DONE
+4. Enable option to delete remote file DONE
+5. Ability to add a new file DONE
+
+20. Add option to navigate back on welcome screens DONE
+21. Add dots on welcome screens DONE
+
+---
+
+1. Should tables be created in a new page. Should they be selected. Should it change page if a new page is created?
+2. Check updrading files
+3. Update artwork color pink.
+4. BUG: rows do not fill parent when created
+5. BUG: When turning localised component off. Component does not respect fill-parent
+6. BUG: template needs rows set to fill parent
+
 
 I think this appears when trying to import from same file:
 Cannot import component with key "d77030703f0f63fd564aeb19d7eecda54dd91505" since it is unpublished

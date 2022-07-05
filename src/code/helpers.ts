@@ -326,6 +326,12 @@ export function copyPasteStyle(source, target, options: any = {}) {
 		'paddingBottom',
 		'itemSpacing',
 		'clipsContent',
+		// --
+		'layoutMode',
+		'strokeTopWeight',
+		'strokeBottomWeight',
+		'strokeRightWeight',
+		'strokeLeftWeight',
 	]
 
 	if (options.include) {

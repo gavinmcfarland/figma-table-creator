@@ -63,4 +63,10 @@
 		color: var(--figma-color-text, black);
 		border: 1px solid var(--figma-color-border-strong, white);
 	}
+
+	.tertiary {
+		background-color: transparent;
+		color: var(--figma-color-text, black);
+		border: 1px solid transparent;
+	}
 </style>

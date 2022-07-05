@@ -27,6 +27,7 @@
     }
   ],
   "relaunchButtons": [
+        {"command": "updateTables", "name": "Refresh Tables"},
         {"command": "createTable", "name": "Create Table"},
         {"command": "spawnTable", "name": "Spawn Table"},
         {"command": "toggleColumnResizing", "name": "Localised Component"},

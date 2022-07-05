@@ -210,93 +210,97 @@ figma.ui.onmessage = message => {
 };
 
 const nodeProps = [
-    'id',
-    'parent',
-    'name',
-    'removed',
-    'visible',
-    'locked',
-    'children',
-    'constraints',
-    'absoluteTransform',
-    'relativeTransform',
-    'x',
-    'y',
-    'rotation',
-    'width',
-    'height',
-    'constrainProportions',
-    'layoutAlign',
-    'layoutGrow',
-    'opacity',
-    'blendMode',
-    'isMask',
-    'effects',
-    'effectStyleId',
-    'expanded',
-    'backgrounds',
-    'backgroundStyleId',
-    'fills',
-    'strokes',
-    'strokeWeight',
-    'strokeMiterLimit',
-    'strokeAlign',
-    'strokeCap',
-    'strokeJoin',
-    'dashPattern',
-    'fillStyleId',
-    'strokeStyleId',
-    'cornerRadius',
-    'cornerSmoothing',
-    'topLeftRadius',
-    'topRightRadius',
-    'bottomLeftRadius',
-    'bottomRightRadius',
-    'exportSettings',
-    'overflowDirection',
-    'numberOfFixedChildren',
-    'overlayPositionType',
-    'overlayBackground',
-    'overlayBackgroundInteraction',
-    'reactions',
-    'description',
-    'remote',
-    'key',
-    'layoutMode',
-    'primaryAxisSizingMode',
-    'counterAxisSizingMode',
-    'primaryAxisAlignItems',
-    'counterAxisAlignItems',
-    'paddingLeft',
-    'paddingRight',
-    'paddingTop',
-    'paddingBottom',
-    'itemSpacing',
+    "id",
+    "parent",
+    "name",
+    "removed",
+    "visible",
+    "locked",
+    "children",
+    "constraints",
+    "absoluteTransform",
+    "relativeTransform",
+    "x",
+    "y",
+    "rotation",
+    "width",
+    "height",
+    "constrainProportions",
+    "layoutAlign",
+    "layoutGrow",
+    "opacity",
+    "blendMode",
+    "isMask",
+    "effects",
+    "effectStyleId",
+    "expanded",
+    "backgrounds",
+    "backgroundStyleId",
+    "fills",
+    "strokes",
+    "strokeWeight",
+    "strokeMiterLimit",
+    "strokeAlign",
+    "strokeCap",
+    "strokeJoin",
+    "dashPattern",
+    "fillStyleId",
+    "strokeStyleId",
+    "cornerRadius",
+    "cornerSmoothing",
+    "topLeftRadius",
+    "topRightRadius",
+    "bottomLeftRadius",
+    "bottomRightRadius",
+    "exportSettings",
+    "overflowDirection",
+    "numberOfFixedChildren",
+    "overlayPositionType",
+    "overlayBackground",
+    "overlayBackgroundInteraction",
+    "reactions",
+    "description",
+    "remote",
+    "key",
+    "layoutMode",
+    "primaryAxisSizingMode",
+    "counterAxisSizingMode",
+    "primaryAxisAlignItems",
+    "counterAxisAlignItems",
+    "paddingLeft",
+    "paddingRight",
+    "paddingTop",
+    "paddingBottom",
+    "itemSpacing",
     // 'horizontalPadding',
     // 'verticalPadding',
-    'layoutGrids',
-    'gridStyleId',
-    'clipsContent',
-    'guides',
-    'type'
+    "layoutGrids",
+    "gridStyleId",
+    "clipsContent",
+    "guides",
+    "type",
+    "strokeTopWeight",
+    "strokeBottomWeight",
+    "strokeRightWeight",
+    "strokeLeftWeight",
 ];
 const readOnly = [
-    'id',
-    'parent',
-    'removed',
-    'children',
-    'absoluteTransform',
-    'width',
-    'height',
-    'overlayPositionType',
-    'overlayBackground',
-    'overlayBackgroundInteraction',
-    'reactions',
-    'remote',
-    'key',
-    'type',
-    'masterComponent',
-    'mainComponent'
+    "id",
+    "parent",
+    "removed",
+    "children",
+    "absoluteTransform",
+    "width",
+    "height",
+    "overlayPositionType",
+    "overlayBackground",
+    "overlayBackgroundInteraction",
+    "reactions",
+    "remote",
+    "key",
+    "type",
+    "masterComponent",
+    "mainComponent",
 ];
 // export function copyPaste(source: {} | BaseNode, target: {} | BaseNode)
 // export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options)
@@ -304,28 +308,30 @@ const readOnly = [
 // export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, options: Options, callback: Callback)
 // export function copyPaste(source: {} | BaseNode, target: {} | BaseNode, callback: Callback, options: Options)
 /**
-* Allows you to copy and paste props between nodes.
-*
-* @param source - The node you want to copy from
-* @param target - The node or object you want to paste to
-* @param args - Either options or a callback.
-* @returns A node or object with the properties copied over
-*/
+ * Allows you to copy and paste props between nodes.
+ *
+ * @param source - The node you want to copy from
+ * @param target - The node or object you want to paste to
+ * @param args - Either options or a callback.
+ * @returns A node or object with the properties copied over
+ */
 // FIXME: When an empty objet is provided, copy over all properties including width and height
 // FIXME: Don't require a setter in order to copy property. Should be able to copy from an object literal for example.
 function copyPaste(source, target, ...args) {
     var targetIsEmpty;
-    if (target && Object.keys(target).length === 0 && target.constructor === Object) {
+    if (target &&
+        Object.keys(target).length === 0 &&
+        target.constructor === Object) {
         targetIsEmpty = true;
     }
     var options;
-    if (typeof args[0] === 'function')
+    if (typeof args[0] === "function")
         ;
-    if (typeof args[1] === 'function')
+    if (typeof args[1] === "function")
         ;
-    if (typeof args[0] === 'object' && typeof args[0] !== 'function')
+    if (typeof args[0] === "object" && typeof args[0] !== "function")
         options = args[0];
-    if (typeof args[0] === 'object' && typeof args[0] !== 'function')
+    if (typeof args[0] === "object" && typeof args[0] !== "function")
         options = args[0];
     if (!options)
         options = {};
@@ -349,7 +355,7 @@ function copyPaste(source, target, ...args) {
     // target supplied, don't copy over the values of these properties
     if (target && !targetIsEmpty) {
         allowlist = allowlist.filter(function (el) {
-            return !['id', 'type'].includes(el);
+            return !["id", "type"].includes(el);
         });
     }
     var obj = {};
@@ -367,8 +373,8 @@ function copyPaste(source, target, ...args) {
     for (const [key, value] of props) {
         if (allowlist.includes(key)) {
             try {
-                if (typeof obj[key] === 'symbol') {
-                    obj[key] = 'Mixed';
+                if (typeof obj[key] === "symbol") {
+                    obj[key] = "Mixed";
                 }
                 else {
                     obj[key] = value.get.call(source);
@@ -387,10 +393,18 @@ function copyPaste(source, target, ...args) {
     }
     if (!removeConflicts) {
         !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
-        !obj.strokeStyleId && obj.strokes ? delete obj.strokeStyleId : delete obj.strokes;
-        !obj.backgroundStyleId && obj.backgrounds ? delete obj.backgroundStyleId : delete obj.backgrounds;
-        !obj.effectStyleId && obj.effects ? delete obj.effectStyleId : delete obj.effects;
-        !obj.gridStyleId && obj.layoutGrids ? delete obj.gridStyleId : delete obj.layoutGrids;
+        !obj.strokeStyleId && obj.strokes
+            ? delete obj.strokeStyleId
+            : delete obj.strokes;
+        !obj.backgroundStyleId && obj.backgrounds
+            ? delete obj.backgroundStyleId
+            : delete obj.backgrounds;
+        !obj.effectStyleId && obj.effects
+            ? delete obj.effectStyleId
+            : delete obj.effects;
+        !obj.gridStyleId && obj.layoutGrids
+            ? delete obj.gridStyleId
+            : delete obj.layoutGrids;
         if (obj.textStyleId) {
             delete obj.fontName;
             delete obj.fontSize;
@@ -422,7 +436,14 @@ function copyPaste(source, target, ...args) {
     }
     // Only applicable to objects because these properties cannot be set on nodes
     if (targetIsEmpty) {
-        if (source.type === "FRAME" || source.type === "COMPONENT" || source.type === "COMPONENT_SET" || source.type === "PAGE" || source.type === 'GROUP' || source.type === 'INSTANCE' || source.type === 'DOCUMENT' || source.type === 'BOOLEAN_OPERATION') {
+        if (source.type === "FRAME" ||
+            source.type === "COMPONENT" ||
+            source.type === "COMPONENT_SET" ||
+            source.type === "PAGE" ||
+            source.type === "GROUP" ||
+            source.type === "INSTANCE" ||
+            source.type === "DOCUMENT" ||
+            source.type === "BOOLEAN_OPERATION") {
             if (source.children && !withoutRelations) {
                 obj.children = source.children.map((child) => copyPaste(child, {}, { withoutRelations }));
             }
@@ -1986,6 +2007,12 @@ function copyPasteStyle(source, target, options = {}) {
         'paddingBottom',
         'itemSpacing',
         'clipsContent',
+        // --
+        'layoutMode',
+        'strokeTopWeight',
+        'strokeBottomWeight',
+        'strokeRightWeight',
+        'strokeLeftWeight',
     ];
     if (options.include) {
         options.include = options.include.concat(styleProps);
@@ -2543,10 +2570,11 @@ async function createTemplateComponents() {
     component_305_184.expanded = false;
     component_305_184.layoutMode = 'HORIZONTAL';
     component_305_184.counterAxisSizingMode = 'AUTO';
+    component_305_184.layoutAlign = 'STRETCH';
+    component_305_184.primaryAxisSizingMode = 'FIXED';
     // Create INSTANCE
     var instance_305_185 = component_305_178.createInstance();
     component_305_184.appendChild(instance_305_185);
-    instance_305_185.name = '.Cell';
     instance_305_185.relativeTransform = [
         [1, 0, 0],
         [0, 1, 0],
@@ -2561,7 +2589,6 @@ async function createTemplateComponents() {
     // Create INSTANCE
     var instance_305_186 = component_305_178.createInstance();
     component_305_184.appendChild(instance_305_186);
-    instance_305_186.name = '.Cell';
     instance_305_186.relativeTransform = [
         [1, 0, 120],
         [0, 1, 0],
@@ -2648,6 +2675,8 @@ async function createTemplateComponents() {
         [1, 0, 0],
         [0, 1, 0],
     ];
+    instance_305_188.layoutAlign = 'STRETCH';
+    instance_305_188.primaryAxisSizingMode = 'FIXED';
     // Swap COMPONENT
     instance_305_188.swapComponent(component_305_184);
     // Ref to SUB NODE
@@ -2686,6 +2715,8 @@ async function createTemplateComponents() {
         [0, 1, 35],
     ];
     instance_305_189.y = 35;
+    instance_305_189.layoutAlign = 'STRETCH';
+    instance_305_189.primaryAxisSizingMode = 'FIXED';
     // Swap COMPONENT
     instance_305_189.swapComponent(component_305_184);
     // Ref to SUB NODE
@@ -2712,6 +2743,8 @@ async function createTemplateComponents() {
         [0, 1, 70],
     ];
     instance_305_190.y = 70;
+    instance_305_190.layoutAlign = 'STRETCH';
+    instance_305_190.primaryAxisSizingMode = 'FIXED';
     // Swap COMPONENT
     instance_305_190.swapComponent(component_305_184);
     // Ref to SUB NODE
@@ -2759,6 +2792,7 @@ let defaultRelaunchData = {
     detachTable: 'Detaches table and rows',
     toggleColumnResizing: 'Use a component to resize columns or rows',
     switchColumnsOrRows: 'Switch between using columns or rows',
+    updateTables: 'Refresh tables already created',
 };
 async function updatePluginVersion(semver) {
     return updateClientStorageAsync('pluginVersion', (pluginVersion) => {
@@ -2816,9 +2850,12 @@ function createTable(templateComponent, settings, type) {
             node.remove();
         }
     });
+    console.log('inpsect part', part.tr);
     if (settings.columnResizing && type !== 'COMPONENT') {
         // First row should be a component
         firstRow = convertToComponent_1(part.tr.clone());
+        firstRow.layoutAlign = part.tr.layoutAlign;
+        firstRow.primaryAxisSizingMode = part.tr.primaryAxisSizingMode;
         setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
     }
     else {
@@ -2846,9 +2883,13 @@ function createTable(templateComponent, settings, type) {
             duplicateCell = part.td.mainComponent.createInstance();
         }
         if (settings.cellWidth) {
+            // if (settings.cellWidth === 'FILL') {
+            // 	duplicateCell.layoutGrow = 1
+            // } else {
             // let origLayoutAlign = duplicateCell.layoutAlign
             duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height);
             // duplicateCell.layoutAlign = origLayoutAlign
+            // }
         }
         setPluginData_1(duplicateCell, 'elementSemantics', { is: 'td' });
         // Figma doesn't automatically inherit this property
@@ -2861,6 +2902,9 @@ function createTable(templateComponent, settings, type) {
         var duplicateRow;
         if (firstRow.type === 'COMPONENT') {
             duplicateRow = firstRow.createInstance();
+            // BUG: isn't copying across layoutAlign, so we have to do it manually
+            duplicateRow.layoutAlign = firstRow.layoutAlign;
+            console.log('duplicate', duplicateRow.layoutAlign);
         }
         else {
             duplicateRow = firstRow.clone();
@@ -2951,8 +2995,9 @@ async function updateTables(template) {
     var tables = figma.root.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.id) === template.id; });
     // getAllTableInstances()
     var templateComponent = await lookForComponent(template);
-    if (templateComponent) {
+    if (templateComponent && tables) {
         var rowTemplate = templateComponent.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+        console.log('rowTemplate', rowTemplate.name);
         for (let b = 0; b < tables.length; b++) {
             var table = tables[b];
             // Don't apply if an instance
@@ -2961,6 +3006,7 @@ async function updateTables(template) {
                 table.findAll((node) => {
                     var _a;
                     if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
+                        console.log('copyPaste');
                         copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
                     }
                 });
@@ -3145,32 +3191,6 @@ async function upgradeOldComponentsToTemplate() {
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 console.clear();
-// createTooltip(
-// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
-// ).then((tooltip) => {
-// 	positionInCenterOfViewport(tooltip)
-// })
-// createTemplateComponents().then((array) => {
-// 	let group = figma.group(array, figma.currentPage)
-// 	positionInCenterOfViewport(group)
-// 	figma.ungroup(group)
-// })
-// setClientStorageAsync('userPreferences', undefined).then(() => {
-// 	figma.closePlugin('User preferences reset')
-// })
-// figma.clientStorage.deleteAsync('recentFiles')
-// figma.clientStorage.deleteAsync('pluginVersion')
-// figma.root.setPluginData('remoteFiles', '')
-// figma.root.setPluginData('fileId', '')
-// figma.root.setPluginData('defaultTemplate', '')
-function isEmpty(obj) {
-    for (var prop in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-            return false;
-        }
-    }
-    return JSON.stringify(obj) === JSON.stringify({});
-}
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
     var index = array.findIndex((x) => x.id === object.id);
@@ -3292,6 +3312,7 @@ function getDefaultTemplate() {
     var _a;
     var usingRemoteTemplate = getDocumentData_1('usingRemoteTemplate');
     var defaultTemplate = getDocumentData_1('defaultTemplate');
+    console.log('defaultT', defaultTemplate);
     // FIXME: Should I be doing more, like checking if the component has been published at this point?
     if (usingRemoteTemplate) {
         return defaultTemplate;
@@ -3718,7 +3739,7 @@ async function main() {
         data = data || {
             columnCount: 4,
             rowCount: 4,
-            cellWidth: 100,
+            cellWidth: 120,
             remember: true,
             includeHeader: true,
             columnResizing: true,
@@ -3820,10 +3841,8 @@ async function main() {
             });
             // Whenever plugin run
             // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-            var recentFiles = await getRecentFilesAsync_1(getLocalTemplates());
+            await getRecentFilesAsync_1(getLocalTemplates());
             var remoteFiles = await getRemoteFilesAsync_1();
-            console.log('recentFiles', recentFiles);
-            console.log('remoteFiles', remoteFiles);
             // Show create table UI
             let pluginVersion = await getClientStorageAsync_1('pluginVersion');
             let userPreferences = await getClientStorageAsync_1('userPreferences');
@@ -3835,9 +3854,10 @@ async function main() {
             const localTemplates = getLocalTemplates();
             // Check for defaultTemplate
             let previousTemplate = getDocumentData_1('previousTemplate');
+            let previousTemplateComponent = getComponentById(previousTemplate === null || previousTemplate === void 0 ? void 0 : previousTemplate.id);
+            let defaultTemplateComponent = getComponentById(defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.id);
             // If can't find current template, but can find previous, then set it as the default
-            if (!defaultTemplate && !isEmpty(previousTemplate)) {
-                console.log('prev', previousTemplate);
+            if (!defaultTemplateComponent && previousTemplateComponent) {
                 defaultTemplate = setDefaultTemplate(previousTemplate);
             }
             const fileData = getDocumentData_1('fileData');
@@ -3916,7 +3936,6 @@ async function main() {
             }
             if (currentTemplate.id === msg.template.id) {
                 let localTemplates = getLocalTemplates();
-                console.log('localTemplates', localTemplates);
                 setDefaultTemplate(localTemplates[localTemplates.length - 1]);
             }
         });
@@ -3945,6 +3964,8 @@ async function main() {
                     setDefaultTemplate(localTemplates[0]);
                 }
                 else {
+                    setDefaultTemplate(null);
+                    console.log(getDefaultTemplate());
                     figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: null });
                 }
             }
@@ -3969,6 +3990,13 @@ async function main() {
                     figma.closePlugin('Table created');
                 });
             }
+        });
+        plugin.command('updateTables', () => {
+            let templateData = getPluginData_1(figma.currentPage.selection[0], 'template');
+            updateTables(templateData).then(() => {
+                figma.notify('Tables updated', { timeout: 1500 });
+                figma.closePlugin();
+            });
         });
         plugin.on('update-tables', (msg) => {
             updateTables(msg.template).then(() => {
@@ -4030,3 +4058,4 @@ async function main() {
     });
 }
 main();
+// figma.clientStorage.deleteAsync('pluginVersion')

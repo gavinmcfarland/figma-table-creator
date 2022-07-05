@@ -356,8 +356,12 @@
 	async function onLoad(event) {
 		var message = await event.data.pluginMessage
 
+		console.log("UI", "defaultT3", message.defaultT)
+
 		if (message.type === "show-create-table-ui") {
+			console.log("UI", "defaultT3", message.defaultTemplate)
 			data = message
+
 			let store = {
 				pageState,
 				selectedFile,
@@ -379,6 +383,7 @@
 			})
 
 			if (data.pluginVersion === "7.0.0") {
+
 				// If localTemplates or remoteFiles exist then show create table page
 				if (data.localTemplates.length > 0 || data.remoteFiles.length > 0) {
 					setActivePage("createTablePageActive")
@@ -404,8 +409,7 @@
 			}
 			else {
 				// FIXME: Need a solution for when no deafult template
-				selectedFile.id = null
-				selectedFile.name = "Local templates"
+				setActivePage("welcomePageActive", 4)
 			}
 		}
 
@@ -455,12 +459,17 @@
 				{:else}
 					<div class="ListItem" on:click={(event) => {
 						updateSelectedFile(data, file)
-						setActivePage("chooseTemplate")
+						usingRemoteTemplate(true)
+						setDefaultTemplate(file.data[0], data)
+						addRemoteFile(file)
+						setActivePage("createTablePageActive")
 					}}><span>{file.name}</span></div>
 				{/if}
 
 			{/each}
 		</div>
+		{:else}
+		<p>To use a library create a template in another file and publish the components.</p>
 		{/if}
 
 		{#if showToggles}
@@ -514,7 +523,13 @@
 	<!-- if existing user -->
 	<div class="container welcomePage" style="padding: var(--size-200)">
 		<div class="artwork">
-		<div class="svg1"></div>
+			<div class="svg1"></div>
+		</div>
+		<div class="dots">
+			<span class="active"></span>
+			<span></span>
+			<span></span>
+			<span></span>
 		</div>
 		<div class="content">
 			<h6>What's new</h6>
@@ -522,7 +537,8 @@
 				Table Creator has been rebuilt from the ground up with some new features.
 			</p>
 			<div class="buttons">
-			<span on:click={() => setActiveSlide(1)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+
+			<span class="next" on:click={() => setActiveSlide(1)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
 			</div>
 		</div>
 	</div>
@@ -534,13 +550,20 @@
 		<div class="artwork">
 		<div class="svg2"></div>
 		</div>
+		<div class="dots">
+			<span></span>
+			<span class="active"></span>
+			<span></span>
+			<span></span>
+		</div>
 		<div class="content">
 		<h6>Templates</h6>
 		<p>
-			Tables are now created from a single component called a template. Templates offer a lot more flexibility and control. Once a table is created, it's appearance can be updated from the plugin.
+			Tables are now created from a single component called a template. They offer more flexibility and existing tables can be updated from them.
 		</p>
 		<div class="buttons">
-		<span on:click={() => setActiveSlide(2)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+			<span class="prev" on:click={() => setActiveSlide(0)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
+		<span class="next" on:click={() => setActiveSlide(2)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
 		</div>
 		</div>
 	</div>
@@ -550,13 +573,20 @@
 		<div class="artwork">
 		<div class="svg3"></div>
 		</div>
+		<div class="dots">
+			<span></span>
+			<span></span>
+			<span class="active"></span>
+			<span></span>
+		</div>
 		<div class="content">
 		<h6>Multiple templates</h6>
 		<p>
 			Manage more than one table design by creating multiple templates. Choose the template you want by selecting it from the dropdown when creating a table.<br />
 		</p>
 		<div class="buttons">
-			<span on:click={() => setActiveSlide(3)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+			<span class="prev" on:click={() => setActiveSlide(1)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
+			<span class="next" on:click={() => setActiveSlide(3)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
 		</div>
 		</div>
 	</div>
@@ -566,13 +596,20 @@
 		<div class="artwork">
 		<div class="svg4"></div>
 		</div>
+		<div class="dots">
+			<span></span>
+			<span></span>
+			<span></span>
+			<span class="active"></span>
+		</div>
 		<div class="content">
 		<h6>Libraries</h6>
 		<p>
-			Create tables based on templates from libraries. First published the template, then in another file run the plugin and choose "Existing Template".
+			To use templates with libraries, first publish the template and then run the plugin in another file.
 		</p>
 		<div class="buttons">
-			<span on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
+			<span class="prev" on:click={() => setActiveSlide(2)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
+			<span class="next" on:click={() => setActiveSlide(4)}><Button classes="secondary" iconRight="arrow-right">Next</Button></span>
 		</div>
 		</div>
 	</div>
@@ -583,28 +620,30 @@
 		<div class="artwork">
 			<div class="svg7"></div>
 			</div>
+			<div class="dots"></div>
 			<div class="content">
 				<h6>Update to template</h6>
 				<p>The table components in this file need updating. This will convert your existing table component into a template or create one if one doesn't exist.</p>
 			<div class="buttons">
-				<span on:click={() => upgradeToTemplate()}><Button classes="secondary">Create Template</Button></span>
+				<span class="next" on:click={() => upgradeToTemplate()}><Button classes="secondary">Create Template</Button></span>
 			</div>
 		</div>
 		{:else}
-		<div class="artwork">
-			<div class="svg6"></div>
-		</div>
+			<div class="artwork">
+				<div class="svg6"></div>
+			</div>
+			<div class="dots"></div>
 			<div class="content">
 			<h6>Get started</h6>
 
 			{#if data.recentFiles.length > 0}
-				<p>Create a new template or choose an existing template from a remote file.</p>
+				<p>Create a new template or use an existing template from a library.</p>
 			{:else}
 				<p>Begin by creating a new template to create tables from.</p>
 			{/if}
 
 
-			<div class="buttons">
+			<div class="buttons new-template">
 				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New Template</Button></span>
 				{#if data.recentFiles.length > 0}
 					<span on:click={() => {
@@ -675,7 +714,7 @@
 														getDropdown('tooltip').close()
 														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 														chooseRemoteTemplate({entry: "MANAGE_LIBRARIES"})
-														}} for="linkLibrary">Link Libaray</label>
+														}} for="linkLibrary">Choose Library</label>
 												</div>
 
 
@@ -703,13 +742,13 @@
 												getDropdown('menu').close()
 
 
-												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"><span style="margin-left: auto;" class="refresh icon" icon="minus" on:click={() => removeTemplate(template)}></span> <span class="refresh icon" icon="pencil" on:click={() => {
+												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Edit Template"  class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
-													}}></span> <span class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></div></li>
+													}}></a> <a title="Refresh Tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
 										{/each}
 										</ul>
 									{/if}
-									<div class="toolbar"><span class="refresh icon" icon="plus" on:click={() => newTemplate({ subComponents: false, tooltips: false})}></span></div>
+									<div class="toolbar"><a title="New Template"  class="refresh icon" icon="plus" on:click={() => newTemplate({ subComponents: false, tooltips: false})}></a></div>
 								{:else}
 									{#if data.remoteFiles.length > 0}
 										<!-- <div> -->
@@ -726,13 +765,13 @@
 																// Hide menu when template set
 																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																getDropdown('menu').close()
-																}}>{template.name} <span style="margin-left: auto;" class="refresh icon" icon="minus" on:click={() => removeTemplate(template, file)}></span> <span class="refresh icon" icon="swap" on:click={() => updateTables(template)}></span></li>
+																}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Refresh Tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
 															{/each}
 													</ul>
-													<div class="toolbar"><span class="refresh icon" icon="break" on:click={() => {
+													<div class="toolbar"><a title="Remove Library" style="margin-left: auto" class="refresh icon" icon="break" on:click={() => {
 														removeRemoteFile(file)
 														updateSelectedFile()
-														}}></span></div>
+														}}></a></div>
 												{/if}
 											{/each}
 										<!-- </div> -->
@@ -815,18 +854,64 @@
 
 	}
 
-	/* .buttons {
-		margin-top: var(--size-300);
-	} */
+	.buttons {
+		display: flex;
+		width: 100%;
+		/* margin-top: var(--size-300); */
+	}
 
+	.buttons > .prev {
+		margin-left: -2px;
+	}
+
+	.buttons > .prev .button {
+		width: 30px;
+		padding: 0;
+	}
+
+	.buttons > .prev .button > div > span:first-child {
+		width: 0;
+	}
+
+	.buttons > .prev .button > div > span:nth-child(2) {
+		margin-left: 2px;
+	}
+
+	.buttons > .next {
+		margin-left: auto;
+	}
+
+	.buttons.new-template {
+		display: block;
+		margin-left: auto;
+	}
+
+	.dots {
+		display: flex;
+		gap: 8px;
+		align-self: center;
+		margin-bottom: 16px;
+		min-height: 21px;
+	}
+	.dots > * {
+
+		background-color: var(--figma-color-border);
+		width: 5px;
+		height: 5px;
+		border-radius: 9999px;
+	}
+
+	.dots .active {
+		background-color: var(--figma-color-border-disabled-strong);
+	}
 	.artwork {
 		display: flex;
     	flex-grow: 1;
     	justify-content: center;
 		align-items: center;
 		margin: 0 -16px;
-		height: 322px;
-		max-height: 322px;
+		height: 300px;
+		max-height: 300px;
 	}
 	.content {
 		flex-grow: 1;
@@ -1070,6 +1155,13 @@
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.7071 8.00004L12.3536 7.64648L9.35355 4.64648L8.64645 5.35359L10.7929 7.50004H5L5 8.50004H10.7929L8.64645 10.6465L9.35355 11.3536L12.3536 8.35359L12.7071 8.00004Z' fill='white'/%3E%3C/svg%3E%0A");
 	}
 
+	.figma-light [icon="arrow-left"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M2.29297 8.00004L2.64652 7.64648L5.64652 4.64648L6.35363 5.35359L4.20718 7.50004L12.5001 7.50004V8.50004L4.20718 8.50004L6.35363 10.6465L5.64652 11.3536L2.64652 8.35359L2.29297 8.00004Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+	.figma-dark [icon="arrow-left"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M2.29297 8.00004L2.64652 7.64648L5.64652 4.64648L6.35363 5.35359L4.20718 7.50004L12.5001 7.50004V8.50004L4.20718 8.50004L6.35363 10.6465L5.64652 11.3536L2.64652 8.35359L2.29297 8.00004Z' fill='white' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
 	/* .Select:hover > .label :last-child {
 		margin-left: auto !important;
 	} */
@@ -1149,6 +1241,7 @@
 	}
 
 	.menu__content .toolbar {
+		display: flex;
 		position: absolute;
 		bottom: 0;
 		border-top: 1px solid var(--figma-color-border);
@@ -1371,19 +1464,19 @@
 }
 
 .figma-light .svg2 {
-	margin-right: -100px !important;
+	margin-right: -96px !important;
     width: 315px;
     height: 202px;
 	background-size: contain;
-    background-image: url("data:image/svg+xml,%3Csvg width='313' height='202' viewBox='0 0 313 202' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_108_4278)'%3E%3Cg clip-path='url(%23clip0_108_4278)'%3E%3Crect x='97' y='31' width='200' height='135' rx='2' fill='white'/%3E%3Crect width='100' height='45' transform='translate(97 31)' fill='white' fill-opacity='0.01'/%3E%3Crect x='97' y='31' width='100' height='45' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(197 31)' fill='white' fill-opacity='0.01'/%3E%3Crect x='197' y='31' width='100' height='45' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(97 76)' fill='white' fill-opacity='0.01'/%3E%3Crect x='97' y='76' width='100' height='45' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(197 76)' fill='white' fill-opacity='0.01'/%3E%3Crect x='197' y='76' width='100' height='45' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(97 121)' fill='white' fill-opacity='0.01'/%3E%3Crect x='97' y='121' width='100' height='45' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(197 121)' fill='white' fill-opacity='0.01'/%3E%3Crect x='197' y='121' width='100' height='45' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Crect x='97' y='31' width='200' height='135' rx='2' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Crect x='87' y='21' width='220' height='155' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='304' y='18' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='304' y='173' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='84' y='173' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='84' y='18' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M89 0L86.375 2.625L89 5.25L91.625 2.625L89 0ZM89 6.75L86.375 9.375L89 12L91.625 9.375L89 6.75ZM83 6L85.625 3.375L88.25 6L85.625 8.625L83 6ZM92.375 3.375L89.75 6L92.375 8.625L95 6L92.375 3.375Z' fill='%23A54EEA'/%3E%3Cpath d='M98.4773 2.59801V1.27273H105.44V2.59801H102.743V10H101.175V2.59801H98.4773ZM107.767 10.1321C107.353 10.1321 106.979 10.0582 106.647 9.91051C106.317 9.75994 106.056 9.53835 105.863 9.24574C105.672 8.95312 105.577 8.59233 105.577 8.16335C105.577 7.79403 105.645 7.48864 105.782 7.24716C105.918 7.00568 106.104 6.8125 106.34 6.66761C106.576 6.52273 106.841 6.41335 107.137 6.33949C107.435 6.26278 107.743 6.20739 108.061 6.1733C108.445 6.13352 108.756 6.09801 108.995 6.06676C109.233 6.03267 109.407 5.98153 109.515 5.91335C109.625 5.84233 109.681 5.73295 109.681 5.58523V5.55966C109.681 5.23864 109.586 4.99006 109.395 4.81392C109.205 4.63778 108.931 4.54972 108.573 4.54972C108.195 4.54972 107.895 4.6321 107.674 4.79688C107.455 4.96165 107.307 5.15625 107.23 5.38068L105.79 5.17614C105.904 4.77841 106.091 4.44602 106.353 4.17898C106.614 3.90909 106.934 3.70739 107.311 3.57386C107.689 3.4375 108.107 3.36932 108.564 3.36932C108.88 3.36932 109.194 3.40625 109.506 3.48011C109.819 3.55398 110.104 3.67614 110.363 3.84659C110.621 4.0142 110.828 4.2429 110.985 4.53267C111.144 4.82244 111.223 5.18466 111.223 5.61932V10H109.74V9.10085H109.689C109.596 9.28267 109.463 9.45312 109.293 9.61222C109.125 9.76847 108.914 9.89489 108.658 9.99148C108.405 10.0852 108.108 10.1321 107.767 10.1321ZM108.168 8.99858C108.478 8.99858 108.746 8.9375 108.973 8.81534C109.201 8.69034 109.375 8.52557 109.497 8.32102C109.622 8.11648 109.685 7.89347 109.685 7.65199V6.88068C109.637 6.92045 109.554 6.95739 109.438 6.99148C109.324 7.02557 109.196 7.0554 109.054 7.08097C108.912 7.10653 108.772 7.12926 108.632 7.14915C108.493 7.16903 108.373 7.18608 108.27 7.20028C108.04 7.23153 107.834 7.28267 107.652 7.35369C107.471 7.42472 107.327 7.52415 107.222 7.65199C107.117 7.77699 107.064 7.93892 107.064 8.13778C107.064 8.42188 107.168 8.63636 107.375 8.78125C107.583 8.92614 107.847 8.99858 108.168 8.99858ZM112.903 10V1.27273H114.445V4.53693H114.509C114.589 4.37784 114.701 4.20881 114.846 4.02983C114.991 3.84801 115.187 3.69318 115.434 3.56534C115.681 3.43466 115.996 3.36932 116.38 3.36932C116.886 3.36932 117.342 3.49858 117.748 3.7571C118.157 4.01278 118.481 4.39205 118.719 4.89489C118.961 5.39489 119.082 6.00852 119.082 6.7358C119.082 7.45455 118.964 8.06534 118.728 8.56818C118.492 9.07102 118.171 9.45455 117.765 9.71875C117.359 9.98295 116.898 10.1151 116.384 10.1151C116.009 10.1151 115.698 10.0526 115.451 9.92756C115.204 9.80256 115.005 9.65199 114.854 9.47585C114.707 9.29687 114.592 9.12784 114.509 8.96875H114.42V10H112.903ZM114.415 6.72727C114.415 7.15057 114.475 7.52131 114.594 7.83949C114.717 8.15767 114.891 8.40625 115.119 8.58523C115.349 8.76136 115.627 8.84943 115.954 8.84943C116.295 8.84943 116.58 8.75852 116.81 8.5767C117.04 8.39205 117.214 8.14062 117.33 7.82244C117.45 7.50142 117.509 7.13636 117.509 6.72727C117.509 6.32102 117.451 5.96023 117.334 5.64489C117.218 5.32955 117.045 5.08239 116.815 4.90341C116.584 4.72443 116.298 4.63494 115.954 4.63494C115.624 4.63494 115.344 4.72159 115.114 4.89489C114.884 5.06818 114.709 5.31108 114.59 5.62358C114.474 5.93608 114.415 6.30398 114.415 6.72727ZM121.996 1.27273V10H120.453V1.27273H121.996ZM126.54 10.1278C125.883 10.1278 125.317 9.99148 124.839 9.71875C124.365 9.44318 124 9.05398 123.744 8.55114C123.489 8.04545 123.361 7.45028 123.361 6.76562C123.361 6.09233 123.489 5.50142 123.744 4.9929C124.003 4.48153 124.364 4.08381 124.827 3.79972C125.29 3.51278 125.834 3.36932 126.459 3.36932C126.862 3.36932 127.243 3.43466 127.601 3.56534C127.962 3.69318 128.28 3.89205 128.555 4.16193C128.834 4.43182 129.053 4.77557 129.212 5.19318C129.371 5.60795 129.45 6.10227 129.45 6.67614V7.14915H124.085V6.10938H127.972C127.969 5.81392 127.905 5.55114 127.78 5.32102C127.655 5.08807 127.48 4.90483 127.256 4.77131C127.034 4.63778 126.776 4.57102 126.48 4.57102C126.165 4.57102 125.888 4.64773 125.649 4.80114C125.41 4.9517 125.224 5.15057 125.091 5.39773C124.96 5.64205 124.893 5.91051 124.891 6.20312V7.1108C124.891 7.49148 124.96 7.81818 125.099 8.09091C125.239 8.3608 125.433 8.56818 125.683 8.71307C125.933 8.85511 126.226 8.92614 126.561 8.92614C126.785 8.92614 126.989 8.89489 127.17 8.83239C127.352 8.76705 127.51 8.67188 127.643 8.54688C127.777 8.42188 127.878 8.26705 127.946 8.08239L129.386 8.24432C129.295 8.625 129.122 8.95739 128.866 9.24148C128.614 9.52273 128.29 9.74148 127.895 9.89773C127.5 10.0511 127.048 10.1278 126.54 10.1278ZM137.385 1.27273V10H135.804V2.81108H135.752L133.711 4.11506V2.66619L135.88 1.27273H137.385Z' fill='%23A54EEA'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M18.4123 79.8982C21.9985 78.6198 25.9007 78.5278 29.5432 79.6359C33.1857 80.7439 36.3756 82.9934 38.6424 86.0523C40.3868 88.4063 41.5135 91.1439 41.9401 94.0157L46.4462 88.3831L48.0079 89.6325L41.9142 97.2497L41.3415 97.9656L40.5786 97.4571L31.438 91.3633L32.5474 89.6992L40.0118 94.6755C39.6775 91.994 38.6574 89.4317 37.0355 87.2431C35.024 84.5286 32.1934 82.5326 28.9611 81.5493C25.7289 80.566 22.2662 80.6477 19.0839 81.7821C15.9015 82.9165 13.168 85.0437 11.2866 87.8499L9.62545 86.7361C11.7456 83.5738 14.8261 81.1766 18.4123 79.8982ZM6.83609 96.0003L0.74234 103.617L2.30408 104.867L6.80997 99.2345C7.23661 102.106 8.36326 104.844 10.1077 107.198C12.3745 110.257 15.5644 112.506 19.2069 113.614C22.8493 114.722 26.7515 114.63 30.3377 113.352C33.924 112.073 37.0044 109.676 39.1246 106.514L37.4634 105.4C35.582 108.206 32.8485 110.333 29.6662 111.468C26.4838 112.602 23.0212 112.684 19.7889 111.701C16.5567 110.717 13.726 108.721 11.7145 106.007C10.0926 103.818 9.07252 101.256 8.73823 98.5744L16.2029 103.551L17.3123 101.887L8.17166 95.7929L7.40882 95.2844L6.83609 96.0003Z' fill='%23CFCFCF'/%3E%3Cdefs%3E%3Cfilter id='filter0_d_108_4278' x='81' y='30' width='232' height='172' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='20'/%3E%3CfeGaussianBlur stdDeviation='7.5'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_108_4278'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_108_4278' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_108_4278'%3E%3Crect x='97' y='31' width='200' height='135' rx='2' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
+    background-image: url("data:image/svg+xml,%3Csvg width='292' height='196' viewBox='0 0 292 196' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_108_4278)'%3E%3Cg clip-path='url(%23clip0_108_4278)'%3E%3Crect x='86' y='31.5' width='190' height='128' rx='2' fill='white'/%3E%3Crect width='95' height='43' transform='translate(86 31.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='86' y='31.5' width='95' height='43' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='95' height='43' transform='translate(181 31.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='181' y='31.5' width='95' height='43' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='95' height='43' transform='translate(86 74.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='86' y='74.5' width='95' height='43' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='95' height='43' transform='translate(181 74.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='181' y='74.5' width='95' height='43' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='95' height='42' transform='translate(86 117.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='86' y='117.5' width='95' height='42' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='95' height='42' transform='translate(181 117.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='181' y='117.5' width='95' height='42' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Crect x='86' y='31.5' width='190' height='128' rx='2' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Crect x='76' y='21.5' width='210' height='148' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='283' y='18.5' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='283' y='166.5' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='73' y='166.5' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='73' y='18.5' width='6' height='6' fill='white' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M78 0.5L75.375 3.125L78 5.75L80.625 3.125L78 0.5ZM78 7.25L75.375 9.875L78 12.5L80.625 9.875L78 7.25ZM72 6.5L74.625 3.875L77.25 6.5L74.625 9.125L72 6.5ZM81.375 3.875L78.75 6.5L81.375 9.125L84 6.5L81.375 3.875Z' fill='%23A54EEA'/%3E%3Cpath d='M87.4773 3.09801V1.77273H94.4403V3.09801H91.7429V10.5H90.1747V3.09801H87.4773ZM96.7674 10.6321C96.3526 10.6321 95.979 10.5582 95.6466 10.4105C95.3171 10.2599 95.0557 10.0384 94.8626 9.74574C94.6722 9.45312 94.577 9.09233 94.577 8.66335C94.577 8.29403 94.6452 7.98864 94.7816 7.74716C94.918 7.50568 95.104 7.3125 95.3398 7.16761C95.5756 7.02273 95.8413 6.91335 96.1367 6.83949C96.435 6.76278 96.7432 6.70739 97.0614 6.6733C97.4449 6.63352 97.756 6.59801 97.9947 6.56676C98.2333 6.53267 98.4066 6.48153 98.5145 6.41335C98.6253 6.34233 98.6807 6.23295 98.6807 6.08523V6.05966C98.6807 5.73864 98.5856 5.49006 98.3952 5.31392C98.2049 5.13778 97.9307 5.04972 97.5728 5.04972C97.1949 5.04972 96.8952 5.1321 96.6736 5.29688C96.4549 5.46165 96.3072 5.65625 96.2305 5.88068L94.7901 5.67614C94.9037 5.27841 95.0913 4.94602 95.3526 4.67898C95.614 4.40909 95.9336 4.20739 96.3114 4.07386C96.6893 3.9375 97.1069 3.86932 97.5643 3.86932C97.8796 3.86932 98.1935 3.90625 98.506 3.98011C98.8185 4.05398 99.104 4.17614 99.3626 4.34659C99.6211 4.5142 99.8285 4.7429 99.9847 5.03267C100.144 5.32244 100.223 5.68466 100.223 6.11932V10.5H98.7404V9.60085H98.6893C98.5955 9.78267 98.4634 9.95312 98.293 10.1122C98.1253 10.2685 97.9137 10.3949 97.658 10.4915C97.4052 10.5852 97.1083 10.6321 96.7674 10.6321ZM97.168 9.49858C97.4776 9.49858 97.7461 9.4375 97.9734 9.31534C98.2006 9.19034 98.3753 9.02557 98.4975 8.82102C98.6225 8.61648 98.685 8.39347 98.685 8.15199V7.38068C98.6367 7.42045 98.5543 7.45739 98.4378 7.49148C98.3242 7.52557 98.1964 7.5554 98.0543 7.58097C97.9123 7.60653 97.7716 7.62926 97.6324 7.64915C97.4932 7.66903 97.3725 7.68608 97.2702 7.70028C97.0401 7.73153 96.8341 7.78267 96.6523 7.85369C96.4705 7.92472 96.327 8.02415 96.2219 8.15199C96.1168 8.27699 96.0643 8.43892 96.0643 8.63778C96.0643 8.92188 96.168 9.13636 96.3753 9.28125C96.5827 9.42614 96.8469 9.49858 97.168 9.49858ZM101.903 10.5V1.77273H103.445V5.03693H103.509C103.589 4.87784 103.701 4.70881 103.846 4.52983C103.991 4.34801 104.187 4.19318 104.434 4.06534C104.681 3.93466 104.996 3.86932 105.38 3.86932C105.886 3.86932 106.342 3.99858 106.748 4.2571C107.157 4.51278 107.481 4.89205 107.719 5.39489C107.961 5.89489 108.082 6.50852 108.082 7.2358C108.082 7.95455 107.964 8.56534 107.728 9.06818C107.492 9.57102 107.171 9.95455 106.765 10.2188C106.359 10.483 105.898 10.6151 105.384 10.6151C105.009 10.6151 104.698 10.5526 104.451 10.4276C104.204 10.3026 104.005 10.152 103.854 9.97585C103.707 9.79687 103.592 9.62784 103.509 9.46875H103.42V10.5H101.903ZM103.415 7.22727C103.415 7.65057 103.475 8.02131 103.594 8.33949C103.717 8.65767 103.891 8.90625 104.119 9.08523C104.349 9.26136 104.627 9.34943 104.954 9.34943C105.295 9.34943 105.58 9.25852 105.81 9.0767C106.04 8.89205 106.214 8.64062 106.33 8.32244C106.45 8.00142 106.509 7.63636 106.509 7.22727C106.509 6.82102 106.451 6.46023 106.334 6.14489C106.218 5.82955 106.045 5.58239 105.815 5.40341C105.584 5.22443 105.298 5.13494 104.954 5.13494C104.624 5.13494 104.344 5.22159 104.114 5.39489C103.884 5.56818 103.709 5.81108 103.59 6.12358C103.474 6.43608 103.415 6.80398 103.415 7.22727ZM110.996 1.77273V10.5H109.453V1.77273H110.996ZM115.54 10.6278C114.883 10.6278 114.317 10.4915 113.839 10.2188C113.365 9.94318 113 9.55398 112.744 9.05114C112.489 8.54545 112.361 7.95028 112.361 7.26562C112.361 6.59233 112.489 6.00142 112.744 5.4929C113.003 4.98153 113.364 4.58381 113.827 4.29972C114.29 4.01278 114.834 3.86932 115.459 3.86932C115.862 3.86932 116.243 3.93466 116.601 4.06534C116.962 4.19318 117.28 4.39205 117.555 4.66193C117.834 4.93182 118.053 5.27557 118.212 5.69318C118.371 6.10795 118.45 6.60227 118.45 7.17614V7.64915H113.085V6.60938H116.972C116.969 6.31392 116.905 6.05114 116.78 5.82102C116.655 5.58807 116.48 5.40483 116.256 5.27131C116.034 5.13778 115.776 5.07102 115.48 5.07102C115.165 5.07102 114.888 5.14773 114.649 5.30114C114.41 5.4517 114.224 5.65057 114.091 5.89773C113.96 6.14205 113.893 6.41051 113.891 6.70312V7.6108C113.891 7.99148 113.96 8.31818 114.099 8.59091C114.239 8.8608 114.433 9.06818 114.683 9.21307C114.933 9.35511 115.226 9.42614 115.561 9.42614C115.785 9.42614 115.989 9.39489 116.17 9.33239C116.352 9.26705 116.51 9.17188 116.643 9.04688C116.777 8.92188 116.878 8.76705 116.946 8.58239L118.386 8.74432C118.295 9.125 118.122 9.45739 117.866 9.74148C117.614 10.0227 117.29 10.2415 116.895 10.3977C116.5 10.5511 116.048 10.6278 115.54 10.6278ZM126.385 1.77273V10.5H124.804V3.31108H124.752L122.711 4.61506V3.16619L124.88 1.77273H126.385Z' fill='%23A54EEA'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M18.4123 76.8982C21.9985 75.6198 25.9007 75.5278 29.5432 76.6359C33.1857 77.7439 36.3756 79.9934 38.6424 83.0523C40.3868 85.4063 41.5135 88.1439 41.9401 91.0157L46.4462 85.3831L48.0079 86.6325L41.9142 94.2497L41.3415 94.9656L40.5786 94.4571L31.438 88.3633L32.5474 86.6992L40.0118 91.6755C39.6775 88.994 38.6574 86.4317 37.0355 84.2431C35.024 81.5286 32.1934 79.5326 28.9611 78.5493C25.7289 77.566 22.2662 77.6477 19.0839 78.7821C15.9015 79.9165 13.168 82.0437 11.2866 84.8499L9.62545 83.7361C11.7456 80.5738 14.8261 78.1766 18.4123 76.8982ZM6.83609 93.0003L0.74234 100.617L2.30408 101.867L6.80997 96.2345C7.23661 99.1063 8.36326 101.844 10.1077 104.198C12.3745 107.257 15.5644 109.506 19.2069 110.614C22.8493 111.722 26.7515 111.63 30.3377 110.352C33.924 109.073 37.0044 106.676 39.1246 103.514L37.4634 102.4C35.582 105.206 32.8485 107.333 29.6662 108.468C26.4838 109.602 23.0212 109.684 19.7889 108.701C16.5567 107.717 13.726 105.721 11.7145 103.007C10.0926 100.818 9.07252 98.2559 8.73823 95.5744L16.2029 100.551L17.3123 98.8867L8.17166 92.7929L7.40882 92.2844L6.83609 93.0003Z' fill='%23CFCFCF'/%3E%3Cdefs%3E%3Cfilter id='filter0_d_108_4278' x='70' y='30.5' width='222' height='165' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='20'/%3E%3CfeGaussianBlur stdDeviation='7.5'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_108_4278'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_108_4278' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_108_4278'%3E%3Crect x='86' y='31.5' width='190' height='128' rx='2' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
 }
 
 .figma-dark .svg2 {
-	margin-right: -130px !important;
+	margin-right: -96px !important;
     width: 320px;
     height: 211px;
 	background-size: contain;
-	background-image: url("data:image/svg+xml,%3Csvg width='320' height='210' viewBox='0 0 320 210' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_108_4327)'%3E%3Cg clip-path='url(%23clip0_108_4327)'%3E%3Crect x='102' y='39' width='200' height='135' rx='2' fill='%232D2D2C'/%3E%3Crect width='100' height='45' transform='translate(102 39)' fill='white' fill-opacity='0.01'/%3E%3Crect x='102' y='39' width='100' height='45' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(202 39)' fill='white' fill-opacity='0.01'/%3E%3Crect x='202' y='39' width='100' height='45' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(102 84)' fill='white' fill-opacity='0.01'/%3E%3Crect x='102' y='84' width='100' height='45' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(202 84)' fill='white' fill-opacity='0.01'/%3E%3Crect x='202' y='84' width='100' height='45' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(102 129)' fill='white' fill-opacity='0.01'/%3E%3Crect x='102' y='129' width='100' height='45' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='100' height='45' transform='translate(202 129)' fill='white' fill-opacity='0.01'/%3E%3Crect x='202' y='129' width='100' height='45' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='102' y='39' width='200' height='135' rx='2' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='92' y='29' width='220' height='155' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='309' y='26' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='309' y='181' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='89' y='181' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='89' y='26' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M94 8L91.375 10.625L94 13.25L96.625 10.625L94 8ZM94 14.75L91.375 17.375L94 20L96.625 17.375L94 14.75ZM88 14L90.625 11.375L93.25 14L90.625 16.625L88 14ZM97.375 11.375L94.75 14L97.375 16.625L100 14L97.375 11.375Z' fill='%23A54EEA'/%3E%3Cpath d='M103.477 10.598V9.27273H110.44V10.598H107.743V18H106.175V10.598H103.477ZM112.767 18.1321C112.353 18.1321 111.979 18.0582 111.647 17.9105C111.317 17.7599 111.056 17.5384 110.863 17.2457C110.672 16.9531 110.577 16.5923 110.577 16.1634C110.577 15.794 110.645 15.4886 110.782 15.2472C110.918 15.0057 111.104 14.8125 111.34 14.6676C111.576 14.5227 111.841 14.4134 112.137 14.3395C112.435 14.2628 112.743 14.2074 113.061 14.1733C113.445 14.1335 113.756 14.098 113.995 14.0668C114.233 14.0327 114.407 13.9815 114.515 13.9134C114.625 13.8423 114.681 13.733 114.681 13.5852V13.5597C114.681 13.2386 114.586 12.9901 114.395 12.8139C114.205 12.6378 113.931 12.5497 113.573 12.5497C113.195 12.5497 112.895 12.6321 112.674 12.7969C112.455 12.9616 112.307 13.1562 112.23 13.3807L110.79 13.1761C110.904 12.7784 111.091 12.446 111.353 12.179C111.614 11.9091 111.934 11.7074 112.311 11.5739C112.689 11.4375 113.107 11.3693 113.564 11.3693C113.88 11.3693 114.194 11.4062 114.506 11.4801C114.819 11.554 115.104 11.6761 115.363 11.8466C115.621 12.0142 115.828 12.2429 115.985 12.5327C116.144 12.8224 116.223 13.1847 116.223 13.6193V18H114.74V17.1009H114.689C114.596 17.2827 114.463 17.4531 114.293 17.6122C114.125 17.7685 113.914 17.8949 113.658 17.9915C113.405 18.0852 113.108 18.1321 112.767 18.1321ZM113.168 16.9986C113.478 16.9986 113.746 16.9375 113.973 16.8153C114.201 16.6903 114.375 16.5256 114.497 16.321C114.622 16.1165 114.685 15.8935 114.685 15.652V14.8807C114.637 14.9205 114.554 14.9574 114.438 14.9915C114.324 15.0256 114.196 15.0554 114.054 15.081C113.912 15.1065 113.772 15.1293 113.632 15.1491C113.493 15.169 113.373 15.1861 113.27 15.2003C113.04 15.2315 112.834 15.2827 112.652 15.3537C112.471 15.4247 112.327 15.5241 112.222 15.652C112.117 15.777 112.064 15.9389 112.064 16.1378C112.064 16.4219 112.168 16.6364 112.375 16.7812C112.583 16.9261 112.847 16.9986 113.168 16.9986ZM117.903 18V9.27273H119.445V12.5369H119.509C119.589 12.3778 119.701 12.2088 119.846 12.0298C119.991 11.848 120.187 11.6932 120.434 11.5653C120.681 11.4347 120.996 11.3693 121.38 11.3693C121.886 11.3693 122.342 11.4986 122.748 11.7571C123.157 12.0128 123.481 12.392 123.719 12.8949C123.961 13.3949 124.082 14.0085 124.082 14.7358C124.082 15.4545 123.964 16.0653 123.728 16.5682C123.492 17.071 123.171 17.4545 122.765 17.7188C122.359 17.983 121.898 18.1151 121.384 18.1151C121.009 18.1151 120.698 18.0526 120.451 17.9276C120.204 17.8026 120.005 17.652 119.854 17.4759C119.707 17.2969 119.592 17.1278 119.509 16.9688H119.42V18H117.903ZM119.415 14.7273C119.415 15.1506 119.475 15.5213 119.594 15.8395C119.717 16.1577 119.891 16.4062 120.119 16.5852C120.349 16.7614 120.627 16.8494 120.954 16.8494C121.295 16.8494 121.58 16.7585 121.81 16.5767C122.04 16.392 122.214 16.1406 122.33 15.8224C122.45 15.5014 122.509 15.1364 122.509 14.7273C122.509 14.321 122.451 13.9602 122.334 13.6449C122.218 13.3295 122.045 13.0824 121.815 12.9034C121.584 12.7244 121.298 12.6349 120.954 12.6349C120.624 12.6349 120.344 12.7216 120.114 12.8949C119.884 13.0682 119.709 13.3111 119.59 13.6236C119.474 13.9361 119.415 14.304 119.415 14.7273ZM126.996 9.27273V18H125.453V9.27273H126.996ZM131.54 18.1278C130.883 18.1278 130.317 17.9915 129.839 17.7188C129.365 17.4432 129 17.054 128.744 16.5511C128.489 16.0455 128.361 15.4503 128.361 14.7656C128.361 14.0923 128.489 13.5014 128.744 12.9929C129.003 12.4815 129.364 12.0838 129.827 11.7997C130.29 11.5128 130.834 11.3693 131.459 11.3693C131.862 11.3693 132.243 11.4347 132.601 11.5653C132.962 11.6932 133.28 11.892 133.555 12.1619C133.834 12.4318 134.053 12.7756 134.212 13.1932C134.371 13.608 134.45 14.1023 134.45 14.6761V15.1491H129.085V14.1094H132.972C132.969 13.8139 132.905 13.5511 132.78 13.321C132.655 13.0881 132.48 12.9048 132.256 12.7713C132.034 12.6378 131.776 12.571 131.48 12.571C131.165 12.571 130.888 12.6477 130.649 12.8011C130.41 12.9517 130.224 13.1506 130.091 13.3977C129.96 13.642 129.893 13.9105 129.891 14.2031V15.1108C129.891 15.4915 129.96 15.8182 130.099 16.0909C130.239 16.3608 130.433 16.5682 130.683 16.7131C130.933 16.8551 131.226 16.9261 131.561 16.9261C131.785 16.9261 131.989 16.8949 132.17 16.8324C132.352 16.767 132.51 16.6719 132.643 16.5469C132.777 16.4219 132.878 16.267 132.946 16.0824L134.386 16.2443C134.295 16.625 134.122 16.9574 133.866 17.2415C133.614 17.5227 133.29 17.7415 132.895 17.8977C132.5 18.0511 132.048 18.1278 131.54 18.1278ZM142.385 9.27273V18H140.804V10.8111H140.752L138.711 12.1151V10.6662L140.88 9.27273H142.385Z' fill='%23A54EEA'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M18.4123 87.8982C21.9985 86.6198 25.9007 86.5278 29.5432 87.6359C33.1857 88.7439 36.3756 90.9934 38.6424 94.0523C40.3868 96.4063 41.5135 99.1439 41.9401 102.016L46.4462 96.3831L48.0079 97.6325L41.9142 105.25L41.3415 105.966L40.5786 105.457L31.438 99.3633L32.5474 97.6992L40.0118 102.675C39.6775 99.994 38.6574 97.4317 37.0355 95.2431C35.024 92.5286 32.1934 90.5326 28.9611 89.5493C25.7289 88.566 22.2662 88.6477 19.0839 89.7821C15.9015 90.9165 13.168 93.0437 11.2866 95.8499L9.62545 94.7361C11.7456 91.5738 14.8261 89.1766 18.4123 87.8982ZM6.83609 104L0.74234 111.617L2.30408 112.867L6.80997 107.235C7.23661 110.106 8.36326 112.844 10.1077 115.198C12.3745 118.257 15.5644 120.506 19.2069 121.614C22.8493 122.722 26.7515 122.63 30.3377 121.352C33.924 120.073 37.0044 117.676 39.1246 114.514L37.4634 113.4C35.582 116.206 32.8485 118.333 29.6662 119.468C26.4838 120.602 23.0212 120.684 19.7889 119.701C16.5567 118.717 13.726 116.721 11.7145 114.007C10.0926 111.818 9.07252 109.256 8.73823 106.574L16.2029 111.551L17.3123 109.887L8.17166 103.793L7.40882 103.284L6.83609 104Z' fill='%235C5C5C'/%3E%3Cdefs%3E%3Cfilter id='filter0_d_108_4327' x='86' y='38' width='232' height='172' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='20'/%3E%3CfeGaussianBlur stdDeviation='7.5'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_108_4327'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_108_4327' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_108_4327'%3E%3Crect x='102' y='39' width='200' height='135' rx='2' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
+	background-image: url("data:image/svg+xml,%3Csvg width='292' height='196' viewBox='0 0 292 196' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_108_4327)'%3E%3Cg clip-path='url(%23clip0_108_4327)'%3E%3Crect x='86' y='31.5' width='190' height='128' rx='2' fill='%232D2D2C'/%3E%3Crect width='95' height='43' transform='translate(86 31.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='86' y='31.5' width='95' height='43' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='95' height='43' transform='translate(181 31.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='181' y='31.5' width='95' height='43' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='95' height='43' transform='translate(86 74.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='86' y='74.5' width='95' height='43' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='95' height='43' transform='translate(181 74.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='181' y='74.5' width='95' height='43' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='95' height='42' transform='translate(86 117.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='86' y='117.5' width='95' height='42' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='95' height='42' transform='translate(181 117.5)' fill='white' fill-opacity='0.01'/%3E%3Crect x='181' y='117.5' width='95' height='42' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='86' y='31.5' width='190' height='128' rx='2' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='76' y='21.5' width='210' height='148' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='283' y='18.5' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='283' y='166.5' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='73' y='166.5' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='73' y='18.5' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M78 0.5L75.375 3.125L78 5.75L80.625 3.125L78 0.5ZM78 7.25L75.375 9.875L78 12.5L80.625 9.875L78 7.25ZM72 6.5L74.625 3.875L77.25 6.5L74.625 9.125L72 6.5ZM81.375 3.875L78.75 6.5L81.375 9.125L84 6.5L81.375 3.875Z' fill='%23A54EEA'/%3E%3Cpath d='M87.4773 3.09801V1.77273H94.4403V3.09801H91.7429V10.5H90.1747V3.09801H87.4773ZM96.7674 10.6321C96.3526 10.6321 95.979 10.5582 95.6466 10.4105C95.3171 10.2599 95.0557 10.0384 94.8626 9.74574C94.6722 9.45312 94.577 9.09233 94.577 8.66335C94.577 8.29403 94.6452 7.98864 94.7816 7.74716C94.918 7.50568 95.104 7.3125 95.3398 7.16761C95.5756 7.02273 95.8413 6.91335 96.1367 6.83949C96.435 6.76278 96.7432 6.70739 97.0614 6.6733C97.4449 6.63352 97.756 6.59801 97.9947 6.56676C98.2333 6.53267 98.4066 6.48153 98.5145 6.41335C98.6253 6.34233 98.6807 6.23295 98.6807 6.08523V6.05966C98.6807 5.73864 98.5856 5.49006 98.3952 5.31392C98.2049 5.13778 97.9307 5.04972 97.5728 5.04972C97.1949 5.04972 96.8952 5.1321 96.6736 5.29688C96.4549 5.46165 96.3072 5.65625 96.2305 5.88068L94.7901 5.67614C94.9037 5.27841 95.0913 4.94602 95.3526 4.67898C95.614 4.40909 95.9336 4.20739 96.3114 4.07386C96.6893 3.9375 97.1069 3.86932 97.5643 3.86932C97.8796 3.86932 98.1935 3.90625 98.506 3.98011C98.8185 4.05398 99.104 4.17614 99.3626 4.34659C99.6211 4.5142 99.8285 4.7429 99.9847 5.03267C100.144 5.32244 100.223 5.68466 100.223 6.11932V10.5H98.7404V9.60085H98.6893C98.5955 9.78267 98.4634 9.95312 98.293 10.1122C98.1253 10.2685 97.9137 10.3949 97.658 10.4915C97.4052 10.5852 97.1083 10.6321 96.7674 10.6321ZM97.168 9.49858C97.4776 9.49858 97.7461 9.4375 97.9734 9.31534C98.2006 9.19034 98.3753 9.02557 98.4975 8.82102C98.6225 8.61648 98.685 8.39347 98.685 8.15199V7.38068C98.6367 7.42045 98.5543 7.45739 98.4378 7.49148C98.3242 7.52557 98.1964 7.5554 98.0543 7.58097C97.9123 7.60653 97.7716 7.62926 97.6324 7.64915C97.4932 7.66903 97.3725 7.68608 97.2702 7.70028C97.0401 7.73153 96.8341 7.78267 96.6523 7.85369C96.4705 7.92472 96.327 8.02415 96.2219 8.15199C96.1168 8.27699 96.0643 8.43892 96.0643 8.63778C96.0643 8.92188 96.168 9.13636 96.3753 9.28125C96.5827 9.42614 96.8469 9.49858 97.168 9.49858ZM101.903 10.5V1.77273H103.445V5.03693H103.509C103.589 4.87784 103.701 4.70881 103.846 4.52983C103.991 4.34801 104.187 4.19318 104.434 4.06534C104.681 3.93466 104.996 3.86932 105.38 3.86932C105.886 3.86932 106.342 3.99858 106.748 4.2571C107.157 4.51278 107.481 4.89205 107.719 5.39489C107.961 5.89489 108.082 6.50852 108.082 7.2358C108.082 7.95455 107.964 8.56534 107.728 9.06818C107.492 9.57102 107.171 9.95455 106.765 10.2188C106.359 10.483 105.898 10.6151 105.384 10.6151C105.009 10.6151 104.698 10.5526 104.451 10.4276C104.204 10.3026 104.005 10.152 103.854 9.97585C103.707 9.79687 103.592 9.62784 103.509 9.46875H103.42V10.5H101.903ZM103.415 7.22727C103.415 7.65057 103.475 8.02131 103.594 8.33949C103.717 8.65767 103.891 8.90625 104.119 9.08523C104.349 9.26136 104.627 9.34943 104.954 9.34943C105.295 9.34943 105.58 9.25852 105.81 9.0767C106.04 8.89205 106.214 8.64062 106.33 8.32244C106.45 8.00142 106.509 7.63636 106.509 7.22727C106.509 6.82102 106.451 6.46023 106.334 6.14489C106.218 5.82955 106.045 5.58239 105.815 5.40341C105.584 5.22443 105.298 5.13494 104.954 5.13494C104.624 5.13494 104.344 5.22159 104.114 5.39489C103.884 5.56818 103.709 5.81108 103.59 6.12358C103.474 6.43608 103.415 6.80398 103.415 7.22727ZM110.996 1.77273V10.5H109.453V1.77273H110.996ZM115.54 10.6278C114.883 10.6278 114.317 10.4915 113.839 10.2188C113.365 9.94318 113 9.55398 112.744 9.05114C112.489 8.54545 112.361 7.95028 112.361 7.26562C112.361 6.59233 112.489 6.00142 112.744 5.4929C113.003 4.98153 113.364 4.58381 113.827 4.29972C114.29 4.01278 114.834 3.86932 115.459 3.86932C115.862 3.86932 116.243 3.93466 116.601 4.06534C116.962 4.19318 117.28 4.39205 117.555 4.66193C117.834 4.93182 118.053 5.27557 118.212 5.69318C118.371 6.10795 118.45 6.60227 118.45 7.17614V7.64915H113.085V6.60938H116.972C116.969 6.31392 116.905 6.05114 116.78 5.82102C116.655 5.58807 116.48 5.40483 116.256 5.27131C116.034 5.13778 115.776 5.07102 115.48 5.07102C115.165 5.07102 114.888 5.14773 114.649 5.30114C114.41 5.4517 114.224 5.65057 114.091 5.89773C113.96 6.14205 113.893 6.41051 113.891 6.70312V7.6108C113.891 7.99148 113.96 8.31818 114.099 8.59091C114.239 8.8608 114.433 9.06818 114.683 9.21307C114.933 9.35511 115.226 9.42614 115.561 9.42614C115.785 9.42614 115.989 9.39489 116.17 9.33239C116.352 9.26705 116.51 9.17188 116.643 9.04688C116.777 8.92188 116.878 8.76705 116.946 8.58239L118.386 8.74432C118.295 9.125 118.122 9.45739 117.866 9.74148C117.614 10.0227 117.29 10.2415 116.895 10.3977C116.5 10.5511 116.048 10.6278 115.54 10.6278ZM126.385 1.77273V10.5H124.804V3.31108H124.752L122.711 4.61506V3.16619L124.88 1.77273H126.385Z' fill='%23A54EEA'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M18.4123 76.8982C21.9985 75.6198 25.9007 75.5278 29.5432 76.6359C33.1857 77.7439 36.3756 79.9934 38.6424 83.0523C40.3868 85.4063 41.5135 88.1439 41.9401 91.0157L46.4462 85.3831L48.0079 86.6325L41.9142 94.2497L41.3415 94.9656L40.5786 94.4571L31.438 88.3633L32.5474 86.6992L40.0118 91.6755C39.6775 88.994 38.6574 86.4317 37.0355 84.2431C35.024 81.5286 32.1934 79.5326 28.9611 78.5493C25.7289 77.566 22.2662 77.6477 19.0839 78.7821C15.9015 79.9165 13.168 82.0437 11.2866 84.8499L9.62545 83.7361C11.7456 80.5738 14.8261 78.1766 18.4123 76.8982ZM6.83609 93.0003L0.74234 100.617L2.30408 101.867L6.80997 96.2345C7.23661 99.1063 8.36326 101.844 10.1077 104.198C12.3745 107.257 15.5644 109.506 19.2069 110.614C22.8493 111.722 26.7515 111.63 30.3377 110.352C33.924 109.073 37.0044 106.676 39.1246 103.514L37.4634 102.4C35.582 105.206 32.8485 107.333 29.6662 108.468C26.4838 109.602 23.0212 109.684 19.7889 108.701C16.5567 107.717 13.726 105.721 11.7145 103.007C10.0926 100.818 9.07252 98.2559 8.73823 95.5744L16.2029 100.551L17.3123 98.8867L8.17166 92.7929L7.40882 92.2844L6.83609 93.0003Z' fill='%235C5C5C'/%3E%3Cdefs%3E%3Cfilter id='filter0_d_108_4327' x='70' y='30.5' width='222' height='165' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='20'/%3E%3CfeGaussianBlur stdDeviation='7.5'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_108_4327'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_108_4327' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_108_4327'%3E%3Crect x='86' y='31.5' width='190' height='128' rx='2' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
 }
 
 .figma-light .svg3 {
