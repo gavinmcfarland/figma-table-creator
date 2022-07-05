@@ -17,5 +17,6 @@ export let valueStore = writable({
 	includeHeader: true,
 
 	cellWidth: 100,
-	cellAlignment: "MIN"
+	cellAlignment: "MIN",
+	prevCellWidth: null
 });

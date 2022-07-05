@@ -29,8 +29,7 @@
   "relaunchButtons": [
         {"command": "updateTables", "name": "Refresh Tables"},
         {"command": "createTable", "name": "Create Table"},
-        {"command": "spawnTable", "name": "Spawn Table"},
-        {"command": "toggleColumnResizing", "name": "Localised Component"},
+        {"command": "toggleColumnResizing", "name": "Column Sizing"},
         {"command": "switchColumnsOrRows", "name": "Columns or Rows", "multipleSelection": true},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
         {"command": "selectRow", "name": "Select Row", "multipleSelection": true},

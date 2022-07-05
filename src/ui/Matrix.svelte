@@ -123,7 +123,7 @@
 		border-spacing: 0;
 		border-collapse: collapse;
 		margin-top: 8px;
-		margin-bottom: 8px;
+		margin-bottom: 2px;
 	}
 
 	/* tr > *:last-child label {
@@ -142,14 +142,14 @@
 		margin: 0;
 		/* 		padding: 1px; */
 		/* 		padding-top: 81%; */
-		width: 24px;
-		height: 24px;
+		width: 22.6px;
+		height: 22.6px;
 
 		padding: 1px;
 		/* padding-top: calc(76% + 1px); */
 
-		margin-right: 6px;
-		margin-bottom: 6px;
+		margin-right: 4px;
+		margin-bottom: 4px;
 		border-radius: 2px;
 	}
 
@@ -171,7 +171,7 @@
 	}
 
 	.selected label {
-		border-width: 1.5px;
+		border-width: 1px;
 		padding: 0px;
 		/* padding-top: 76%; */
 		border-color: var(--figma-color-bg-brand, --color-blue);

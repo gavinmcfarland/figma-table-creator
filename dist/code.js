@@ -2609,18 +2609,18 @@ async function createTemplateComponents() {
     component_305_187.primaryAxisSizingMode = 'AUTO';
     component_305_187.counterAxisSizingMode = 'AUTO';
     component_305_187.name = 'Table 1';
-    component_305_187.effects = [
-        {
-            type: 'DROP_SHADOW',
-            color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
-            offset: { x: 0, y: 2 },
-            radius: 6,
-            spread: 0,
-            visible: true,
-            blendMode: 'NORMAL',
-            showShadowBehindNode: false,
-        },
-    ];
+    // component_305_187.effects = [
+    // 	{
+    // 		type: 'DROP_SHADOW',
+    // 		color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
+    // 		offset: { x: 0, y: 2 },
+    // 		radius: 6,
+    // 		spread: 0,
+    // 		visible: true,
+    // 		blendMode: 'NORMAL',
+    // 		showShadowBehindNode: false,
+    // 	},
+    // ]
     component_305_187.relativeTransform = [
         [1, 0, 11689],
         [0, 1, 7174],
@@ -2790,10 +2790,18 @@ async function updateClientStorageAsync(key, callback) {
 
 let defaultRelaunchData = {
     detachTable: 'Detaches table and rows',
-    toggleColumnResizing: 'Use a component to resize columns or rows',
+    toggleColumnResizing: 'Turn column sizing on or off',
     switchColumnsOrRows: 'Switch between using columns or rows',
     updateTables: 'Refresh tables already created',
 };
+function convertToNumber(data) {
+    if (Number(data)) {
+        return Number(data);
+    }
+    else {
+        return data;
+    }
+}
 async function updatePluginVersion(semver) {
     return updateClientStorageAsync('pluginVersion', (pluginVersion) => {
         // Remove plugin version from document for now
@@ -2806,133 +2814,161 @@ function createTable(templateComponent, settings, type) {
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
-    let tableInstance = convertToFrame_1(templateComponent.clone());
     let part = getTemplateParts$1(templateComponent);
-    var table;
-    if (settings.includeHeader && !part.th) {
-        figma.notify('No Header Cell component found');
-        // FIXME: Check for header cell sooner so table creation doesn't start
-        return;
-    }
-    if (part.table.id === templateComponent.id) {
-        console.log('table and container are the same thing');
-        if (type === 'COMPONENT') {
-            table = convertToComponent_1(tableInstance);
-            tableInstance = table;
+    if (!part.table || !part.tr || !part.td || !part.th) {
+        let array = [];
+        part.table ? null : array.push('table');
+        part.tr ? null : array.push('row');
+        part.th ? null : array.push('header');
+        part.td ? null : array.push('cell');
+        if (array.length > 1) {
+            figma.notify(`Template parts "${array.join(', ')}" not configured`);
         }
         else {
-            table = tableInstance;
+            figma.notify(`Template part "${array.join(', ')}" not configured`);
         }
     }
     else {
-        // Remove table from template
-        tableInstance.findAll((node) => {
+        let tableInstance = convertToFrame_1(templateComponent.clone());
+        var table;
+        if (part.table.id === templateComponent.id) {
+            console.log('table and container are the same thing');
+            if (type === 'COMPONENT') {
+                table = convertToComponent_1(tableInstance);
+                tableInstance = table;
+            }
+            else {
+                table = tableInstance;
+            }
+        }
+        else {
+            // Remove table from template
+            tableInstance.findAll((node) => {
+                var _a;
+                if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table') {
+                    node.remove();
+                }
+            });
+            var tableIndex = getNodeIndex_1(part.table);
+            // Add table back to template
+            tableInstance.insertChild(tableIndex, table);
+        }
+        var firstRow;
+        var rowIndex = getNodeIndex_1(part.tr);
+        function getRowParent() {
+            var row = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+            return row.parent;
+        }
+        var rowParent = getRowParent();
+        // Remove children which are trs
+        table.findAll((node) => {
             var _a;
-            if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table') {
+            if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
                 node.remove();
             }
         });
-        var tableIndex = getNodeIndex_1(part.table);
-        // Add table back to template
-        tableInstance.insertChild(tableIndex, table);
-    }
-    var firstRow;
-    var rowIndex = getNodeIndex_1(part.tr);
-    function getRowParent() {
-        var row = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-        return row.parent;
-    }
-    var rowParent = getRowParent();
-    // Remove children which are trs
-    table.findAll((node) => {
-        var _a;
-        if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
-            node.remove();
-        }
-    });
-    console.log('inpsect part', part.tr);
-    if (settings.columnResizing && type !== 'COMPONENT') {
-        // First row should be a component
-        firstRow = convertToComponent_1(part.tr.clone());
-        firstRow.layoutAlign = part.tr.layoutAlign;
-        firstRow.primaryAxisSizingMode = part.tr.primaryAxisSizingMode;
-        setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
-    }
-    else {
-        // First row should be a frame
-        firstRow = convertToFrame_1(part.tr.clone());
-        setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
-    }
-    rowParent.insertChild(rowIndex, firstRow);
-    // Remove children which are tds
-    firstRow.findAll((node) => {
-        var _a, _b;
-        if (node) {
-            if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th') {
-                node.remove();
-            }
-        }
-    });
-    // Create columns in first row
-    for (let i = 0; i < settings.columnCount; i++) {
-        var duplicateCell;
-        if (part.td.type === 'COMPONENT') {
-            duplicateCell = part.td.clone();
-        }
-        if (part.td.type === 'INSTANCE') {
-            duplicateCell = part.td.mainComponent.createInstance();
-        }
-        if (settings.cellWidth) {
-            // if (settings.cellWidth === 'FILL') {
-            // 	duplicateCell.layoutGrow = 1
-            // } else {
-            // let origLayoutAlign = duplicateCell.layoutAlign
-            duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height);
-            // duplicateCell.layoutAlign = origLayoutAlign
-            // }
-        }
-        setPluginData_1(duplicateCell, 'elementSemantics', { is: 'td' });
-        // Figma doesn't automatically inherit this property
-        duplicateCell.layoutAlign = part.td.layoutAlign;
-        duplicateCell.primaryAxisAlignItems = settings.cellAlignment;
-        firstRow.appendChild(duplicateCell);
-    }
-    // Create rest of rows
-    for (var i = 1; i < settings.rowCount; i++) {
-        var duplicateRow;
-        if (firstRow.type === 'COMPONENT') {
-            duplicateRow = firstRow.createInstance();
-            // BUG: isn't copying across layoutAlign, so we have to do it manually
-            duplicateRow.layoutAlign = firstRow.layoutAlign;
-            console.log('duplicate', duplicateRow.layoutAlign);
+        console.log('inpsect part', part.tr);
+        if (settings.columnResizing && type !== 'COMPONENT') {
+            // First row should be a component
+            firstRow = convertToComponent_1(part.tr.clone());
+            firstRow.layoutAlign = part.tr.layoutAlign;
+            firstRow.primaryAxisSizingMode = part.tr.primaryAxisSizingMode;
+            setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
         }
         else {
-            duplicateRow = firstRow.clone();
+            // First row should be a frame
+            firstRow = convertToFrame_1(part.tr.clone());
+            setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
         }
-        // If using columnResizing and header swap non headers to default cells
-        if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
-            for (let i = 0; i < duplicateRow.children.length; i++) {
-                var cell = duplicateRow.children[i];
-                // cell.swapComponent(part.th)
+        rowParent.insertChild(rowIndex, firstRow);
+        // Remove children which are tds and ths
+        firstRow.findAll((node) => {
+            var _a, _b;
+            if (node) {
+                if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th') {
+                    node.remove();
+                }
+            }
+        });
+        // If height specified then make rows grow to height
+        // Change size of cells
+        if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+            firstRow.layoutGrow = 1;
+        }
+        // Create columns in first row
+        for (let i = 0; i < settings.columnCount; i++) {
+            var duplicateCell;
+            if (part.td.type === 'COMPONENT') {
+                duplicateCell = part.td.clone();
+            }
+            if (part.td.type === 'INSTANCE') {
+                duplicateCell = part.td.mainComponent.createInstance();
+            }
+            if (settings.cellWidth && settings.cellWidth !== 'FILL') {
+                // if (settings.cellWidth === 'FILL') {
+                // 	duplicateCell.layoutGrow = 1
+                // } else {
+                // let origLayoutAlign = duplicateCell.layoutAlign
+                duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height);
+                // duplicateCell.layoutAlign = origLayoutAlign
+                // }
+            }
+            // Change size of cells
+            if (settings.tableWidth && settings.tableWidth !== 'HUG') {
+                duplicateCell.layoutGrow = 1;
+            }
+            setPluginData_1(duplicateCell, 'elementSemantics', { is: 'td' });
+            // Figma doesn't automatically inherit this property
+            duplicateCell.layoutAlign = part.td.layoutAlign;
+            duplicateCell.primaryAxisAlignItems = settings.cellAlignment;
+            firstRow.appendChild(duplicateCell);
+        }
+        // Create rest of rows
+        for (var i = 1; i < settings.rowCount; i++) {
+            var duplicateRow;
+            if (firstRow.type === 'COMPONENT') {
+                duplicateRow = firstRow.createInstance();
+                // BUG: isn't copying across layoutAlign, so we have to do it manually
+                duplicateRow.layoutAlign = firstRow.layoutAlign;
+            }
+            else {
+                duplicateRow = firstRow.clone();
+            }
+            if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+                duplicateRow.layoutGrow = 1;
+            }
+            // If using columnResizing and header swap non headers to default cells
+            if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
+                for (let i = 0; i < duplicateRow.children.length; i++) {
+                    var cell = duplicateRow.children[i];
+                    // cell.swapComponent(part.th)
+                    // FIXME: Check if instance or main component
+                    cell.mainComponent = part.td.mainComponent;
+                    setPluginData_1(cell, 'elementSemantics', { is: 'td' });
+                }
+            }
+            rowParent.insertChild(rowIndex + 1, duplicateRow);
+        }
+        // Swap first row to use header cell
+        if (settings.includeHeader && part.th) {
+            for (var i = 0; i < firstRow.children.length; i++) {
+                var child = firstRow.children[i];
                 // FIXME: Check if instance or main component
-                cell.mainComponent = part.td.mainComponent;
-                setPluginData_1(cell, 'elementSemantics', { is: 'td' });
+                child.swapComponent(part.th.mainComponent);
+                setPluginData_1(child, 'elementSemantics', { is: 'th' });
+                // child.mainComponent = part.th.mainComponent
             }
         }
-        rowParent.insertChild(rowIndex + 1, duplicateRow);
-    }
-    // Swap first row to use header cell
-    if (settings.includeHeader && part.th) {
-        for (var i = 0; i < firstRow.children.length; i++) {
-            var child = firstRow.children[i];
-            // FIXME: Check if instance or main component
-            child.swapComponent(part.th.mainComponent);
-            setPluginData_1(child, 'elementSemantics', { is: 'th' });
-            // child.mainComponent = part.th.mainComponent
+        tableInstance.setRelaunchData(defaultRelaunchData);
+        // Set width of table
+        if (settings.tableWidth && settings.tableWidth !== 'HUG') {
+            tableInstance.resize(convertToNumber(settings.tableWidth), tableInstance.height);
         }
+        if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+            tableInstance.resize(tableInstance.width, convertToNumber(settings.tableHeight));
+        }
+        return tableInstance;
     }
-    tableInstance.setRelaunchData(defaultRelaunchData);
-    return tableInstance;
 }
 function File(data) {
     // TODO: if fileId doesn't exist then create random ID and set fileId
@@ -3013,6 +3049,50 @@ async function updateTables(template) {
             }
         }
     }
+}
+function getTableSettings(tableNode) {
+    var _a, _b, _c;
+    let rowCount = 0;
+    let columnCount = 0;
+    let usingColumnsOrRows = 'rows';
+    for (let i = 0; i < tableNode.children.length; i++) {
+        var node = tableNode.children[i];
+        if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
+            rowCount++;
+        }
+    }
+    let firstRow = tableNode.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
+    if (firstRow.parent.layoutMode === 'VERTICAL') {
+        usingColumnsOrRows = 'rows';
+    }
+    if (firstRow.parent.layoutMode === 'HORIZONTAL') {
+        usingColumnsOrRows = 'columns';
+    }
+    for (let i = 0; i < firstRow.children.length; i++) {
+        var node = firstRow.children[i];
+        var cellType = (_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
+        if (cellType === 'td' || cellType === 'th') {
+            columnCount++;
+        }
+    }
+    return {
+        tableWidth: (() => {
+            if (tableNode.counterAxisSizingMode === 'AUTO') {
+                return 'HUG';
+            }
+            else {
+                return tableNode.width;
+            }
+        })(),
+        columnCount,
+        rowCount,
+        columnResizing: firstRow.type === 'COMPONENT' ? true : false,
+        includeHeader: ((_c = getPluginData_1(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false,
+        cellAlignment: 'MIN',
+        usingColumnsOrRows,
+        cellWidth: firstCell.width,
+    };
 }
 
 //TODO: Is it easier to ask the user to import and select their own components?
@@ -3145,6 +3225,13 @@ async function upgradeOldComponentsToTemplate() {
         let rowInstance1 = rowComponent.createInstance();
         let rowInstance2 = rowComponent.createInstance();
         let rowInstance3 = rowComponent.createInstance();
+        // BUG: isn't copying across layoutAlign, so we have to do it manually
+        rowInstance1.layoutAlign = 'STRETCH';
+        rowInstance2.layoutAlign = 'STRETCH';
+        rowInstance3.layoutAlign = 'STRETCH';
+        rowInstance1.primaryAxisSizingMode = 'FIXED';
+        rowInstance2.primaryAxisSizingMode = 'FIXED';
+        rowInstance3.primaryAxisSizingMode = 'FIXED';
         templateComponent.appendChild(rowInstance1);
         templateComponent.appendChild(rowInstance2);
         templateComponent.appendChild(rowInstance3);
@@ -3162,6 +3249,7 @@ async function upgradeOldComponentsToTemplate() {
         const templateComponent = createTemplateComponent();
         // TODO: Needs to be added to list of templates
         // TODO: Needs to relink previously created tables
+        figma.currentPage = getPageNode_1(templateComponent);
         // Add template data and relaunch data to templateComponent
         let templateData = new Template(templateComponent);
         setPluginData_1(templateComponent, 'template', templateData);
@@ -3172,7 +3260,7 @@ async function upgradeOldComponentsToTemplate() {
         // let newPage = figma.createPage()
         // newPage.name = 'Table Creator Template'
         // newPage.appendChild(templateComponent)
-        let tooltip = await createTooltip('Your table components have been converted into a template. A template is single component used by Table Creator to create tables from. Only this component is required by the plugin.', figma.currentPage.backgrounds[0].color);
+        let tooltip = await createTooltip('Your table components have been converted into a template. A template is a single component used by Table Creator to create tables from.', figma.currentPage.backgrounds[0].color);
         tooltip.x = templateComponent.x + templateComponent.width + 80;
         tooltip.y = templateComponent.y - 10;
         let componentPage = getPageNode_1(templateComponent);
@@ -3180,8 +3268,8 @@ async function upgradeOldComponentsToTemplate() {
         // figma.currentPage.selection = [templateComponent, tooltip]
         // let group = figma.group([templateComponent, tooltip], componentPage)
         // figma.currentPage = componentPage
-        // figma.viewport.scrollAndZoomIntoView([templateComponent, tooltip])
-        // figma.currentPage.selection = [templateComponent]
+        figma.currentPage.selection = [templateComponent, tooltip];
+        figma.viewport.scrollAndZoomIntoView([templateComponent, tooltip]);
         cleanupOldPluginData();
         cleanUpOldTooltips();
         upgradeOldTablesToNewTables(templateData);
@@ -3191,6 +3279,25 @@ async function upgradeOldComponentsToTemplate() {
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 console.clear();
+// createTooltip(
+// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
+// ).then((tooltip) => {
+// 	positionInCenterOfViewport(tooltip)
+// })
+// createTemplateComponents().then((array) => {
+// 	let group = figma.group(array, figma.currentPage)
+// 	positionInCenterOfViewport(group)
+// 	figma.ungroup(group)
+// })
+// setClientStorageAsync('userPreferences', undefined).then(() => {
+// 	figma.closePlugin('User preferences reset')
+// })
+figma.clientStorage.deleteAsync('recentFiles');
+figma.clientStorage.deleteAsync('pluginVersion');
+figma.root.setPluginData('remoteFiles', '');
+figma.root.setPluginData('fileId', '');
+figma.root.setPluginData('defaultTemplate', '');
+figma.clientStorage.deleteAsync('userPreferences');
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
     var index = array.findIndex((x) => x.id === object.id);
@@ -3268,42 +3375,6 @@ function importTemplate(node) {
     else {
         figma.notify('No template found');
     }
-}
-function getTableSettings(tableNode) {
-    var _a, _b, _c;
-    let rowCount = 0;
-    let columnCount = 0;
-    let usingColumnsOrRows = 'rows';
-    for (let i = 0; i < tableNode.children.length; i++) {
-        var node = tableNode.children[i];
-        if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
-            rowCount++;
-        }
-    }
-    let firstRow = tableNode.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
-    if (firstRow.parent.layoutMode === 'VERTICAL') {
-        usingColumnsOrRows = 'rows';
-    }
-    if (firstRow.parent.layoutMode === 'HORIZONTAL') {
-        usingColumnsOrRows = 'columns';
-    }
-    for (let i = 0; i < firstRow.children.length; i++) {
-        var node = firstRow.children[i];
-        var cellType = (_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
-        if (cellType === 'td' || cellType === 'th') {
-            columnCount++;
-        }
-    }
-    return {
-        columnCount,
-        rowCount,
-        columnResizing: firstRow.type === 'COMPONENT' ? true : false,
-        includeHeader: ((_c = getPluginData_1(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false,
-        cellAlignment: 'MIN',
-        usingColumnsOrRows,
-        cellWidth: firstCell.width,
-    };
 }
 // function getUserPreferencesAsync() {
 // 	return getRecentFilesAsync()
@@ -3733,6 +3804,50 @@ function selectTableVector(type) {
         figma.notify('One or more table cells must be selected');
     }
 }
+async function createTableUI() {
+    figma.root.setRelaunchData({
+        createTable: '',
+    });
+    // Whenever plugin run
+    // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
+    await getRecentFilesAsync_1(getLocalTemplates());
+    var remoteFiles = await getRemoteFilesAsync_1();
+    // Show create table UI
+    let pluginVersion = await getClientStorageAsync_1('pluginVersion');
+    let userPreferences = await getClientStorageAsync_1('userPreferences');
+    let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
+    let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
+    // const remoteFiles = getDocumentData('remoteFiles')
+    const fileId = getDocumentData_1('fileId');
+    let defaultTemplate = getDefaultTemplate();
+    const localTemplates = getLocalTemplates();
+    // Check for defaultTemplate
+    let previousTemplate = getDocumentData_1('previousTemplate');
+    getComponentById(previousTemplate === null || previousTemplate === void 0 ? void 0 : previousTemplate.id);
+    let defaultTemplateComponent = getComponentById(defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.id);
+    // If can't find current template, but can find previous, then set it as the default
+    if (!defaultTemplateComponent && localTemplates.length > 0) {
+        defaultTemplate = localTemplates[0];
+    }
+    else {
+        defaultTemplate = undefined;
+    }
+    const fileData = getDocumentData_1('fileData');
+    console.log('fileData', fileData);
+    figma.showUI(__uiFiles__.main, {
+        width: 240,
+        height: 474 + 8 + 8,
+        themeColors: true,
+    });
+    figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(localTemplates), localTemplates,
+        defaultTemplate,
+        fileId,
+        usingRemoteTemplate,
+        pluginVersion,
+        pluginUsingOldComponents }));
+    // We update plugin version after UI opened for the first time so user can see the whats new message
+    updatePluginVersion('7.0.0');
+}
 async function main() {
     // Set default preferences
     await updateClientStorageAsync_1('userPreferences', (data) => {
@@ -3744,13 +3859,15 @@ async function main() {
             includeHeader: true,
             columnResizing: true,
             cellAlignment: 'MIN',
+            tableWidth: 'HUG',
+            tableHeight: 'HUG',
         };
         return data;
     });
     dist((plugin) => {
         plugin.ui = {
             html: __uiFiles__.main,
-            width: 268,
+            width: 240,
             height: 504,
         };
         // Received messages
@@ -3836,45 +3953,7 @@ async function main() {
             });
         }
         plugin.command('createTable', async ({ ui }) => {
-            figma.root.setRelaunchData({
-                createTable: '',
-            });
-            // Whenever plugin run
-            // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-            await getRecentFilesAsync_1(getLocalTemplates());
-            var remoteFiles = await getRemoteFilesAsync_1();
-            // Show create table UI
-            let pluginVersion = await getClientStorageAsync_1('pluginVersion');
-            let userPreferences = await getClientStorageAsync_1('userPreferences');
-            let usingRemoteTemplate = await getClientStorageAsync_1('usingRemoteTemplate');
-            let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
-            // const remoteFiles = getDocumentData('remoteFiles')
-            const fileId = getDocumentData_1('fileId');
-            let defaultTemplate = getDefaultTemplate();
-            const localTemplates = getLocalTemplates();
-            // Check for defaultTemplate
-            let previousTemplate = getDocumentData_1('previousTemplate');
-            let previousTemplateComponent = getComponentById(previousTemplate === null || previousTemplate === void 0 ? void 0 : previousTemplate.id);
-            let defaultTemplateComponent = getComponentById(defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.id);
-            // If can't find current template, but can find previous, then set it as the default
-            if (!defaultTemplateComponent && previousTemplateComponent) {
-                defaultTemplate = setDefaultTemplate(previousTemplate);
-            }
-            const fileData = getDocumentData_1('fileData');
-            console.log('fileData', fileData);
-            figma.showUI(__uiFiles__.main, {
-                width: 268,
-                height: 504,
-                themeColors: true,
-            });
-            figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(localTemplates), localTemplates,
-                defaultTemplate,
-                fileId,
-                usingRemoteTemplate,
-                pluginVersion,
-                pluginUsingOldComponents }));
-            // We update plugin version after UI opened for the first time so user can see the whats new message
-            updatePluginVersion('7.0.0');
+            createTableUI();
         });
         plugin.command('detachTable', () => {
             detachTable(figma.currentPage.selection);
@@ -3983,6 +4062,23 @@ async function main() {
             const templateComponent = await lookForComponent(getDocumentData_1('defaultTemplate'));
             // const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
             if (templateComponent) {
+                if (typeof msg.data.tableWidth === 'string' || msg.data.tableWidth instanceof String) {
+                    msg.data.tableWidth = msg.data.tableWidth.toUpperCase();
+                    msg.data.tableWidth = convertToNumber(msg.data.tableWidth);
+                }
+                if (typeof msg.data.tableHeight === 'string' || msg.data.tableHeight instanceof String) {
+                    msg.data.tableHeight = msg.data.tableHeight.toUpperCase();
+                    msg.data.tableHeight = convertToNumber(msg.data.tableHeight);
+                }
+                if (typeof msg.data.cellWidth === 'string' || msg.data.cellWidth instanceof String) {
+                    msg.data.cellWidth = msg.data.cellWidth.toUpperCase();
+                    msg.data.cellWidth = convertToNumber(msg.data.cellWidth);
+                }
+                if (typeof msg.data.cellHeight === 'string' || msg.data.cellHeight instanceof String) {
+                    msg.data.cellHeight = msg.data.tableHeight.toUpperCase();
+                    msg.data.cellHeight = convertToNumber(msg.data.cellHeight);
+                }
+                console.log('msg.data', msg.data);
                 let tableInstance = createTable(templateComponent, msg.data);
                 positionInCenterOfViewport(tableInstance);
                 figma.currentPage.selection = [tableInstance];
@@ -4044,7 +4140,7 @@ async function main() {
         plugin.on('upgrade-to-template', () => {
             upgradeOldComponentsToTemplate();
             figma.notify('Template created');
-            figma.ui.postMessage({ type: 'show-create-table-page' });
+            createTableUI();
             figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: getDefaultTemplate(), localTemplates: getLocalTemplates() });
         });
         // plugin.on('existing-template', (msg) => {

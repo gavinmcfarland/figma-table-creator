@@ -13,15 +13,129 @@
 	export let step
 	export let classes = ""
 	export let style
+	export let opts
 
 	const dispatch = createEventDispatcher()
 
 	const handleInput = (e) => {
+
+		let origValue = value
 		// in here, you can switch on type and implement
 		// whatever behaviour you need
 		value = type.match(/^(number|range)$/)
 			? +e.target.value
 			: e.target.value
+
+		if (typeof value === 'string' || value instanceof String) {
+			value = value.toUpperCase()
+		}
+
+
+		// if (id === "columnCount") {
+		// 	valueStore.update((data) => {
+		// 		data.tableWidth = "HUG"
+		// 		return data
+		// 	})
+		// }
+
+		if (id === "columnCount") {
+			valueStore.update((data) => {
+				// data.tableWidth = "HUG"
+
+				return data
+			})
+		}
+
+		if (id === "tableWidth") {
+			if (value.toUpperCase() === 'HUG') {
+				valueStore.update((data) => {
+					data.cellWidth = data.prevCellWidth || 120
+					return data
+				})
+			}
+			else if (!isNaN(value)) {
+				valueStore.update((data) => {
+					data.prevCellWidth = data.cellWidth
+					data.cellWidth = "FILL"
+					return data
+				})
+
+			}
+			else {
+				value = origValue
+				valueStore.update((data) => {
+					data.tableWidth = value
+					return data
+				})
+			}
+
+		}
+
+		if (id === "tableHeight") {
+			if (value.toUpperCase() === 'HUG') {
+				valueStore.update((data) => {
+					data.prevCellHeight = data.cellHeight || 120
+					return data
+
+				})
+			}
+			else if (!isNaN(value)) {
+				// valueStore.update((data) => {
+				// 	data.prevCellHeight = data.cellHeight
+				// 	data.cellHeight = "FILL"
+				// 	return data
+				// })
+			}
+			else {
+				value = origValue
+				valueStore.update((data) => {
+					data.tableHeight = value
+					return data
+				})
+			}
+
+		}
+
+		if (id === "cellWidth") {
+			if (value.toUpperCase() === 'FILL') {
+				valueStore.update((data) => {
+					data.tableWidth = opts.tableWidth
+					return data
+				})
+			}
+			else if (!isNaN(value)) {
+				valueStore.update((data) => {
+					data.tableWidth = "HUG"
+					return data
+				})
+			}
+			else {
+				value = origValue
+				valueStore.update((data) => {
+					data.cellWidth = value
+					return data
+				})
+			}
+		}
+
+		// if (opts) {
+
+
+
+		// 	if (id === "columnCount" && opts.cellHeight) {
+		// 		valueStore.update((data) => {
+		// 			data.tableHeight = value * opts.cellHeight
+		// 			return data
+		// 		})
+		// 	}
+
+		// 	if (id === "cellWidth" && opts.columnCount) {
+		// 		valueStore.update((data) => {
+		// 			data.tableWidth = value * opts.columnCount
+		// 			return data
+		// 		})
+		// 	}
+		// }
 
 		//   if (id === "columns") {
 		valueStore.update((data) => {
@@ -73,6 +187,7 @@
 	.TextField input {
 		flex-grow: 1;
 		cursor: default;
+		width: 50px;
 	}
 </style>
 

@@ -591,18 +591,18 @@ export async function createTemplateComponents() {
 	component_305_187.primaryAxisSizingMode = 'AUTO'
 	component_305_187.counterAxisSizingMode = 'AUTO'
 	component_305_187.name = 'Table 1'
-	component_305_187.effects = [
-		{
-			type: 'DROP_SHADOW',
-			color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
-			offset: { x: 0, y: 2 },
-			radius: 6,
-			spread: 0,
-			visible: true,
-			blendMode: 'NORMAL',
-			showShadowBehindNode: false,
-		},
-	]
+	// component_305_187.effects = [
+	// 	{
+	// 		type: 'DROP_SHADOW',
+	// 		color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
+	// 		offset: { x: 0, y: 2 },
+	// 		radius: 6,
+	// 		spread: 0,
+	// 		visible: true,
+	// 		blendMode: 'NORMAL',
+	// 		showShadowBehindNode: false,
+	// 	},
+	// ]
 	component_305_187.relativeTransform = [
 		[1, 0, 11689],
 		[0, 1, 7174],

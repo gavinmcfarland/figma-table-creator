@@ -52,6 +52,8 @@ import {
 	updateTables,
 	setDefaultTemplate,
 	setPreviousTemplate,
+	getTableSettings,
+	convertToNumber,
 } from './globals'
 import { swapInstance } from './helpers'
 
@@ -76,11 +78,12 @@ console.clear()
 // 	figma.closePlugin('User preferences reset')
 // })
 
-// figma.clientStorage.deleteAsync('recentFiles')
-// figma.clientStorage.deleteAsync('pluginVersion')
-// figma.root.setPluginData('remoteFiles', '')
-// figma.root.setPluginData('fileId', '')
-// figma.root.setPluginData('defaultTemplate', '')
+figma.clientStorage.deleteAsync('recentFiles')
+figma.clientStorage.deleteAsync('pluginVersion')
+figma.root.setPluginData('remoteFiles', '')
+figma.root.setPluginData('fileId', '')
+figma.root.setPluginData('defaultTemplate', '')
+figma.clientStorage.deleteAsync('userPreferences')
 
 function isEmpty(obj) {
 	for (var prop in obj) {
@@ -277,50 +280,6 @@ function importTemplate(node) {
 		setDocumentData('defaultTemplate', getPluginData(node, 'template'))
 	} else {
 		figma.notify('No template found')
-	}
-}
-
-function getTableSettings(tableNode) {
-	let rowCount = 0
-	let columnCount = 0
-	let usingColumnsOrRows = 'rows'
-
-	for (let i = 0; i < tableNode.children.length; i++) {
-		var node = tableNode.children[i]
-		if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-			rowCount++
-		}
-	}
-
-	let firstRow = tableNode.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
-	let firstCell = firstRow.findOne(
-		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
-	)
-
-	if (firstRow.parent.layoutMode === 'VERTICAL') {
-		usingColumnsOrRows = 'rows'
-	}
-
-	if (firstRow.parent.layoutMode === 'HORIZONTAL') {
-		usingColumnsOrRows = 'columns'
-	}
-
-	for (let i = 0; i < firstRow.children.length; i++) {
-		var node = firstRow.children[i]
-		var cellType = getPluginData(node, 'elementSemantics')?.is
-		if (cellType === 'td' || cellType === 'th') {
-			columnCount++
-		}
-	}
-
-	return {
-		columnCount,
-		rowCount,
-		columnResizing: firstRow.type === 'COMPONENT' ? true : false,
-		includeHeader: getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false,
-		cellAlignment: 'MIN',
-		usingColumnsOrRows,
-		cellWidth: firstCell.width,
 	}
 }
 
@@ -834,6 +793,69 @@ function selectTableVector(type) {
 	}
 }
 
+async function createTableUI() {
+	figma.root.setRelaunchData({
+		createTable: '',
+	})
+
+	// Whenever plugin run
+
+	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
+	var recentFiles = await getRecentFilesAsync(getLocalTemplates())
+	var remoteFiles = await getRemoteFilesAsync()
+
+	// Show create table UI
+	let pluginVersion = await getClientStorageAsync('pluginVersion')
+	let userPreferences = await getClientStorageAsync('userPreferences')
+	let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
+	let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
+
+	// const remoteFiles = getDocumentData('remoteFiles')
+	const fileId = getDocumentData('fileId')
+	let defaultTemplate = getDefaultTemplate()
+	const localTemplates = getLocalTemplates()
+
+	// Check for defaultTemplate
+	let previousTemplate = getDocumentData('previousTemplate')
+	let previousTemplateComponent = getComponentById(previousTemplate?.id)
+	let defaultTemplateComponent = getComponentById(defaultTemplate?.id)
+
+	// If can't find current template, but can find previous, then set it as the default
+	if (!defaultTemplateComponent && localTemplates.length > 0) {
+		defaultTemplate = localTemplates[0]
+	} else {
+		defaultTemplate = undefined
+	}
+
+	const fileData = getDocumentData('fileData')
+	console.log('fileData', fileData)
+
+	if (!localTemplates) {
+		// deleteRecentFile(fileId)
+	}
+
+	figma.showUI(__uiFiles__.main, {
+		width: 240,
+		height: 474 + 8 + 8,
+		themeColors: true,
+	})
+	figma.ui.postMessage({
+		type: 'show-create-table-ui',
+		...userPreferences,
+		remoteFiles,
+		recentFiles: await getRecentFilesAsync(localTemplates),
+		localTemplates,
+		defaultTemplate,
+		fileId,
+		usingRemoteTemplate,
+		pluginVersion,
+		pluginUsingOldComponents,
+	})
+
+	// We update plugin version after UI opened for the first time so user can see the whats new message
+	updatePluginVersion('7.0.0')
+}
+
 async function main() {
 	// Set default preferences
 	await updateClientStorageAsync('userPreferences', (data) => {
@@ -845,6 +867,8 @@ async function main() {
 			includeHeader: true,
 			columnResizing: true,
 			cellAlignment: 'MIN',
+			tableWidth: 'HUG',
+			tableHeight: 'HUG',
 		}
 
 		return data
@@ -853,7 +877,7 @@ async function main() {
 	plugma((plugin) => {
 		plugin.ui = {
 			html: __uiFiles__.main,
-			width: 268,
+			width: 240,
 			height: 504,
 		}
 
@@ -964,64 +988,7 @@ async function main() {
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
-			figma.root.setRelaunchData({
-				createTable: '',
-			})
-
-			// Whenever plugin run
-
-			// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-			var recentFiles = await getRecentFilesAsync(getLocalTemplates())
-			var remoteFiles = await getRemoteFilesAsync()
-
-			// Show create table UI
-			let pluginVersion = await getClientStorageAsync('pluginVersion')
-			let userPreferences = await getClientStorageAsync('userPreferences')
-			let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
-			let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
-
-			// const remoteFiles = getDocumentData('remoteFiles')
-			const fileId = getDocumentData('fileId')
-			let defaultTemplate = getDefaultTemplate()
-			const localTemplates = getLocalTemplates()
-
-			// Check for defaultTemplate
-			let previousTemplate = getDocumentData('previousTemplate')
-			let previousTemplateComponent = getComponentById(previousTemplate?.id)
-			let defaultTemplateComponent = getComponentById(defaultTemplate?.id)
-
-			// If can't find current template, but can find previous, then set it as the default
-			if (!defaultTemplateComponent && previousTemplateComponent) {
-				defaultTemplate = setDefaultTemplate(previousTemplate)
-			}
-
-			const fileData = getDocumentData('fileData')
-			console.log('fileData', fileData)
-
-			if (!localTemplates) {
-				// deleteRecentFile(fileId)
-			}
-
-			figma.showUI(__uiFiles__.main, {
-				width: 268,
-				height: 504,
-				themeColors: true,
-			})
-			figma.ui.postMessage({
-				type: 'show-create-table-ui',
-				...userPreferences,
-				remoteFiles,
-				recentFiles: await getRecentFilesAsync(localTemplates),
-				localTemplates,
-				defaultTemplate,
-				fileId,
-				usingRemoteTemplate,
-				pluginVersion,
-				pluginUsingOldComponents,
-			})
-
-			// We update plugin version after UI opened for the first time so user can see the whats new message
-			updatePluginVersion('7.0.0')
+			createTableUI()
 		})
 		plugin.command('detachTable', () => {
 			detachTable(figma.currentPage.selection)
@@ -1148,6 +1115,27 @@ async function main() {
 			// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 			if (templateComponent) {
+				if (typeof msg.data.tableWidth === 'string' || msg.data.tableWidth instanceof String) {
+					msg.data.tableWidth = msg.data.tableWidth.toUpperCase()
+					msg.data.tableWidth = convertToNumber(msg.data.tableWidth)
+				}
+
+				if (typeof msg.data.tableHeight === 'string' || msg.data.tableHeight instanceof String) {
+					msg.data.tableHeight = msg.data.tableHeight.toUpperCase()
+					msg.data.tableHeight = convertToNumber(msg.data.tableHeight)
+				}
+
+				if (typeof msg.data.cellWidth === 'string' || msg.data.cellWidth instanceof String) {
+					msg.data.cellWidth = msg.data.cellWidth.toUpperCase()
+					msg.data.cellWidth = convertToNumber(msg.data.cellWidth)
+				}
+
+				if (typeof msg.data.cellHeight === 'string' || msg.data.cellHeight instanceof String) {
+					msg.data.cellHeight = msg.data.tableHeight.toUpperCase()
+					msg.data.cellHeight = convertToNumber(msg.data.cellHeight)
+				}
+
+				console.log('msg.data', msg.data)
 				let tableInstance = createTable(templateComponent, msg.data)
 				positionInCenterOfViewport(tableInstance)
 				figma.currentPage.selection = [tableInstance]
@@ -1214,7 +1202,7 @@ async function main() {
 			upgradeOldComponentsToTemplate()
 
 			figma.notify('Template created')
-			figma.ui.postMessage({ type: 'show-create-table-page' })
+			createTableUI()
 			figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: getDefaultTemplate(), localTemplates: getLocalTemplates() })
 		})
 

@@ -17,6 +17,7 @@
 	let rowCount
 	let includeHeader
 	let cellWidth = 100
+	let cellHeight
 	let cellAlignment
 	let selectedFile
 	let editingTemplate
@@ -24,6 +25,12 @@
 	let remoteFiles
 	let localTemplates
 	let showToggles
+	let tableWidth
+	let tableHeight
+	let columnCountField
+	let rowCountField
+	let prevCellWidth = 120
+	let prevCellHeight = 40
 
 	let welcomeSlides = [
 		true,
@@ -122,7 +129,10 @@
 						rowCount: rowCount,
 						includeHeader: includeHeader,
 						cellWidth: cellWidth,
-					cellAlignment: cellAlignment,
+						cellAlignment: cellAlignment,
+						tableWidth: tableWidth,
+						tableHeight: tableHeight,
+						cellHeight: cellHeight,
 					}
 				},
 			},
@@ -370,16 +380,23 @@
 			}
 			valueStore.set(store)
 
+			console.log({store})
+
 			valueStore.subscribe((value) => {
 				selectedFile = value.selectedFile
 				pageState = value.pageState
 				columnCount = value.columnCount
 				rowCount = value.rowCount
 				cellWidth = value.cellWidth
+				cellHeight = value.cellHeight
 				includeHeader = value.includeHeader
 				cellAlignment = value.cellAlignment
 				columnResizing = value.columnResizing
+				tableWidth = value.tableWidth
+				tableHeight = value.tableHeight
 				data = value.data
+				prevCellWidth = value.prevCellWidth
+				prevCellHeight = value.prevCellHeight
 			})
 
 			if (data.pluginVersion === "7.0.0") {
@@ -559,7 +576,7 @@
 		<div class="content">
 		<h6>Templates</h6>
 		<p>
-			Tables are now created from a single component called a template. They offer more flexibility and existing tables can be updated from them.
+			Tables are now created from a single component called a template. They offer more flexibility. Easily update already created tables from the plugin or template.
 		</p>
 		<div class="buttons">
 			<span class="prev" on:click={() => setActiveSlide(0)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
@@ -669,7 +686,7 @@
 						<div class="menu">
 							<div class="Title">
 
-								<p style="font-weight: 600">Choose template</p>
+								<p style="font-weight: 600">Templates</p>
 
 								<Dropdown id="tooltip">
 									<slot slot="label">
@@ -802,8 +819,12 @@
 			</div>
 		</div>
 		<div class="field-group">
-			<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} />
+			<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} opts={{columnCount, cellWidth}} />
 			<Field id="rowCount" label="R" type="number" step="1" min="1" max="50" value={rowCount} />
+		</div>
+		<div class="field-group">
+			<Field id="tableWidth" label="W" type="text" step="1" min="1" max="2000" value={tableWidth} opts={{prevCellWidth}} />
+			<Field id="tableHeight" label="H" type="text" step="1" min="1" max="2000" value={tableHeight} opts={{prevCellHeight}} />
 		</div>
 
 		<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
@@ -812,7 +833,7 @@
 
 		<div class="text-bold SectionTitle">Cell</div>
 		<div style="display: flex; gap: var(--size-200);">
-			<Field style="width: 106px" id="cellWidth" label="W" type="number" step="1" min="1" max="1000" value={cellWidth} />
+			<Field style="width: 106px" id="cellWidth" label="W" type="text" step="1" min="1" max="1000" value={cellWidth} opts={{columnCount, cellWidth, tableWidth: columnCount * cellWidth}} />
 
 			<div class="RadioButtons">
 				<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
@@ -836,7 +857,7 @@
 <style global>
 
 	.welcomePage .buttons .button {
-		margin-top: var(--margin-200);
+		margin-top: var(--margin-100);
 	}
 
 	.wrapper {
@@ -844,6 +865,7 @@
 	}
 
 	.container {
+		overflow: scroll;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -910,8 +932,8 @@
     	justify-content: center;
 		align-items: center;
 		margin: 0 -16px;
-		height: 300px;
-		max-height: 300px;
+		height: 284px;
+		max-height: 284px;
 	}
 	.content {
 		flex-grow: 1;
@@ -1026,6 +1048,7 @@
 		right: 0;
 		border-top: 1px solid var(--figma-color-border, var(--color-black-10));
 		padding: var(--size-100);
+		background-color: var(--figma-color-bg);
 	}
 
 	.SelectWrapper {
@@ -1179,7 +1202,7 @@
 		left: 12px;
 		right: 12px;
 		width: auto;
-		min-width: 242px;
+		min-width: 218px;
 		margin-top: 1px;
 	}
 
@@ -1414,6 +1437,7 @@
 
 	.List {
 		margin-top: 8px;
+		margin-bottom: 48px;
 	}
 
 	.ListItem {
@@ -1464,7 +1488,7 @@
 }
 
 .figma-light .svg2 {
-	margin-right: -96px !important;
+	margin-right: -120px !important;
     width: 315px;
     height: 202px;
 	background-size: contain;
@@ -1472,7 +1496,7 @@
 }
 
 .figma-dark .svg2 {
-	margin-right: -96px !important;
+	margin-right: -120px !important;
     width: 320px;
     height: 211px;
 	background-size: contain;

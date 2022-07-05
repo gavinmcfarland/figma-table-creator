@@ -169,6 +169,15 @@ export async function upgradeOldComponentsToTemplate() {
 		let rowInstance2 = rowComponent.createInstance()
 		let rowInstance3 = rowComponent.createInstance()
 
+		// BUG: isn't copying across layoutAlign, so we have to do it manually
+		rowInstance1.layoutAlign = 'STRETCH'
+		rowInstance2.layoutAlign = 'STRETCH'
+		rowInstance3.layoutAlign = 'STRETCH'
+
+		rowInstance1.primaryAxisSizingMode = 'FIXED'
+		rowInstance2.primaryAxisSizingMode = 'FIXED'
+		rowInstance3.primaryAxisSizingMode = 'FIXED'
+
 		templateComponent.appendChild(rowInstance1)
 		templateComponent.appendChild(rowInstance2)
 		templateComponent.appendChild(rowInstance3)
@@ -190,6 +199,8 @@ export async function upgradeOldComponentsToTemplate() {
 		// TODO: Needs to be added to list of templates
 		// TODO: Needs to relink previously created tables
 
+		figma.currentPage = getPageNode(templateComponent)
+
 		// Add template data and relaunch data to templateComponent
 		let templateData = new Template(templateComponent)
 		setPluginData(templateComponent, 'template', templateData)
@@ -205,7 +216,7 @@ export async function upgradeOldComponentsToTemplate() {
 		// newPage.appendChild(templateComponent)
 
 		let tooltip = await createTooltip(
-			'Your table components have been converted into a template. A template is single component used by Table Creator to create tables from. Only this component is required by the plugin.',
+			'Your table components have been converted into a template. A template is a single component used by Table Creator to create tables from.',
 			figma.currentPage.backgrounds[0].color
 		)
 
@@ -219,9 +230,10 @@ export async function upgradeOldComponentsToTemplate() {
 		// figma.currentPage.selection = [templateComponent, tooltip]
 		// let group = figma.group([templateComponent, tooltip], componentPage)
 		// figma.currentPage = componentPage
-		// figma.viewport.scrollAndZoomIntoView([templateComponent, tooltip])
 
-		// figma.currentPage.selection = [templateComponent]
+		figma.currentPage.selection = [templateComponent, tooltip]
+
+		figma.viewport.scrollAndZoomIntoView([templateComponent, tooltip])
 
 		cleanupOldPluginData()
 

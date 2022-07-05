@@ -125,9 +125,25 @@
 1. Should tables be created in a new page. Should they be selected. Should it change page if a new page is created?
 2. Check updrading files
 3. Update artwork color pink.
-4. BUG: rows do not fill parent when created
-5. BUG: When turning localised component off. Component does not respect fill-parent
-6. BUG: template needs rows set to fill parent
+4. BUG: rows do not fill parent when created DONE
+5. BUG: When turning localised component off. Component does not respect fill-parent DONE
+6. BUG: template needs rows set to fill parent DONE
+7. Don't create table if all parts missing DONE
+8. BUG: When plugin run, it seems to change template width from hug to fixed FIXED
+
+---
+
+1. Regresion test editing templates (What can go wrong?)
+2. Regression test deleting templates DONE
+3. Regression test first use DONE
+4. Regression test upgrade template (3 variants) DONE
+5. Regression test dark and light DONE
+6. Update artwork
+7. Remove console.logs
+8. Regression test importing DONE
+
+1. Automatically detach table and rows when using column or rows
+
 
 
 I think this appears when trying to import from same file:

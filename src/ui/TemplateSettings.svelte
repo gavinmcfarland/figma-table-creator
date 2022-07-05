@@ -246,12 +246,15 @@
 
 <style global>
 
+	.EditTemplate {
+		margin-top: -8px;
+	}
+
 	.description {
 		color: var(--figma-color-text-secondary, var(--color-black-30))
 	}
 
 	.SectionTitle {
-		margin-top: -8px;
 		min-height: 34px;
 		display: flex;
 		place-items: center;
@@ -352,7 +355,7 @@
 
 	.EditTemplate .target.table {
 		display: block;
-		left: 65px;
+		left: 51px;
 		top: -6px;
 		width: 106px;
 		height: 76px;
@@ -360,7 +363,7 @@
 
 	.EditTemplate .target.tr {
 		display: block;
-		left: 65px;
+		left: 51px;
 		top: 15px;
 		width: 106px;
 		height: 35px;
@@ -368,7 +371,7 @@
 
 	.EditTemplate .target.td {
 		display: block;
-		left: 65px;
+		left: 51px;
 		top: 35px;
 		width: 60px;
 		height: 35px;
@@ -376,7 +379,7 @@
 
 	.EditTemplate .target.th {
 		display: block;
-		left: 110px;
+		left: 96px;
 		top: -6px;
 		width: 61px;
 		height: 35px;
