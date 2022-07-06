@@ -124,7 +124,7 @@
 
 1. Should tables be created in a new page. Should they be selected. Should it change page if a new page is created?
 2. Check updrading files
-3. Update artwork color pink.
+3. Update artwork color pink. DONE
 4. BUG: rows do not fill parent when created DONE
 5. BUG: When turning localised component off. Component does not respect fill-parent DONE
 6. BUG: template needs rows set to fill parent DONE
@@ -138,11 +138,15 @@
 3. Regression test first use DONE
 4. Regression test upgrade template (3 variants) DONE
 5. Regression test dark and light DONE
-6. Update artwork
-7. Remove console.logs
+6. Update artwork DONE
+7. Remove console.logs DONE
 8. Regression test importing DONE
+9. Improve whats new when opening on file that already has templates DONE
 
-1. Automatically detach table and rows when using column or rows
+1. Automatically detach table and rows when using column or rows DONE
+2. Add .row to table instances so they don't get published dONE
+3. Disable column sizing and row/column on component DONE
+
 
 
 

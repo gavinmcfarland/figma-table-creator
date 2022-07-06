@@ -30,7 +30,7 @@
         {"command": "updateTables", "name": "Refresh Tables"},
         {"command": "createTable", "name": "Create Table"},
         {"command": "toggleColumnResizing", "name": "Column Sizing"},
-        {"command": "switchColumnsOrRows", "name": "Columns or Rows", "multipleSelection": true},
+        {"command": "switchColumnsOrRows", "name": "Switch Axis", "multipleSelection": true},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
         {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
         {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}

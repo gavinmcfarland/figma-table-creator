@@ -78,12 +78,12 @@ console.clear()
 // 	figma.closePlugin('User preferences reset')
 // })
 
-figma.clientStorage.deleteAsync('recentFiles')
-figma.clientStorage.deleteAsync('pluginVersion')
-figma.root.setPluginData('remoteFiles', '')
-figma.root.setPluginData('fileId', '')
-figma.root.setPluginData('defaultTemplate', '')
-figma.clientStorage.deleteAsync('userPreferences')
+// figma.clientStorage.deleteAsync('recentFiles')
+// figma.clientStorage.deleteAsync('pluginVersion')
+// figma.root.setPluginData('remoteFiles', '')
+// figma.root.setPluginData('fileId', '')
+// figma.root.setPluginData('defaultTemplate', '')
+// figma.clientStorage.deleteAsync('userPreferences')
 
 function isEmpty(obj) {
 	for (var prop in obj) {
@@ -146,56 +146,6 @@ function removeTemplateFromFile() {}
 
 // 	return name
 // }
-function incrementNameNumerically(node) {
-	// TODO: Update to support any type of node
-
-	var nodeType = node.type
-	let templateData = getPluginData(node, 'template')
-
-	if (nodeType === 'COMPONENT' && templateData) {
-		nodeType = 'TEMPLATE_COMPONENT'
-	}
-
-	// Find templates locally
-	if (nodeType === 'TEMPLATE_COMPONENT') {
-		var localTemplates = getLocalTemplates()
-
-		// Only do it if there is more than one template
-		if (localTemplates && localTemplates.length > 1) {
-			localTemplates.sort((a, b) => {
-				if (a.name === b.name) return 0
-
-				return a.name > b.name ? -1 : 1
-			})
-
-			// If the first template in the array starts with Table
-			// if (localTemplates[0].name.startsWith('Table')) {
-			// Get the number
-			let matches = localTemplates[0].name.match(/^(.*\S)(\s*)(\d+)$/)
-
-			let temp = []
-			localTemplates.map((item) => {
-				temp.push(item.name)
-			})
-			console.log(temp)
-
-			console.log('matches', localTemplates[0].name, matches)
-
-			// And increment by 1
-			if (matches) {
-				node.name = `${matches[1]}${matches[2]}${parseInt(matches[3], 10) + 1}`
-				templateData.name = node.name
-				setPluginData(node, 'template', templateData)
-				figma.ui.postMessage({
-					type: 'post-default-template',
-					defaultTemplate: templateData,
-					localTemplates,
-				})
-			}
-			// }
-		}
-	}
-}
 function fetchTemplateParts() {}
 function setTemplateData(node) {
 	if (node.type === 'COMPONENT') {
@@ -290,7 +240,6 @@ function importTemplate(node) {
 function getDefaultTemplate() {
 	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
 	var defaultTemplate = getDocumentData('defaultTemplate')
-	console.log('defaultT', defaultTemplate)
 
 	// FIXME: Should I be doing more, like checking if the component has been published at this point?
 	if (usingRemoteTemplate) {
@@ -312,7 +261,6 @@ function getTemplateParts(templateNode) {
 			let elementSemantics = getPluginData(node, 'elementSemantics')
 
 			if (elementSemantics?.is === elementName) {
-				console.log(elementSemantics)
 				return true
 			}
 		})
@@ -359,7 +307,6 @@ function postCurrentSelection(templateNodeId) {
 
 	figma.on('selectionchange', () => {
 		if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
-			console.log('selection changed')
 			selection = {
 				element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
 				name: getSelectionName(figma.currentPage.selection[0]),
@@ -510,79 +457,85 @@ function detachTable(selection) {
 
 		if (table.type === 'INSTANCE') {
 			table = table.detachInstance()
+			newSelection.push(table)
 		}
 
-		table.findAll((node) => {
-			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-				if (node.type === 'INSTANCE') {
-					// console.log(node.type, node.id)
-					node.detachInstance()
+		if (table.type !== 'COMPONENT') {
+			table.findAll((node) => {
+				if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+					if (node.type === 'INSTANCE') {
+						// console.log(node.type, node.id)
+						node.detachInstance()
+					}
+					if (node.type === 'COMPONENT') {
+						replace(node, convertToFrame)
+					}
 				}
-				if (node.type === 'COMPONENT') {
-					replace(node, convertToFrame)
-				}
-			}
-		})
+			})
 
-		newSelection.push(table)
+			newSelection.push(table)
+		}
 	}
 
 	figma.currentPage.selection = newSelection
+
+	return newSelection
 }
 function spawnTable() {}
 async function toggleColumnResizing(selection) {
-	console.log('start')
-
+	let result: any = false
 	for (let i = 0; i < selection.length; i++) {
 		var oldTable = selection[i]
 
-		let settings = getTableSettings(oldTable)
+		if (oldTable.type !== 'COMPONENT') {
+			let settings = getTableSettings(oldTable)
 
-		console.log('settings', settings)
+			if (settings.columnResizing) {
+				detachTable(selection)
+				result = 'removed'
+			} else {
+				result = 'applied'
+				settings.columnResizing = !settings.columnResizing
 
-		if (settings.columnResizing) {
-			detachTable(selection)
-		} else {
-			settings.columnResizing = !settings.columnResizing
+				let newTable = await createTable(oldTable, settings)
 
-			let newTable = await createTable(oldTable, settings)
+				// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
 
-			// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
+				// Loop new table and replace with cells from old table
 
-			// Loop new table and replace with cells from old table
+				let rowLength = oldTable.children.length
 
-			let rowLength = oldTable.children.length
+				for (let a = 0; a < rowLength; a++) {
+					let nodeA = oldTable.children[a]
+					if (getPluginData(nodeA, 'elementSemantics')?.is === 'tr') {
+						let columnLength = nodeA.children.length
 
-			for (let a = 0; a < rowLength; a++) {
-				let nodeA = oldTable.children[a]
-				if (getPluginData(nodeA, 'elementSemantics')?.is === 'tr') {
-					let columnLength = nodeA.children.length
+						for (let b = 0; b < columnLength; b++) {
+							let nodeB = nodeA.children[b]
 
-					for (let b = 0; b < columnLength; b++) {
-						let nodeB = nodeA.children[b]
+							if (getPluginData(nodeB, 'elementSemantics')?.is === 'td' || getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
+								let newTableCell = newTable.children[a].children[b]
 
-						if (getPluginData(nodeB, 'elementSemantics')?.is === 'td' || getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
-							let newTableCell = newTable.children[a].children[b]
+								let oldTableCell = nodeB
 
-							let oldTableCell = nodeB
-
-							await swapInstance(oldTableCell, newTableCell)
-							// console.log('tableCell', oldTableCell.width, newTableCell)
-							// replace(newTableCell, oldTableCell)
-							// newTableCell.swapComponent(oldTableCell.mainComponent)
-							resize(newTableCell, oldTableCell.width, oldTableCell.height)
+								await swapInstance(oldTableCell, newTableCell)
+								// console.log('tableCell', oldTableCell.width, newTableCell)
+								// replace(newTableCell, oldTableCell)
+								// newTableCell.swapComponent(oldTableCell.mainComponent)
+								resize(newTableCell, oldTableCell.width, oldTableCell.height)
+							}
 						}
 					}
 				}
+
+				figma.currentPage.selection = [newTable]
+
+				oldTable.remove()
 			}
-
-			figma.currentPage.selection = [newTable]
-
-			oldTable.remove()
 		}
 	}
 
-	console.log('end')
+	return result
 }
 function switchColumnsOrRows(selection) {
 	let vectorType
@@ -595,13 +548,16 @@ function switchColumnsOrRows(selection) {
 	for (let i = 0; i < selection.length; i++) {
 		var table = selection[i]
 
-		let firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+		if (table.type !== 'COMPONENT') {
+			let firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
-		if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
-			figma.closePlugin('Table and rows must be detached')
-		} else {
+			if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
+				table = detachTable(figma.currentPage.selection)[0]
+				// As it's a new table, we need to find the first row again
+				firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+			}
+			// else {
 			let settings = getTableSettings(table)
-			console.log(settings)
 			vectorType = settings.usingColumnsOrRows
 
 			// let parts: any = findTemplateParts(table)
@@ -750,7 +706,6 @@ function switchColumnsOrRows(selection) {
 										if (row.parent.children[getNodeIndex(firstRow) + c]) {
 											cell.primaryAxisSizingMode = 'FIXED'
 											cell.layoutAlign = 'STRETCH'
-											console.log(cell.layoutAlign)
 										}
 									}
 								}
@@ -760,7 +715,6 @@ function switchColumnsOrRows(selection) {
 
 							// If row ends up being empty, then assume it's not needed
 							if (row.children.length === 0) {
-								console.log('remove row')
 								discardBucket.push(row)
 							}
 						}
@@ -823,12 +777,9 @@ async function createTableUI() {
 	// If can't find current template, but can find previous, then set it as the default
 	if (!defaultTemplateComponent && localTemplates.length > 0) {
 		defaultTemplate = localTemplates[0]
-	} else {
+	} else if (localTemplates.length === 0) {
 		defaultTemplate = undefined
 	}
-
-	const fileData = getDocumentData('fileData')
-	console.log('fileData', fileData)
 
 	if (!localTemplates) {
 		// deleteRecentFile(fileId)
@@ -902,7 +853,6 @@ async function main() {
 			// Before first template data set
 			let localTemplates = getLocalTemplates()
 			localTemplates = localTemplates.filter((item) => item.name.startsWith('Table'))
-			console.log(templateComponent.name, localTemplates)
 			templateComponent.name = incrementName(templateComponent.name, localTemplates)
 			templateData.name = templateComponent.name
 			setPluginData(templateComponent, 'template', templateData)
@@ -991,19 +941,32 @@ async function main() {
 			createTableUI()
 		})
 		plugin.command('detachTable', () => {
-			detachTable(figma.currentPage.selection)
-			figma.closePlugin()
+			let tables = detachTable(figma.currentPage.selection)
+			if (tables.length > 0) {
+				figma.closePlugin(`Table and rows detached`)
+			} else {
+				figma.closePlugin(`Can't detach template`)
+			}
 		})
 		plugin.command('spawnTable', spawnTable)
 		plugin.command('toggleColumnResizing', () => {
-			toggleColumnResizing(figma.currentPage.selection).then(() => {
-				figma.closePlugin()
+			toggleColumnResizing(figma.currentPage.selection).then((result) => {
+				if (result) {
+					figma.closePlugin(`Column sizing ${result}`)
+				} else {
+					figma.closePlugin(`Can't apply to templates`)
+				}
 			})
 		})
 
 		plugin.command('switchColumnsOrRows', () => {
 			let { vectorType } = switchColumnsOrRows(figma.currentPage.selection)
-			figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`)
+
+			if (vectorType) {
+				figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`)
+			} else {
+				figma.closePlugin(`Can't apply to templates`)
+			}
 		})
 		plugin.command('selectColumn', () => {
 			selectTableVector('column')
@@ -1034,8 +997,6 @@ async function main() {
 				let templateIndex = currentFile.data.findIndex((template) => template.id === msg.template.id)
 
 				currentFile.data.splice(templateIndex, 1)
-
-				console.log(remoteFiles)
 
 				// If no data, then remove file from list
 				if (currentFile.data.length === 0) {
@@ -1073,13 +1034,11 @@ async function main() {
 			setDefaultTemplate(msg.template)
 		})
 		plugin.on('add-remote-file', async (msg) => {
-			console.log(msg.file)
 			const remoteFiles = await getRemoteFilesAsync(msg.file.id)
 			figma.ui.postMessage({ type: 'remote-files', remoteFiles })
 		})
 
 		plugin.on('remove-remote-file', async (msg) => {
-			console.log('fileId', msg.file.id)
 			removeRemoteFile(msg.file.id)
 			const remoteFiles = await getRemoteFilesAsync()
 			const localTemplates = getLocalTemplates()
@@ -1087,18 +1046,15 @@ async function main() {
 			if (remoteFiles.length > 0) {
 				setDefaultTemplate(remoteFiles[0].data[0])
 			} else {
-				console.log('>>>>', localTemplates)
 				if (localTemplates.length > 0) {
 					setDefaultTemplate(localTemplates[0])
 				} else {
 					setDefaultTemplate(null)
-					console.log(getDefaultTemplate())
 					figma.ui.postMessage({ type: 'post-default-template', defaultTemplate: null })
 				}
 			}
 
 			figma.ui.postMessage({ type: 'remote-files', remoteFiles })
-			console.log('remoteFiles', remoteFiles)
 		})
 
 		plugin.on('remove-element', (msg) => {
@@ -1135,7 +1091,6 @@ async function main() {
 					msg.data.cellHeight = convertToNumber(msg.data.cellHeight)
 				}
 
-				console.log('msg.data', msg.data)
 				let tableInstance = createTable(templateComponent, msg.data)
 				positionInCenterOfViewport(tableInstance)
 				figma.currentPage.selection = [tableInstance]
