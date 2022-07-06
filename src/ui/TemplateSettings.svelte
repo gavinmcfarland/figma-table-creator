@@ -222,7 +222,7 @@
 			{#each parts as part, i}
 
 				<div class={currentSelection?.element === part.element ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
-					<p class="element">&lt;{part.element}&gt;</p>
+					<p title="{part.longName}" class="element">&lt;{part.element}&gt;</p>
 					{#if part.name}
 					<span>{part.name}</span>
 					{:else}

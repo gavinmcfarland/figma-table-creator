@@ -299,9 +299,25 @@ function postCurrentSelection(templateNodeId) {
 	}
 
 	if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+		let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
 		selection = {
-			element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+			element: semanticName,
 			name: getSelectionName(figma.currentPage.selection[0]),
+			longName: (() => {
+				console.log('tttt', semanticName)
+				if (semanticName === 'table') {
+					return 'Table'
+				}
+				if (semanticName === 'tr') {
+					return 'Row'
+				}
+				if (semanticName === 'td') {
+					return 'Cell'
+				}
+				if (semanticName === 'th') {
+					return 'Header Cell'
+				}
+			})(),
 		}
 
 		figma.ui.postMessage({ type: 'current-selection', selection: selection })
@@ -309,9 +325,25 @@ function postCurrentSelection(templateNodeId) {
 
 	figma.on('selectionchange', () => {
 		if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+			let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
 			selection = {
-				element: getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is,
+				element: semanticName,
 				name: getSelectionName(figma.currentPage.selection[0]),
+				longName: (() => {
+					console.log('ttstst', semanticName)
+					if (semanticName === 'table') {
+						return 'Table'
+					}
+					if (semanticName === 'tr') {
+						return 'Row'
+					}
+					if (semanticName === 'td') {
+						return 'Cell'
+					}
+					if (semanticName === 'th') {
+						return 'Header Cell'
+					}
+				})(),
 			}
 
 			figma.ui.postMessage({ type: 'current-selection', selection: selection })
@@ -939,21 +971,25 @@ async function main() {
 						name: getSelectionName(parts?.table),
 						element: 'table',
 						id: parts?.table?.id,
+						longName: 'Table',
 					},
 					tr: {
 						name: getSelectionName(parts?.tr),
 						element: 'tr',
 						id: parts?.tr?.id,
+						longName: 'Row',
 					},
 					td: {
 						name: getSelectionName(parts?.td),
 						element: 'td',
 						id: parts?.td?.id,
+						longName: 'Cell',
 					},
 					th: {
 						name: getSelectionName(parts?.th),
 						element: 'th',
 						id: parts?.th?.id,
+						longName: 'Cell Header',
 					},
 				}
 

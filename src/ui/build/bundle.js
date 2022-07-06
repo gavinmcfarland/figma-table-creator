@@ -2213,6 +2213,7 @@ var ui = (function () {
     	let t1_value = /*part*/ ctx[15].element + "";
     	let t1;
     	let t2;
+    	let p_title_value;
     	let t3;
     	let t4;
     	let span1;
@@ -2250,6 +2251,7 @@ var ui = (function () {
     			span1 = element("span");
     			span0 = element("span");
     			t5 = space();
+    			attr(p, "title", p_title_value = /*part*/ ctx[15].longName);
     			attr(p, "class", "element");
     			attr(span0, "class", "refresh icon addRemoveButton");
     			attr(span0, "icon", span0_icon_value = /*part*/ ctx[15].name ? "minus" : "plus");
@@ -2288,6 +2290,10 @@ var ui = (function () {
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
     			if (dirty & /*parts*/ 2 && t1_value !== (t1_value = /*part*/ ctx[15].element + "")) set_data(t1, t1_value);
+
+    			if (dirty & /*parts*/ 2 && p_title_value !== (p_title_value = /*part*/ ctx[15].longName)) {
+    				attr(p, "title", p_title_value);
+    			}
 
     			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
     				if_block.p(ctx, dirty);

@@ -3420,18 +3420,50 @@ function postCurrentSelection(templateNodeId) {
         }
     }
     if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+        let semanticName = (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is;
         selection = {
-            element: (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
+            element: semanticName,
             name: getSelectionName(figma.currentPage.selection[0]),
+            longName: (() => {
+                console.log('tttt', semanticName);
+                if (semanticName === 'table') {
+                    return 'Table';
+                }
+                if (semanticName === 'tr') {
+                    return 'Row';
+                }
+                if (semanticName === 'td') {
+                    return 'Cell';
+                }
+                if (semanticName === 'th') {
+                    return 'Header Cell';
+                }
+            })(),
         };
         figma.ui.postMessage({ type: 'current-selection', selection: selection });
     }
     figma.on('selectionchange', () => {
         var _a;
         if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+            let semanticName = (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is;
             selection = {
-                element: (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is,
+                element: semanticName,
                 name: getSelectionName(figma.currentPage.selection[0]),
+                longName: (() => {
+                    console.log('ttstst', semanticName);
+                    if (semanticName === 'table') {
+                        return 'Table';
+                    }
+                    if (semanticName === 'tr') {
+                        return 'Row';
+                    }
+                    if (semanticName === 'td') {
+                        return 'Cell';
+                    }
+                    if (semanticName === 'th') {
+                        return 'Header Cell';
+                    }
+                })(),
             };
             figma.ui.postMessage({ type: 'current-selection', selection: selection });
         }
@@ -3943,21 +3975,25 @@ async function main() {
                         name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.table),
                         element: 'table',
                         id: (_a = parts === null || parts === void 0 ? void 0 : parts.table) === null || _a === void 0 ? void 0 : _a.id,
+                        longName: 'Table',
                     },
                     tr: {
                         name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.tr),
                         element: 'tr',
                         id: (_b = parts === null || parts === void 0 ? void 0 : parts.tr) === null || _b === void 0 ? void 0 : _b.id,
+                        longName: 'Row',
                     },
                     td: {
                         name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.td),
                         element: 'td',
                         id: (_c = parts === null || parts === void 0 ? void 0 : parts.td) === null || _c === void 0 ? void 0 : _c.id,
+                        longName: 'Cell',
                     },
                     th: {
                         name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
                         element: 'th',
                         id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
+                        longName: 'Cell Header',
                     },
                 };
                 postCurrentSelection(templateNode.id);
