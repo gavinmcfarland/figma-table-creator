@@ -724,8 +724,15 @@ function switchColumnsOrRows(selection) {
 
 									if (cell) {
 										if (row.parent.children[getNodeIndex(firstRow) + c]) {
-											cell.layoutGrow = 0
-											cell.primaryAxisSizingMode = 'AUTO'
+											// NOTE: temporary fix. Could be better
+											if (settings.tableHeight === 'HUG') {
+												console.log('appplpla')
+												cell.layoutGrow = 0
+												cell.primaryAxisSizingMode = 'AUTO'
+											} else {
+												cell.layoutGrow = 1
+												cell.primaryAxisSizingMode = 'FIXED'
+											}
 										}
 									}
 								}

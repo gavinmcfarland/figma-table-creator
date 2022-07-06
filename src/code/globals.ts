@@ -450,6 +450,7 @@ export function getTableSettings(tableNode) {
 	let columnCount = 0
 	let usingColumnsOrRows = 'rows'
 	let tableWidth
+	let tableHeight
 
 	for (let i = 0; i < tableNode.children.length; i++) {
 		var node = tableNode.children[i]
@@ -485,6 +486,13 @@ export function getTableSettings(tableNode) {
 				return 'HUG'
 			} else {
 				return tableNode.width
+			}
+		})(),
+		tableHeight: (() => {
+			if (tableNode.primaryAxisSizingMode === 'AUTO') {
+				return 'HUG'
+			} else {
+				return tableNode.height
 			}
 		})(),
 		columnCount,

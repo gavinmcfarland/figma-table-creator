@@ -3086,6 +3086,14 @@ function getTableSettings(tableNode) {
                 return tableNode.width;
             }
         })(),
+        tableHeight: (() => {
+            if (tableNode.primaryAxisSizingMode === 'AUTO') {
+                return 'HUG';
+            }
+            else {
+                return tableNode.height;
+            }
+        })(),
         columnCount,
         rowCount,
         columnResizing: firstRow.type === 'COMPONENT' ? true : false,
@@ -3768,8 +3776,16 @@ function switchColumnsOrRows(selection) {
                                     var cell = cells[c];
                                     if (cell) {
                                         if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
-                                            cell.layoutGrow = 0;
-                                            cell.primaryAxisSizingMode = 'AUTO';
+                                            // NOTE: temporary fix. Could be better
+                                            if (settings.tableHeight === 'HUG') {
+                                                console.log('appplpla');
+                                                cell.layoutGrow = 0;
+                                                cell.primaryAxisSizingMode = 'AUTO';
+                                            }
+                                            else {
+                                                cell.layoutGrow = 1;
+                                                cell.primaryAxisSizingMode = 'FIXED';
+                                            }
                                         }
                                     }
                                 }
