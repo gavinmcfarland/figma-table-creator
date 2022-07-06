@@ -2,16 +2,20 @@
   "name": "Table Creator",
   "id": "885838970710285271",
   "api": "1.0.0",
-  "main": "code.js",
+  "main": "dist/code.js",
   "ui": {
-      "main": "ui.html",
-      "components": "components.html",
-      "versionLog": "version-log.html"
+      "main": "dist/index.html"
   },
+  "permissions": [
+    "currentuser"
+  ],
   "menu": [
     {
       "name": "Create Table",
       "command": "createTable"
+    },
+    {
+        "separator": true
     },
     {
       "name": "Select Column",
@@ -20,20 +24,17 @@
     {
       "name": "Select Row",
       "command": "selectRow"
-    },
-    {
-        "separator": true
-    },
-    {
-      "name": "Settings",
-      "command": "linkComponents"
     }
   ],
   "relaunchButtons": [
-      {"command": "createTable", "name": "Create Table"},
-      {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
-      {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
-      {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
+        {"command": "updateTables", "name": "Refresh Tables"},
+        {"command": "createTable", "name": "Create Table"},
+        {"command": "toggleColumnResizing", "name": "Column Resizing"},
+        {"command": "switchColumnsOrRows", "name": "Switch Axis", "multipleSelection": true},
+        {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
+        {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
+        {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
     ],
     "editorType": ["figma"]
+
 }
