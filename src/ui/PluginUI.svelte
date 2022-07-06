@@ -848,7 +848,7 @@
 		</div>
 
 		<div class="BottomBar">
-			<span on:click={createTable}><Button id="create-table">Create table</Button></span>
+			<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
 		</div>
 	</div>
 {/if}
