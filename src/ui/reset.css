@@ -91,6 +91,16 @@ button {
 	/* margin-top: var(--size-200); */
 }
 
+.figma-dark ::selection {
+	color: white;
+	background-color: #2F567D;
+}
+
+.figma-light ::selection {
+	color: black;
+	background-color: #AAD4FB;
+}
+
 :root {
 	--color-blue: #18a0fb;
 	--color-selection-a: #daebf7;

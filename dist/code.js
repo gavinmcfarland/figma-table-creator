@@ -1951,7 +1951,6 @@ function getTemplateParts$1(templateNode) {
         let part = templateNode.findOne((node) => {
             let elementSemantics = getPluginData_1(node, 'elementSemantics');
             if ((elementSemantics === null || elementSemantics === void 0 ? void 0 : elementSemantics.is) === elementName) {
-                console.log(elementSemantics);
                 return true;
             }
         });
@@ -2815,11 +2814,12 @@ function createTable(templateComponent, settings, type) {
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
     let part = getTemplateParts$1(templateComponent);
-    if (!part.table || !part.tr || !part.td || !part.th) {
+    let tableInstance;
+    if (!part.table || !part.tr || !part.td || (!part.th && settings.includeHeader)) {
         let array = [];
         part.table ? null : array.push('table');
         part.tr ? null : array.push('row');
-        part.th ? null : array.push('header');
+        !part.th && settings.includeHeader ? array.push('header') : null;
         part.td ? null : array.push('cell');
         if (array.length > 1) {
             figma.notify(`Template parts "${array.join(', ')}" not configured`);
@@ -2827,12 +2827,12 @@ function createTable(templateComponent, settings, type) {
         else {
             figma.notify(`Template part "${array.join(', ')}" not configured`);
         }
+        tableInstance = false;
     }
     else {
-        let tableInstance = convertToFrame_1(templateComponent.clone());
+        tableInstance = convertToFrame_1(templateComponent.clone());
         var table;
         if (part.table.id === templateComponent.id) {
-            console.log('table and container are the same thing');
             if (type === 'COMPONENT') {
                 table = convertToComponent_1(tableInstance);
                 tableInstance = table;
@@ -2867,7 +2867,6 @@ function createTable(templateComponent, settings, type) {
                 node.remove();
             }
         });
-        console.log('inpsect part', part.tr);
         if (settings.columnResizing && type !== 'COMPONENT') {
             // First row should be a component
             firstRow = convertToComponent_1(part.tr.clone());
@@ -2883,14 +2882,14 @@ function createTable(templateComponent, settings, type) {
         }
         rowParent.insertChild(rowIndex, firstRow);
         // Remove children which are tds and ths
-        firstRow.findAll((node) => {
-            var _a, _b;
-            if (node) {
-                if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th') {
-                    node.remove();
-                }
-            }
-        });
+        // firstRow.findAll((node) => {
+        // 	if (node) {
+        // 		if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
+        // 			node.remove()
+        // 		}
+        // 	}
+        // })
+        removeChildren(firstRow);
         // If height specified then make rows grow to height
         // Change size of cells
         if (settings.tableHeight && settings.tableHeight !== 'HUG') {
@@ -3034,7 +3033,6 @@ async function updateTables(template) {
     var templateComponent = await lookForComponent(template);
     if (templateComponent && tables) {
         var rowTemplate = templateComponent.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-        console.log('rowTemplate', rowTemplate.name);
         for (let b = 0; b < tables.length; b++) {
             var table = tables[b];
             // Don't apply if an instance
@@ -3043,7 +3041,6 @@ async function updateTables(template) {
                 table.findAll((node) => {
                     var _a;
                     if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
-                        console.log('copyPaste');
                         copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
                     }
                 });
@@ -3778,7 +3775,6 @@ function switchColumnsOrRows(selection) {
                                         if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
                                             // NOTE: temporary fix. Could be better
                                             if (settings.tableHeight === 'HUG') {
-                                                console.log('appplpla');
                                                 cell.layoutGrow = 0;
                                                 cell.primaryAxisSizingMode = 'AUTO';
                                             }
@@ -4104,11 +4100,13 @@ async function main() {
                     msg.data.cellHeight = convertToNumber(msg.data.cellHeight);
                 }
                 let tableInstance = createTable(templateComponent, msg.data);
-                positionInCenterOfViewport(tableInstance);
-                figma.currentPage.selection = [tableInstance];
-                updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
-                    figma.closePlugin('Table created');
-                });
+                if (tableInstance) {
+                    positionInCenterOfViewport(tableInstance);
+                    figma.currentPage.selection = [tableInstance];
+                    updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
+                        figma.closePlugin('Table created');
+                    });
+                }
             }
         });
         plugin.command('updateTables', () => {

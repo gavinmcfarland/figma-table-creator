@@ -42,12 +42,13 @@ export function createTable(templateComponent, settings, type?) {
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
 
 	let part = getTemplateParts(templateComponent)
+	let tableInstance
 
-	if (!part.table || !part.tr || !part.td || !part.th) {
+	if (!part.table || !part.tr || !part.td || (!part.th && settings.includeHeader)) {
 		let array = []
 		part.table ? null : array.push('table')
 		part.tr ? null : array.push('row')
-		part.th ? null : array.push('header')
+		!part.th && settings.includeHeader ? array.push('header') : null
 		part.td ? null : array.push('cell')
 
 		if (array.length > 1) {
@@ -55,13 +56,13 @@ export function createTable(templateComponent, settings, type?) {
 		} else {
 			figma.notify(`Template part "${array.join(', ')}" not configured`)
 		}
+		tableInstance = false
 	} else {
-		let tableInstance = convertToFrame(templateComponent.clone())
+		tableInstance = convertToFrame(templateComponent.clone())
 
 		var table
 
 		if (part.table.id === templateComponent.id) {
-			console.log('table and container are the same thing')
 			if (type === 'COMPONENT') {
 				table = convertToComponent(tableInstance)
 				tableInstance = table
@@ -99,8 +100,6 @@ export function createTable(templateComponent, settings, type?) {
 			}
 		})
 
-		console.log('inpsect part', part.tr)
-
 		if (settings.columnResizing && type !== 'COMPONENT') {
 			// First row should be a component
 			firstRow = convertToComponent(part.tr.clone())
@@ -117,13 +116,15 @@ export function createTable(templateComponent, settings, type?) {
 		rowParent.insertChild(rowIndex, firstRow)
 
 		// Remove children which are tds and ths
-		firstRow.findAll((node) => {
-			if (node) {
-				if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
-					node.remove()
-				}
-			}
-		})
+		// firstRow.findAll((node) => {
+		// 	if (node) {
+		// 		if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
+		// 			node.remove()
+		// 		}
+		// 	}
+		// })
+
+		removeChildren(firstRow)
 
 		// If height specified then make rows grow to height
 		// Change size of cells
@@ -258,7 +259,6 @@ export function tableFactory(templateComponent) {
 	}
 	function checkIfTableSameAsContainer() {
 		if (parts.table.id === templateComponent.id) {
-			console.log('table and container are the same thing')
 			if (type === 'COMPONENT') {
 				table = convertToComponent(tableContainer)
 				tableContainer = table
@@ -425,8 +425,6 @@ export async function updateTables(template) {
 	if (templateComponent && tables) {
 		var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
-		console.log('rowTemplate', rowTemplate.name)
-
 		for (let b = 0; b < tables.length; b++) {
 			var table = tables[b]
 
@@ -436,7 +434,6 @@ export async function updateTables(template) {
 
 				table.findAll((node) => {
 					if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
-						console.log('copyPaste')
 						copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
 					}
 				})

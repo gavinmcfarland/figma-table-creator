@@ -825,7 +825,7 @@
 				</Dropdown>
 			</div>
 		</div>
-		<form autocomplete="off">
+		<!-- <form autocomplete="off"> -->
 			<div class="field-group">
 				<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} opts={{columnCount, cellWidth}} />
 				<Field id="rowCount" label="R" type="number" step="1" min="1" max="50" value={rowCount} />
@@ -853,7 +853,7 @@
 			<div class="BottomBar">
 				<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
 			</div>
-		</form>
+		<!-- </form> -->
 	</div>
 {/if}
 

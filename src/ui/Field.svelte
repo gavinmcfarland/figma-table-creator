@@ -1,6 +1,7 @@
 <script>
 	import { getContext, createEventDispatcher } from "svelte"
 	import { valueStore } from "./data.js"
+	import { onMount } from "svelte"
 
 	export let placeholder = "PLACEHOLDER"
 	export let value = ""
@@ -14,6 +15,15 @@
 	export let classes = ""
 	export let style
 	export let opts
+
+	let input
+
+	onMount(() => {
+		input.addEventListener("focus", () => {
+			input.select();
+		});
+	})
+
 
 	const dispatch = createEventDispatcher()
 
@@ -194,7 +204,7 @@
 <div style={style}>
 	<label class="TextField {classes}">
 		<span>{label}</span>
-		<input autocomplete="false"
+		<input bind:this={input} autocomplete="false"
 			{id}
 			{type}
 			{disabled}

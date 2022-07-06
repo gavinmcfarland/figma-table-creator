@@ -726,7 +726,6 @@ function switchColumnsOrRows(selection) {
 										if (row.parent.children[getNodeIndex(firstRow) + c]) {
 											// NOTE: temporary fix. Could be better
 											if (settings.tableHeight === 'HUG') {
-												console.log('appplpla')
 												cell.layoutGrow = 0
 												cell.primaryAxisSizingMode = 'AUTO'
 											} else {
@@ -1119,12 +1118,15 @@ async function main() {
 				}
 
 				let tableInstance = createTable(templateComponent, msg.data)
-				positionInCenterOfViewport(tableInstance)
-				figma.currentPage.selection = [tableInstance]
 
-				updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
-					figma.closePlugin('Table created')
-				})
+				if (tableInstance) {
+					positionInCenterOfViewport(tableInstance)
+					figma.currentPage.selection = [tableInstance]
+
+					updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
+						figma.closePlugin('Table created')
+					})
+				}
 			}
 		})
 

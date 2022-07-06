@@ -263,7 +263,6 @@ export function getTemplateParts(templateNode) {
 			let elementSemantics = getPluginData(node, 'elementSemantics')
 
 			if (elementSemantics?.is === elementName) {
-				console.log(elementSemantics)
 				return true
 			}
 		})
