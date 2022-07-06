@@ -10,6 +10,8 @@
 	import TemplateSettings from "./TemplateSettings.svelte"
 	import "./reset.css"
 
+	// TODO: Reset value to original if input left empty
+
 	let data
 	let columnResizing = true
 	let rememberSettings = true
@@ -823,33 +825,35 @@
 				</Dropdown>
 			</div>
 		</div>
-		<div class="field-group">
-			<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} opts={{columnCount, cellWidth}} />
-			<Field id="rowCount" label="R" type="number" step="1" min="1" max="50" value={rowCount} />
-		</div>
-		<div class="field-group">
-			<Field id="tableWidth" label="W" type="text" step="1" min="1" max="2000" value={tableWidth} opts={{prevCellWidth}} />
-			<Field id="tableHeight" label="H" type="text" step="1" min="1" max="2000" value={tableHeight} opts={{prevCellHeight}} />
-		</div>
-
-		<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
-
-		<Matrix {columnCount} {rowCount} grid={[8, 8]} />
-
-		<div class="text-bold SectionTitle">Cell</div>
-		<div style="display: flex; gap: var(--size-200);">
-			<Field style="width: 106px" id="cellWidth" label="W" type="text" step="1" min="1" max="1000" value={cellWidth} opts={{columnCount, cellWidth, tableWidth: columnCount * cellWidth}} />
-
-			<div class="RadioButtons">
-				<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
-				<RadioButton id="center" icon="text-align-middle" value="CENTER" name="cellAlignment" group={cellAlignment} />
-				<RadioButton id="max" icon="text-align-bottom" value="MAX" name="cellAlignment" group={cellAlignment} />
+		<form autocomplete="off">
+			<div class="field-group">
+				<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} opts={{columnCount, cellWidth}} />
+				<Field id="rowCount" label="R" type="number" step="1" min="1" max="50" value={rowCount} />
 			</div>
-		</div>
+			<div class="field-group">
+				<Field id="tableWidth" label="W" type="text" step="1" min="1" max="2000" value={tableWidth} opts={{prevCellWidth}} />
+				<Field id="tableHeight" label="H" type="text" step="1" min="1" max="2000" value={tableHeight} opts={{prevCellHeight}} />
+			</div>
 
-		<div class="BottomBar">
-			<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
-		</div>
+			<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
+
+			<Matrix {columnCount} {rowCount} grid={[8, 8]} />
+
+			<div class="text-bold SectionTitle">Cell</div>
+			<div style="display: flex; gap: var(--size-200);">
+				<Field style="width: 106px" id="cellWidth" label="W" type="text" step="1" min="1" max="1000" value={cellWidth} opts={{columnCount, cellWidth, tableWidth: columnCount * cellWidth}} />
+
+				<div class="RadioButtons">
+					<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
+					<RadioButton id="center" icon="text-align-middle" value="CENTER" name="cellAlignment" group={cellAlignment} />
+					<RadioButton id="max" icon="text-align-bottom" value="MAX" name="cellAlignment" group={cellAlignment} />
+				</div>
+			</div>
+
+			<div class="BottomBar">
+				<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
+			</div>
+		</form>
 	</div>
 {/if}
 

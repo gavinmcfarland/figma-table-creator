@@ -872,7 +872,7 @@ async function main() {
 				tooltip2.y = rowComponent.y - 10
 
 				let tooltip3 = await createTooltip(
-					'Change the appearance of each cell type by customising these variants. Create more variants to add to your design system.'
+					'Customise cell borders by changing these components. Create variants for different types of cells, icons, dropdowns, ratings etc.'
 				)
 				tooltip3.x = cellComponentSet.x + cellComponentSet.width + 80 - 16
 				tooltip3.y = cellComponentSet.y - 10 + 16
