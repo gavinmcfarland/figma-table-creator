@@ -1021,7 +1021,7 @@ async function main() {
 		plugin.command('toggleColumnResizing', () => {
 			toggleColumnResizing(figma.currentPage.selection).then((result) => {
 				if (result) {
-					figma.closePlugin(`Column sizing ${result}`)
+					figma.closePlugin(`Column resizing ${result}`)
 				} else {
 					figma.closePlugin(`Can't apply to templates`)
 				}
