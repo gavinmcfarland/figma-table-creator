@@ -105,7 +105,9 @@ export function createTable(templateComponent, settings, type?) {
 			firstRow = convertToComponent(part.tr.clone())
 			firstRow.layoutAlign = part.tr.layoutAlign
 			firstRow.primaryAxisSizingMode = part.tr.primaryAxisSizingMode
-			firstRow.name = '.Row'
+
+			// Add dot to name do that component is not published
+			firstRow.name = '.' + firstRow.name
 			setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 		} else {
 			// First row should be a frame
