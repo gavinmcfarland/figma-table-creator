@@ -396,10 +396,15 @@
 				prevCellHeight = value.prevCellHeight
 			})
 
+
 			if (data.pluginVersion === "7.0.0") {
 
 				// If localTemplates or remoteFiles exist then show create table page
-				if (data.localTemplates.length > 0 || data.remoteFiles.length > 0) {
+				if (data.pluginUsingOldComponents) {
+					// Shows page to either convert old components to template, or create new template
+					setActivePage("welcomePageActive", 4)
+				}
+				else if (data.localTemplates.length > 0 || data.remoteFiles.length > 0) {
 					setActivePage("createTablePageActive")
 					updateSelectedTemplate(data)
 					updateSelectedFile(data)
@@ -411,7 +416,6 @@
 
 			}
 			else {
-				// User has not run plugin before
 				setActivePage("welcomePageActive", 0)
 			}
 		}

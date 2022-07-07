@@ -575,6 +575,8 @@ async function toggleColumnResizing(selection) {
 								// replace(newTableCell, oldTableCell)
 								// newTableCell.swapComponent(oldTableCell.mainComponent)
 								resize(newTableCell, oldTableCell.width, oldTableCell.height)
+								// Old layoutAlign not being preserved
+								newTableCell.layoutAlign = oldTableCell.layoutAlign
 							}
 						}
 					}
