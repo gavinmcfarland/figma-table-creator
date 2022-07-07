@@ -352,7 +352,7 @@ export async function createTemplateComponents() {
 	}
 	text_305_180.listSpacing = 0
 	text_305_180.characters = ''
-	text_305_180.lineHeight = { unit: 'PERCENT', value: 125 }
+	text_305_180.lineHeight = { unit: 'PERCENT', value: 130 }
 	text_305_180.fontName = { family: 'Inter', style: 'Regular' }
 	text_305_180.textAutoResize = 'HEIGHT'
 
@@ -445,7 +445,7 @@ export async function createTemplateComponents() {
 	}
 	text_305_183.listSpacing = 0
 	text_305_183.characters = ''
-	text_305_183.lineHeight = { unit: 'PERCENT', value: 125 }
+	text_305_183.lineHeight = { unit: 'PERCENT', value: 130 }
 	text_305_183.fontName = { family: 'Inter', style: 'Semi Bold' }
 	text_305_183.textAutoResize = 'HEIGHT'
 

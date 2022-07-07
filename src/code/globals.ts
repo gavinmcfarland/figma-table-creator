@@ -158,10 +158,16 @@ export function createTable(templateComponent, settings, type?) {
 			}
 
 			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
-			// Figma doesn't automatically inherit this property
-			duplicateCell.layoutAlign = part.td.layoutAlign
+
 			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
+
 			firstRow.appendChild(duplicateCell)
+
+			// We want to always force the cells to stretch to height of row regardless of users settings
+			duplicateCell.layoutAlign = 'STRETCH'
+
+			// The property below would need to be applied to if I wanted to force this. Normally inherited from cell
+			duplicateCell.primaryAxisSizingMode = 'FIXED'
 		}
 
 		// Create rest of rows
@@ -189,6 +195,9 @@ export function createTable(templateComponent, settings, type?) {
 
 					cell.mainComponent = part.td.mainComponent
 					setPluginData(cell, 'elementSemantics', { is: 'td' })
+
+					// Needs to be applied here too
+					cell.primaryAxisSizingMode = 'FIXED'
 				}
 			}
 
