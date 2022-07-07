@@ -61,6 +61,7 @@ import { swapInstance } from './helpers'
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 // FIXME: Column resizing doesn't work on table without headers
 // FIXME: When turning column resizing off component does not resize with table DONE
+// TODO: Consider removing number when creating table
 
 console.clear()
 
@@ -512,6 +513,13 @@ function detachTable(selection) {
 
 			newSelection.push(table)
 		}
+
+		// Remove dot from nodes used as column resizing
+		table.findAll((node) => {
+			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+				node.name = node.name.replace(/^./, '')
+			}
+		})
 	}
 
 	figma.currentPage.selection = newSelection
