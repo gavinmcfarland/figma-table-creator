@@ -520,6 +520,9 @@ function detachTable(selection) {
 }
 function spawnTable() {}
 async function toggleColumnResizing(selection) {
+	// FIXME: Check for text layer before setting characters
+	// TODO: Swap instance to preverve current instance
+	// FIXME: Something weird happening with resizing of cell/text
 	let result: any = false
 	for (let i = 0; i < selection.length; i++) {
 		var oldTable = selection[i]
@@ -554,6 +557,10 @@ async function toggleColumnResizing(selection) {
 								let newTableCell = newTable.children[a].children[b]
 
 								let oldTableCell = nodeB
+
+								newTableCell.swapComponent(oldTableCell.mainComponent)
+
+								// console.log('vp', oldTableCell.variantProperties, newTableCell.variantProperties)
 
 								await swapInstance(oldTableCell, newTableCell)
 								// console.log('tableCell', oldTableCell.width, newTableCell)

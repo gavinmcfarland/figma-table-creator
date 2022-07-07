@@ -482,7 +482,13 @@ export async function createTemplateComponents() {
 	componentSet_305_177.exportSettings = []
 	componentSet_305_177.fills = []
 	componentSet_305_177.strokes = [
-		{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 0.48235294222831726, g: 0.3803921639919281, b: 1 } },
+		{
+			type: 'SOLID',
+			visible: true,
+			opacity: 1,
+			blendMode: 'NORMAL',
+			color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
+		},
 	]
 	componentSet_305_177.strokeWeight = 1
 	componentSet_305_177.strokeAlign = 'INSIDE'

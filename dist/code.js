@@ -2022,6 +2022,7 @@ function copyPasteStyle(source, target, options = {}) {
     return copyPaste_1(source, target, options);
 }
 async function changeText(node, text, weight) {
+    // if (node.characters) {
     if (node.fontName === figma.mixed) {
         await figma.loadFontAsync(node.getRangeFontName(0, 1));
     }
@@ -2040,27 +2041,60 @@ async function changeText(node, text, weight) {
     if (text) {
         node.characters = text;
     }
-    if (text === '') {
-        // Fixes issue where spaces are ignored and node has zero width
-        node.resize(10, node.height);
-    }
-    node.textAutoResize = 'HEIGHT';
-    node.layoutAlign = 'STRETCH';
+    // node.textAutoResize = 'HEIGHT'
+    // node.layoutAlign = 'STRETCH'
+    // // Reapply because of bug
+    // node.textAutoResize = 'origTextAutoResize'
+    // }
 }
+// Must pass in both the source/target and their matching main components
+// async function overrideChildrenChars(sourceComponentChildren, targetComponentChildren, sourceChildren, targetChildren) {
+// 	for (let a = 0; a < targetChildren.length; a++) {
+// 		for (let b = 0; b < sourceChildren.length; b++) {
+// 			// If layer has children then run function again
+// 			if (
+// 				sourceComponentChildren[a].children &&
+// 				targetComponentChildren[a].children &&
+// 				targetChildren[a].children &&
+// 				sourceChildren[a].children
+// 			) {
+// 				overrideChildrenChars(
+// 					sourceComponentChildren[a].children,
+// 					targetComponentChildren[b].children,
+// 					sourceChildren[b].children,
+// 					targetChildren[b].children
+// 				)
+// 			}
+// 			// If layer is a text node then check if the main components share the same name
+// 			else if (sourceChildren[a].type === 'TEXT') {
+// 				if (sourceComponentChildren[a].name === targetComponentChildren[b].name) {
+// 					await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style)
+// 					// loadFonts(targetChildren[a]).then(() => {
+// 					// 	targetChildren[a].characters = sourceChildren[a].characters
+// 					// 	targetChildren[a].fontName.style = sourceChildren[a].fontName.style
+// 					// })
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
     for (let a = 0; a < sourceChildren.length; a++) {
-        if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
-            targetChildren[a].name = sourceChildren[a].name;
-            // targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
-        }
-        // If layer has children then run function again
-        if (targetChildren[a].children && sourceChildren[a].children) {
-            await overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children);
-        }
-        // If layer is a text node then check if the main components share the same name
-        else if (sourceChildren[a].type === 'TEXT') {
-            // if (sourceChildren[a].name === targetChildren[b].name) {
-            await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
+        if (sourceComponentChildren[a] && targetComponentChildren[a]) {
+            if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
+                targetChildren[a].name = sourceChildren[a].name;
+                targetChildren[a].visible = sourceChildren[a].visible;
+                // targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
+            }
+            // If layer has children then run function again
+            if (targetChildren[a].children && sourceChildren[a].children) {
+                await overrideChildrenChars2(sourceChildren[a].children, targetChildren[a].children, sourceComponentChildren[a].children, targetComponentChildren[a].children);
+            }
+            // If layer is a text node then check if the main components share the same name
+            else if (sourceChildren[a].type === 'TEXT') {
+                // if (sourceChildren[a].name === targetChildren[b].name) {
+                await changeText(targetChildren[a], sourceChildren[a].characters, sourceChildren[a].fontName.style);
+            }
         }
     }
 }
@@ -2068,7 +2102,9 @@ async function swapInstance(target, source) {
     // await overrideChildrenChars(source.mainComponent.children, source.mainComponent.children, source.children, target.children)
     // replace(newTableCell, oldTableCell.clone())
     // target.swapComponent(source.mainComponent)
-    await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children);
+    if (target && source) {
+        await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children);
+    }
 }
 
 function isTheme(color) {
@@ -2511,7 +2547,13 @@ async function createTemplateComponents() {
     componentSet_305_177.exportSettings = [];
     componentSet_305_177.fills = [];
     componentSet_305_177.strokes = [
-        { type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 0.48235294222831726, g: 0.3803921639919281, b: 1 } },
+        {
+            type: 'SOLID',
+            visible: true,
+            opacity: 1,
+            blendMode: 'NORMAL',
+            color: { r: 0.7254902124404907, g: 0.7254902124404907, b: 0.7254902124404907 },
+        },
     ];
     componentSet_305_177.strokeWeight = 1;
     componentSet_305_177.strokeAlign = 'INSIDE';
@@ -3624,6 +3666,9 @@ function detachTable(selection) {
 function spawnTable() { }
 async function toggleColumnResizing(selection) {
     var _a, _b, _c;
+    // FIXME: Check for text layer before setting characters
+    // TODO: Swap instance to preverve current instance
+    // FIXME: Something weird happening with resizing of cell/text
     let result = false;
     for (let i = 0; i < selection.length; i++) {
         var oldTable = selection[i];
@@ -3649,6 +3694,8 @@ async function toggleColumnResizing(selection) {
                             if (((_b = getPluginData_1(nodeB, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'td' || ((_c = getPluginData_1(nodeB, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th') {
                                 let newTableCell = newTable.children[a].children[b];
                                 let oldTableCell = nodeB;
+                                newTableCell.swapComponent(oldTableCell.mainComponent);
+                                // console.log('vp', oldTableCell.variantProperties, newTableCell.variantProperties)
                                 await swapInstance(oldTableCell, newTableCell);
                                 // console.log('tableCell', oldTableCell.width, newTableCell)
                                 // replace(newTableCell, oldTableCell)
