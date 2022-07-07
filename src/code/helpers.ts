@@ -416,6 +416,10 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 			if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
 				targetChildren[a].name = sourceChildren[a].name
 				targetChildren[a].visible = sourceChildren[a].visible
+				if (targetChildren[a].type === 'INSTANCE') {
+					targetChildren[a].swapComponent(sourceChildren[a].mainComponent)
+				}
+
 				// targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
 			}
 			// If layer has children then run function again
@@ -436,6 +440,10 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 			}
 		}
 	}
+}
+
+function swapVariant(target, source) {
+	console.log('vp', target.variantProperties, source.variantProperties)
 }
 
 export async function swapInstance(target, source) {

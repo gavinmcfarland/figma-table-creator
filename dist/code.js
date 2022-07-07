@@ -2084,6 +2084,9 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
             if (sourceComponentChildren[a].name === targetComponentChildren[a].name) {
                 targetChildren[a].name = sourceChildren[a].name;
                 targetChildren[a].visible = sourceChildren[a].visible;
+                if (targetChildren[a].type === 'INSTANCE') {
+                    targetChildren[a].swapComponent(sourceChildren[a].mainComponent);
+                }
                 // targetChildren[a].resize(sourceChildren[a].width, sourceChildren[a].height)
             }
             // If layer has children then run function again
@@ -4071,7 +4074,7 @@ async function main() {
         plugin.command('toggleColumnResizing', () => {
             toggleColumnResizing(figma.currentPage.selection).then((result) => {
                 if (result) {
-                    figma.closePlugin(`Column sizing ${result}`);
+                    figma.closePlugin(`Column resizing ${result}`);
                 }
                 else {
                     figma.closePlugin(`Can't apply to templates`);
