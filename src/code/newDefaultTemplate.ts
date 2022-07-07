@@ -315,7 +315,8 @@ export async function createTemplateComponents() {
 	var frame_305_179 = figma.createFrame()
 	component_305_178.appendChild(frame_305_179)
 	frame_305_179.resize(120.0, 35.0)
-	frame_305_179.primaryAxisSizingMode = 'AUTO'
+	frame_305_179.counterAxisSizingMode = 'AUTO'
+	frame_305_179.primaryAxisSizingMode = 'FIXED'
 	frame_305_179.name = 'Content'
 	frame_305_179.layoutAlign = 'STRETCH'
 	frame_305_179.fills = []
@@ -329,7 +330,7 @@ export async function createTemplateComponents() {
 	frame_305_179.strokeRightWeight = 1
 	frame_305_179.backgrounds = []
 	frame_305_179.expanded = false
-	frame_305_179.layoutMode = 'VERTICAL'
+	frame_305_179.layoutMode = 'HORIZONTAL'
 
 	// Create TEXT
 	var text_305_180 = figma.createText()
@@ -341,7 +342,8 @@ export async function createTemplateComponents() {
 	]
 	text_305_180.x = 12
 	text_305_180.y = 10
-	text_305_180.layoutAlign = 'STRETCH'
+	// text_305_180.layoutAlign = 'STRETCH'
+	text_305_180.layoutGrow = 1
 
 	// Font properties
 	text_305_180.fontName = {
@@ -406,7 +408,8 @@ export async function createTemplateComponents() {
 	var frame_305_182 = figma.createFrame()
 	component_305_181.appendChild(frame_305_182)
 	frame_305_182.resize(120.0, 35.0)
-	frame_305_182.primaryAxisSizingMode = 'AUTO'
+	frame_305_182.counterAxisSizingMode = 'AUTO'
+	frame_305_182.primaryAxisSizingMode = 'FIXED'
 	frame_305_182.name = 'Content'
 	frame_305_182.layoutAlign = 'STRETCH'
 	frame_305_182.fills = []
@@ -420,7 +423,7 @@ export async function createTemplateComponents() {
 	frame_305_182.strokeRightWeight = 1
 	frame_305_182.backgrounds = []
 	frame_305_182.expanded = false
-	frame_305_182.layoutMode = 'VERTICAL'
+	frame_305_182.layoutMode = 'HORIZONTAL'
 
 	// Create TEXT
 	var text_305_183 = figma.createText()
@@ -432,7 +435,8 @@ export async function createTemplateComponents() {
 	]
 	text_305_183.x = 12
 	text_305_183.y = 10
-	text_305_183.layoutAlign = 'STRETCH'
+	text_305_183.layoutGrow = 1
+	// text_305_183.layoutAlign = 'STRETCH'
 
 	// Font properties
 	text_305_183.fontName = {

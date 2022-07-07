@@ -27,13 +27,16 @@
     }
   ],
   "relaunchButtons": [
-        {"command": "updateTables", "name": "Refresh Tables"},
+
         {"command": "createTable", "name": "Create Table"},
+        {"command": "updateTables", "name": "Refresh Tables"},
+        {"command": "switchColumnsOrRows", "name": "Switch Axis"},
         {"command": "toggleColumnResizing", "name": "Column Resizing"},
-        {"command": "switchColumnsOrRows", "name": "Switch Axis", "multipleSelection": true},
+
+        {"command": "detachTable", "name": "Detach Table"},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},
-        {"command": "selectRow", "name": "Select Row", "multipleSelection": true},
-        {"command": "detachTable", "name": "Detach Table", "multipleSelection": true}
+        {"command": "selectRow", "name": "Select Row", "multipleSelection": true}
+
     ],
     "editorType": ["figma"]
 
