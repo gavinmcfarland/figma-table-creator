@@ -542,7 +542,7 @@ async function toggleColumnResizing(selection) {
 				detachTable(selection)
 				result = 'removed'
 			} else {
-				result = 'applied'
+				result = 'added'
 				settings.columnResizing = !settings.columnResizing
 
 				let newTable = await createTable(oldTable, settings)
