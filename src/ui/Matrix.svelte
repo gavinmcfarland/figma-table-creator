@@ -54,11 +54,23 @@
 	})
 
 	function on_load(node) {
+
+		let rowState = rowCount - 1
+		let columnState = columnCount - 1
+
+		if (rowState > 7) {
+			rowState = 7
+		}
+
+		if (columnState > 7) {
+			columnState = 7
+		}
+
 		// Set default checked radio
-		table_state[rowCount - 1][columnCount - 1].checked = true
+		table_state[rowState][columnState].checked = true
 
 		// Set default state
-		set_state("selected", [rowCount - 1, columnCount - 1])
+		set_state("selected", [rowState, columnState])
 	}
 
 	function enter(x, y) {

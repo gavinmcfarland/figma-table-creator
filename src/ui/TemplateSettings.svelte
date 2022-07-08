@@ -204,8 +204,8 @@
 		</span>
 	</div>
 
-	<p class="type m-xxsmall description">
-		Configure which parts of your template represent the following elements below.
+	<p class="type m-xxsmall description" style="letter-spacing: -0.15px">
+		Configure part of a template by selecting a layer and adding or removing it below.
 	</p>
 
 	<div class="templateArtwork">
@@ -218,11 +218,11 @@
 	<!-- {#if currentSelection} -->
 		{#if parts}
 
-		<div class="List">
+		<div class="List" style="margin-bottom: 8px">
 			{#each parts as part, i}
 
 				<div class={currentSelection?.element === part.element ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
-					<p title="{part.longName}" class="element">&lt;{part.element}&gt;</p>
+					<p title="{part.longName}" class="element">&lt;{part.element}&gt;<spa class={part.element === "th" ? "astrix" : "astrix-hide"}>*</spa></p>
 					{#if part.name}
 					<span>{part.name}</span>
 					{:else}
@@ -236,6 +236,8 @@
 			{/each}
 		</div>
 		{/if}
+
+		<p class="type m-xxsmall description">* optional</p>
 	<!-- {/if} -->
 
 	<div class="BottomBar">
@@ -245,6 +247,15 @@
 </div>
 
 <style global>
+
+	.astrix {
+		position: absolute;
+		color: var(--figma-color-text-secondary)
+	}
+
+	.astrix-hide {
+		display: none;
+	}
 
 	.EditTemplate {
 		margin-top: -8px;
@@ -298,6 +309,10 @@
 		margin-bottom: 24px; text-align: center;
 		margin-left: -4px;
 		color: var(--figma-color-text-tertiary, var(--color-black-30));
+	}
+
+	.ListItem {
+		position: relative;
 	}
 
 	.ListItem.currentlySelected {

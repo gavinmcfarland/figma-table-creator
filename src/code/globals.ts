@@ -137,6 +137,9 @@ export function createTable(templateComponent, settings, type?) {
 			firstRow.layoutGrow = 1
 		}
 
+		// MANDATORY PROP
+		firstRow.layoutAlign = 'STRETCH'
+
 		// Create columns in first row
 
 		for (let i = 0; i < settings.columnCount; i++) {
@@ -393,7 +396,12 @@ export function getLocalTemplates() {
 	figma.root.findAll((node) => {
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
+			// ID could update if copied to another file
+			templateData.id = node.id
 			templateData.name = node.name
+			templateData.component.id = node.id
+			// Update file id incase component moved to another file
+			templateData.file.id = getDocumentData('fileId')
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 		}

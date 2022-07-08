@@ -34,7 +34,10 @@ export async function lookForComponent(template) {
 	var localComponent = getComponentById(template.component.id)
 
 	try {
-		if (localComponent && localComponent.key === template.component.key) {
+		// If can find the component, and it's key is the same as the templates this assumes the node is in the file it originated from?
+		// if (localComponent && localComponent.key === template.component.key) {
+
+		if (localComponent) {
 			component = localComponent
 		} else {
 			throw 'error'
@@ -440,10 +443,6 @@ async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComp
 			}
 		}
 	}
-}
-
-function swapVariant(target, source) {
-	console.log('vp', target.variantProperties, source.variantProperties)
 }
 
 export async function swapInstance(target, source) {

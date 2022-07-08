@@ -11,6 +11,7 @@
 	import "./reset.css"
 
 	// TODO: Reset value to original if input left empty
+	// FIXME: Find out selected file is undefined when component copied from another file
 
 	let data
 	let columnResizing = true
@@ -89,7 +90,7 @@
 		template = template || data.defaultTemplate
 
 		for (var i in data.localTemplates) {
-			if (template.component.key === data.localTemplates[i].component.key) {
+			if (template.component.id === data.localTemplates[i].component.id) {
 				data.localTemplates[i].selected = true
 			}
 		}
@@ -461,7 +462,7 @@
 <svelte:window on:message={onLoad} />
 
 {#if pageState.chooseRemoteTemplate}
-	<div class="container" style="padding: var(--size-100) var(--size-200)">
+	<div class="container choose-library" style="padding: var(--size-100) var(--size-200)">
 
 		{#if data.recentFiles.length > 0}
 		<p>Choose a library</p>
@@ -877,8 +878,11 @@
 		padding: var(--padding-200);
 	}
 
-	.container {
+	.container.choose-library {
 		overflow: scroll;
+	}
+
+	.container {
 		height: 100%;
 		display: flex;
 		flex-direction: column;

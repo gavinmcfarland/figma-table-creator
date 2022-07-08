@@ -24,6 +24,13 @@
     {
       "name": "Select Row",
       "command": "selectRow"
+    },
+    {
+        "separator": true
+    },
+    {
+        "name": "Switch Axis",
+        "command": "switchColumnsOrRows"
     }
   ],
   "relaunchButtons": [
