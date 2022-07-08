@@ -864,7 +864,7 @@ async function createTableUI() {
 	} else if (!defaultTemplateComponent && recentFiles.length > 0) {
 		// Set first template in first file
 		defaultTemplate = recentFiles[0].data[0]
-	} else if (localTemplates.length === 0) {
+	} else if (!defaultTemplateComponent && localTemplates.length === 0) {
 		defaultTemplate = undefined
 	}
 
