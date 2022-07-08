@@ -2926,7 +2926,7 @@ var ui = (function () {
     	return {
     		c() {
     			p = element("p");
-    			p.textContent = "To use a library create a template in another file and publish the components.";
+    			p.textContent = "To use a template from a library, create a template in another file and publish the components.";
     		},
     		m(target, anchor) {
     			insert(target, p, anchor);

@@ -497,7 +497,7 @@
 			{/each}
 		</div>
 		{:else}
-		<p>To use a library create a template in another file and publish the components.</p>
+		<p>To use a template from a library, create a template in another file and publish the components.</p>
 		{/if}
 
 		{#if showToggles}

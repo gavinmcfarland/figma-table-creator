@@ -88,6 +88,11 @@ console.clear()
 // figma.root.setPluginData('defaultTemplate', '')
 // figma.clientStorage.deleteAsync('userPreferences')
 
+function daysToMilliseconds(days) {
+	// 👇️        hour  min  sec  ms
+	return days * 24 * 60 * 60 * 1000
+}
+
 function isEmpty(obj) {
 	for (var prop in obj) {
 		if (Object.prototype.hasOwnProperty.call(obj, prop)) {
@@ -834,7 +839,7 @@ async function createTableUI() {
 	// Whenever plugin run
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	var recentFiles = await getRecentFilesAsync(getLocalTemplates())
+	var recentFiles = await getRecentFilesAsync(getLocalTemplates(), { expire: daysToMilliseconds(7) })
 	var remoteFiles = await getRemoteFilesAsync()
 
 	// Show create table UI
@@ -883,7 +888,7 @@ async function createTableUI() {
 		type: 'show-create-table-ui',
 		...userPreferences,
 		remoteFiles,
-		recentFiles: await getRecentFilesAsync(localTemplates),
+		recentFiles: await getRecentFilesAsync(localTemplates, { expire: 1000 * 60 * 1 }),
 		localTemplates,
 		defaultTemplate,
 		fileId,

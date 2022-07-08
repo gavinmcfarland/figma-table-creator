@@ -148,6 +148,10 @@
 3. Disable column sizing and row/column on component DONE
 
 
+---
+
+1. Order recent files by firstVisitedByPlugin
+
 
 
 I think this appears when trying to import from same file:

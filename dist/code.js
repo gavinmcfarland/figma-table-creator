@@ -860,6 +860,8 @@ function File$1(data) {
     // TODO: When getPluginData has been updated to evaluate expressions at runtime replace with below
     // this.name = `{figma.getNodeById("0:1").name}`
     this.name = figma.root.name;
+    this.firstVisited = new Date().toISOString();
+    this.lastVisited = new Date().toISOString();
     if (data) {
         this.data = data;
         setDocumentData("fileData", data);
@@ -868,7 +870,8 @@ function File$1(data) {
         this.data = getDocumentData("fileData");
     }
 }
-async function getRecentFilesAsync(fileData) {
+async function getRecentFilesAsync(fileData, opts) {
+    opts = opts || {};
     // Should it include an option top only add published components/data?
     // const publishedComponents = await getPublishedComponents(fileData)
     fileData = fileData || getDocumentData("fileData");
@@ -898,26 +901,51 @@ async function getRecentFilesAsync(fileData) {
             }
             // If unique then add to array
             addUniqueToArray$1(recentFiles, currentFile);
-            // If not, then update
-            recentFiles.filter((item, i) => {
-                if (item.id === currentFile.id) {
-                    item.name = currentFile.name;
-                    item.data = currentFile.data;
-                    setDocumentData("fileData", fileData);
-                    // If data no longer exists, delete the file
-                    if (!fileData ||
-                        (Array.isArray(fileData) && fileData.length === 0)) {
-                        recentFiles.splice(i, 1);
+            if (recentFiles.length > 0) {
+                // If not, then update
+                recentFiles.filter((item, i) => {
+                    if (item.id === currentFile.id) {
+                        item.name = currentFile.name;
+                        item.lastVisited = new Date().toISOString();
+                        item.data = currentFile.data;
+                        setDocumentData("fileData", fileData);
+                        // If data no longer exists, delete the file
+                        if (!fileData ||
+                            (Array.isArray(fileData) && fileData.length === 0)) {
+                            recentFiles.splice(i, 1);
+                        }
                     }
+                });
+                // Sort by firstVisitedByPlugin
+                recentFiles.sort((a, b) => {
+                    if (a.lastVisited === b.lastVisited)
+                        return 0;
+                    return a.lastVisited > b.lastVisited ? -1 : 1;
+                });
+                if (opts.expire) {
+                    // Remove files which are out of date
+                    recentFiles.map((file) => {
+                        let fileTimestamp = new Date(file.lastVisited).valueOf();
+                        let currentTimestamp = new Date().valueOf();
+                        // if (fileTimestamp < currentTimestamp - daysToMilliseconds(7)) {
+                        if (fileTimestamp < currentTimestamp - opts.expire) {
+                            let fileIndex = recentFiles.indexOf(file);
+                            if (fileIndex !== -1) {
+                                recentFiles.splice(fileIndex, 1);
+                            }
+                        }
+                    });
                 }
-            });
+            }
         }
         return recentFiles;
     });
-    // Exclude current file
-    recentFiles = recentFiles.filter((file) => {
-        return !(file.id === getPluginData(figma.root, "fileId"));
-    });
+    if (recentFiles.length > 0) {
+        // Exclude current file
+        recentFiles = recentFiles.filter((file) => {
+            return !(file.id === getPluginData(figma.root, "fileId"));
+        });
+    }
     return recentFiles;
 }
 
@@ -3350,6 +3378,29 @@ async function upgradeOldComponentsToTemplate() {
 // FIXME: When turning column resizing off component does not resize with table DONE
 // TODO: Consider removing number when creating table
 console.clear();
+// createTooltip(
+// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
+// ).then((tooltip) => {
+// 	positionInCenterOfViewport(tooltip)
+// })
+// createTemplateComponents().then((array) => {
+// 	let group = figma.group(array, figma.currentPage)
+// 	positionInCenterOfViewport(group)
+// 	figma.ungroup(group)
+// })
+// setClientStorageAsync('userPreferences', undefined).then(() => {
+// 	figma.closePlugin('User preferences reset')
+// })
+// figma.clientStorage.deleteAsync('recentFiles')
+// figma.clientStorage.deleteAsync('pluginVersion')
+// figma.root.setPluginData('remoteFiles', '')
+// figma.root.setPluginData('fileId', '')
+// figma.root.setPluginData('defaultTemplate', '')
+// figma.clientStorage.deleteAsync('userPreferences')
+function daysToMilliseconds(days) {
+    // 👇️        hour  min  sec  ms
+    return days * 24 * 60 * 60 * 1000;
+}
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
     var index = array.findIndex((x) => x.id === object.id);
@@ -3938,7 +3989,7 @@ async function createTableUI() {
     });
     // Whenever plugin run
     // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-    var recentFiles = await getRecentFilesAsync_1(getLocalTemplates());
+    var recentFiles = await getRecentFilesAsync_1(getLocalTemplates(), { expire: daysToMilliseconds(7) });
     var remoteFiles = await getRemoteFilesAsync_1();
     // Show create table UI
     let pluginVersion = await getClientStorageAsync_1('pluginVersion');
@@ -3973,7 +4024,7 @@ async function createTableUI() {
         height: 474 + 8 + 8,
         themeColors: true,
     });
-    figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(localTemplates), localTemplates,
+    figma.ui.postMessage(Object.assign(Object.assign({ type: 'show-create-table-ui' }, userPreferences), { remoteFiles, recentFiles: await getRecentFilesAsync_1(localTemplates, { expire: 1000 * 60 * 1 }), localTemplates,
         defaultTemplate,
         fileId,
         usingRemoteTemplate,
