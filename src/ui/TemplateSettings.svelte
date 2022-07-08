@@ -204,14 +204,20 @@
 		</span>
 	</div>
 
-	<p class="type m-xxsmall description" style="letter-spacing: -0.15px">
+	<!-- <p class="type m-xxsmall description" style="letter-spacing: -0.15px">
 		Configure part of a template by selecting a layer and adding or removing it below.
-	</p>
+	</p> -->
+
+
 
 	<div class="templateArtwork">
 		<div class="target" bind:this={artworkTarget} ></div>
 		<div class="image"></div>
 	</div>
+
+	<p class="type m-xxsmall description" style="margin-bottom: 16px; letter-spacing: -0.15px">
+		Select a layer on the canvas and assign or remove it below to configure template.
+		</p>
 
 	<!-- <p class="currentlySelected">&nbsp;{#if currentSelection}{currentSelection.name}{/if}</p> -->
 
@@ -237,7 +243,7 @@
 		</div>
 		{/if}
 
-		<p class="type m-xxsmall description">* optional</p>
+		<p class="type m-xxsmall description" style="margin-top: 16px">* optional</p>
 	<!-- {/if} -->
 
 	<div class="BottomBar">
@@ -301,7 +307,7 @@
 
 	.EditTemplate .templateArtwork {
 		position: relative;
-		margin-top: 24px;
+		margin-top: 16px;
 		margin-bottom: 8px;
 	}
 
