@@ -400,6 +400,8 @@ export function getLocalTemplates() {
 			templateData.id = node.id
 			templateData.name = node.name
 			templateData.component.id = node.id
+			// KEY needs updating if template duplicated
+			templateData.component.key = node.key
 			// Update file id incase component moved to another file
 			templateData.file.id = getDocumentData('fileId')
 			setPluginData(node, 'template', templateData)
@@ -412,11 +414,13 @@ export function getLocalTemplates() {
 
 export async function setDefaultTemplate(templateData) {
 	// Only set prevoious template if default template has been set once
-	let previousTemplate = getDocumentData('defaultTemplate') ? getDocumentData('defaultTemplate') : null
+	// let previousTemplate = getDocumentData('defaultTemplate') ? getDocumentData('defaultTemplate') : null
 
 	await getRemoteFilesAsync()
 	await getRecentFilesAsync(getLocalTemplates())
 	setDocumentData('defaultTemplate', templateData)
+
+	console.log('set it ', templateData)
 
 	figma.ui.postMessage({
 		type: 'post-default-template',
@@ -424,9 +428,9 @@ export async function setDefaultTemplate(templateData) {
 		localTemplates: getLocalTemplates(),
 	})
 
-	if (previousTemplate) {
-		setPreviousTemplate(previousTemplate)
-	}
+	// if (previousTemplate) {
+	// 	setPreviousTemplate(previousTemplate)
+	// }
 }
 
 export async function setPreviousTemplate(templateData) {

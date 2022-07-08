@@ -470,10 +470,9 @@ function convertToFrame(node) {
     if (node.type === "COMPONENT") {
         let parent = node.parent;
         // This method preserves plugin data and relaunch data
-        console.log("hello");
         let frame = node.createInstance().detachInstance();
         parent.appendChild(frame);
-        copyPaste(node, frame, { include: ['x', 'y'] });
+        copyPaste(node, frame, { include: ["x", "y"] });
         // Treat like native method
         figma.currentPage.appendChild(frame);
         node.remove();
@@ -3063,6 +3062,8 @@ function getLocalTemplates() {
             templateData.id = node.id;
             templateData.name = node.name;
             templateData.component.id = node.id;
+            // KEY needs updating if template duplicated
+            templateData.component.key = node.key;
             // Update file id incase component moved to another file
             templateData.file.id = getDocumentData_1('fileId');
             setPluginData_1(node, 'template', templateData);
@@ -3073,24 +3074,19 @@ function getLocalTemplates() {
 }
 async function setDefaultTemplate(templateData) {
     // Only set prevoious template if default template has been set once
-    let previousTemplate = getDocumentData_1('defaultTemplate') ? getDocumentData_1('defaultTemplate') : null;
+    // let previousTemplate = getDocumentData('defaultTemplate') ? getDocumentData('defaultTemplate') : null
     await getRemoteFilesAsync_1();
     await getRecentFilesAsync_1(getLocalTemplates());
     setDocumentData_1('defaultTemplate', templateData);
+    console.log('set it ', templateData);
     figma.ui.postMessage({
         type: 'post-default-template',
         defaultTemplate: templateData,
         localTemplates: getLocalTemplates(),
     });
-    if (previousTemplate) {
-        setPreviousTemplate(previousTemplate);
-    }
-}
-async function setPreviousTemplate(templateData) {
-    // await getRemoteFilesAsync()
-    // await getRecentFilesAsync(getLocalTemplates())
-    setDocumentData_1('previousTemplate', templateData);
-    return templateData;
+    // if (previousTemplate) {
+    // 	setPreviousTemplate(previousTemplate)
+    // }
 }
 async function updateTables(template) {
     // FIXME: Template file name not up to date for some reason
@@ -3942,7 +3938,7 @@ async function createTableUI() {
     });
     // Whenever plugin run
     // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-    await getRecentFilesAsync_1(getLocalTemplates());
+    var recentFiles = await getRecentFilesAsync_1(getLocalTemplates());
     var remoteFiles = await getRemoteFilesAsync_1();
     // Show create table UI
     let pluginVersion = await getClientStorageAsync_1('pluginVersion');
@@ -3956,10 +3952,17 @@ async function createTableUI() {
     // Check for defaultTemplate
     let previousTemplate = getDocumentData_1('previousTemplate');
     getComponentById(previousTemplate === null || previousTemplate === void 0 ? void 0 : previousTemplate.id);
-    let defaultTemplateComponent = getComponentById(defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.id);
+    let defaultTemplateComponent;
+    if (defaultTemplate) {
+        defaultTemplateComponent = await lookForComponent(defaultTemplate);
+    }
     // If can't find current template, but can find previous, then set it as the default
     if (!defaultTemplateComponent && localTemplates.length > 0) {
         defaultTemplate = localTemplates[0];
+    }
+    else if (!defaultTemplateComponent && recentFiles.length > 0) {
+        // Set first template in first file
+        defaultTemplate = recentFiles[0].data[0];
     }
     else if (localTemplates.length === 0) {
         defaultTemplate = undefined;

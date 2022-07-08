@@ -85,9 +85,12 @@
 
 
 	function updateSelectedTemplate(data, template) {
+
 		// Look for selected table in local templates
 		// If template not provided use defaultTemplate
 		template = template || data.defaultTemplate
+
+
 
 		for (var i in data.localTemplates) {
 			if (template.component.id === data.localTemplates[i].component.id) {
@@ -234,6 +237,8 @@
 
 	function setDefaultTemplate(template, data) {
 
+
+
 		if (data) {
 			// Not sure how to get it to update UI
 			data = updateSelectedTemplate(data, template)
@@ -369,8 +374,11 @@
 	async function onLoad(event) {
 		var message = await event.data.pluginMessage
 
+
 		if (message.type === "show-create-table-ui") {
 			data = message
+
+
 
 			let store = {
 				pageState,

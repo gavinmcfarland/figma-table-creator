@@ -851,11 +851,19 @@ async function createTableUI() {
 	// Check for defaultTemplate
 	let previousTemplate = getDocumentData('previousTemplate')
 	let previousTemplateComponent = getComponentById(previousTemplate?.id)
-	let defaultTemplateComponent = getComponentById(defaultTemplate?.id)
+
+	let defaultTemplateComponent
+
+	if (defaultTemplate) {
+		defaultTemplateComponent = await lookForComponent(defaultTemplate)
+	}
 
 	// If can't find current template, but can find previous, then set it as the default
 	if (!defaultTemplateComponent && localTemplates.length > 0) {
 		defaultTemplate = localTemplates[0]
+	} else if (!defaultTemplateComponent && recentFiles.length > 0) {
+		// Set first template in first file
+		defaultTemplate = recentFiles[0].data[0]
 	} else if (localTemplates.length === 0) {
 		defaultTemplate = undefined
 	}
