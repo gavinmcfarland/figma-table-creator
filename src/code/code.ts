@@ -304,32 +304,14 @@ function postCurrentSelection(templateNodeId) {
 		}
 	}
 
-	if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
-		let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
-		selection = {
-			element: semanticName,
-			name: getSelectionName(figma.currentPage.selection[0]),
-			longName: (() => {
-				if (semanticName === 'table') {
-					return 'Table'
-				}
-				if (semanticName === 'tr') {
-					return 'Row'
-				}
-				if (semanticName === 'td') {
-					return 'Cell'
-				}
-				if (semanticName === 'th') {
-					return 'Header Cell'
-				}
-			})(),
-		}
-
-		figma.ui.postMessage({ type: 'current-selection', selection: selection })
-	}
-
-	figma.on('selectionchange', () => {
-		if (figma.currentPage.selection.length === 1 && isInsideTemplate(figma.currentPage.selection[0])) {
+	function postSelection() {
+		let sel = figma.currentPage.selection[0]
+		// console.log('sel', sel.type)
+		if (
+			figma.currentPage.selection.length === 1 &&
+			isInsideTemplate(figma.currentPage.selection[0]) &&
+			(sel.type === 'COMPONENT' || sel.type === 'FRAME' || sel.type === 'INSTANCE')
+		) {
 			let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
 			selection = {
 				element: semanticName,
@@ -354,6 +336,12 @@ function postCurrentSelection(templateNodeId) {
 		} else {
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
+	}
+
+	postSelection()
+
+	figma.on('selectionchange', () => {
+		postSelection()
 	})
 }
 
@@ -837,21 +825,21 @@ async function createTableUI() {
 	})
 
 	// Whenever plugin run
+	const localTemplates = getLocalTemplates()
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	var recentFiles = await getRecentFilesAsync(getLocalTemplates(), { expire: daysToMilliseconds(7) })
+	var recentFiles = await getRecentFilesAsync(localTemplates, { expire: daysToMilliseconds(7) })
 	var remoteFiles = await getRemoteFilesAsync()
 
 	// Show create table UI
 	let pluginVersion = await getClientStorageAsync('pluginVersion')
 	let userPreferences = await getClientStorageAsync('userPreferences')
-	let usingRemoteTemplate = await getClientStorageAsync('usingRemoteTemplate')
+	let usingRemoteTemplate = await getDocumentData('usingRemoteTemplate')
 	let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
 
 	// const remoteFiles = getDocumentData('remoteFiles')
 	const fileId = getDocumentData('fileId')
 	let defaultTemplate = getDefaultTemplate()
-	const localTemplates = getLocalTemplates()
 
 	// Check for defaultTemplate
 	let previousTemplate = getDocumentData('previousTemplate')
@@ -888,7 +876,7 @@ async function createTableUI() {
 		type: 'show-create-table-ui',
 		...userPreferences,
 		remoteFiles,
-		recentFiles: await getRecentFilesAsync(localTemplates, { expire: 1000 * 60 * 1 }),
+		recentFiles,
 		localTemplates,
 		defaultTemplate,
 		fileId,
@@ -1221,9 +1209,11 @@ async function main() {
 		plugin.on('save-user-preferences', () => {})
 		plugin.on('fetch-template-part', () => {})
 		plugin.on('fetch-current-selection', (msg) => {
-			lookForComponent(msg.template).then((templateNode) => {
-				postCurrentSelection(templateNode.id)
-			})
+			if (msg.template) {
+				lookForComponent(msg.template).then((templateNode) => {
+					postCurrentSelection(templateNode.id)
+				})
+			}
 		})
 		plugin.on('fetch-template-parts', (msg) => {
 			lookForComponent(msg.template).then((templateNode) => {

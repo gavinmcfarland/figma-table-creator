@@ -473,7 +473,7 @@
 	<div class="container choose-library" style="padding: var(--size-100) var(--size-200)">
 
 		{#if data.recentFiles.length > 0}
-		<p>Choose a library</p>
+		<p class="description">Choose library to add</p>
 		<div class="List">
 			{#each data.recentFiles as file}
 				{#if showToggles}
@@ -681,7 +681,7 @@
 
 
 			<div class="buttons new-template">
-				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New Template</Button></span>
+				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New template</Button></span>
 				{#if data.recentFiles.length > 0}
 					<span on:click={() => {
 						chooseRemoteTemplate()
@@ -751,7 +751,7 @@
 														getDropdown('tooltip').close()
 														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 														chooseRemoteTemplate({entry: "MANAGE_LIBRARIES"})
-														}} for="linkLibrary">Choose Library</label>
+														}} for="linkLibrary">Add Library</label>
 												</div>
 
 
@@ -779,13 +779,13 @@
 												getDropdown('menu').close()
 
 
-												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Edit Template"  class="refresh icon" icon="pencil" on:click={() => {
+												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Edit template"  class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
-													}}></a> <a title="Refresh Tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
+													}}></a> <a title="Refresh tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
 										{/each}
 										</ul>
 									{/if}
-									<div class="toolbar"><a title="New Template"  class="refresh icon" icon="plus" on:click={() => newTemplate({ subComponents: false, tooltips: false})}></a></div>
+									<div class="toolbar"><a title="New template"  class="refresh icon" icon="plus" on:click={() => newTemplate({ subComponents: false, tooltips: false})}></a></div>
 								{:else}
 									{#if data.remoteFiles.length > 0}
 										<!-- <div> -->
@@ -802,10 +802,10 @@
 																// Hide menu when template set
 																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 																getDropdown('menu').close()
-																}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Refresh Tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
+																}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Refresh tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
 															{/each}
 													</ul>
-													<div class="toolbar"><a title="Remove Library" style="margin-left: auto" class="refresh icon" icon="break" on:click={() => {
+													<div class="toolbar"><a title="Remove library" style="margin-left: auto" class="refresh icon" icon="break" on:click={() => {
 														removeRemoteFile(file)
 														updateSelectedFile()
 														}}></a></div>
@@ -887,7 +887,7 @@
 	}
 
 	.container.choose-library {
-		overflow: scroll;
+		overflow-y: scroll;
 	}
 
 	.container {
@@ -1232,8 +1232,8 @@
 	}
 
 	.menu__content {
-		min-height: calc(8 * var(--size-400));
-		max-height: calc(8 * var(--size-400));
+		min-height: calc(8 * var(--size-300));
+		max-height: calc(8 * var(--size-300));
 		overflow-y: auto;
 	}
 
@@ -1297,6 +1297,8 @@
 		width: 100%;
 		padding: 8px;
 		background-color: var(--figma-color-bg);
+		border-bottom-left-radius: 2px;
+		border-bottom-right-radius: 2px;
 	}
 
 

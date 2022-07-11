@@ -392,8 +392,13 @@ export function Template(node) {
 // 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
 // }
 export function getLocalTemplates() {
+	figma.skipInvisibleInstanceChildren = true
 	var templates = []
-	figma.root.findAll((node) => {
+	var components = figma.root.findAllWithCriteria({
+		types: ['COMPONENT'],
+	})
+	for (let i = 0; i < components.length; i++) {
+		let node = components[i]
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
 			// ID could update if copied to another file
@@ -407,7 +412,22 @@ export function getLocalTemplates() {
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 		}
-	})
+	}
+	// figma.root.findAll((node) => {
+	// 	var templateData = getPluginData(node, 'template')
+	// 	if (templateData && node.type === 'COMPONENT') {
+	// 		// ID could update if copied to another file
+	// 		templateData.id = node.id
+	// 		templateData.name = node.name
+	// 		templateData.component.id = node.id
+	// 		// KEY needs updating if template duplicated
+	// 		templateData.component.key = node.key
+	// 		// Update file id incase component moved to another file
+	// 		templateData.file.id = getDocumentData('fileId')
+	// 		setPluginData(node, 'template', templateData)
+	// 		templates.push(templateData)
+	// 	}
+	// })
 
 	return templates
 }
@@ -419,8 +439,6 @@ export async function setDefaultTemplate(templateData) {
 	await getRemoteFilesAsync()
 	await getRecentFilesAsync(getLocalTemplates())
 	setDocumentData('defaultTemplate', templateData)
-
-	console.log('set it ', templateData)
 
 	figma.ui.postMessage({
 		type: 'post-default-template',

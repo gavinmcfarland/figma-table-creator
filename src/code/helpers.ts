@@ -35,6 +35,8 @@ export async function lookForComponent(template) {
 
 	try {
 		// If can find the component, and it's key is the same as the templates this assumes the node is in the file it originated from?
+
+		// TRY: Another way could be to just check that the component is a template component? Maybe still not reliable. Maybe need to check file details with the file it's in.
 		// if (localComponent && localComponent.key === template.component.key) {
 
 		if (localComponent) {
@@ -47,6 +49,7 @@ export async function lookForComponent(template) {
 			component = await figma.importComponentByKeyAsync(template.component.key)
 		} catch (e) {
 			if (e.startsWith('Could not find a published component with the key')) {
+				console.log('Template: ', template)
 				figma.notify('Check component is published', { error: true })
 			}
 		}
