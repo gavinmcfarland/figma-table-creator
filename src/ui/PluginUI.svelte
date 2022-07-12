@@ -32,7 +32,7 @@
 	let tableHeight
 	let columnCountField
 	let rowCountField
-	let prevCellWidth = 120
+	let prevCellWidth
 	let prevCellHeight = 40
 
 	let welcomeSlides = [
@@ -135,6 +135,7 @@
 						rowCount: rowCount,
 						includeHeader: includeHeader,
 						cellWidth: cellWidth,
+						prevCellWidth: prevCellWidth,
 						cellAlignment: cellAlignment,
 						tableWidth: tableWidth,
 						tableHeight: tableHeight,
@@ -407,9 +408,10 @@
 				columnResizing = value.columnResizing
 				tableWidth = value.tableWidth
 				tableHeight = value.tableHeight
-				data = value.data
 				prevCellWidth = value.prevCellWidth
 				prevCellHeight = value.prevCellHeight
+				data = value.data
+
 			})
 
 
@@ -860,10 +862,10 @@
 			<Matrix {columnCount} {rowCount} grid={[8, 8]} />
 
 			<div class="text-bold SectionTitle">Cell</div>
-			<div style="display: flex; gap: var(--size-200);">
+			<div class="field-group">
 				<Field style="width: 106px" id="cellWidth" label="W" type="text" step="1" min="1" max="1000" value={cellWidth} opts={{columnCount, cellWidth, tableWidth: columnCount * cellWidth}} />
 
-				<div class="RadioButtons">
+				<div class="RadioButtons" style="margin-left: 20px !important">
 					<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
 					<RadioButton id="center" icon="text-align-middle" value="CENTER" name="cellAlignment" group={cellAlignment} />
 					<RadioButton id="max" icon="text-align-bottom" value="MAX" name="cellAlignment" group={cellAlignment} />

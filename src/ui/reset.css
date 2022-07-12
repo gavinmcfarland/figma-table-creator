@@ -18,7 +18,8 @@ html {
 	} */
 .field-group {
 	display: flex;
-	gap: var(--size-400);
+	gap: var(--size-300);
+	width: 176px;
 }
 
 .field-group > * {

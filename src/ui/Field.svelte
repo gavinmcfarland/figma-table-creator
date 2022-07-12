@@ -57,21 +57,32 @@
 		}
 
 		if (id === "tableWidth") {
+
 			if (value.toUpperCase() === 'HUG') {
 				valueStore.update((data) => {
-					data.cellWidth = data.prevCellWidth || 120
+					data.cellWidth = data.prevCellWidth
 					return data
 				})
 			}
 			else if (!isNaN(value)) {
+				// If table width is a number
 				valueStore.update((data) => {
-					data.prevCellWidth = data.cellWidth
+
+						if (data.cellWidth.toString().toUpperCase() !== 'FILL') {
+							data.prevCellWidth = data.cellWidth
+						}
+
+					// else {
+					// 	console.log("set previous width", data.cellWidth)
+					// 	data.prevCellWidth = data.cellWidth
+					// }
 					data.cellWidth = "FILL"
 					return data
 				})
 
 			}
 			else {
+				// Anything else entered, reset to orig value
 				value = origValue
 				valueStore.update((data) => {
 					data.tableWidth = value
@@ -107,8 +118,12 @@
 		}
 
 		if (id === "cellWidth") {
+
 			if (value.toUpperCase() === 'FILL') {
 				valueStore.update((data) => {
+					if (origValue.toString().toUpperCase() !== 'FILL') {
+						data.prevCellWidth = origValue
+					}
 					data.tableWidth = opts.tableWidth
 					return data
 				})

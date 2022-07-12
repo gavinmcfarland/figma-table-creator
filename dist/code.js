@@ -4009,8 +4009,6 @@ async function createTableUI() {
     // const remoteFiles = getDocumentData('remoteFiles')
     const fileId = getDocumentData_1('fileId');
     let defaultTemplate = getDefaultTemplate();
-    // FIXME: Logic for finding default template when missing needs cleaning up
-    // let defaultTemplateComponent
     if (defaultTemplate) {
         if (defaultTemplate.file.id === fileId) {
             let templateComponent = getComponentById(defaultTemplate.id);
@@ -4072,7 +4070,7 @@ async function createTableUI() {
 async function main() {
     // Set default preferences
     await updateClientStorageAsync_1('userPreferences', (data) => {
-        data = data || {
+        let defaultData = {
             columnCount: 4,
             rowCount: 4,
             cellWidth: 120,
@@ -4082,7 +4080,10 @@ async function main() {
             cellAlignment: 'MIN',
             tableWidth: 'HUG',
             tableHeight: 'HUG',
+            prevCellWidth: 120,
         };
+        // Merge user's data with deafult
+        data = Object.assign(defaultData, data || {});
         return data;
     });
     dist((plugin) => {
