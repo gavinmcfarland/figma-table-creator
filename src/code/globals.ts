@@ -409,7 +409,10 @@ export function getLocalTemplates() {
 			// KEY needs updating if template duplicated
 			templateData.component.key = node.key
 			// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
-			templateData.file.id = getDocumentData('fileId')
+			// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
+			let fileId = getDocumentData('fileId') || genUID()
+			templateData.file.id = fileId
+
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 		}

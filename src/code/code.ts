@@ -844,44 +844,46 @@ async function createTableUI() {
 
 	// FIXME: Logic for finding default template when missing needs cleaning up
 
-	let defaultTemplateComponent
+	// let defaultTemplateComponent
 
-	if (defaultTemplate?.file.id === fileId) {
-		defaultTemplateComponent = getComponentById(defaultTemplate.id)
-		if (defaultTemplateComponent === false) {
-			if (localTemplates.length > 0) {
-				defaultTemplateComponent = getComponentById(defaultTemplate.id)
-			} else if (recentFiles.length > 0) {
-				defaultTemplateComponent = await lookForComponent(remoteFiles[0].data[0])
+	if (defaultTemplate) {
+		if (defaultTemplate.file.id === fileId) {
+			let templateComponent = getComponentById(defaultTemplate.id)
+			if (!templateComponent) {
+				if (localTemplates.length > 0) {
+					defaultTemplate = localTemplates[0]
+					console.log('local', defaultTemplate)
+					setDocumentData('defaultTemplate', defaultTemplate)
+				} else if (remoteFiles.length > 0) {
+					defaultTemplate = remoteFiles[0].data[0]
+					setDocumentData('defaultTemplate', defaultTemplate)
+				}
+			}
+		} else {
+			let templateComponent = await lookForComponent(defaultTemplate)
+			if (!templateComponent) {
+				if (remoteFiles.length > 0) {
+					defaultTemplate = remoteFiles[0].data[0]
+					setDocumentData('defaultTemplate', defaultTemplate)
+				} else if (localTemplates.length > 0) {
+					defaultTemplate = localTemplates[0]
+					setDocumentData('defaultTemplate', defaultTemplate)
+				}
 			}
 		}
-	} else if (defaultTemplate) {
-		defaultTemplateComponent = await lookForComponent(defaultTemplate)
-	}
-
-	// if (defaultTemplate) {
-	// 	defaultTemplateComponent = await lookForComponent(defaultTemplate)
-	// }
-
-	// If can't find current template, but can find previous, then set it as the default
-	if (!defaultTemplateComponent && localTemplates.length > 0) {
-		defaultTemplate = localTemplates[0]
-		setDocumentData('defaultTemplate', defaultTemplate)
-	} else if (!defaultTemplateComponent && remoteFiles.length > 0) {
-		// Set first template in first file
-		defaultTemplate = remoteFiles[0].data[0]
-		setDocumentData('defaultTemplate', defaultTemplate)
-	} else if (!defaultTemplateComponent && localTemplates.length === 0) {
-		defaultTemplate = undefined
-		setDocumentData('defaultTemplate', defaultTemplate)
 	} else {
-		defaultTemplate = getPluginData(defaultTemplateComponent, 'template')
-		setDocumentData('defaultTemplate', defaultTemplate)
+		// In the event defaultTemplate not set, but there are templates
+
+		if (localTemplates.length > 0) {
+			defaultTemplate = localTemplates[0]
+			setDocumentData('defaultTemplate', defaultTemplate)
+		} else if (remoteFiles.length > 0) {
+			defaultTemplate = remoteFiles[0].data[0]
+			setDocumentData('defaultTemplate', defaultTemplate)
+		}
 	}
 
-	if (!localTemplates) {
-		// deleteRecentFile(fileId)
-	}
+	console.log({ defaultTemplate })
 
 	// console.log({ localTemplates, defaultTemplate })
 

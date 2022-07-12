@@ -1064,6 +1064,7 @@ function incrementName(name, array) {
 var convertToComponent_1 = convertToComponent;
 var convertToFrame_1 = convertToFrame;
 var copyPaste_1 = copyPaste;
+var genUID_1 = genUID;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getDocumentData_1 = getDocumentData;
 var getNodeIndex_1 = getNodeIndex;
@@ -3100,7 +3101,9 @@ function getLocalTemplates() {
             // KEY needs updating if template duplicated
             templateData.component.key = node.key;
             // Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
-            templateData.file.id = getDocumentData_1('fileId');
+            // We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
+            let fileId = getDocumentData_1('fileId') || genUID_1();
+            templateData.file.id = fileId;
             setPluginData_1(node, 'template', templateData);
             templates.push(templateData);
         }
@@ -4007,42 +4010,48 @@ async function createTableUI() {
     const fileId = getDocumentData_1('fileId');
     let defaultTemplate = getDefaultTemplate();
     // FIXME: Logic for finding default template when missing needs cleaning up
-    let defaultTemplateComponent;
-    if ((defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.file.id) === fileId) {
-        defaultTemplateComponent = getComponentById(defaultTemplate.id);
-        if (defaultTemplateComponent === false) {
-            if (localTemplates.length > 0) {
-                defaultTemplateComponent = getComponentById(defaultTemplate.id);
+    // let defaultTemplateComponent
+    if (defaultTemplate) {
+        if (defaultTemplate.file.id === fileId) {
+            let templateComponent = getComponentById(defaultTemplate.id);
+            if (!templateComponent) {
+                if (localTemplates.length > 0) {
+                    defaultTemplate = localTemplates[0];
+                    console.log('local', defaultTemplate);
+                    setDocumentData_1('defaultTemplate', defaultTemplate);
+                }
+                else if (remoteFiles.length > 0) {
+                    defaultTemplate = remoteFiles[0].data[0];
+                    setDocumentData_1('defaultTemplate', defaultTemplate);
+                }
             }
-            else if (recentFiles.length > 0) {
-                defaultTemplateComponent = await lookForComponent(remoteFiles[0].data[0]);
+        }
+        else {
+            let templateComponent = await lookForComponent(defaultTemplate);
+            if (!templateComponent) {
+                if (remoteFiles.length > 0) {
+                    defaultTemplate = remoteFiles[0].data[0];
+                    setDocumentData_1('defaultTemplate', defaultTemplate);
+                }
+                else if (localTemplates.length > 0) {
+                    defaultTemplate = localTemplates[0];
+                    setDocumentData_1('defaultTemplate', defaultTemplate);
+                }
             }
         }
     }
-    else if (defaultTemplate) {
-        defaultTemplateComponent = await lookForComponent(defaultTemplate);
-    }
-    // if (defaultTemplate) {
-    // 	defaultTemplateComponent = await lookForComponent(defaultTemplate)
-    // }
-    // If can't find current template, but can find previous, then set it as the default
-    if (!defaultTemplateComponent && localTemplates.length > 0) {
-        defaultTemplate = localTemplates[0];
-        setDocumentData_1('defaultTemplate', defaultTemplate);
-    }
-    else if (!defaultTemplateComponent && remoteFiles.length > 0) {
-        // Set first template in first file
-        defaultTemplate = remoteFiles[0].data[0];
-        setDocumentData_1('defaultTemplate', defaultTemplate);
-    }
-    else if (!defaultTemplateComponent && localTemplates.length === 0) {
-        defaultTemplate = undefined;
-        setDocumentData_1('defaultTemplate', defaultTemplate);
-    }
     else {
-        defaultTemplate = getPluginData_1(defaultTemplateComponent, 'template');
-        setDocumentData_1('defaultTemplate', defaultTemplate);
+        // In the event defaultTemplate not set, but there are templates
+        if (localTemplates.length > 0) {
+            defaultTemplate = localTemplates[0];
+            setDocumentData_1('defaultTemplate', defaultTemplate);
+        }
+        else if (remoteFiles.length > 0) {
+            defaultTemplate = remoteFiles[0].data[0];
+            setDocumentData_1('defaultTemplate', defaultTemplate);
+        }
     }
+    console.log({ defaultTemplate });
     // console.log({ localTemplates, defaultTemplate })
     figma.showUI(__uiFiles__.main, {
         width: 240,
