@@ -839,26 +839,44 @@ async function createTableUI() {
 
 	// const remoteFiles = getDocumentData('remoteFiles')
 	const fileId = getDocumentData('fileId')
+
 	let defaultTemplate = getDefaultTemplate()
 
-	// Check for defaultTemplate
-	let previousTemplate = getDocumentData('previousTemplate')
-	let previousTemplateComponent = getComponentById(previousTemplate?.id)
+	// FIXME: Logic for finding default template when missing needs cleaning up
 
 	let defaultTemplateComponent
 
-	if (defaultTemplate) {
+	if (defaultTemplate?.file.id === fileId) {
+		defaultTemplateComponent = getComponentById(defaultTemplate.id)
+		if (defaultTemplateComponent === false) {
+			if (localTemplates.length > 0) {
+				defaultTemplateComponent = getComponentById(defaultTemplate.id)
+			} else if (recentFiles.length > 0) {
+				defaultTemplateComponent = await lookForComponent(remoteFiles[0].data[0])
+			}
+		}
+	} else if (defaultTemplate) {
 		defaultTemplateComponent = await lookForComponent(defaultTemplate)
 	}
+
+	// if (defaultTemplate) {
+	// 	defaultTemplateComponent = await lookForComponent(defaultTemplate)
+	// }
 
 	// If can't find current template, but can find previous, then set it as the default
 	if (!defaultTemplateComponent && localTemplates.length > 0) {
 		defaultTemplate = localTemplates[0]
-	} else if (!defaultTemplateComponent && recentFiles.length > 0) {
+		setDocumentData('defaultTemplate', defaultTemplate)
+	} else if (!defaultTemplateComponent && remoteFiles.length > 0) {
 		// Set first template in first file
-		defaultTemplate = recentFiles[0].data[0]
+		defaultTemplate = remoteFiles[0].data[0]
+		setDocumentData('defaultTemplate', defaultTemplate)
 	} else if (!defaultTemplateComponent && localTemplates.length === 0) {
 		defaultTemplate = undefined
+		setDocumentData('defaultTemplate', defaultTemplate)
+	} else {
+		defaultTemplate = getPluginData(defaultTemplateComponent, 'template')
+		setDocumentData('defaultTemplate', defaultTemplate)
 	}
 
 	if (!localTemplates) {

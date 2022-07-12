@@ -123,7 +123,7 @@
 	// 	}
 	// }
 
-	function createTable() {
+	function createTable(data) {
 		parent.postMessage(
 			{
 				pluginMessage: {
@@ -139,6 +139,7 @@
 						tableWidth: tableWidth,
 						tableHeight: tableHeight,
 						cellHeight: cellHeight,
+						template: data.defaultTemplate
 					}
 				},
 			},
@@ -286,15 +287,21 @@
 		// file = file || data.defaultTemplate.file
 
 		if (!data && !file) {
-			selectedFile = data.defaultTemplate.file
+			selectedFile = data?.defaultTemplate?.file
 		}
 		else {
 			if (file) {
 			selectedFile = file
 		}
 		else {
-			if (data.defaultTemplate?.file.id === data.fileId) {
-				selectedFile = data.defaultTemplate.file
+
+			let index = data.localTemplates.findIndex((template) => template.id === data?.defaultTemplate?.id)
+
+
+			if (index !== -1) {
+			// if (data.defaultTemplate?.file.id === data.fileId) {
+				selectedFile = {}
+				selectedFile.id = data.fileId
 				selectedFile.name = "Local templates"
 
 				valueStore.update((data) => {
@@ -304,7 +311,7 @@
 			}
 			else {
 				for (var i in data.remoteFiles) {
-					if (data.remoteFiles[i].id === data.defaultTemplate.file.id) {
+					if (data.remoteFiles[i].id === data?.defaultTemplate?.file.id) {
 						// data.remoteFiles[i].selected = true
 						selectedFile = data.remoteFiles[i]
 
@@ -864,7 +871,9 @@
 			</div>
 
 			<div class="BottomBar">
-				<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
+				<span on:click={() => {
+					createTable(data)
+				}}><Button id="create-table">Create Table</Button></span>
 			</div>
 		<!-- </form> -->
 	</div>
@@ -1348,7 +1357,7 @@
 		top: 3px;
 		right: -2px;
 		z-index: 100;
-		width: 160px;
+		width: 180px;
 		background: #222222;
 		box-shadow: 0px 2px 7px rgba(0, 0, 0, 0.15), 0px 5px 17px rgba(0, 0, 0, 0.2);
 		border-radius: 2px;

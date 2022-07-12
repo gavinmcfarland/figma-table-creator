@@ -9,6 +9,7 @@ import {
 	getClientStorageAsync,
 	getDocumentData,
 	setDocumentData,
+	genUID,
 } from '@fignite/helpers'
 import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle } from './helpers'
 import { updateClientStorageAsync } from './old-helpers'
@@ -407,7 +408,7 @@ export function getLocalTemplates() {
 			templateData.component.id = node.id
 			// KEY needs updating if template duplicated
 			templateData.component.key = node.key
-			// Update file id incase component moved to another file
+			// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
 			templateData.file.id = getDocumentData('fileId')
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
