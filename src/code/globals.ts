@@ -37,6 +37,17 @@ export async function updatePluginVersion(semver) {
 	})
 }
 
+function extractValues(objectArray) {
+	return Object.entries(objectArray).reduce(function (acc, obj) {
+		let [key, value] = obj
+		let thing
+		// if (value.type !== 'VARIANT') {
+		thing = { [key]: value.value }
+		// }
+		return { ...acc, ...thing }
+	}, {})
+}
+
 export function createTable(templateComponent, settings, type?) {
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
@@ -170,6 +181,12 @@ export function createTable(templateComponent, settings, type?) {
 
 			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
 
+			// // Set component properties on instances
+			// if (part.td.componentProperties) {
+			// 	console.log(extractValues(part.td.componentProperties))
+			// 	duplicateCell.setProperties(extractValues(part.td.componentProperties))
+			// }
+
 			firstRow.appendChild(duplicateCell)
 
 			// We want to always force the cells to stretch to height of row regardless of users settings
@@ -205,6 +222,9 @@ export function createTable(templateComponent, settings, type?) {
 					cell.mainComponent = part.td.mainComponent
 					setPluginData(cell, 'elementSemantics', { is: 'td' })
 
+					// // Set component properties on instances. Doesn't need to be set when using column resizing?
+					// cell.setProperties(extractValues(part.td.componentProperties))
+
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
 				}
@@ -221,6 +241,12 @@ export function createTable(templateComponent, settings, type?) {
 
 				child.swapComponent(part.th.mainComponent)
 				setPluginData(child, 'elementSemantics', { is: 'th' })
+
+				// // Set component properties on instances
+				// if (part.th.componentProperties) {
+				// 	child.setProperties(extractValues(part.th.componentProperties))
+				// }
+
 				// child.mainComponent = part.th.mainComponent
 			}
 		}
