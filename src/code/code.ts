@@ -522,6 +522,8 @@ async function toggleColumnResizing(selection) {
 	// FIXME: Check for text layer before setting characters
 	// TODO: Swap instance to preverve current instance
 	// FIXME: Something weird happening with resizing of cell/text
+	// FIXME: check width fill, fixed, fill when applied
+	// FIXME: re-apply cell alignement when applied
 	let result: any = false
 	for (let i = 0; i < selection.length; i++) {
 		var oldTable = selection[i]

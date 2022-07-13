@@ -478,11 +478,11 @@ export async function updateTables(template) {
 
 			// Don't apply if an instance
 			if (table.type !== 'INSTANCE') {
-				copyPasteStyle(templateComponent, table, { exclude: ['name'] })
+				copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] })
 
 				table.findAll((node) => {
 					if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
-						copyPasteStyle(rowTemplate, node, { exclude: ['name'] })
+						copyPasteStyle(rowTemplate, node, { exclude: ['name', 'layoutMode'] })
 					}
 				})
 			}

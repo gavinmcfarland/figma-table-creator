@@ -3151,11 +3151,11 @@ async function updateTables(template) {
             var table = tables[b];
             // Don't apply if an instance
             if (table.type !== 'INSTANCE') {
-                copyPasteStyle(templateComponent, table, { exclude: ['name'] });
+                copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] });
                 table.findAll((node) => {
                     var _a;
                     if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
-                        copyPasteStyle(rowTemplate, node, { exclude: ['name'] });
+                        copyPasteStyle(rowTemplate, node, { exclude: ['name', 'layoutMode'] });
                     }
                 });
             }
@@ -3747,6 +3747,8 @@ async function toggleColumnResizing(selection) {
     // FIXME: Check for text layer before setting characters
     // TODO: Swap instance to preverve current instance
     // FIXME: Something weird happening with resizing of cell/text
+    // FIXME: check width fill, fixed, fill when applied
+    // FIXME: re-apply cell alignement when applied
     let result = false;
     for (let i = 0; i < selection.length; i++) {
         var oldTable = selection[i];
