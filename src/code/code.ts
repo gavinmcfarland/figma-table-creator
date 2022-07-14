@@ -519,11 +519,12 @@ function detachTable(selection) {
 }
 function spawnTable() {}
 async function toggleColumnResizing(selection) {
-	// FIXME: Check for text layer before setting characters
-	// TODO: Swap instance to preverve current instance
 	// FIXME: Something weird happening with resizing of cell/text
 	// FIXME: check width fill, fixed, fill when applied
-	// FIXME: re-apply cell alignement when applied
+
+	let newSelection = []
+	let discardBucket = []
+	let firstTableColumnResizing
 	let result: any = false
 	for (let i = 0; i < selection.length; i++) {
 		var oldTable = selection[i]
@@ -531,12 +532,21 @@ async function toggleColumnResizing(selection) {
 		if (oldTable.type !== 'COMPONENT') {
 			let settings = getTableSettings(oldTable)
 
-			if (settings.columnResizing) {
-				detachTable(selection)
+			if (i === 0) {
+				firstTableColumnResizing = settings.columnResizing
+			}
+
+			if (firstTableColumnResizing) {
+				let [newTable] = detachTable([oldTable])
 				result = 'removed'
+				newSelection.push(newTable)
 			} else {
-				result = 'added'
-				settings.columnResizing = !settings.columnResizing
+				result = 'applied'
+				settings.columnResizing = !firstTableColumnResizing
+
+				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
+				let oldTablePrimaryAxisSizingMode = oldTable.primaryAxisSizingMode
+				oldTable.primaryAxisSizingMode = 'FIXED'
 
 				let newTable = await createTable(oldTable, settings)
 
@@ -575,11 +585,20 @@ async function toggleColumnResizing(selection) {
 					}
 				}
 
-				figma.currentPage.selection = [newTable]
+				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
+				newTable.primaryAxisSizingMode = oldTablePrimaryAxisSizingMode
 
-				oldTable.remove()
+				newSelection.push(newTable)
+
+				discardBucket.push(oldTable)
 			}
 		}
+	}
+
+	figma.currentPage.selection = newSelection
+
+	for (let i = 0; i < discardBucket.length; i++) {
+		discardBucket[i].remove()
 	}
 
 	return result
@@ -592,6 +611,9 @@ function switchColumnsOrRows(selection) {
 
 	// TODO: Fix localise component to take account of rows or columns
 	// FIXME: Change cell to
+
+	let settings
+	let firstTableLayoutMode
 
 	for (let i = 0; i < selection.length; i++) {
 		var table = selection[i]
@@ -606,8 +628,19 @@ function switchColumnsOrRows(selection) {
 					firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 				}
 				// else {
-				let settings = getTableSettings(table)
-				vectorType = settings.usingColumnsOrRows
+
+				settings = getTableSettings(table)
+
+				if (i === 0) {
+					vectorType = settings.usingColumnsOrRows
+
+					if (vectorType === 'rows') {
+						firstTableLayoutMode = 'VERTICAL'
+					}
+					if (vectorType === 'columns') {
+						firstTableLayoutMode = 'HORIZONTAL'
+					}
+				}
 
 				// let parts: any = findTemplateParts(table)
 
@@ -797,7 +830,12 @@ function switchColumnsOrRows(selection) {
 					}
 				}
 
-				iterateChildren()
+				if (vectorType === table.layoutMode) {
+				}
+
+				if (firstTableLayoutMode === table.layoutMode) {
+					iterateChildren()
+				}
 			}
 		} else {
 			figma.closePlugin('Please select a table')
@@ -850,7 +888,6 @@ async function createTableUI() {
 			if (!templateComponent) {
 				if (localTemplates.length > 0) {
 					defaultTemplate = localTemplates[0]
-					console.log('local', defaultTemplate)
 					setDocumentData('defaultTemplate', defaultTemplate)
 				} else if (remoteFiles.length > 0) {
 					defaultTemplate = remoteFiles[0].data[0]
@@ -880,8 +917,6 @@ async function createTableUI() {
 			setDocumentData('defaultTemplate', defaultTemplate)
 		}
 	}
-
-	console.log({ defaultTemplate })
 
 	// console.log({ localTemplates, defaultTemplate })
 

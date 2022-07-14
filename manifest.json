@@ -29,16 +29,20 @@
         "separator": true
     },
     {
-        "name": "Switch Axis",
+        "name": "Switch Axes",
         "command": "switchColumnsOrRows"
+    },
+    {
+        "name": "Column Resizing",
+        "command": "toggleColumnResizing"
     }
   ],
   "relaunchButtons": [
 
         {"command": "createTable", "name": "Create Table"},
         {"command": "updateTables", "name": "Refresh Tables"},
-        {"command": "switchColumnsOrRows", "name": "Switch Axis"},
-        {"command": "toggleColumnResizing", "name": "Column Resizing"},
+        {"command": "switchColumnsOrRows", "name": "Switch Axes",  "multipleSelection": true},
+        {"command": "toggleColumnResizing", "name": "Column Resizing",  "multipleSelection": true},
 
         {"command": "detachTable", "name": "Detach Table"},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},

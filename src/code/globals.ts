@@ -16,7 +16,7 @@ import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
-	toggleColumnResizing: 'Turn column resizing on or off',
+	toggleColumnResizing: 'Apply or remove column resizing',
 	switchColumnsOrRows: 'Switch between using columns or rows',
 	updateTables: 'Refresh tables already created',
 }
@@ -73,6 +73,8 @@ export function createTable(templateComponent, settings, type?) {
 		tableInstance = convertToFrame(templateComponent.clone())
 
 		var table
+
+		tableInstance.primaryAxisSizingMode = 'FIXED'
 
 		if (part.table.id === templateComponent.id) {
 			if (type === 'COMPONENT') {
@@ -149,7 +151,7 @@ export function createTable(templateComponent, settings, type?) {
 			firstRow.layoutGrow = 1
 		}
 
-		// MANDATORY PROP
+		// MANDATORY PROP as can't guarentee user will or figma will honour this
 		firstRow.layoutAlign = 'STRETCH'
 
 		// Create columns in first row
@@ -522,6 +524,7 @@ export function getTableSettings(tableNode) {
 	let usingColumnsOrRows = 'rows'
 	let tableWidth
 	let tableHeight
+	let cellAlignment
 
 	for (let i = 0; i < tableNode.children.length; i++) {
 		var node = tableNode.children[i]
@@ -534,6 +537,8 @@ export function getTableSettings(tableNode) {
 	let firstCell = firstRow.findOne(
 		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
 	)
+
+	cellAlignment = firstCell.primaryAxisAlignItems
 
 	if (firstRow.parent.layoutMode === 'VERTICAL') {
 		usingColumnsOrRows = 'rows'
@@ -570,7 +575,7 @@ export function getTableSettings(tableNode) {
 		rowCount,
 		columnResizing: firstRow.type === 'COMPONENT' ? true : false,
 		includeHeader: getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false,
-		cellAlignment: 'MIN',
+		cellAlignment,
 		usingColumnsOrRows,
 		cellWidth: firstCell.width,
 	}
