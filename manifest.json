@@ -15,17 +15,32 @@
       "command": "createTable",
       "parameters": [
         {
+            "name": "Template",
+            "key": "template"
+        },
+        {
           "name": "Matrix",
           "key": "matrix",
-          "description": "Number of columnss and rows, eg 4x4"
+          "description": "Number columns x rows, eg 4x4"
         },
         {
             "name": "Size",
-            "key": "size"
+            "key": "size",
+            "description": "Size width x height, eg 500xHUG"
         },
         {
-            "name": "Template",
-            "key": "template",
+            "name": "Cell",
+            "key": "cell",
+            "optional": true
+        },
+        {
+            "name": "Alignement",
+            "key": "alignment",
+            "optional": true
+        },
+        {
+            "name": "Header",
+            "key": "header",
             "optional": true
         }
       ],

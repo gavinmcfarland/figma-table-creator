@@ -1,6 +1,14 @@
 import { getPageNode, getPluginData, copyPaste } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
+export function convertToNumber(data) {
+	if (Number(data)) {
+		return Number(data)
+	} else {
+		return data
+	}
+}
+
 export function unique(array, value) {
 	return array.length === 0 || !array.some((item) => item.id === value)
 }

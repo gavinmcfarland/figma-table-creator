@@ -181,11 +181,13 @@ export function createTable(templateComponent, settings, type?) {
 
 			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
 
-			// // Set component properties on instances
-			// if (part.td.componentProperties) {
-			// 	console.log(extractValues(part.td.componentProperties))
-			// 	duplicateCell.setProperties(extractValues(part.td.componentProperties))
-			// }
+			console.log('alignment', settings.cellAlignment)
+
+			// Set component properties on instances
+			if (part.td.componentProperties) {
+				console.log(extractValues(part.td.componentProperties))
+				duplicateCell.setProperties(extractValues(part.td.componentProperties))
+			}
 
 			firstRow.appendChild(duplicateCell)
 
@@ -222,11 +224,12 @@ export function createTable(templateComponent, settings, type?) {
 					cell.mainComponent = part.td.mainComponent
 					setPluginData(cell, 'elementSemantics', { is: 'td' })
 
-					// // Set component properties on instances. Doesn't need to be set when using column resizing?
-					// cell.setProperties(extractValues(part.td.componentProperties))
+					// Set component properties on instances
+					cell.setProperties(extractValues(part.td.componentProperties))
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
+					cell.primaryAxisAlignItems = settings.cellAlignment
 				}
 			}
 
@@ -242,10 +245,10 @@ export function createTable(templateComponent, settings, type?) {
 				child.swapComponent(part.th.mainComponent)
 				setPluginData(child, 'elementSemantics', { is: 'th' })
 
-				// // Set component properties on instances
-				// if (part.th.componentProperties) {
-				// 	child.setProperties(extractValues(part.th.componentProperties))
-				// }
+				// Set component properties on instances
+				if (part.th.componentProperties) {
+					child.setProperties(extractValues(part.th.componentProperties))
+				}
 
 				// child.mainComponent = part.th.mainComponent
 			}

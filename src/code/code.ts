@@ -56,13 +56,15 @@ import {
 	convertToNumber,
 	getLocalTemplateWithoutUpdating,
 } from './globals'
-import { swapInstance } from './helpers'
+import { swapInstance, convertToNumber } from './helpers'
 
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 // FIXME: Column resizing doesn't work on table without headers
 // FIXME: When turning column resizing off component does not resize with table DONE
 // TODO: Consider removing number when creating table
+// TODO: When template renamed, default data no updated
+// TODO: Should default template be stored in usersPreferences? different for each file
 
 console.clear()
 
@@ -943,10 +945,10 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(opts) {
+async function createTableInstance(opts, template) {
 	// TODO: Modify to support custom template being passed in
 	const remoteFiles = await getRemoteFilesAsync()
-	const templateComponent = await lookForComponent(getDocumentData('defaultTemplate'))
+	const templateComponent = await lookForComponent(template || getDocumentData('defaultTemplate'))
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
@@ -990,6 +992,7 @@ async function main() {
 			columnCount: 4,
 			rowCount: 4,
 			cellWidth: 120,
+			cellHeight: 'FILL',
 			remember: true,
 			includeHeader: true,
 			columnResizing: true,
@@ -997,6 +1000,11 @@ async function main() {
 			tableWidth: 'HUG',
 			tableHeight: 'HUG',
 			prevCellWidth: 120,
+		}
+
+		// It might accidentally be defined from previous version of plugin
+		if (typeof data.cellHeight === 'undefined') {
+			data.cellHeight = 'FILL'
 		}
 
 		// Merge user's data with deafult
@@ -1124,8 +1132,24 @@ async function main() {
 		plugin.command('createTable', async ({ ui }) => {
 			let userPreferences = await getClientStorageAsync('userPreferences')
 			let localTemplates = getLocalTemplateWithoutUpdating()
+			let remoteFiles = getDocumentData('remoteFiles')
+			let remoteTemplates = []
+			let defaultTemplate = getDocumentData('defaultTemplate')
 
-			console.log(';pc', localTemplates)
+			for (let i = 0; i < remoteFiles.length; i++) {
+				let file = remoteFiles[i]
+
+				for (let x = 0; x < file.data.length; x++) {
+					let template = file.data[x]
+					remoteTemplates.push({
+						name: template.name,
+						data: template,
+						icon: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M1.92228 7.04535L7.42826 1.53783L6.72106 0.830822L1.21508 6.33834C0.678207 6.87536 0.678299 7.74591 1.21529 8.28282L6.1029 13.1697C6.63989 13.7066 7.51044 13.7066 8.04738 13.1696L13.5528 7.66416L12.8457 6.95706L7.34027 12.4625C7.19383 12.609 6.9564 12.609 6.80995 12.4625L1.92234 7.57566C1.77589 7.42923 1.77586 7.19181 1.92228 7.04535ZM11.8885 1.99731H8.82605V2.99731H10.6814L7.16 6.51875L7.8671 7.22586L11.3885 3.70441V5.55981H12.3885V2.49731V1.99731H11.8885Z" fill="black" fill-opacity="0.5"/>
+						</svg>`,
+					})
+				}
+			}
 
 			figma.parameters.on('input', ({ query, result, key }) => {
 				// console.log('query', query, key, name)
@@ -1186,60 +1210,103 @@ async function main() {
 
 					result.setSuggestions(suggestions)
 				}
-				// if (key === 'tableWidth') {
-				// 	let suggestions = []
-				// 	if (query) {
-				// 		// result.setSuggestions([`${query}`])
-				// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
-				// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
-				// 	} else {
-				// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
-				// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
-				// 	}
-
-				// 	result.setSuggestions(suggestions)
-				// }
-				// if (key === 'tableHeight') {
-				// 	let suggestions = []
-				// 	if (query) {
-				// 		// result.setSuggestions([`${query}`])
-				// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
-				// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
-				// 	} else {
-				// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
-				// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
-				// 	}
-				// 	result.setSuggestions(suggestions)
-				// }
 
 				if (key === 'template') {
 					// TODO: Add remote templates if they exist
 					// TODO: Add icon for remote templates
 					// TODO: reorder so that defaultTemplate is first in array
-					let matches = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
-					result.setSuggestions(matches)
+					localTemplates = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+					let suggestions = [...localTemplates, ...remoteTemplates]
+
+					// Reorder array so that default template is at the top
+					let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key)
+					let element = suggestions.splice(indexOfDefaultTemplate, 1)[0]
+					// element.icon = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+					// <path fill-rule="evenodd" clip-rule="evenodd" d="M11 6C11 8.76142 8.76142 11 6 11C3.23858 11 1 8.76142 1 6C1 3.23858 3.23858 1 6 1C8.76142 1 11 3.23858 11 6ZM12 6C12 9.31371 9.31371 12 6 12C2.68629 12 0 9.31371 0 6C0 2.68629 2.68629 0 6 0C9.31371 0 12 2.68629 12 6ZM6.5 2.5V2H5.5V2.5V6C5.5 6.18939 5.607 6.36252 5.77639 6.44721L7.77639 7.44721L8.22361 7.67082L8.67082 6.77639L8.22361 6.55279L6.5 5.69098V2.5Z" fill="black" fill-opacity="0.5"/>
+					// </svg>`
+					suggestions.splice(0, 0, element)
+
+					result.setSuggestions(suggestions)
+				}
+
+				if (key === 'cell') {
+					let suggestions = []
+					if (query) {
+						let [width, height] = query.split('x')
+						let widthx
+						let heightx
+
+						if (width) {
+							widthx = width
+						} else {
+							widthx = userPreferences.cellWidth
+						}
+
+						if (height) {
+							heightx = height
+						} else {
+							heightx = userPreferences.cellHeight
+						}
+						suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
+					} else {
+						console.log('cell sugge')
+						suggestions.push({
+							name: `${userPreferences.cellWidth.toString().toUpperCase()} x ${userPreferences.cellHeight.toString().toUpperCase()}`,
+						})
+					}
+
+					result.setSuggestions(suggestions)
+				}
+
+				if (key === 'alignment') {
+					result.setSuggestions(
+						[
+							{ name: 'Top', data: 'MIN' },
+							{ name: 'Center', data: 'STRETCH' },
+							{ name: 'Bottom', data: 'MAX' },
+						].filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+					)
+				}
+
+				if (key === 'header') {
+					let first
+					let second
+
+					if (userPreferences.includeHeader) {
+						first = { name: 'True', data: true }
+						second = { name: 'False', data: false }
+					} else {
+						first = { name: 'False', data: false }
+						second = { name: 'True', data: true }
+					}
+					result.setSuggestions([first, second].filter((s) => s.name.toUpperCase().includes(query.toUpperCase())))
 				}
 			})
 
-			figma.on('run', ({ parameters }) => {
+			figma.on('run', async ({ parameters }) => {
 				// TODO: Need to update localTemplates on file and then cross reference that with ones from paramters so they are up to date
-				let settings = {
-					cellAlignment: 'CENTER',
-					cellHeight: undefined,
-					cellWidth: 120,
-					columnCount: 2,
-					columnResizing: false,
-					includeHeader: true,
-					prevCellWidth: 120,
-					remember: true,
-					rowCount: 2,
-					tableHeight: 500,
-					tableWidth: 600,
-				}
+				// let settings = {
+				// 	cellAlignment: 'CENTER',
+				// 	cellHeight: undefined,
+				// 	cellWidth: 120,
+				// 	columnCount: 2,
+				// 	columnResizing: false,
+				// 	includeHeader: true,
+				// 	prevCellWidth: 120,
+				// 	remember: true,
+				// 	rowCount: 2,
+				// 	tableHeight: 500,
+				// 	tableWidth: 600,
+				// }
+
+				let settings = userPreferences
+				let template
 
 				if (parameters) {
 					if (parameters.matrix) {
 						let [cols, rows] = parameters.matrix.split('x')
+						cols = convertToNumber(cols.trim())
+						rows = convertToNumber(rows.trim())
 						settings.columnCount = cols
 						settings.rowCount = rows
 					}
@@ -1247,15 +1314,42 @@ async function main() {
 					if (parameters.size) {
 						// TODO: pass correct cell width when hug used
 						let [width, height] = parameters.size.split('x')
+						width = convertToNumber(width.trim())
+						height = convertToNumber(height.trim())
 						settings.tableWidth = width
 						settings.tableHeight = height
 
-						if (width.trim() == 'HUG') {
-							// settings.cellWidth = userPreferences.cellWidth
+						if (width === 'HUG') {
+							settings.cellWidth = 120
 						}
 					}
 
-					createTableInstance({ data: settings })
+					if (parameters.template) {
+						template = parameters.template
+					}
+
+					if (parameters.cell) {
+						let [width, height] = parameters.cell.split('x')
+						width = convertToNumber(width.trim())
+						height = convertToNumber(height.trim())
+
+						settings.cellWidth = width
+						settings.cellHeight = height
+					}
+
+					if (parameters.alignment) {
+						settings.cellAlignment = parameters.alignment
+					}
+
+					if (parameters.header) {
+						settings.includeHeader = parameters.header
+					}
+
+					console.log('settings', settings)
+
+					createTableInstance({ data: settings }, template)
+
+					setClientStorageAsync('userPreferences', settings)
 				} else {
 					createTableUI()
 				}
