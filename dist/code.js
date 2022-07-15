@@ -3020,10 +3020,8 @@ function createTable(templateComponent, settings, type) {
             }
             setPluginData_1(duplicateCell, 'elementSemantics', { is: 'td' });
             duplicateCell.primaryAxisAlignItems = settings.cellAlignment;
-            console.log('alignment', settings.cellAlignment);
             // Set component properties on instances
             if (part.td.componentProperties) {
-                console.log(extractValues(part.td.componentProperties));
                 duplicateCell.setProperties(extractValues(part.td.componentProperties));
             }
             firstRow.appendChild(duplicateCell);
@@ -4161,7 +4159,7 @@ async function createTableInstance(opts, template) {
             opts.data.cellWidth = convertToNumber(opts.data.cellWidth);
         }
         if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
-            opts.data.cellHeight = opts.data.tableHeight.toUpperCase();
+            opts.data.cellHeight = opts.data.cellHeight.toUpperCase();
             opts.data.cellHeight = convertToNumber(opts.data.cellHeight);
         }
         let tableInstance = createTable(templateComponent, opts.data);
@@ -4291,6 +4289,19 @@ async function main() {
         }
         plugin.command('createTable', async ({ ui }) => {
             let userPreferences = await getClientStorageAsync_1('userPreferences');
+            // let userPreferences = {
+            // 	cellAlignment: 'CENTER',
+            // 	cellHeight: undefined,
+            // 	cellWidth: 120,
+            // 	columnCount: 2,
+            // 	columnResizing: false,
+            // 	includeHeader: true,
+            // 	prevCellWidth: 120,
+            // 	remember: true,
+            // 	rowCount: 2,
+            // 	tableHeight: 500,
+            // 	tableWidth: 600,
+            // }
             let localTemplates = getLocalTemplateWithoutUpdating();
             let remoteFiles = getDocumentData_1('remoteFiles');
             let remoteTemplates = [];
@@ -4309,8 +4320,6 @@ async function main() {
                 }
             }
             figma.parameters.on('input', ({ query, result, key }) => {
-                // console.log('query', query, key, name)
-                // result.setSuggestions()
                 if (key === 'matrix') {
                     let suggestions = [];
                     if (query) {
@@ -4374,9 +4383,6 @@ async function main() {
                     // Reorder array so that default template is at the top
                     let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key);
                     let element = suggestions.splice(indexOfDefaultTemplate, 1)[0];
-                    // element.icon = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    // <path fill-rule="evenodd" clip-rule="evenodd" d="M11 6C11 8.76142 8.76142 11 6 11C3.23858 11 1 8.76142 1 6C1 3.23858 3.23858 1 6 1C8.76142 1 11 3.23858 11 6ZM12 6C12 9.31371 9.31371 12 6 12C2.68629 12 0 9.31371 0 6C0 2.68629 2.68629 0 6 0C9.31371 0 12 2.68629 12 6ZM6.5 2.5V2H5.5V2.5V6C5.5 6.18939 5.607 6.36252 5.77639 6.44721L7.77639 7.44721L8.22361 7.67082L8.67082 6.77639L8.22361 6.55279L6.5 5.69098V2.5Z" fill="black" fill-opacity="0.5"/>
-                    // </svg>`
                     suggestions.splice(0, 0, element);
                     result.setSuggestions(suggestions);
                 }
@@ -4401,7 +4407,6 @@ async function main() {
                         suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` });
                     }
                     else {
-                        console.log('cell sugge');
                         suggestions.push({
                             name: `${userPreferences.cellWidth.toString().toUpperCase()} x ${userPreferences.cellHeight.toString().toUpperCase()}`,
                         });
@@ -4409,11 +4414,16 @@ async function main() {
                     result.setSuggestions(suggestions);
                 }
                 if (key === 'alignment') {
-                    result.setSuggestions([
+                    let suggestions = [
                         { name: 'Top', data: 'MIN' },
-                        { name: 'Center', data: 'STRETCH' },
+                        { name: 'Center', data: 'CENTER' },
                         { name: 'Bottom', data: 'MAX' },
-                    ].filter((s) => s.name.toUpperCase().includes(query.toUpperCase())));
+                    ];
+                    // Reorder array so that default template is at the top
+                    let indexFrom = suggestions.findIndex((item) => item.data === userPreferences.cellAlignment);
+                    let element = suggestions.splice(indexFrom, 1)[0];
+                    suggestions.splice(0, 0, element);
+                    result.setSuggestions(suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase())));
                 }
                 if (key === 'header') {
                     let first;
@@ -4478,10 +4488,9 @@ async function main() {
                     if (parameters.alignment) {
                         settings.cellAlignment = parameters.alignment;
                     }
-                    if (parameters.header) {
+                    if (parameters.header === false || parameters.header === true) {
                         settings.includeHeader = parameters.header;
                     }
-                    console.log('settings', settings);
                     createTableInstance({ data: settings }, template);
                     setClientStorageAsync_1('userPreferences', settings);
                 }

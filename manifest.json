@@ -14,16 +14,17 @@
       "name": "Create Table",
       "command": "createTable",
       "parameters": [
+
         {
             "name": "Template",
             "key": "template"
         },
         {
-          "name": "Matrix",
-          "key": "matrix",
-          "description": "Number columns x rows, eg 4x4"
-        },
-        {
+            "name": "Matrix",
+            "key": "matrix",
+            "description": "Number columns x rows, eg 4x4"
+          },
+          {
             "name": "Size",
             "key": "size",
             "description": "Size width x height, eg 500xHUG"

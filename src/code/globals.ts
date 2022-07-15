@@ -181,11 +181,8 @@ export function createTable(templateComponent, settings, type?) {
 
 			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
 
-			console.log('alignment', settings.cellAlignment)
-
 			// Set component properties on instances
 			if (part.td.componentProperties) {
-				console.log(extractValues(part.td.componentProperties))
 				duplicateCell.setProperties(extractValues(part.td.componentProperties))
 			}
 
