@@ -74,8 +74,6 @@ export function createTable(templateComponent, settings, type?) {
 
 		var table
 
-		tableInstance.primaryAxisSizingMode = 'FIXED'
-
 		if (part.table.id === templateComponent.id) {
 			if (type === 'COMPONENT') {
 				table = convertToComponent(tableInstance)
@@ -257,10 +255,10 @@ export function createTable(templateComponent, settings, type?) {
 
 		// Set width of table
 
-		if (settings.tableWidth && settings.tableWidth !== 'HUG') {
+		if (settings.tableWidth && !(typeof settings.tableWidth === 'string')) {
 			tableInstance.resize(convertToNumber(settings.tableWidth), tableInstance.height)
 		}
-		if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+		if (settings.tableHeight && !(typeof settings.tableHeight === 'string')) {
 			tableInstance.resize(tableInstance.width, convertToNumber(settings.tableHeight))
 		}
 
@@ -420,6 +418,26 @@ export function Template(node) {
 // function getLocalTemplateComponents() {
 // 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
 // }
+export function getLocalTemplateWithoutUpdating() {
+	figma.skipInvisibleInstanceChildren = true
+	var templates = []
+	var components = figma.root.findAllWithCriteria({
+		types: ['COMPONENT'],
+	})
+	for (let i = 0; i < components.length; i++) {
+		let node = components[i]
+		var templateData = getPluginData(node, 'template')
+		if (templateData && node.type === 'COMPONENT') {
+			let obj = {}
+			obj.name = templateData.name
+			obj.data = templateData
+			templates.push(obj)
+		}
+	}
+
+	return templates
+}
+
 export function getLocalTemplates() {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []

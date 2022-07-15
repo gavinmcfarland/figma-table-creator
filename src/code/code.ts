@@ -54,6 +54,7 @@ import {
 	setPreviousTemplate,
 	getTableSettings,
 	convertToNumber,
+	getLocalTemplateWithoutUpdating,
 } from './globals'
 import { swapInstance } from './helpers'
 
@@ -942,6 +943,46 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
+async function createTableInstance(opts) {
+	// TODO: Modify to support custom template being passed in
+	const remoteFiles = await getRemoteFilesAsync()
+	const templateComponent = await lookForComponent(getDocumentData('defaultTemplate'))
+	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
+
+	if (templateComponent) {
+		if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
+			opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
+			opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
+		}
+
+		if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
+			opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
+			opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
+		}
+
+		if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
+			opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
+			opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
+		}
+
+		if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
+			opts.data.cellHeight = opts.data.tableHeight.toUpperCase()
+			opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
+		}
+
+		let tableInstance = createTable(templateComponent, opts.data)
+
+		if (tableInstance) {
+			positionInCenterOfViewport(tableInstance)
+			figma.currentPage.selection = [tableInstance]
+
+			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, opts.data)).then(() => {
+				figma.closePlugin('Table created')
+			})
+		}
+	}
+}
+
 async function main() {
 	// Set default preferences
 	await updateClientStorageAsync('userPreferences', (data) => {
@@ -1081,7 +1122,148 @@ async function main() {
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
-			createTableUI()
+			let userPreferences = await getClientStorageAsync('userPreferences')
+			let localTemplates = getLocalTemplateWithoutUpdating()
+
+			console.log(';pc', localTemplates)
+
+			figma.parameters.on('input', ({ query, result, key }) => {
+				// console.log('query', query, key, name)
+				// result.setSuggestions()
+				if (key === 'matrix') {
+					let suggestions = []
+					if (query) {
+						let [cols, rows] = query.split('x')
+						let colsx
+						let rowsx
+
+						if (cols) {
+							colsx = cols
+						} else {
+							colsx = userPreferences.columnCount
+						}
+
+						if (rows) {
+							rowsx = rows
+						} else {
+							rowsx = userPreferences.rowCount
+						}
+
+						suggestions.push({ name: `${colsx} x ${rowsx}` })
+						// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+					} else {
+						suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+					}
+
+					result.setSuggestions(suggestions)
+				}
+				if (key === 'size') {
+					let suggestions = []
+					if (query) {
+						let [width, height] = query.split('x')
+						let widthx
+						let heightx
+
+						if (width) {
+							widthx = width
+						} else {
+							widthx = userPreferences.tableWidth
+						}
+
+						if (height) {
+							heightx = height
+						} else {
+							heightx = userPreferences.tableHeight
+						}
+
+						suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
+						// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+					} else {
+						suggestions.push({
+							name: `${userPreferences.tableWidth.toString().toUpperCase()} x ${userPreferences.tableHeight.toString().toUpperCase()}`,
+						})
+					}
+
+					result.setSuggestions(suggestions)
+				}
+				// if (key === 'tableWidth') {
+				// 	let suggestions = []
+				// 	if (query) {
+				// 		// result.setSuggestions([`${query}`])
+				// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
+				// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
+				// 	} else {
+				// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
+				// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
+				// 	}
+
+				// 	result.setSuggestions(suggestions)
+				// }
+				// if (key === 'tableHeight') {
+				// 	let suggestions = []
+				// 	if (query) {
+				// 		// result.setSuggestions([`${query}`])
+				// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
+				// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
+				// 	} else {
+				// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
+				// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
+				// 	}
+				// 	result.setSuggestions(suggestions)
+				// }
+
+				if (key === 'template') {
+					// TODO: Add remote templates if they exist
+					// TODO: Add icon for remote templates
+					// TODO: reorder so that defaultTemplate is first in array
+					let matches = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+					result.setSuggestions(matches)
+				}
+			})
+
+			figma.on('run', ({ parameters }) => {
+				// TODO: Need to update localTemplates on file and then cross reference that with ones from paramters so they are up to date
+				let settings = {
+					cellAlignment: 'CENTER',
+					cellHeight: undefined,
+					cellWidth: 120,
+					columnCount: 2,
+					columnResizing: false,
+					includeHeader: true,
+					prevCellWidth: 120,
+					remember: true,
+					rowCount: 2,
+					tableHeight: 500,
+					tableWidth: 600,
+				}
+
+				if (parameters) {
+					if (parameters.matrix) {
+						let [cols, rows] = parameters.matrix.split('x')
+						settings.columnCount = cols
+						settings.rowCount = rows
+					}
+
+					if (parameters.size) {
+						// TODO: pass correct cell width when hug used
+						let [width, height] = parameters.size.split('x')
+						settings.tableWidth = width
+						settings.tableHeight = height
+
+						if (width.trim() == 'HUG') {
+							// settings.cellWidth = userPreferences.cellWidth
+						}
+					}
+
+					createTableInstance({ data: settings })
+				} else {
+					createTableUI()
+				}
+			})
+
+			// if (parametersNotUsed) {
+			// 	createTableUI()
+			// }
 		})
 		plugin.command('detachTable', () => {
 			let tables = detachTable(figma.currentPage.selection)
@@ -1211,42 +1393,7 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			const remoteFiles = await getRemoteFilesAsync()
-			const templateComponent = await lookForComponent(getDocumentData('defaultTemplate'))
-			// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
-
-			if (templateComponent) {
-				if (typeof msg.data.tableWidth === 'string' || msg.data.tableWidth instanceof String) {
-					msg.data.tableWidth = msg.data.tableWidth.toUpperCase()
-					msg.data.tableWidth = convertToNumber(msg.data.tableWidth)
-				}
-
-				if (typeof msg.data.tableHeight === 'string' || msg.data.tableHeight instanceof String) {
-					msg.data.tableHeight = msg.data.tableHeight.toUpperCase()
-					msg.data.tableHeight = convertToNumber(msg.data.tableHeight)
-				}
-
-				if (typeof msg.data.cellWidth === 'string' || msg.data.cellWidth instanceof String) {
-					msg.data.cellWidth = msg.data.cellWidth.toUpperCase()
-					msg.data.cellWidth = convertToNumber(msg.data.cellWidth)
-				}
-
-				if (typeof msg.data.cellHeight === 'string' || msg.data.cellHeight instanceof String) {
-					msg.data.cellHeight = msg.data.tableHeight.toUpperCase()
-					msg.data.cellHeight = convertToNumber(msg.data.cellHeight)
-				}
-
-				let tableInstance = createTable(templateComponent, msg.data)
-
-				if (tableInstance) {
-					positionInCenterOfViewport(tableInstance)
-					figma.currentPage.selection = [tableInstance]
-
-					updateClientStorageAsync('userPreferences', (data) => Object.assign(data, msg.data)).then(() => {
-						figma.closePlugin('Table created')
-					})
-				}
-			}
+			createTableInstance(msg)
 		})
 
 		plugin.command('updateTables', () => {

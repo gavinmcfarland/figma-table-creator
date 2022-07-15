@@ -12,7 +12,24 @@
   "menu": [
     {
       "name": "Create Table",
-      "command": "createTable"
+      "command": "createTable",
+      "parameters": [
+        {
+          "name": "Matrix",
+          "key": "matrix",
+          "description": "Number of columnss and rows, eg 4x4"
+        },
+        {
+            "name": "Size",
+            "key": "size"
+        },
+        {
+            "name": "Template",
+            "key": "template",
+            "optional": true
+        }
+      ],
+      "parameterOnly": false
     },
     {
         "separator": true
@@ -50,5 +67,6 @@
 
     ],
     "editorType": ["figma"]
+
 
 }
