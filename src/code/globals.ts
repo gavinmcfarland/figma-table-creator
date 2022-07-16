@@ -10,8 +10,9 @@ import {
 	getDocumentData,
 	setDocumentData,
 	genUID,
+	getRemoteFiles,
 } from '@fignite/helpers'
-import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle } from './helpers'
+import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, getComponentById, isEmpty } from './helpers'
 import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
@@ -49,7 +50,6 @@ function extractValues(objectArray) {
 }
 
 export function createTable(templateComponent, settings, type?) {
-	console.log(settings)
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -260,7 +260,7 @@ export function createTable(templateComponent, settings, type?) {
 			tableInstance.resize(convertToNumber(settings.table.size[0][0]), tableInstance.height)
 		}
 		if (settings.table.size[0][1] && !(typeof settings.table.size[0][1] === 'string')) {
-			tableInstance.resize(tableInstance.width, convertToNumber(settings.table.size[0]))
+			tableInstance.resize(tableInstance.width, convertToNumber(settings.table.size[0][1]))
 		}
 
 		return tableInstance
@@ -313,7 +313,7 @@ export function Template(node) {
 // function getLocalTemplateComponents() {
 // 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
 // }
-export function getLocalTemplateWithoutUpdating() {
+export function getLocalTemplatesWithoutUpdating() {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
@@ -327,6 +327,24 @@ export function getLocalTemplateWithoutUpdating() {
 			obj.name = node.name
 			obj.data = templateData
 			templates.push(obj)
+		}
+	}
+
+	return templates
+}
+
+export function getLocalTemplatesWithoutUpdating2() {
+	figma.skipInvisibleInstanceChildren = true
+	var templates = []
+	var components = figma.root.findAllWithCriteria({
+		types: ['COMPONENT'],
+	})
+	for (let i = 0; i < components.length; i++) {
+		let node = components[i]
+		var templateData = getPluginData(node, 'template')
+		if (templateData && node.type === 'COMPONENT') {
+			templateData.name = node.name
+			templates.push(templateData)
 		}
 	}
 
@@ -394,6 +412,59 @@ export async function setDefaultTemplate(templateData) {
 	// if (previousTemplate) {
 	// 	setPreviousTemplate(previousTemplate)
 	// }
+}
+
+export function getDefaultTemplate() {
+	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
+	var defaultTemplate = getDocumentData('defaultTemplate')
+
+	// FIXME: Should I be doing more, like checking if the component has been published at this point?
+	if (usingRemoteTemplate) {
+		return defaultTemplate
+	} else {
+		return getComponentById(defaultTemplate?.component?.id) ? defaultTemplate : undefined
+	}
+}
+
+export async function determineDefaultTemplate() {
+	let { table } = await getClientStorageAsync('userPreferences')
+	let defaultTemplate = table.template
+	let localTemplates = getLocalTemplatesWithoutUpdating2()
+	let remoteFiles = getDocumentData('remoteFiles')
+
+	let fileId = getDocumentData('fileId')
+
+	if (defaultTemplate && !isEmpty(defaultTemplate)) {
+		if (defaultTemplate.file.id === fileId) {
+			let templateComponent = getComponentById(defaultTemplate.id)
+			if (!templateComponent) {
+				if (localTemplates.length > 0) {
+					defaultTemplate = localTemplates[0]
+				} else if (remoteFiles.length > 0) {
+					defaultTemplate = remoteFiles[0].data[0]
+				}
+			}
+		} else {
+			let templateComponent = await lookForComponent(defaultTemplate)
+			if (!templateComponent) {
+				if (remoteFiles.length > 0) {
+					defaultTemplate = remoteFiles[0].data[0]
+				} else if (localTemplates.length > 0) {
+					defaultTemplate = localTemplates[0]
+				}
+			}
+		}
+	} else {
+		// In the event defaultTemplate not set, but there are templates
+
+		if (localTemplates.length > 0) {
+			defaultTemplate = localTemplates[0]
+		} else if (remoteFiles.length > 0) {
+			defaultTemplate = remoteFiles[0].data[0]
+		}
+	}
+
+	return defaultTemplate
 }
 
 export async function setPreviousTemplate(templateData) {

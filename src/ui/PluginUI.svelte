@@ -35,6 +35,8 @@
 	let prevCellWidth
 	let prevCellHeight = 40
 
+	let table
+
 	let welcomeSlides = [
 		true,
 		false,
@@ -129,17 +131,17 @@
 				pluginMessage: {
 					type: "create-table-instance",
 					data: {
-						remember: rememberSettings,
-						columnResizing: columnResizing,
-						columnCount: columnCount,
-						rowCount: rowCount,
-						includeHeader: includeHeader,
-						cellWidth: cellWidth,
+						table: {
+							matrix: [[ columnCount, rowCount]],
+							size: [[tableWidth, tableHeight]],
+							cell: [[cellWidth, cellHeight]],
+							alignment: [cellAlignment, 'MIN'],
+							options: {
+								header: includeHeader,
+								resizing: columnResizing,
+							}
+						},
 						prevCellWidth: prevCellWidth,
-						cellAlignment: cellAlignment,
-						tableWidth: tableWidth,
-						tableHeight: tableHeight,
-						cellHeight: cellHeight,
 						template: data.defaultTemplate
 					}
 				},
@@ -387,12 +389,21 @@
 			data = message
 
 
-
 			let store = {
 				pageState,
 				selectedFile,
 				data,
-				...data
+				columnCount: data.table.matrix[0][0],
+				rowCount: data.table.matrix[0][0],
+				cellWidth: data.table.cell[0][0],
+				cellHeight: data.table.cell[0][1],
+				includeHeader: data.table.options.header,
+				cellAlignment: data.table.alignment[0],
+				columnResizing: data.table.options.resizing,
+				tableWidth: data.table.size[0][0],
+				tableHeight: data.table.size[0][1],
+				prevCellWidth: data.prevCellWidth,
+				prevCellHeight: data.prevCellHeight
 			}
 			valueStore.set(store)
 

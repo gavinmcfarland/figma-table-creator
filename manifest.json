@@ -32,16 +32,19 @@
         {
             "name": "Cell",
             "key": "cell",
+            "description": "Cell size width x height, eg 120xFILL",
             "optional": true
         },
         {
             "name": "Alignement",
             "key": "alignment",
+            "description": "Vertical alignment of cells",
             "optional": true
         },
         {
             "name": "Header",
             "key": "header",
+            "description": "Include header",
             "optional": true
         }
       ],

@@ -55,9 +55,12 @@ import {
 	setPreviousTemplate,
 	getTableSettings,
 	convertToNumber,
-	getLocalTemplateWithoutUpdating,
+	getLocalTemplatesWithoutUpdating,
+	determineDefaultTemplate,
+	getDefaultTemplate,
+	getLocalTemplatesWithoutUpdating2,
 } from './globals'
-import { swapInstance, convertToNumber } from './helpers'
+import { swapInstance, convertToNumber, isEmpty } from './helpers'
 
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
@@ -100,16 +103,6 @@ function move(array, from, to) {
 function daysToMilliseconds(days) {
 	// 👇️        hour  min  sec  ms
 	return days * 24 * 60 * 60 * 1000
-}
-
-function isEmpty(obj) {
-	for (var prop in obj) {
-		if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-			return false
-		}
-	}
-
-	return JSON.stringify(obj) === JSON.stringify({})
 }
 
 function addUniqueToArray(object, array) {
@@ -253,18 +246,6 @@ function importTemplate(node) {
 // function getUserPreferencesAsync() {
 // 	return getRecentFilesAsync()
 // }
-
-function getDefaultTemplate() {
-	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
-	var defaultTemplate = getDocumentData('defaultTemplate')
-
-	// FIXME: Should I be doing more, like checking if the component has been published at this point?
-	if (usingRemoteTemplate) {
-		return defaultTemplate
-	} else {
-		return getComponentById(defaultTemplate?.component?.id) ? defaultTemplate : undefined
-	}
-}
 
 function getTemplateParts(templateNode) {
 	// find nodes with certain pluginData
@@ -889,45 +870,10 @@ async function createTableUI() {
 	// const remoteFiles = getDocumentData('remoteFiles')
 	const fileId = getDocumentData('fileId')
 
-	let defaultTemplate = getDefaultTemplate()
+	let defaultTemplate = await determineDefaultTemplate()
+	setDocumentData('defaultTemplate', defaultTemplate)
 
-	if (defaultTemplate) {
-		if (defaultTemplate.file.id === fileId) {
-			let templateComponent = getComponentById(defaultTemplate.id)
-			if (!templateComponent) {
-				if (localTemplates.length > 0) {
-					defaultTemplate = localTemplates[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				} else if (remoteFiles.length > 0) {
-					defaultTemplate = remoteFiles[0].data[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				}
-			}
-		} else {
-			let templateComponent = await lookForComponent(defaultTemplate)
-			if (!templateComponent) {
-				if (remoteFiles.length > 0) {
-					defaultTemplate = remoteFiles[0].data[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				} else if (localTemplates.length > 0) {
-					defaultTemplate = localTemplates[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				}
-			}
-		}
-	} else {
-		// In the event defaultTemplate not set, but there are templates
-
-		if (localTemplates.length > 0) {
-			defaultTemplate = localTemplates[0]
-			setDocumentData('defaultTemplate', defaultTemplate)
-		} else if (remoteFiles.length > 0) {
-			defaultTemplate = remoteFiles[0].data[0]
-			setDocumentData('defaultTemplate', defaultTemplate)
-		}
-	}
-
-	// console.log({ localTemplates, defaultTemplate })
+	console.log({ defaultTemplate })
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240,
@@ -951,10 +897,10 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(opts, template?) {
+async function createTableInstance(opts) {
 	// TODO: Modify to support custom template being passed in
 	const remoteFiles = await getRemoteFilesAsync()
-	const templateComponent = await lookForComponent(template || getDocumentData('defaultTemplate'))
+	const templateComponent = await lookForComponent(opts.template || getDocumentData('defaultTemplate'))
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
@@ -996,12 +942,14 @@ async function main() {
 	await updateClientStorageAsync('userPreferences', (data) => {
 		let defaultData = {
 			table: {
+				template: null,
 				matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
 				size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
 				cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
 				alignment: [data?.cellAlignment || 'MIN', 'MIN'],
 				options: {
 					header: data?.includeHeader || true,
+					resizing: data?.columnResizing || true,
 				},
 			},
 		}
@@ -1148,10 +1096,12 @@ async function main() {
 			// 	tableHeight: 500,
 			// 	tableWidth: 600,
 			// }
-			let localTemplates = getLocalTemplateWithoutUpdating()
+			let localTemplates = getLocalTemplatesWithoutUpdating2()
 			let remoteFiles = getDocumentData('remoteFiles')
 			let remoteTemplates = []
-			let defaultTemplate = getDocumentData('defaultTemplate')
+			let defaultTemplate = await determineDefaultTemplate()
+
+			console.log('defaultTemplate', defaultTemplate)
 
 			for (let i = 0; i < remoteFiles.length; i++) {
 				let file = remoteFiles[i]
@@ -1167,6 +1117,13 @@ async function main() {
 					})
 				}
 			}
+
+			localTemplates = localTemplates.map((item) => {
+				return {
+					name: item.name,
+					data: item,
+				}
+			})
 
 			figma.parameters.on('input', ({ query, result, key }) => {
 				function genSuggestions(key, query) {
@@ -1209,6 +1166,7 @@ async function main() {
 					localTemplates = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
 					let suggestions = [...localTemplates, ...remoteTemplates]
 					// Reorder array so that default template is at the top
+
 					let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key)
 					let element = suggestions.splice(indexOfDefaultTemplate, 1)[0]
 					suggestions.splice(0, 0, element)
@@ -1308,9 +1266,11 @@ async function main() {
 						settings.table.options.header = parameters.header
 					}
 
-					console.log('.' + settings.table.alignment + '.')
+					if (parameters.template) {
+						settings.table.template = parameters.template
+					}
 
-					createTableInstance({ data: settings }, template)
+					createTableInstance({ data: settings })
 
 					setClientStorageAsync('userPreferences', settings)
 				} else {

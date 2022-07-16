@@ -468,7 +468,7 @@ function keys(obj) {
 
 // Is a given array, string, or object empty?
 // An "empty" object has no enumerable own-properties.
-function isEmpty(obj) {
+function isEmpty$1(obj) {
   if (obj == null) return true;
   // Skip the more expensive `toString`-based type checks if `obj` has no
   // `.length`.
@@ -2078,7 +2078,7 @@ var allExports = /*#__PURE__*/Object.freeze({
   isFinite: isFinite$1,
   isNaN: isNaN$1,
   isTypedArray: isTypedArray$1,
-  isEmpty: isEmpty,
+  isEmpty: isEmpty$1,
   isMatch: isMatch,
   isEqual: isEqual,
   isMap: isMap,
@@ -3831,6 +3831,14 @@ async function lookForComponent(template) {
     }
     return component;
 }
+function isEmpty(obj) {
+    for (var prop in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+            return false;
+        }
+    }
+    return JSON.stringify(obj) === JSON.stringify({});
+}
 function getComponentById(id) {
     // var pages = figma.root.children
     // var component
@@ -3845,16 +3853,13 @@ function getComponentById(id) {
     if (node && node.type === 'COMPONENT') {
         if (node) {
             if (node.parent === null || node.parent.parent === null) {
-                figma.root.setPluginData('cellComponentState', 'exists');
                 return false;
             }
             else {
-                figma.root.setPluginData('cellComponentState', 'removed');
                 return node;
             }
         }
         else {
-            figma.root.setPluginData('cellComponentState', 'deleted');
             return null;
         }
     }
@@ -4935,7 +4940,6 @@ function extractValues(objectArray) {
     }, {});
 }
 function createTable(templateComponent, settings, type) {
-    console.log(settings);
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -5112,7 +5116,7 @@ function createTable(templateComponent, settings, type) {
             tableInstance.resize(convertToNumber(settings.table.size[0][0]), tableInstance.height);
         }
         if (settings.table.size[0][1] && !(typeof settings.table.size[0][1] === 'string')) {
-            tableInstance.resize(tableInstance.width, convertToNumber(settings.table.size[0]));
+            tableInstance.resize(tableInstance.width, convertToNumber(settings.table.size[0][1]));
         }
         return tableInstance;
     }
@@ -5137,10 +5141,7 @@ function Template(node) {
         name: figma.root.name,
     };
 }
-// function getLocalTemplateComponents() {
-// 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
-// }
-function getLocalTemplateWithoutUpdating() {
+function getLocalTemplatesWithoutUpdating2() {
     figma.skipInvisibleInstanceChildren = true;
     var templates = [];
     var components = figma.root.findAllWithCriteria({
@@ -5150,10 +5151,8 @@ function getLocalTemplateWithoutUpdating() {
         let node = components[i];
         var templateData = getPluginData_1(node, 'template');
         if (templateData && node.type === 'COMPONENT') {
-            let obj = {};
-            obj.name = node.name;
-            obj.data = templateData;
-            templates.push(obj);
+            templateData.name = node.name;
+            templates.push(templateData);
         }
     }
     return templates;
@@ -5213,6 +5212,59 @@ async function setDefaultTemplate(templateData) {
     // if (previousTemplate) {
     // 	setPreviousTemplate(previousTemplate)
     // }
+}
+function getDefaultTemplate() {
+    var _a;
+    var usingRemoteTemplate = getDocumentData_1('usingRemoteTemplate');
+    var defaultTemplate = getDocumentData_1('defaultTemplate');
+    // FIXME: Should I be doing more, like checking if the component has been published at this point?
+    if (usingRemoteTemplate) {
+        return defaultTemplate;
+    }
+    else {
+        return getComponentById((_a = defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.component) === null || _a === void 0 ? void 0 : _a.id) ? defaultTemplate : undefined;
+    }
+}
+async function determineDefaultTemplate() {
+    let { table } = await getClientStorageAsync_1('userPreferences');
+    let defaultTemplate = table.template;
+    let localTemplates = getLocalTemplatesWithoutUpdating2();
+    let remoteFiles = getDocumentData_1('remoteFiles');
+    let fileId = getDocumentData_1('fileId');
+    if (defaultTemplate && !isEmpty(defaultTemplate)) {
+        if (defaultTemplate.file.id === fileId) {
+            let templateComponent = getComponentById(defaultTemplate.id);
+            if (!templateComponent) {
+                if (localTemplates.length > 0) {
+                    defaultTemplate = localTemplates[0];
+                }
+                else if (remoteFiles.length > 0) {
+                    defaultTemplate = remoteFiles[0].data[0];
+                }
+            }
+        }
+        else {
+            let templateComponent = await lookForComponent(defaultTemplate);
+            if (!templateComponent) {
+                if (remoteFiles.length > 0) {
+                    defaultTemplate = remoteFiles[0].data[0];
+                }
+                else if (localTemplates.length > 0) {
+                    defaultTemplate = localTemplates[0];
+                }
+            }
+        }
+    }
+    else {
+        // In the event defaultTemplate not set, but there are templates
+        if (localTemplates.length > 0) {
+            defaultTemplate = localTemplates[0];
+        }
+        else if (remoteFiles.length > 0) {
+            defaultTemplate = remoteFiles[0].data[0];
+        }
+    }
+    return defaultTemplate;
 }
 async function updateTables(template) {
     // FIXME: Template file name not up to date for some reason
@@ -5597,18 +5649,6 @@ function importTemplate(node) {
 // function getUserPreferencesAsync() {
 // 	return getRecentFilesAsync()
 // }
-function getDefaultTemplate() {
-    var _a;
-    var usingRemoteTemplate = getDocumentData_1('usingRemoteTemplate');
-    var defaultTemplate = getDocumentData_1('defaultTemplate');
-    // FIXME: Should I be doing more, like checking if the component has been published at this point?
-    if (usingRemoteTemplate) {
-        return defaultTemplate;
-    }
-    else {
-        return getComponentById((_a = defaultTemplate === null || defaultTemplate === void 0 ? void 0 : defaultTemplate.component) === null || _a === void 0 ? void 0 : _a.id) ? defaultTemplate : undefined;
-    }
-}
 function getTemplateParts(templateNode) {
     // find nodes with certain pluginData
     let elements = ['tr', 'td', 'th', 'table'];
@@ -6127,47 +6167,9 @@ async function createTableUI() {
     let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false;
     // const remoteFiles = getDocumentData('remoteFiles')
     const fileId = getDocumentData_1('fileId');
-    let defaultTemplate = getDefaultTemplate();
-    if (defaultTemplate) {
-        if (defaultTemplate.file.id === fileId) {
-            let templateComponent = getComponentById(defaultTemplate.id);
-            if (!templateComponent) {
-                if (localTemplates.length > 0) {
-                    defaultTemplate = localTemplates[0];
-                    setDocumentData_1('defaultTemplate', defaultTemplate);
-                }
-                else if (remoteFiles.length > 0) {
-                    defaultTemplate = remoteFiles[0].data[0];
-                    setDocumentData_1('defaultTemplate', defaultTemplate);
-                }
-            }
-        }
-        else {
-            let templateComponent = await lookForComponent(defaultTemplate);
-            if (!templateComponent) {
-                if (remoteFiles.length > 0) {
-                    defaultTemplate = remoteFiles[0].data[0];
-                    setDocumentData_1('defaultTemplate', defaultTemplate);
-                }
-                else if (localTemplates.length > 0) {
-                    defaultTemplate = localTemplates[0];
-                    setDocumentData_1('defaultTemplate', defaultTemplate);
-                }
-            }
-        }
-    }
-    else {
-        // In the event defaultTemplate not set, but there are templates
-        if (localTemplates.length > 0) {
-            defaultTemplate = localTemplates[0];
-            setDocumentData_1('defaultTemplate', defaultTemplate);
-        }
-        else if (remoteFiles.length > 0) {
-            defaultTemplate = remoteFiles[0].data[0];
-            setDocumentData_1('defaultTemplate', defaultTemplate);
-        }
-    }
-    // console.log({ localTemplates, defaultTemplate })
+    let defaultTemplate = await determineDefaultTemplate();
+    setDocumentData_1('defaultTemplate', defaultTemplate);
+    console.log({ defaultTemplate });
     figma.showUI(__uiFiles__.main, {
         width: 240,
         height: 474 + 8 + 8,
@@ -6184,10 +6186,10 @@ async function createTableUI() {
     // We update plugin version after UI opened for the first time so user can see the whats new message
     updatePluginVersion('7.0.0');
 }
-async function createTableInstance(opts, template) {
+async function createTableInstance(opts) {
     // TODO: Modify to support custom template being passed in
     await getRemoteFilesAsync_1();
-    const templateComponent = await lookForComponent(template || getDocumentData_1('defaultTemplate'));
+    const templateComponent = await lookForComponent(opts.template || getDocumentData_1('defaultTemplate'));
     // const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
     if (templateComponent) {
         if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
@@ -6221,12 +6223,14 @@ async function main() {
     await updateClientStorageAsync_1('userPreferences', (data) => {
         let defaultData = {
             table: {
+                template: null,
                 matrix: [[(data === null || data === void 0 ? void 0 : data.columnCount) || 4, (data === null || data === void 0 ? void 0 : data.rowCount) || 4]],
                 size: [[(data === null || data === void 0 ? void 0 : data.tableWidth) || 'HUG', (data === null || data === void 0 ? void 0 : data.tableHeight) || 'HUG']],
                 cell: [[(data === null || data === void 0 ? void 0 : data.cellWidth) || 120, (data === null || data === void 0 ? void 0 : data.cellHeight) || 'FILL']],
                 alignment: [(data === null || data === void 0 ? void 0 : data.cellAlignment) || 'MIN', 'MIN'],
                 options: {
                     header: (data === null || data === void 0 ? void 0 : data.includeHeader) || true,
+                    resizing: (data === null || data === void 0 ? void 0 : data.columnResizing) || true,
                 },
             },
         };
@@ -6344,10 +6348,11 @@ async function main() {
             // 	tableHeight: 500,
             // 	tableWidth: 600,
             // }
-            let localTemplates = getLocalTemplateWithoutUpdating();
+            let localTemplates = getLocalTemplatesWithoutUpdating2();
             let remoteFiles = getDocumentData_1('remoteFiles');
             let remoteTemplates = [];
-            let defaultTemplate = getDocumentData_1('defaultTemplate');
+            let defaultTemplate = await determineDefaultTemplate();
+            console.log('defaultTemplate', defaultTemplate);
             for (let i = 0; i < remoteFiles.length; i++) {
                 let file = remoteFiles[i];
                 for (let x = 0; x < file.data.length; x++) {
@@ -6361,6 +6366,12 @@ async function main() {
                     });
                 }
             }
+            localTemplates = localTemplates.map((item) => {
+                return {
+                    name: item.name,
+                    data: item,
+                };
+            });
             figma.parameters.on('input', ({ query, result, key }) => {
                 function genSuggestions(key, query) {
                     let suggestions = [];
@@ -6431,7 +6442,6 @@ async function main() {
             });
             figma.on('run', async ({ parameters }) => {
                 let settings = userPreferences;
-                let template;
                 function updateEntryInArray(array, entry) {
                     // Add to recents
                     // If it doesn't exist add it to top of array
@@ -6468,9 +6478,7 @@ async function main() {
                     if (parameters.size) {
                         updateEntryInArray(settings.table.size, parameters.size);
                     }
-                    if (parameters.template) {
-                        template = parameters.template;
-                    }
+                    if (parameters.template) ;
                     if (parameters.cell) {
                         updateEntryInArray(settings.table.cell, parameters.cell);
                     }
@@ -6480,8 +6488,10 @@ async function main() {
                     if (parameters.header === false || parameters.header === true) {
                         settings.table.options.header = parameters.header;
                     }
-                    console.log('.' + settings.table.alignment + '.');
-                    createTableInstance({ data: settings }, template);
+                    if (parameters.template) {
+                        settings.table.template = parameters.template;
+                    }
+                    createTableInstance({ data: settings });
                     setClientStorageAsync_1('userPreferences', settings);
                 }
                 else {

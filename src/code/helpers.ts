@@ -65,6 +65,17 @@ export async function lookForComponent(template) {
 
 	return component
 }
+
+export function isEmpty(obj) {
+	for (var prop in obj) {
+		if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+			return false
+		}
+	}
+
+	return JSON.stringify(obj) === JSON.stringify({})
+}
+
 export function getComponentById(id) {
 	// var pages = figma.root.children
 	// var component
@@ -84,14 +95,11 @@ export function getComponentById(id) {
 	if (node && node.type === 'COMPONENT') {
 		if (node) {
 			if (node.parent === null || node.parent.parent === null) {
-				figma.root.setPluginData('cellComponentState', 'exists')
 				return false
 			} else {
-				figma.root.setPluginData('cellComponentState', 'removed')
 				return node
 			}
 		} else {
-			figma.root.setPluginData('cellComponentState', 'deleted')
 			return null
 		}
 	}
