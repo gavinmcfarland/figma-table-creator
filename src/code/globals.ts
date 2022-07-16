@@ -49,6 +49,7 @@ function extractValues(objectArray) {
 }
 
 export function createTable(templateComponent, settings, type?) {
+	console.log(settings)
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -56,11 +57,11 @@ export function createTable(templateComponent, settings, type?) {
 	let part = getTemplateParts(templateComponent)
 	let tableInstance
 
-	if (!part.table || !part.tr || !part.td || (!part.th && settings.includeHeader)) {
+	if (!part.table || !part.tr || !part.td || (!part.th && settings.table.options.header)) {
 		let array = []
 		part.table ? null : array.push('table')
 		part.tr ? null : array.push('row')
-		!part.th && settings.includeHeader ? array.push('header') : null
+		!part.th && settings.table.options.header ? array.push('header') : null
 		part.td ? null : array.push('cell')
 
 		if (array.length > 1) {
@@ -112,7 +113,7 @@ export function createTable(templateComponent, settings, type?) {
 			}
 		})
 
-		if (settings.columnResizing && type !== 'COMPONENT') {
+		if (settings.table.options.resizing && type !== 'COMPONENT') {
 			// First row should be a component
 			firstRow = convertToComponent(part.tr.clone())
 			firstRow.layoutAlign = part.tr.layoutAlign
@@ -145,7 +146,7 @@ export function createTable(templateComponent, settings, type?) {
 
 		// If height specified then make rows grow to height
 		// Change size of cells
-		if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+		if (settings.table.size[0][1] && settings.table.size[0][1] !== 'HUG') {
 			firstRow.layoutGrow = 1
 		}
 
@@ -154,7 +155,7 @@ export function createTable(templateComponent, settings, type?) {
 
 		// Create columns in first row
 
-		for (let i = 0; i < settings.columnCount; i++) {
+		for (let i = 0; i < settings.table.matrix[0][0]; i++) {
 			var duplicateCell
 			if (part.td.type === 'COMPONENT') {
 				duplicateCell = part.td.clone()
@@ -162,24 +163,24 @@ export function createTable(templateComponent, settings, type?) {
 			if (part.td.type === 'INSTANCE') {
 				duplicateCell = part.td.mainComponent.createInstance()
 			}
-			if (settings.cellWidth && settings.cellWidth !== 'FILL') {
+			if (settings.table.cell[0][0] && settings.table.cell[0][0] !== 'FILL') {
 				// if (settings.cellWidth === 'FILL') {
 				// 	duplicateCell.layoutGrow = 1
 				// } else {
 				// let origLayoutAlign = duplicateCell.layoutAlign
-				duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height)
+				duplicateCell.resizeWithoutConstraints(settings.table.cell[0][0], duplicateCell.height)
 				// duplicateCell.layoutAlign = origLayoutAlign
 				// }
 			}
 
 			// Change size of cells
-			if (settings.tableWidth && settings.tableWidth !== 'HUG') {
+			if (settings.table.size[0][0] && settings.table.size[0][0] !== 'HUG') {
 				duplicateCell.layoutGrow = 1
 			}
 
 			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
 
-			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
+			duplicateCell.primaryAxisAlignItems = settings.table.alignment[0]
 
 			// Set component properties on instances
 			if (part.td.componentProperties) {
@@ -196,7 +197,7 @@ export function createTable(templateComponent, settings, type?) {
 		}
 
 		// Create rest of rows
-		for (var i = 1; i < settings.rowCount; i++) {
+		for (var i = 1; i < settings.table.matrix[0][1]; i++) {
 			var duplicateRow
 
 			if (firstRow.type === 'COMPONENT') {
@@ -207,12 +208,12 @@ export function createTable(templateComponent, settings, type?) {
 				duplicateRow = firstRow.clone()
 			}
 
-			if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+			if (settings.table.size[0][1] && settings.table.size[0][1] !== 'HUG') {
 				duplicateRow.layoutGrow = 1
 			}
 
 			// If using columnResizing and header swap non headers to default cells
-			if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
+			if (settings.table.options.resizing && type !== 'COMPONENT' && settings.table.options.header) {
 				for (let i = 0; i < duplicateRow.children.length; i++) {
 					var cell = duplicateRow.children[i]
 					// cell.swapComponent(part.th)
@@ -226,7 +227,7 @@ export function createTable(templateComponent, settings, type?) {
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
-					cell.primaryAxisAlignItems = settings.cellAlignment
+					cell.primaryAxisAlignItems = settings.table.alignment[0]
 				}
 			}
 
@@ -234,7 +235,7 @@ export function createTable(templateComponent, settings, type?) {
 		}
 
 		// Swap first row to use header cell
-		if (settings.includeHeader && part.th) {
+		if (settings.table.options.header && part.th) {
 			for (var i = 0; i < firstRow.children.length; i++) {
 				var child = firstRow.children[i]
 				// FIXME: Check if instance or main component
@@ -255,11 +256,11 @@ export function createTable(templateComponent, settings, type?) {
 
 		// Set width of table
 
-		if (settings.tableWidth && !(typeof settings.tableWidth === 'string')) {
-			tableInstance.resize(convertToNumber(settings.tableWidth), tableInstance.height)
+		if (settings.table.size[0][0] && !(typeof settings.table.size[0][0] === 'string')) {
+			tableInstance.resize(convertToNumber(settings.table.size[0][0]), tableInstance.height)
 		}
-		if (settings.tableHeight && !(typeof settings.tableHeight === 'string')) {
-			tableInstance.resize(tableInstance.width, convertToNumber(settings.tableHeight))
+		if (settings.table.size[0][1] && !(typeof settings.table.size[0][1] === 'string')) {
+			tableInstance.resize(tableInstance.width, convertToNumber(settings.table.size[0]))
 		}
 
 		return tableInstance
@@ -285,112 +286,6 @@ let defaultParts = {
 		}
 		return Object.assign(node, obj)
 	},
-}
-
-export function tableFactory(templateComponent) {
-	let parts = getTemplateParts(templateComponent)
-
-	// Find the parent of the row because row might be in another frame inside table
-	let rowParent = !parts.tr ? parts.table : parts.tr.parent
-
-	function checkForHeaderComponent() {
-		if (opts.settings.includeHeader && !opts.parts.th) {
-			figma.notify('No Header Cell component found')
-
-			// FIXME: Check for header cell sooner so table creation doesn't start
-			return
-		}
-	}
-	function checkIfTableSameAsContainer() {
-		if (parts.table.id === templateComponent.id) {
-			if (type === 'COMPONENT') {
-				table = convertToComponent(tableContainer)
-				tableContainer = table
-			} else {
-				table = tableContainer
-			}
-		} else {
-			// Remove table from template
-			tableContainer.findAll((node) => {
-				if (getPluginData(node, 'elementSemantics')?.is === 'table') {
-					node.remove()
-				}
-			})
-
-			var tableIndex = getNodeIndex(parts.table)
-
-			// Add table back to template
-			tableContainer.insertChild(tableIndex, table)
-		}
-	}
-	function createFirstRow() {
-		let firstRow
-
-		if (opts.settings.columnResizing && opts.type !== 'COMPONENT') {
-			firstRow = convertToComponent(parts.tr.clone())
-		} else {
-			firstRow = convertToFrame(parts.tr.clone())
-		}
-
-		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
-
-		// Remove table cells from row so that they can prepopulated
-		firstRow.findAll((node) => {
-			if (node) {
-				if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
-					node.remove()
-				}
-			}
-		})
-
-		if (tableMissing) {
-			removeChildren(firstRow)
-		}
-
-		return firstRow
-	}
-	function createColumnCells() {
-		let firstRow = createFirstRow()
-
-		// Only remove the rows
-		rowParent.findAll((node) => {
-			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-				node.remove()
-			}
-		})
-
-		// If a row part can't be found then this needs to inserted at 0
-		rowParent.insertChild(!parts.tr ? 0 : getNodeIndex(parts.tr), firstRow)
-
-		// Create columns in first row
-		for (let i = 0; i < settings.columnCount; i++) {
-			var duplicateCell
-			if (parts.td.type === 'COMPONENT') {
-				duplicateCell = parts.td.createInstance()
-			}
-			if (parts.td.type === 'INSTANCE') {
-				duplicateCell = parts.td.mainComponent.createInstance()
-			}
-			if (settings.cellWidth) {
-				// let origLayoutAlign = duplicateCell.layoutAlign
-				duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height)
-				// duplicateCell.layoutAlign = origLayoutAlign
-			}
-
-			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
-			// Figma doesn't automatically inherit this property
-			duplicateCell.layoutAlign = parts.td.layoutAlign
-			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
-			firstRow.appendChild(duplicateCell)
-		}
-	}
-
-	// !parts.table ? (parts.table = defaultParts.table()) : null
-	// !parts.tr ? (parts.tr = defaultParts.tr()) : null
-
-	checkForHeaderComponent()
-	// checkIfTableSameAsContainer()
-	createColumnCells()
 }
 
 export function File(data?) {
@@ -429,7 +324,7 @@ export function getLocalTemplateWithoutUpdating() {
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
 			let obj = {}
-			obj.name = templateData.name
+			obj.name = node.name
 			obj.data = templateData
 			templates.push(obj)
 		}
@@ -540,9 +435,18 @@ export function getTableSettings(tableNode) {
 	let rowCount = 0
 	let columnCount = 0
 	let usingColumnsOrRows = 'rows'
-	let tableWidth
-	let tableHeight
-	let cellAlignment
+
+	let table = {
+		matrix: [[0, 0]],
+		size: [[0, 0]],
+		cell: [[0, 0]],
+		alignment: [],
+		options: {
+			resizing: true,
+			header: true,
+			axes: 'COLUMNS',
+		},
+	}
 
 	for (let i = 0; i < tableNode.children.length; i++) {
 		var node = tableNode.children[i]
@@ -552,49 +456,49 @@ export function getTableSettings(tableNode) {
 	}
 
 	let firstRow = tableNode.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
 	let firstCell = firstRow.findOne(
 		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
 	)
 
-	cellAlignment = firstCell.primaryAxisAlignItems
-
 	if (firstRow.parent.layoutMode === 'VERTICAL') {
-		usingColumnsOrRows = 'rows'
+		usingColumnsOrRows = 'ROWS'
 	}
 
 	if (firstRow.parent.layoutMode === 'HORIZONTAL') {
-		usingColumnsOrRows = 'columns'
+		usingColumnsOrRows = 'COLUMNS'
 	}
 
 	for (let i = 0; i < firstRow.children.length; i++) {
 		var node = firstRow.children[i]
 		var cellType = getPluginData(node, 'elementSemantics')?.is
 		if (cellType === 'td' || cellType === 'th') {
-			columnCount++
+			columnCount[0]++
 		}
 	}
 
-	return {
-		tableWidth: (() => {
-			if (tableNode.counterAxisSizingMode === 'AUTO') {
-				return 'HUG'
-			} else {
-				return tableNode.width
-			}
-		})(),
-		tableHeight: (() => {
-			if (tableNode.primaryAxisSizingMode === 'AUTO') {
-				return 'HUG'
-			} else {
-				return tableNode.height
-			}
-		})(),
-		columnCount,
-		rowCount,
-		columnResizing: firstRow.type === 'COMPONENT' ? true : false,
-		includeHeader: getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false,
-		cellAlignment,
-		usingColumnsOrRows,
-		cellWidth: firstCell.width,
-	}
+	table.matrix = [[rowCount, columnCount]]
+	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]
+	table.size = [
+		[
+			(() => {
+				if (tableNode.counterAxisSizingMode === 'AUTO') {
+					return 'HUG'
+				} else {
+					return tableNode.width
+				}
+			})(),
+			(() => {
+				if (tableNode.primaryAxisSizingMode === 'AUTO') {
+					return 'HUG'
+				} else {
+					return tableNode.height
+				}
+			})(),
+		],
+	]
+	table.options.axes = usingColumnsOrRows
+	table.options.header = getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false
+
+	return { table }
 }

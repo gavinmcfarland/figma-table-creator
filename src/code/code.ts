@@ -1,4 +1,5 @@
 import plugma from 'plugma'
+import _ from 'underscore'
 import {
 	replace,
 	getOverrides,
@@ -90,6 +91,11 @@ console.clear()
 // figma.root.setPluginData('fileId', '')
 // figma.root.setPluginData('defaultTemplate', '')
 // figma.clientStorage.deleteAsync('userPreferences')
+
+function move(array, from, to) {
+	let element = array.splice(from, 1)[0]
+	array.splice(to, 0, element)
+}
 
 function daysToMilliseconds(days) {
 	// 👇️        hour  min  sec  ms
@@ -536,7 +542,7 @@ async function toggleColumnResizing(selection) {
 			let settings = getTableSettings(oldTable)
 
 			if (i === 0) {
-				firstTableColumnResizing = settings.columnResizing
+				firstTableColumnResizing = settings.table.options.axes
 			}
 
 			if (firstTableColumnResizing) {
@@ -545,7 +551,7 @@ async function toggleColumnResizing(selection) {
 				newSelection.push(newTable)
 			} else {
 				result = 'applied'
-				settings.columnResizing = !firstTableColumnResizing
+				settings.table.options.axes = !firstTableColumnResizing
 
 				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
 				let oldTablePrimaryAxisSizingMode = oldTable.primaryAxisSizingMode
@@ -635,7 +641,7 @@ function switchColumnsOrRows(selection) {
 				settings = getTableSettings(table)
 
 				if (i === 0) {
-					vectorType = settings.usingColumnsOrRows
+					vectorType = settings.table.options.axes
 
 					if (vectorType === 'rows') {
 						firstTableLayoutMode = 'VERTICAL'
@@ -655,7 +661,7 @@ function switchColumnsOrRows(selection) {
 					var rowContainerObject = nodeToObject(rowContainer)
 
 					// Change the table container
-					if (settings.usingColumnsOrRows === 'rows') {
+					if (settings.table.options.axes === 'ROWS') {
 						rowContainer.layoutMode = 'HORIZONTAL'
 					}
 
@@ -686,7 +692,7 @@ function switchColumnsOrRows(selection) {
 
 								var cells = row.children
 
-								if (settings.usingColumnsOrRows === 'columns') {
+								if (settings.table.options.axes === 'COLUMNS') {
 									row.name = row.name.replace('Col', 'Row')
 									row.layoutMode = 'HORIZONTAL'
 									row.layoutGrow = 0
@@ -694,7 +700,7 @@ function switchColumnsOrRows(selection) {
 								}
 
 								if (i < origRowlength) {
-									for (let c = 0; c < settings.columnCount; c++) {
+									for (let c = 0; c < settings.table.matrix[0][0]; c++) {
 										var cell = cells[c]
 										var cellWidth = cell.width
 										// var cellLocation = [c + 1, r + 1]
@@ -715,7 +721,7 @@ function switchColumnsOrRows(selection) {
 											}
 
 											if (row.parent.children[oppositeIndex]) {
-												if (settings.usingColumnsOrRows === 'rows') {
+												if (settings.table.options.axes === 'ROWS') {
 													row.parent.children[oppositeIndex].appendChild(cell)
 													row.parent.children[oppositeIndex].resize(
 														rowContainerObject.children[i].children[c].width,
@@ -748,13 +754,13 @@ function switchColumnsOrRows(selection) {
 								row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
 							}
 
-							if (settings.usingColumnsOrRows === 'rows' && isRow(row)) {
+							if (settings.table.options.axes === 'ROWS' && isRow(row)) {
 								row.name = row.name.replace('Row', 'Col')
 								row.layoutMode = 'VERTICAL'
 							}
 						}
 
-						if (settings.usingColumnsOrRows === 'columns') {
+						if (settings.table.options.axes === 'COLUMNS') {
 							rowContainer.layoutMode = 'VERTICAL'
 						}
 
@@ -777,7 +783,7 @@ function switchColumnsOrRows(selection) {
 
 							if (isRow(row)) {
 								// Settings is original settings, not new settings
-								if (settings.usingColumnsOrRows === 'columns') {
+								if (settings.table.options.axes === 'COLUMNS') {
 									row.counterAxisSizingMode = 'AUTO'
 									row.layoutAlign = 'STRETCH'
 
@@ -785,7 +791,7 @@ function switchColumnsOrRows(selection) {
 
 									var cells = row.children
 									var length =
-										settings.usingColumnsOrRows === 'columns' ? firstRow.parent.children.length : firstRow.children.length
+										settings.table.options.axes === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
@@ -798,7 +804,7 @@ function switchColumnsOrRows(selection) {
 									}
 								} else {
 									var cells = row.children
-									var length = settings.usingColumnsOrRows === 'rows' ? firstRow.parent.children.length : firstRow.children.length
+									var length = settings.table.options.axes === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length
 
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
@@ -806,7 +812,7 @@ function switchColumnsOrRows(selection) {
 										if (cell) {
 											if (row.parent.children[getNodeIndex(firstRow) + c]) {
 												// NOTE: temporary fix. Could be better
-												if (settings.tableHeight === 'HUG') {
+												if (settings.table.size[0][0] === 'HUG') {
 													cell.layoutGrow = 0
 													cell.primaryAxisSizingMode = 'AUTO'
 												} else {
@@ -945,7 +951,7 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(opts, template) {
+async function createTableInstance(opts, template?) {
 	// TODO: Modify to support custom template being passed in
 	const remoteFiles = await getRemoteFilesAsync()
 	const templateComponent = await lookForComponent(template || getDocumentData('defaultTemplate'))
@@ -989,22 +995,20 @@ async function main() {
 	// Set default preferences
 	await updateClientStorageAsync('userPreferences', (data) => {
 		let defaultData = {
-			columnCount: 4,
-			rowCount: 4,
-			cellWidth: 120,
-			cellHeight: 'FILL',
-			remember: true,
-			includeHeader: true,
-			columnResizing: true,
-			cellAlignment: 'MIN',
-			tableWidth: 'HUG',
-			tableHeight: 'HUG',
-			prevCellWidth: 120,
+			table: {
+				matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
+				size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
+				cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
+				alignment: [data?.cellAlignment || 'MIN', 'MIN'],
+				options: {
+					header: data?.includeHeader || true,
+				},
+			},
 		}
 
-		// It might accidentally be defined from previous version of plugin
-		if (typeof data.cellHeight === 'undefined') {
-			data.cellHeight = 'FILL'
+		// If the property table deosn't exist, then declare new defaultData
+		if (!data?.table) {
+			data = defaultData
 		}
 
 		// Merge user's data with deafult
@@ -1165,53 +1169,38 @@ async function main() {
 			}
 
 			figma.parameters.on('input', ({ query, result, key }) => {
-				if (key === 'matrix') {
+				function genSuggestions(key, query) {
 					let suggestions = []
+
 					if (query) {
-						let [cols, rows] = query.split('x')
-						let colsx
-						let rowsx
-						if (cols) {
-							colsx = cols
-						} else {
-							colsx = userPreferences.columnCount
-						}
-						if (rows) {
-							rowsx = rows
-						} else {
-							rowsx = userPreferences.rowCount
-						}
-						suggestions.push({ name: `${colsx} x ${rowsx}` })
-						// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-					} else {
-						suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+						let [item1, item2] = query.split('x')
+
+						item1 = item1 || userPreferences.table[key][0][0]
+						item2 = item2 || userPreferences.table[key][0][1]
+
+						item1 = convertToNumber(item1)
+						item2 = convertToNumber(item2)
+
+						suggestions.push({ name: `${item1} x ${item2}`, data: [item1, item2] })
 					}
-					result.setSuggestions(suggestions)
+
+					for (let i = 0; i < userPreferences.table[key].length; i++) {
+						let item = userPreferences.table[key][i]
+						let obj = {
+							name: `${item[0].toString().toUpperCase()} x ${item[1].toString().toUpperCase()}`,
+							data: item,
+						}
+						suggestions.push(obj)
+					}
+
+					return suggestions
+				}
+
+				if (key === 'matrix') {
+					result.setSuggestions(genSuggestions('matrix', query))
 				}
 				if (key === 'size') {
-					let suggestions = []
-					if (query) {
-						let [width, height] = query.split('x')
-						let widthx
-						let heightx
-						if (width) {
-							widthx = width
-						} else {
-							widthx = userPreferences.tableWidth
-						}
-						if (height) {
-							heightx = height
-						} else {
-							heightx = userPreferences.tableHeight
-						}
-						suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
-						// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-					} else {
-						suggestions.push({
-							name: `${userPreferences.tableWidth.toString().toUpperCase()} x ${userPreferences.tableHeight.toString().toUpperCase()}`,
-						})
-					}
-					result.setSuggestions(suggestions)
+					result.setSuggestions(genSuggestions('size', query))
 				}
 				if (key === 'template') {
 					// TODO: Add remote templates if they exist
@@ -1226,38 +1215,17 @@ async function main() {
 					result.setSuggestions(suggestions)
 				}
 				if (key === 'cell') {
-					let suggestions = []
-					if (query) {
-						let [width, height] = query.split('x')
-						let widthx
-						let heightx
-						if (width) {
-							widthx = width
-						} else {
-							widthx = userPreferences.cellWidth
-						}
-						if (height) {
-							heightx = height
-						} else {
-							heightx = userPreferences.cellHeight
-						}
-						suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
-					} else {
-						suggestions.push({
-							name: `${userPreferences.cellWidth.toString().toUpperCase()} x ${userPreferences.cellHeight.toString().toUpperCase()}`,
-						})
-					}
-					result.setSuggestions(suggestions)
+					result.setSuggestions(genSuggestions('cell', query))
 				}
 				if (key === 'alignment') {
 					let suggestions = [
-						{ name: 'Top', data: 'MIN' },
-						{ name: 'Center', data: 'CENTER' },
-						{ name: 'Bottom', data: 'MAX' },
+						{ name: 'Top', data: ['MIN', 'MIN'] },
+						{ name: 'Center', data: ['CENTER', 'MIN'] },
+						{ name: 'Bottom', data: ['MAX', 'MIN'] },
 					]
 
 					// Reorder array so that default template is at the top
-					let indexFrom = suggestions.findIndex((item) => item.data === userPreferences.cellAlignment)
+					let indexFrom = suggestions.findIndex((item) => item.data === userPreferences.table.alignment[0])
 					let element = suggestions.splice(indexFrom, 1)[0]
 					suggestions.splice(0, 0, element)
 					result.setSuggestions(suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase())))
@@ -1265,7 +1233,7 @@ async function main() {
 				if (key === 'header') {
 					let first
 					let second
-					if (userPreferences.includeHeader) {
+					if (userPreferences.table.options.header) {
 						first = { name: 'True', data: true }
 						second = { name: 'False', data: false }
 					} else {
@@ -1277,44 +1245,51 @@ async function main() {
 			})
 
 			figma.on('run', async ({ parameters }) => {
-				// TODO: Need to update localTemplates on file and then cross reference that with ones from paramters so they are up to date
-				// let settings = {
-				// 	cellAlignment: 'CENTER',
-				// 	cellHeight: undefined,
-				// 	cellWidth: 120,
-				// 	columnCount: 2,
-				// 	columnResizing: false,
-				// 	includeHeader: true,
-				// 	prevCellWidth: 120,
-				// 	remember: true,
-				// 	rowCount: 2,
-				// 	tableHeight: 500,
-				// 	tableWidth: 600,
-				// }
-
 				let settings = userPreferences
 				let template
 
+				function updateEntryInArray(array, entry) {
+					// Add to recents
+					// If it doesn't exist add it to top of array
+					// else if it does, move it to top of array
+
+					array.some((item, index) => {
+						let result = false
+						if (_.isEqual(item, entry)) {
+							result = true
+							// move to top
+							console.log('move to top')
+							move(array, index, 0)
+						}
+
+						return result
+					})
+
+					let matchFound = false
+					array.map((item, index) => {
+						if (_.isEqual(item, entry)) {
+							matchFound = true
+						}
+					})
+
+					if (!matchFound) {
+						console.log('add to array')
+						array.unshift(entry)
+					}
+
+					if (array.length > 4) {
+						array = array.slice(0, 4)
+					}
+				}
+
 				if (parameters) {
+					console.log(parameters)
 					if (parameters.matrix) {
-						let [cols, rows] = parameters.matrix.split('x')
-						cols = convertToNumber(cols.trim())
-						rows = convertToNumber(rows.trim())
-						settings.columnCount = cols
-						settings.rowCount = rows
+						updateEntryInArray(settings.table.matrix, parameters.matrix)
 					}
 
 					if (parameters.size) {
-						// TODO: pass correct cell width when hug used
-						let [width, height] = parameters.size.split('x')
-						width = convertToNumber(width.trim())
-						height = convertToNumber(height.trim())
-						settings.tableWidth = width
-						settings.tableHeight = height
-
-						if (width === 'HUG') {
-							settings.cellWidth = 120
-						}
+						updateEntryInArray(settings.table.size, parameters.size)
 					}
 
 					if (parameters.template) {
@@ -1322,21 +1297,18 @@ async function main() {
 					}
 
 					if (parameters.cell) {
-						let [width, height] = parameters.cell.split('x')
-						width = convertToNumber(width.trim())
-						height = convertToNumber(height.trim())
-
-						settings.cellWidth = width
-						settings.cellHeight = height
+						updateEntryInArray(settings.table.cell, parameters.cell)
 					}
 
 					if (parameters.alignment) {
-						settings.cellAlignment = parameters.alignment
+						settings.table.alignment = parameters.alignment
 					}
 
 					if (parameters.header === false || parameters.header === true) {
-						settings.includeHeader = parameters.header
+						settings.table.options.header = parameters.header
 					}
+
+					console.log('.' + settings.table.alignment + '.')
 
 					createTableInstance({ data: settings }, template)
 
@@ -1345,10 +1317,6 @@ async function main() {
 					createTableUI()
 				}
 			})
-
-			// if (parametersNotUsed) {
-			// 	createTableUI()
-			// }
 		})
 		plugin.command('detachTable', () => {
 			let tables = detachTable(figma.currentPage.selection)
