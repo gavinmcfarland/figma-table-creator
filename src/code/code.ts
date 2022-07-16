@@ -1122,140 +1122,135 @@ async function main() {
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
-			let userPreferences = await getClientStorageAsync('userPreferences')
-			let localTemplates = getLocalTemplateWithoutUpdating()
+			// let userPreferences = await getClientStorageAsync('userPreferences')
+			// let localTemplates = getLocalTemplateWithoutUpdating()
 
-			console.log(';pc', localTemplates)
+			// figma.parameters.on('input', ({ query, result, key }) => {
+			// 	// console.log('query', query, key, name)
+			// 	// result.setSuggestions()
+			// 	if (key === 'matrix') {
+			// 		let suggestions = []
+			// 		if (query) {
+			// 			let [cols, rows] = query.split('x')
+			// 			let colsx
+			// 			let rowsx
 
-			figma.parameters.on('input', ({ query, result, key }) => {
-				// console.log('query', query, key, name)
-				// result.setSuggestions()
-				if (key === 'matrix') {
-					let suggestions = []
-					if (query) {
-						let [cols, rows] = query.split('x')
-						let colsx
-						let rowsx
+			// 			if (cols) {
+			// 				colsx = cols
+			// 			} else {
+			// 				colsx = userPreferences.columnCount
+			// 			}
 
-						if (cols) {
-							colsx = cols
-						} else {
-							colsx = userPreferences.columnCount
-						}
+			// 			if (rows) {
+			// 				rowsx = rows
+			// 			} else {
+			// 				rowsx = userPreferences.rowCount
+			// 			}
 
-						if (rows) {
-							rowsx = rows
-						} else {
-							rowsx = userPreferences.rowCount
-						}
+			// 			suggestions.push({ name: `${colsx} x ${rowsx}` })
+			// 			// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+			// 		} else {
+			// 			suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+			// 		}
 
-						suggestions.push({ name: `${colsx} x ${rowsx}` })
-						// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-					} else {
-						suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-					}
+			// 		result.setSuggestions(suggestions)
+			// 	}
+			// 	if (key === 'size') {
+			// 		let suggestions = []
+			// 		if (query) {
+			// 			let [width, height] = query.split('x')
+			// 			let widthx
+			// 			let heightx
 
-					result.setSuggestions(suggestions)
-				}
-				if (key === 'size') {
-					let suggestions = []
-					if (query) {
-						let [width, height] = query.split('x')
-						let widthx
-						let heightx
+			// 			if (width) {
+			// 				widthx = width
+			// 			} else {
+			// 				widthx = userPreferences.tableWidth
+			// 			}
 
-						if (width) {
-							widthx = width
-						} else {
-							widthx = userPreferences.tableWidth
-						}
+			// 			if (height) {
+			// 				heightx = height
+			// 			} else {
+			// 				heightx = userPreferences.tableHeight
+			// 			}
 
-						if (height) {
-							heightx = height
-						} else {
-							heightx = userPreferences.tableHeight
-						}
+			// 			suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
+			// 			// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
+			// 		} else {
+			// 			suggestions.push({
+			// 				name: `${userPreferences.tableWidth.toString().toUpperCase()} x ${userPreferences.tableHeight.toString().toUpperCase()}`,
+			// 			})
+			// 		}
 
-						suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
-						// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-					} else {
-						suggestions.push({
-							name: `${userPreferences.tableWidth.toString().toUpperCase()} x ${userPreferences.tableHeight.toString().toUpperCase()}`,
-						})
-					}
+			// 		result.setSuggestions(suggestions)
+			// 	}
+			// 	// if (key === 'tableWidth') {
+			// 	// 	let suggestions = []
+			// 	// 	if (query) {
+			// 	// 		// result.setSuggestions([`${query}`])
+			// 	// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
+			// 	// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
+			// 	// 	} else {
+			// 	// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
+			// 	// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
+			// 	// 	}
 
-					result.setSuggestions(suggestions)
-				}
-				// if (key === 'tableWidth') {
-				// 	let suggestions = []
-				// 	if (query) {
-				// 		// result.setSuggestions([`${query}`])
-				// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
-				// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
-				// 	} else {
-				// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
-				// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
-				// 	}
+			// 	// 	result.setSuggestions(suggestions)
+			// 	// }
+			// 	// if (key === 'tableHeight') {
+			// 	// 	let suggestions = []
+			// 	// 	if (query) {
+			// 	// 		// result.setSuggestions([`${query}`])
+			// 	// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
+			// 	// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
+			// 	// 	} else {
+			// 	// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
+			// 	// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
+			// 	// 	}
+			// 	// 	result.setSuggestions(suggestions)
+			// 	// }
 
-				// 	result.setSuggestions(suggestions)
-				// }
-				// if (key === 'tableHeight') {
-				// 	let suggestions = []
-				// 	if (query) {
-				// 		// result.setSuggestions([`${query}`])
-				// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
-				// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
-				// 	} else {
-				// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
-				// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
-				// 	}
-				// 	result.setSuggestions(suggestions)
-				// }
-
-				if (key === 'template') {
-					// TODO: Add remote templates if they exist
-					// TODO: Add icon for remote templates
-					// TODO: reorder so that defaultTemplate is first in array
-					let matches = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
-					result.setSuggestions(matches)
-				}
-			})
+			// 	if (key === 'template') {
+			// 		// TODO: Add remote templates if they exist
+			// 		// TODO: Add icon for remote templates
+			// 		// TODO: reorder so that defaultTemplate is first in array
+			// 		let matches = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+			// 		result.setSuggestions(matches)
+			// 	}
+			// })
 
 			figma.on('run', ({ parameters }) => {
 				// TODO: Need to update localTemplates on file and then cross reference that with ones from paramters so they are up to date
-				let settings = {
-					cellAlignment: 'CENTER',
-					cellHeight: undefined,
-					cellWidth: 120,
-					columnCount: 2,
-					columnResizing: false,
-					includeHeader: true,
-					prevCellWidth: 120,
-					remember: true,
-					rowCount: 2,
-					tableHeight: 500,
-					tableWidth: 600,
-				}
+				// let settings = {
+				// 	cellAlignment: 'CENTER',
+				// 	cellHeight: undefined,
+				// 	cellWidth: 120,
+				// 	columnCount: 2,
+				// 	columnResizing: false,
+				// 	includeHeader: true,
+				// 	prevCellWidth: 120,
+				// 	remember: true,
+				// 	rowCount: 2,
+				// 	tableHeight: 500,
+				// 	tableWidth: 600,
+				// }
 
 				if (parameters) {
-					if (parameters.matrix) {
-						let [cols, rows] = parameters.matrix.split('x')
-						settings.columnCount = cols
-						settings.rowCount = rows
-					}
-
-					if (parameters.size) {
-						// TODO: pass correct cell width when hug used
-						let [width, height] = parameters.size.split('x')
-						settings.tableWidth = width
-						settings.tableHeight = height
-
-						if (width.trim() == 'HUG') {
-							// settings.cellWidth = userPreferences.cellWidth
-						}
-					}
-
-					createTableInstance({ data: settings })
+					// if (parameters.matrix) {
+					// 	let [cols, rows] = parameters.matrix.split('x')
+					// 	settings.columnCount = cols
+					// 	settings.rowCount = rows
+					// }
+					// if (parameters.size) {
+					// 	// TODO: pass correct cell width when hug used
+					// 	let [width, height] = parameters.size.split('x')
+					// 	settings.tableWidth = width
+					// 	settings.tableHeight = height
+					// 	if (width.trim() == 'HUG') {
+					// 		// settings.cellWidth = userPreferences.cellWidth
+					// 	}
+					// }
+					// createTableInstance({ data: settings })
 				} else {
 					createTableUI()
 				}

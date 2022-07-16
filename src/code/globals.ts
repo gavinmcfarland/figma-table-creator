@@ -248,6 +248,8 @@ export function createTable(templateComponent, settings, type?) {
 				// }
 
 				// child.mainComponent = part.th.mainComponent
+
+				cell.primaryAxisAlignItems = settings.cellAlignment
 			}
 		}
 
