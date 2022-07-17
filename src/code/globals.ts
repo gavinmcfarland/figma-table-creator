@@ -57,6 +57,19 @@ export function createTable(templateComponent, settings, type?) {
 	let part = getTemplateParts(templateComponent)
 	let tableInstance
 
+	let templateSettings = getTableSettings(part.table)
+
+	// Get settings from template
+	if (settings.table.matrix[0][0] === '$') {
+		settings.table.matrix[0][0] = templateSettings.table.matrix[0][0]
+	}
+
+	if (settings.table.matrix[0][1] === '$') {
+		settings.table.matrix[0][1] = templateSettings.table.matrix[0][1]
+	}
+
+	console.log(settings.table.matrix[0])
+
 	if (!part.table || !part.tr || !part.td || (!part.th && settings.table.options.header)) {
 		let array = []
 		part.table ? null : array.push('table')
@@ -320,7 +333,16 @@ export function getLocalTemplatesWithoutUpdating() {
 		let node = components[i]
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
+			templateData.id = node.id
 			templateData.name = node.name
+			templateData.name = node.name
+			templateData.component.id = node.id
+			// KEY needs updating if template duplicated
+			templateData.component.key = node.key
+			// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
+			// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
+			let fileId = getDocumentData('fileId') || genUID()
+			templateData.file.id = fileId
 			templates.push(templateData)
 		}
 	}
@@ -492,7 +514,7 @@ export function getTableSettings(tableNode) {
 		options: {
 			resizing: true,
 			header: true,
-			axes: 'COLUMNS',
+			axis: 'COLUMNS',
 		},
 	}
 
@@ -521,11 +543,11 @@ export function getTableSettings(tableNode) {
 		var node = firstRow.children[i]
 		var cellType = getPluginData(node, 'elementSemantics')?.is
 		if (cellType === 'td' || cellType === 'th') {
-			columnCount[0]++
+			columnCount++
 		}
 	}
 
-	table.matrix = [[rowCount, columnCount]]
+	table.matrix = [[columnCount, rowCount]]
 	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]
 	table.size = [
 		[
@@ -545,7 +567,7 @@ export function getTableSettings(tableNode) {
 			})(),
 		],
 	]
-	table.options.axes = usingColumnsOrRows
+	table.options.axis = usingColumnsOrRows
 	table.options.header = getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false
 
 	return { table }
