@@ -964,6 +964,8 @@ async function main() {
 			data = defaultData
 		}
 
+		console.log('pref', data)
+
 		// Merge user's data with deafult
 		data = Object.assign(defaultData, data || {})
 
@@ -1428,7 +1430,8 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			createTableInstance(msg)
+			console.log(msg)
+			createTableInstance(msg.data)
 		})
 
 		plugin.command('updateTables', () => {

@@ -64,7 +64,7 @@
 					return data
 				})
 			}
-			else if (!isNaN(value)) {
+			else if (!isNaN(value) || value.trim() === "$") {
 				// If table width is a number
 				valueStore.update((data) => {
 
@@ -100,7 +100,7 @@
 
 				})
 			}
-			else if (!isNaN(value)) {
+			else if (!isNaN(value) || value.trim() === "$") {
 				// valueStore.update((data) => {
 				// 	data.prevCellHeight = data.cellHeight
 				// 	data.cellHeight = "FILL"
@@ -128,7 +128,7 @@
 					return data
 				})
 			}
-			else if (!isNaN(value)) {
+			else if (!isNaN(value) || value.trim() === "$") {
 				valueStore.update((data) => {
 					data.tableWidth = "HUG"
 					return data

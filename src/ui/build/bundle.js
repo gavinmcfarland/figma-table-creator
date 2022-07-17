@@ -650,7 +650,7 @@ var ui = (function () {
     					data.cellWidth = data.prevCellWidth;
     					return data;
     				});
-    			} else if (!isNaN(value)) {
+    			} else if (!isNaN(value) || value.trim() === "$") {
     				// If table width is a number
     				valueStore.update(data => {
     					if (data.cellWidth.toString().toUpperCase() !== "FILL") {
@@ -682,7 +682,7 @@ var ui = (function () {
     					data.prevCellHeight = data.cellHeight || 120;
     					return data;
     				});
-    			} else if (!isNaN(value)) ; else // 	data.prevCellHeight = data.cellHeight
+    			} else if (!isNaN(value) || value.trim() === "$") ; else // 	data.prevCellHeight = data.cellHeight
     			// 	data.cellHeight = "FILL"
     			// 	return data
     			// })
@@ -706,7 +706,7 @@ var ui = (function () {
     					data.tableWidth = opts.tableWidth;
     					return data;
     				});
-    			} else if (!isNaN(value)) {
+    			} else if (!isNaN(value) || value.trim() === "$") {
     				valueStore.update(data => {
     					data.tableWidth = "HUG";
     					return data;
@@ -1763,19 +1763,19 @@ var ui = (function () {
 
     function get_each_context$2(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[16] = list[i];
-    	child_ctx[18] = i;
+    	child_ctx[17] = list[i];
+    	child_ctx[19] = i;
     	return child_ctx;
     }
 
     function get_each_context_1$1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[16] = list[i];
-    	child_ctx[20] = i;
+    	child_ctx[17] = list[i];
+    	child_ctx[21] = i;
     	return child_ctx;
     }
 
-    // (119:3) {#each { length: grid[1] } as _, y}
+    // (169:3) {#each { length: grid[1] } as _, y}
     function create_each_block_1$1(ctx) {
     	let td;
     	let label;
@@ -1786,15 +1786,15 @@ var ui = (function () {
     	let dispose;
 
     	function click_handler() {
-    		return /*click_handler*/ ctx[8](/*x*/ ctx[18], /*y*/ ctx[20]);
+    		return /*click_handler*/ ctx[9](/*x*/ ctx[19], /*y*/ ctx[21]);
     	}
 
     	function mouseover_handler() {
-    		return /*mouseover_handler*/ ctx[9](/*x*/ ctx[18], /*y*/ ctx[20]);
+    		return /*mouseover_handler*/ ctx[10](/*x*/ ctx[19], /*y*/ ctx[21]);
     	}
 
     	function mouseout_handler() {
-    		return /*mouseout_handler*/ ctx[10](/*x*/ ctx[18], /*y*/ ctx[20]);
+    		return /*mouseout_handler*/ ctx[11](/*x*/ ctx[19], /*y*/ ctx[21]);
     	}
 
     	return {
@@ -1803,18 +1803,18 @@ var ui = (function () {
     			label = element("label");
     			t = space();
     			input = element("input");
-    			attr(label, "for", "" + (/*x*/ ctx[18] + "of" + /*y*/ ctx[20]));
+    			attr(label, "for", "" + (/*x*/ ctx[19] + "of" + /*y*/ ctx[21]));
     			attr(label, "tabindex", "-1");
     			attr(label, "class", "svelte-d6jnz8");
-    			attr(input, "id", "" + (/*x*/ ctx[18] + "of" + /*y*/ ctx[20]));
+    			attr(input, "id", "" + (/*x*/ ctx[19] + "of" + /*y*/ ctx[21]));
     			attr(input, "type", "radio");
-    			input.value = "" + (/*x*/ ctx[18] + "of" + /*y*/ ctx[20]);
+    			input.value = "" + (/*x*/ ctx[19] + "of" + /*y*/ ctx[21]);
     			attr(input, "name", "selection");
-    			input.checked = input_checked_value = /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].checked;
+    			input.checked = input_checked_value = /*table_state*/ ctx[1][/*x*/ ctx[19]][/*y*/ ctx[21]].checked;
     			attr(input, "class", "svelte-d6jnz8");
     			attr(td, "class", "svelte-d6jnz8");
-    			toggle_class(td, "hover", /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].hover);
-    			toggle_class(td, "selected", /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].selected);
+    			toggle_class(td, "hover", /*table_state*/ ctx[1][/*x*/ ctx[19]][/*y*/ ctx[21]].hover);
+    			toggle_class(td, "selected", /*table_state*/ ctx[1][/*x*/ ctx[19]][/*y*/ ctx[21]].selected);
     		},
     		m(target, anchor) {
     			insert(target, td, anchor);
@@ -1836,16 +1836,16 @@ var ui = (function () {
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
 
-    			if (dirty & /*table_state*/ 2 && input_checked_value !== (input_checked_value = /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].checked)) {
+    			if (dirty & /*table_state*/ 2 && input_checked_value !== (input_checked_value = /*table_state*/ ctx[1][/*x*/ ctx[19]][/*y*/ ctx[21]].checked)) {
     				input.checked = input_checked_value;
     			}
 
     			if (dirty & /*table_state*/ 2) {
-    				toggle_class(td, "hover", /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].hover);
+    				toggle_class(td, "hover", /*table_state*/ ctx[1][/*x*/ ctx[19]][/*y*/ ctx[21]].hover);
     			}
 
     			if (dirty & /*table_state*/ 2) {
-    				toggle_class(td, "selected", /*table_state*/ ctx[1][/*x*/ ctx[18]][/*y*/ ctx[20]].selected);
+    				toggle_class(td, "selected", /*table_state*/ ctx[1][/*x*/ ctx[19]][/*y*/ ctx[21]].selected);
     			}
     		},
     		d(detaching) {
@@ -1856,7 +1856,7 @@ var ui = (function () {
     	};
     }
 
-    // (117:1) {#each { length: grid[0] } as _, x}
+    // (167:1) {#each { length: grid[0] } as _, x}
     function create_each_block$2(ctx) {
     	let tr;
     	let t;
@@ -1977,6 +1977,14 @@ var ui = (function () {
     	};
     }
 
+    function convertToNumber(data) {
+    	if (Number(data)) {
+    		return Number(data);
+    	} else {
+    		return data;
+    	}
+    }
+
     function instance$2($$self, $$props, $$invalidate) {
     	let { grid = [4, 4] } = $$props;
     	let { columnCount = 4 } = $$props;
@@ -2021,13 +2029,20 @@ var ui = (function () {
     		// Reset to no state
     		set_state("selected", [grid[0], grid[1]], false);
 
-    		set_state("selected", [value.rowCount - 1, value.columnCount - 1]);
+    		set_state("selected", [value.rowCount, value.columnCount]);
     	});
 
     	function on_load(node) {
-    		let rowState = rowCount - 1;
-    		let columnState = columnCount - 1;
+    		$$invalidate(7, rowCount = convertToNumber(rowCount));
+    		$$invalidate(6, columnCount = convertToNumber(columnCount));
 
+    		// TODO: If input is $, then don't select matrix
+    		let rowState = rowCount === "$" ? 8 : rowCount - 1;
+
+    		let columnState = columnCount === "$" ? 8 : columnCount - 1;
+
+    		// let rowState = rowCount - 1
+    		// let columnState = columnCount - 1
     		if (rowState > 7) {
     			rowState = 7;
     		}
@@ -2039,22 +2054,46 @@ var ui = (function () {
     		// Set default checked radio
     		$$invalidate(1, table_state[rowState][columnState].checked = true, table_state);
 
+    		console.log(rowCount, columnCount);
+
     		// Set default state
-    		set_state("selected", [rowState, columnState]);
+    		set_state("selected", [rowCount, columnCount]);
     	}
 
     	function enter(x, y) {
-    		hover_end = [x, y];
+    		hover_end = [x + 1, y + 1];
     		set_state("hover", hover_end);
     	} // valueStore.set({ columnCount: x + 1, rowCount: y + 1 })
 
     	function leave(x, y) {
-    		hover_end = [x, y];
+    		hover_end = [x + 1, y + 1];
     		set_state("hover", hover_end, false);
     	} // valueStore.set({ columnCount: origColumnCount, rowCount: origRowCount })
 
     	function set_state(type, end, value = true) {
     		let [x2, y2] = end;
+    		x2 = convertToNumber(x2);
+    		y2 = convertToNumber(y2);
+
+    		if (x2 === "$") {
+    			x2 = 8;
+    		}
+
+    		if (y2 === "$") {
+    			y2 = 8;
+    		}
+
+    		// Cap to 7
+    		if (x2 > 8) {
+    			x2 = 8;
+    		}
+
+    		if (y2 > 8) {
+    			y2 = 8;
+    		}
+
+    		x2 = x2 - 1;
+    		y2 = y2 - 1;
 
     		$$invalidate(1, table_state = table_state.map((a, x) => a.map((obj, y) => {
     			if (type === "selected") {
@@ -2092,6 +2131,7 @@ var ui = (function () {
     		leave,
     		columnCount,
     		rowCount,
+    		convertToNumber,
     		click_handler,
     		mouseover_handler,
     		mouseout_handler
@@ -2101,7 +2141,17 @@ var ui = (function () {
     class Matrix extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { grid: 0, columnCount: 6, rowCount: 7 });
+
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {
+    			grid: 0,
+    			columnCount: 6,
+    			rowCount: 7,
+    			convertToNumber: 8
+    		});
+    	}
+
+    	get convertToNumber() {
+    		return convertToNumber;
     	}
     }
 
@@ -4757,7 +4807,7 @@ var ui = (function () {
     			props: {
     				id: "columnCount",
     				label: "C",
-    				type: "number",
+    				type: "text",
     				step: "1",
     				min: "1",
     				max: "50",
@@ -4773,7 +4823,7 @@ var ui = (function () {
     			props: {
     				id: "rowCount",
     				label: "R",
-    				type: "number",
+    				type: "text",
     				step: "1",
     				min: "1",
     				max: "50",
@@ -6869,7 +6919,7 @@ var ui = (function () {
     				selectedFile,
     				data,
     				columnCount: data.table.matrix[0][0],
-    				rowCount: data.table.matrix[0][0],
+    				rowCount: data.table.matrix[0][1],
     				cellWidth: data.table.cell[0][0],
     				cellHeight: data.table.cell[0][1],
     				includeHeader: data.table.options.header,

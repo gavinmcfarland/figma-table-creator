@@ -395,7 +395,7 @@
 				selectedFile,
 				data,
 				columnCount: data.table.matrix[0][0],
-				rowCount: data.table.matrix[0][0],
+				rowCount: data.table.matrix[0][1],
 				cellWidth: data.table.cell[0][0],
 				cellHeight: data.table.cell[0][1],
 				includeHeader: data.table.options.header,
@@ -861,8 +861,8 @@
 		</div>
 		<!-- <form autocomplete="off"> -->
 			<div class="field-group">
-				<Field id="columnCount" label="C" type="number" step="1" min="1" max="50" value={columnCount} opts={{columnCount, cellWidth}} />
-				<Field id="rowCount" label="R" type="number" step="1" min="1" max="50" value={rowCount} />
+				<Field id="columnCount" label="C" type="text" step="1" min="1" max="50" value={columnCount} opts={{columnCount, cellWidth}} />
+				<Field id="rowCount" label="R" type="text" step="1" min="1" max="50" value={rowCount} />
 			</div>
 			<div class="field-group">
 				<Field id="tableWidth" label="W" type="text" step="1" min="1" max="2000" value={tableWidth} opts={{prevCellWidth}} />

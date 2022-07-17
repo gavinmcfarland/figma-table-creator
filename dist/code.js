@@ -4935,6 +4935,32 @@ function extractValues(objectArray) {
         return Object.assign(Object.assign({}, acc), thing);
     }, {});
 }
+function copyTemplatePart(partParent, node, index, templateSettings, tableSettings) {
+    // TODO: Copy across overrides like text, and instance swaps
+    // Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
+    if (index > templateSettings.table.matrix[0][0] - 1) {
+        index = templateSettings.table.matrix[0][0] - 1;
+    }
+    let templateCell = partParent.children[index];
+    // Copy across width
+    if (tableSettings) {
+        console.log('cellWidth', tableSettings.table.cell[0][0]);
+        let cellWidth;
+        if (tableSettings.table.cell[0][0] === '$') {
+            cellWidth = templateCell.width;
+        }
+        else {
+            cellWidth = tableSettings.table.cell[0][0];
+        }
+        if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
+            node.resizeWithoutConstraints(cellWidth, node.height);
+        }
+    }
+    // Set component properties on instances
+    if (templateCell.componentProperties) {
+        node.setProperties(extractValues(templateCell.componentProperties));
+    }
+}
 function createTable(templateComponent, settings, type) {
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
@@ -4942,15 +4968,41 @@ function createTable(templateComponent, settings, type) {
     let part = getTemplateParts$1(templateComponent);
     let tableInstance;
     let templateSettings = getTableSettings(part.table);
+    // Santitize data
+    settings.table.matrix[0][0] = convertToNumber(settings.table.matrix[0][0]);
+    settings.table.matrix[0][1] = convertToNumber(settings.table.matrix[0][1]);
+    settings.table.size[0][0] = convertToNumber(settings.table.size[0][0]);
+    settings.table.size[0][1] = convertToNumber(settings.table.size[0][1]);
+    settings.table.cell[0][0] = convertToNumber(settings.table.cell[0][0]);
+    settings.table.cell[0][1] = convertToNumber(settings.table.cell[0][1]);
     // Could be better. Need a way to avoid mutating original object (settings)
-    let columnCount = settings.table.matrix[0][0];
-    let rowCount = settings.table.matrix[0][1];
+    let tableSettings = {
+        table: {
+            matrix: [[settings.table.matrix[0][0], settings.table.matrix[0][1]]],
+            size: [[settings.table.size[0][0], settings.table.size[0][1]]],
+            cell: [[settings.table.cell[0][0], settings.table.cell[0][1]]],
+        },
+    };
     // Get settings from template
     if (settings.table.matrix[0][0] === '$') {
-        columnCount = templateSettings.table.matrix[0][0];
+        tableSettings.table.matrix[0][0] = templateSettings.table.matrix[0][0];
     }
     if (settings.table.matrix[0][1] === '$') {
-        rowCount = templateSettings.table.matrix[0][1];
+        tableSettings.table.matrix[0][1] = templateSettings.table.matrix[0][1];
+    }
+    if (settings.table.size[0][0] === '$') {
+        tableSettings.table.size[0][0] = templateSettings.table.size[0][0];
+    }
+    if (settings.table.size[0][1] === '$') {
+        tableSettings.table.size[0][1] = templateSettings.table.size[0][1];
+    }
+    // Can't set this here because needs to happen inside template
+    // if (settings.table.cell[0][0] === '$') {
+    // 	tableSettings.table.cell[0][0] = templateSettings.table.size[0][0]
+    // }
+    console.log(templateSettings.table.cell[0][0], tableSettings.table.cell[0][0]);
+    if (settings.table.cell[0][1] === '$') {
+        tableSettings.table.cell[0][1] = templateSettings.table.cell[0][1];
     }
     if (!part.table || !part.tr || !part.td || (!part.th && settings.table.options.header)) {
         let array = [];
@@ -5022,24 +5074,16 @@ function createTable(templateComponent, settings, type) {
             setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
         }
         rowParent.insertChild(rowIndex, firstRow);
-        // Remove children which are tds and ths
-        // firstRow.findAll((node) => {
-        // 	if (node) {
-        // 		if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
-        // 			node.remove()
-        // 		}
-        // 	}
-        // })
         removeChildren(firstRow);
         // If height specified then make rows grow to height
         // Change size of cells
-        if (settings.table.size[0][1] && settings.table.size[0][1] !== 'HUG') {
+        if (tableSettings.table.size[0][1] && tableSettings.table.size[0][1] !== 'HUG') {
             firstRow.layoutGrow = 1;
         }
         // MANDATORY PROP as can't guarentee user will or figma will honour this
         firstRow.layoutAlign = 'STRETCH';
         // Create columns in first row
-        for (let i = 0; i < columnCount; i++) {
+        for (let i = 0; i < tableSettings.table.matrix[0][0]; i++) {
             var duplicateCell;
             if (part.td.type === 'COMPONENT') {
                 duplicateCell = part.td.clone();
@@ -5047,33 +5091,21 @@ function createTable(templateComponent, settings, type) {
             if (part.td.type === 'INSTANCE') {
                 duplicateCell = part.td.mainComponent.createInstance();
             }
-            if (settings.table.cell[0][0] && settings.table.cell[0][0] !== 'FILL') {
-                // if (settings.cellWidth === 'FILL') {
-                // 	duplicateCell.layoutGrow = 1
-                // } else {
-                // let origLayoutAlign = duplicateCell.layoutAlign
-                duplicateCell.resizeWithoutConstraints(settings.table.cell[0][0], duplicateCell.height);
-                // duplicateCell.layoutAlign = origLayoutAlign
-                // }
-            }
             // Change size of cells
-            if (settings.table.size[0][0] && settings.table.size[0][0] !== 'HUG') {
+            if (tableSettings.table.size[0][0] && tableSettings.table.size[0][0] !== 'HUG') {
                 duplicateCell.layoutGrow = 1;
             }
             setPluginData_1(duplicateCell, 'elementSemantics', { is: 'td' });
-            duplicateCell.primaryAxisAlignItems = settings.table.alignment[0];
-            // Set component properties on instances
-            if (part.td.componentProperties) {
-                duplicateCell.setProperties(extractValues(part.td.componentProperties));
-            }
             firstRow.appendChild(duplicateCell);
+            copyTemplatePart(part.table.children[1], duplicateCell, i, templateSettings, tableSettings);
+            duplicateCell.primaryAxisAlignItems = settings.table.alignment[0];
             // We want to always force the cells to stretch to height of row regardless of users settings
             duplicateCell.layoutAlign = 'STRETCH';
             // The property below would need to be applied to if I wanted to force this. Normally inherited from cell
             duplicateCell.primaryAxisSizingMode = 'FIXED';
         }
         // Create rest of rows
-        for (var i = 1; i < rowCount; i++) {
+        for (var i = 1; i < tableSettings.table.matrix[0][1]; i++) {
             var duplicateRow;
             if (firstRow.type === 'COMPONENT') {
                 duplicateRow = firstRow.createInstance();
@@ -5083,7 +5115,7 @@ function createTable(templateComponent, settings, type) {
             else {
                 duplicateRow = firstRow.clone();
             }
-            if (settings.table.size[0][1] && settings.table.size[0][1] !== 'HUG') {
+            if (tableSettings.table.size[0][1] && tableSettings.table.size[0][1] !== 'HUG') {
                 duplicateRow.layoutGrow = 1;
             }
             // If using columnResizing and header swap non headers to default cells
@@ -5095,7 +5127,8 @@ function createTable(templateComponent, settings, type) {
                     cell.mainComponent = part.td.mainComponent;
                     setPluginData_1(cell, 'elementSemantics', { is: 'td' });
                     // Set component properties on instances
-                    cell.setProperties(extractValues(part.td.componentProperties));
+                    // cell.setProperties(extractValues(part.td.componentProperties))
+                    copyTemplatePart(part.table.children[1], cell, i, templateSettings);
                     // Needs to be applied here too
                     cell.primaryAxisSizingMode = 'FIXED';
                     cell.primaryAxisAlignItems = settings.table.alignment[0];
@@ -5110,20 +5143,22 @@ function createTable(templateComponent, settings, type) {
                 // FIXME: Check if instance or main component
                 child.swapComponent(part.th.mainComponent);
                 setPluginData_1(child, 'elementSemantics', { is: 'th' });
-                // Set component properties on instances
-                if (part.th.componentProperties) {
-                    child.setProperties(extractValues(part.th.componentProperties));
-                }
+                // // Set component properties on instances
+                // if (part.th.componentProperties) {
+                // 	child.setProperties(extractValues(part.th.componentProperties))
+                // }
+                // Need first row which is the header
+                copyTemplatePart(part.table.children[0], child, i, templateSettings);
                 // child.mainComponent = part.th.mainComponent
             }
         }
         tableInstance.setRelaunchData(defaultRelaunchData);
         // Set width of table
-        if (settings.table.size[0][0] && !(typeof settings.table.size[0][0] === 'string')) {
-            tableInstance.resize(convertToNumber(settings.table.size[0][0]), tableInstance.height);
+        if (tableSettings.table.size[0][0] && !(typeof tableSettings.table.size[0][0] === 'string')) {
+            tableInstance.resize(convertToNumber(tableSettings.table.size[0][0]), tableInstance.height);
         }
-        if (settings.table.size[0][1] && !(typeof settings.table.size[0][1] === 'string')) {
-            tableInstance.resize(tableInstance.width, convertToNumber(settings.table.size[0][1]));
+        if (tableSettings.table.size[0][1] && !(typeof tableSettings.table.size[0][1] === 'string')) {
+            tableInstance.resize(tableInstance.width, convertToNumber(tableSettings.table.size[0][1]));
         }
         return tableInstance;
     }
@@ -6260,6 +6295,7 @@ async function main() {
         if (!(data === null || data === void 0 ? void 0 : data.table)) {
             data = defaultData;
         }
+        console.log('pref', data);
         // Merge user's data with deafult
         data = Object.assign(defaultData, data || {});
         return data;
@@ -6642,7 +6678,8 @@ async function main() {
             addElement(msg.element);
         });
         plugin.on('create-table-instance', async (msg) => {
-            createTableInstance(msg);
+            console.log(msg);
+            createTableInstance(msg.data);
         });
         plugin.command('updateTables', () => {
             let templateData = getPluginData_1(figma.currentPage.selection[0], 'template');

@@ -14,6 +14,8 @@
 13. Add keyword option to use when creating table for matrix DONE
 12. and variant, component type for each column, including header and default cell
 14. Investigate why some $ dissapear in recent settings. Investigate why $ gets turned into number in recents
+13. Solve why aligment order isn't changing in paramters
+14. Figure out why UI isn't loading
 
 
 1. Wait for fix for setting component properties has been released
