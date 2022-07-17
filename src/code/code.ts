@@ -899,7 +899,7 @@ async function createTableUI() {
 }
 
 async function createTableInstance(opts) {
-	const templateComponent = await lookForComponent(opts.data.table.template)
+	const templateComponent = await lookForComponent(opts.table.template)
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
@@ -924,14 +924,18 @@ async function createTableInstance(opts) {
 		// }
 
 		// Add template to settings
-		opts.data.table.template = getPluginData(templateComponent, 'template')
+		opts.table.template = getPluginData(templateComponent, 'template')
 
-		let tableInstance = createTable(templateComponent, opts.data)
+		let tableInstance = createTable(templateComponent, opts)
+
+		console.log('->', opts)
 
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]
-			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, opts.data)).then(() => {
+			updateClientStorageAsync('userPreferences', (data) => {
+				return Object.assign(data, opts)
+			}).then(() => {
 				figma.closePlugin('Table created')
 			})
 		}
@@ -1210,7 +1214,6 @@ async function main() {
 
 			figma.on('run', async ({ parameters }) => {
 				let settings = userPreferences
-				let template
 
 				function updateEntryInArray(array, entry) {
 					// Add to recents
@@ -1244,6 +1247,8 @@ async function main() {
 					if (array.length > 4) {
 						array = array.slice(0, 4)
 					}
+
+					return array
 				}
 
 				if (parameters) {
@@ -1263,20 +1268,20 @@ async function main() {
 
 					// ----
 
+					if (parameters.template) {
+						settings.table.template = parameters.template
+					}
+
 					if (parameters.matrix) {
-						updateEntryInArray(settings.table.matrix, parameters.matrix)
+						settings.table.matrix = updateEntryInArray(settings.table.matrix, parameters.matrix)
 					}
 
 					if (parameters.size) {
-						updateEntryInArray(settings.table.size, parameters.size)
-					}
-
-					if (parameters.template) {
-						template = parameters.template
+						settings.table.size = updateEntryInArray(settings.table.size, parameters.size)
 					}
 
 					if (parameters.cell) {
-						updateEntryInArray(settings.table.cell, parameters.cell)
+						settings.table.cell = updateEntryInArray(settings.table.cell, parameters.cell)
 					}
 
 					if (parameters.alignment) {
@@ -1287,13 +1292,9 @@ async function main() {
 						settings.table.options.header = parameters.header
 					}
 
-					if (parameters.template) {
-						settings.table.template = parameters.template
-					}
+					console.log({ settings })
 
-					createTableInstance({ data: settings })
-
-					setClientStorageAsync('userPreferences', settings)
+					createTableInstance(settings)
 				} else {
 					createTableUI()
 				}

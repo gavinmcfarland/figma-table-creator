@@ -2218,9 +2218,6 @@ _._ = _;
 async function getClientStorageAsync(key) {
     return await figma.clientStorage.getAsync(key);
 }
-function setClientStorageAsync(key, data) {
-    return figma.clientStorage.setAsync(key, data);
-}
 async function updateClientStorageAsync$1(key, callback) {
     var data = await figma.clientStorage.getAsync(key);
     data = callback(data);
@@ -3111,7 +3108,6 @@ var removeChildren_1 = removeChildren$1;
 var removeRemoteFile_1 = removeRemoteFile;
 var replace_1 = replace;
 var resize_1 = resize;
-var setClientStorageAsync_1 = setClientStorageAsync;
 var setDocumentData_1 = setDocumentData;
 var setPluginData_1 = setPluginData;
 var ungroup_1 = ungroup;
@@ -4946,14 +4942,16 @@ function createTable(templateComponent, settings, type) {
     let part = getTemplateParts$1(templateComponent);
     let tableInstance;
     let templateSettings = getTableSettings(part.table);
+    // Could be better. Need a way to avoid mutating original object (settings)
+    let columnCount = settings.table.matrix[0][0];
+    let rowCount = settings.table.matrix[0][1];
     // Get settings from template
     if (settings.table.matrix[0][0] === '$') {
-        settings.table.matrix[0][0] = templateSettings.table.matrix[0][0];
+        columnCount = templateSettings.table.matrix[0][0];
     }
     if (settings.table.matrix[0][1] === '$') {
-        settings.table.matrix[0][1] = templateSettings.table.matrix[0][1];
+        rowCount = templateSettings.table.matrix[0][1];
     }
-    console.log(settings.table.matrix[0]);
     if (!part.table || !part.tr || !part.td || (!part.th && settings.table.options.header)) {
         let array = [];
         part.table ? null : array.push('table');
@@ -5041,7 +5039,7 @@ function createTable(templateComponent, settings, type) {
         // MANDATORY PROP as can't guarentee user will or figma will honour this
         firstRow.layoutAlign = 'STRETCH';
         // Create columns in first row
-        for (let i = 0; i < settings.table.matrix[0][0]; i++) {
+        for (let i = 0; i < columnCount; i++) {
             var duplicateCell;
             if (part.td.type === 'COMPONENT') {
                 duplicateCell = part.td.clone();
@@ -5075,7 +5073,7 @@ function createTable(templateComponent, settings, type) {
             duplicateCell.primaryAxisSizingMode = 'FIXED';
         }
         // Create rest of rows
-        for (var i = 1; i < settings.table.matrix[0][1]; i++) {
+        for (var i = 1; i < rowCount; i++) {
             var duplicateRow;
             if (firstRow.type === 'COMPONENT') {
                 duplicateRow = firstRow.createInstance();
@@ -6208,7 +6206,7 @@ async function createTableUI() {
     updatePluginVersion('7.0.0');
 }
 async function createTableInstance(opts) {
-    const templateComponent = await lookForComponent(opts.data.table.template);
+    const templateComponent = await lookForComponent(opts.table.template);
     // const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
     if (templateComponent) {
         // if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
@@ -6228,12 +6226,15 @@ async function createTableInstance(opts) {
         // 	opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
         // }
         // Add template to settings
-        opts.data.table.template = getPluginData_1(templateComponent, 'template');
-        let tableInstance = createTable(templateComponent, opts.data);
+        opts.table.template = getPluginData_1(templateComponent, 'template');
+        let tableInstance = createTable(templateComponent, opts);
+        console.log('->', opts);
         if (tableInstance) {
             positionInCenterOfViewport(tableInstance);
             figma.currentPage.selection = [tableInstance];
-            updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, opts.data)).then(() => {
+            updateClientStorageAsync_1('userPreferences', (data) => {
+                return Object.assign(data, opts);
+            }).then(() => {
                 figma.closePlugin('Table created');
             });
         }
@@ -6487,6 +6488,7 @@ async function main() {
                     if (array.length > 4) {
                         array = array.slice(0, 4);
                     }
+                    return array;
                 }
                 if (parameters) {
                     // ---- Because we can't set data when parameters is launched we need to retrospectively update template components that may have been copied and have the out of date template data on them
@@ -6499,15 +6501,17 @@ async function main() {
                         parameters.template = localTemplates[indexOfDefaultTemplate];
                     }
                     // ----
+                    if (parameters.template) {
+                        settings.table.template = parameters.template;
+                    }
                     if (parameters.matrix) {
-                        updateEntryInArray(settings.table.matrix, parameters.matrix);
+                        settings.table.matrix = updateEntryInArray(settings.table.matrix, parameters.matrix);
                     }
                     if (parameters.size) {
-                        updateEntryInArray(settings.table.size, parameters.size);
+                        settings.table.size = updateEntryInArray(settings.table.size, parameters.size);
                     }
-                    if (parameters.template) ;
                     if (parameters.cell) {
-                        updateEntryInArray(settings.table.cell, parameters.cell);
+                        settings.table.cell = updateEntryInArray(settings.table.cell, parameters.cell);
                     }
                     if (parameters.alignment) {
                         settings.table.alignment = parameters.alignment;
@@ -6515,11 +6519,8 @@ async function main() {
                     if (parameters.header === false || parameters.header === true) {
                         settings.table.options.header = parameters.header;
                     }
-                    if (parameters.template) {
-                        settings.table.template = parameters.template;
-                    }
-                    createTableInstance({ data: settings });
-                    setClientStorageAsync_1('userPreferences', settings);
+                    console.log({ settings });
+                    createTableInstance(settings);
                 }
                 else {
                     createTableUI();

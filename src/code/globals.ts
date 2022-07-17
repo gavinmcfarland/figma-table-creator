@@ -59,16 +59,18 @@ export function createTable(templateComponent, settings, type?) {
 
 	let templateSettings = getTableSettings(part.table)
 
+	// Could be better. Need a way to avoid mutating original object (settings)
+	let columnCount = settings.table.matrix[0][0]
+	let rowCount = settings.table.matrix[0][1]
+
 	// Get settings from template
 	if (settings.table.matrix[0][0] === '$') {
-		settings.table.matrix[0][0] = templateSettings.table.matrix[0][0]
+		columnCount = templateSettings.table.matrix[0][0]
 	}
 
 	if (settings.table.matrix[0][1] === '$') {
-		settings.table.matrix[0][1] = templateSettings.table.matrix[0][1]
+		rowCount = templateSettings.table.matrix[0][1]
 	}
-
-	console.log(settings.table.matrix[0])
 
 	if (!part.table || !part.tr || !part.td || (!part.th && settings.table.options.header)) {
 		let array = []
@@ -168,7 +170,7 @@ export function createTable(templateComponent, settings, type?) {
 
 		// Create columns in first row
 
-		for (let i = 0; i < settings.table.matrix[0][0]; i++) {
+		for (let i = 0; i < columnCount; i++) {
 			var duplicateCell
 			if (part.td.type === 'COMPONENT') {
 				duplicateCell = part.td.clone()
@@ -210,7 +212,7 @@ export function createTable(templateComponent, settings, type?) {
 		}
 
 		// Create rest of rows
-		for (var i = 1; i < settings.table.matrix[0][1]; i++) {
+		for (var i = 1; i < rowCount; i++) {
 			var duplicateRow
 
 			if (firstRow.type === 'COMPONENT') {
