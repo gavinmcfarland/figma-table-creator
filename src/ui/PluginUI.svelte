@@ -132,6 +132,7 @@
 					type: "create-table-instance",
 					data: {
 						table: {
+							template: data.defaultTemplate,
 							matrix: [[ columnCount, rowCount]],
 							size: [[tableWidth, tableHeight]],
 							cell: [[cellWidth, cellHeight]],
@@ -142,7 +143,7 @@
 							}
 						},
 						prevCellWidth: prevCellWidth,
-						template: data.defaultTemplate
+
 					}
 				},
 			},

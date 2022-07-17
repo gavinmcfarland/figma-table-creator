@@ -5141,7 +5141,7 @@ function Template(node) {
         name: figma.root.name,
     };
 }
-function getLocalTemplatesWithoutUpdating2() {
+function getLocalTemplatesWithoutUpdating() {
     figma.skipInvisibleInstanceChildren = true;
     var templates = [];
     var components = figma.root.findAllWithCriteria({
@@ -5228,7 +5228,7 @@ function getDefaultTemplate() {
 async function determineDefaultTemplate() {
     let { table } = await getClientStorageAsync_1('userPreferences');
     let defaultTemplate = table.template;
-    let localTemplates = getLocalTemplatesWithoutUpdating2();
+    let localTemplates = getLocalTemplatesWithoutUpdating();
     let remoteFiles = getDocumentData_1('remoteFiles');
     let fileId = getDocumentData_1('fileId');
     if (defaultTemplate && !isEmpty(defaultTemplate)) {
@@ -5563,6 +5563,7 @@ console.clear();
 function move(array, from, to) {
     let element = array.splice(from, 1)[0];
     array.splice(to, 0, element);
+    return array;
 }
 function daysToMilliseconds(days) {
     // 👇️        hour  min  sec  ms
@@ -6187,32 +6188,35 @@ async function createTableUI() {
     updatePluginVersion('7.0.0');
 }
 async function createTableInstance(opts) {
-    // TODO: Modify to support custom template being passed in
-    await getRemoteFilesAsync_1();
-    const templateComponent = await lookForComponent(opts.template || getDocumentData_1('defaultTemplate'));
+    const templateComponent = await lookForComponent(opts.data.table.template);
     // const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
     if (templateComponent) {
-        if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
-            opts.data.tableWidth = opts.data.tableWidth.toUpperCase();
-            opts.data.tableWidth = convertToNumber(opts.data.tableWidth);
-        }
-        if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
-            opts.data.tableHeight = opts.data.tableHeight.toUpperCase();
-            opts.data.tableHeight = convertToNumber(opts.data.tableHeight);
-        }
-        if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
-            opts.data.cellWidth = opts.data.cellWidth.toUpperCase();
-            opts.data.cellWidth = convertToNumber(opts.data.cellWidth);
-        }
-        if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
-            opts.data.cellHeight = opts.data.cellHeight.toUpperCase();
-            opts.data.cellHeight = convertToNumber(opts.data.cellHeight);
-        }
+        // if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
+        // 	opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
+        // 	opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
+        // }
+        // if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
+        // 	opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
+        // 	opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
+        // }
+        // if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
+        // 	opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
+        // 	opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
+        // }
+        // if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
+        // 	opts.data.cellHeight = opts.data.cellHeight.toUpperCase()
+        // 	opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
+        // }
+        // Add template to settings
+        opts.data.table.template = getPluginData_1(templateComponent, 'template');
         let tableInstance = createTable(templateComponent, opts.data);
         if (tableInstance) {
             positionInCenterOfViewport(tableInstance);
             figma.currentPage.selection = [tableInstance];
-            updateClientStorageAsync_1('userPreferences', (data) => Object.assign(data, opts.data)).then(() => {
+            updateClientStorageAsync_1('userPreferences', (data) => {
+                console.log('new', Object.assign(data, opts.data));
+                return Object.assign(data, opts.data);
+            }).then(() => {
                 figma.closePlugin('Table created');
             });
         }
@@ -6348,7 +6352,7 @@ async function main() {
             // 	tableHeight: 500,
             // 	tableWidth: 600,
             // }
-            let localTemplates = getLocalTemplatesWithoutUpdating2();
+            let localTemplates = getLocalTemplatesWithoutUpdating();
             let remoteFiles = getDocumentData_1('remoteFiles');
             let remoteTemplates = [];
             let defaultTemplate = await determineDefaultTemplate();
@@ -6407,8 +6411,7 @@ async function main() {
                     let suggestions = [...localTemplates, ...remoteTemplates];
                     // Reorder array so that default template is at the top
                     let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key);
-                    let element = suggestions.splice(indexOfDefaultTemplate, 1)[0];
-                    suggestions.splice(0, 0, element);
+                    suggestions = move(suggestions, indexOfDefaultTemplate, 0);
                     result.setSuggestions(suggestions);
                 }
                 if (key === 'cell') {
@@ -6491,6 +6494,7 @@ async function main() {
                     if (parameters.template) {
                         settings.table.template = parameters.template;
                     }
+                    console.log('param', settings.table.template);
                     createTableInstance({ data: settings });
                     setClientStorageAsync_1('userPreferences', settings);
                 }

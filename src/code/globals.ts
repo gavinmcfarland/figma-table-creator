@@ -310,30 +310,7 @@ export function Template(node) {
 	}
 }
 
-// function getLocalTemplateComponents() {
-// 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
-// }
 export function getLocalTemplatesWithoutUpdating() {
-	figma.skipInvisibleInstanceChildren = true
-	var templates = []
-	var components = figma.root.findAllWithCriteria({
-		types: ['COMPONENT'],
-	})
-	for (let i = 0; i < components.length; i++) {
-		let node = components[i]
-		var templateData = getPluginData(node, 'template')
-		if (templateData && node.type === 'COMPONENT') {
-			let obj = {}
-			obj.name = node.name
-			obj.data = templateData
-			templates.push(obj)
-		}
-	}
-
-	return templates
-}
-
-export function getLocalTemplatesWithoutUpdating2() {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
@@ -429,7 +406,7 @@ export function getDefaultTemplate() {
 export async function determineDefaultTemplate() {
 	let { table } = await getClientStorageAsync('userPreferences')
 	let defaultTemplate = table.template
-	let localTemplates = getLocalTemplatesWithoutUpdating2()
+	let localTemplates = getLocalTemplatesWithoutUpdating()
 	let remoteFiles = getDocumentData('remoteFiles')
 
 	let fileId = getDocumentData('fileId')

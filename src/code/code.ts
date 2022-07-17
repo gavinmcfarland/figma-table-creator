@@ -52,13 +52,11 @@ import {
 	File,
 	updateTables,
 	setDefaultTemplate,
-	setPreviousTemplate,
 	getTableSettings,
 	convertToNumber,
 	getLocalTemplatesWithoutUpdating,
 	determineDefaultTemplate,
 	getDefaultTemplate,
-	getLocalTemplatesWithoutUpdating2,
 } from './globals'
 import { swapInstance, convertToNumber, isEmpty } from './helpers'
 
@@ -98,6 +96,7 @@ console.clear()
 function move(array, from, to) {
 	let element = array.splice(from, 1)[0]
 	array.splice(to, 0, element)
+	return array
 }
 
 function daysToMilliseconds(days) {
@@ -898,39 +897,42 @@ async function createTableUI() {
 }
 
 async function createTableInstance(opts) {
-	// TODO: Modify to support custom template being passed in
-	const remoteFiles = await getRemoteFilesAsync()
-	const templateComponent = await lookForComponent(opts.template || getDocumentData('defaultTemplate'))
+	const templateComponent = await lookForComponent(opts.data.table.template)
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
-		if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
-			opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
-			opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
-		}
+		// if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
+		// 	opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
+		// 	opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
+		// }
 
-		if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
-			opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
-			opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
-		}
+		// if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
+		// 	opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
+		// 	opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
+		// }
 
-		if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
-			opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
-			opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
-		}
+		// if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
+		// 	opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
+		// 	opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
+		// }
 
-		if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
-			opts.data.cellHeight = opts.data.cellHeight.toUpperCase()
-			opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
-		}
+		// if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
+		// 	opts.data.cellHeight = opts.data.cellHeight.toUpperCase()
+		// 	opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
+		// }
+
+		// Add template to settings
+		opts.data.table.template = getPluginData(templateComponent, 'template')
 
 		let tableInstance = createTable(templateComponent, opts.data)
 
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]
-
-			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, opts.data)).then(() => {
+			updateClientStorageAsync('userPreferences', (data) => {
+				console.log('new', Object.assign(data, opts.data))
+				return Object.assign(data, opts.data)
+			}).then(() => {
 				figma.closePlugin('Table created')
 			})
 		}
@@ -1096,7 +1098,7 @@ async function main() {
 			// 	tableHeight: 500,
 			// 	tableWidth: 600,
 			// }
-			let localTemplates = getLocalTemplatesWithoutUpdating2()
+			let localTemplates = getLocalTemplatesWithoutUpdating()
 			let remoteFiles = getDocumentData('remoteFiles')
 			let remoteTemplates = []
 			let defaultTemplate = await determineDefaultTemplate()
@@ -1168,8 +1170,7 @@ async function main() {
 					// Reorder array so that default template is at the top
 
 					let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key)
-					let element = suggestions.splice(indexOfDefaultTemplate, 1)[0]
-					suggestions.splice(0, 0, element)
+					suggestions = move(suggestions, indexOfDefaultTemplate, 0)
 					result.setSuggestions(suggestions)
 				}
 				if (key === 'cell') {
@@ -1269,6 +1270,8 @@ async function main() {
 					if (parameters.template) {
 						settings.table.template = parameters.template
 					}
+
+					console.log('param', settings.table.template)
 
 					createTableInstance({ data: settings })
 
