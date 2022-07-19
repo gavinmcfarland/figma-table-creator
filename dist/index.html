@@ -660,22 +660,22 @@ var ui = (function () {
     					data.cellWidth = data.prevCellWidth;
     					return data;
     				});
-    			} else if (!isNaN(value) || value.trim() === "$") {
+    			} else if (!isNaN(value)) {
     				// If table width is a number
     				valueStore.update(data => {
-    					if (data.cellWidth.toString().toUpperCase() !== "FILL") {
-    						data.prevCellWidth = data.cellWidth;
-    					}
+    					if (data.cellWidth.toString().trim() !== "$") {
+    						if (data.cellWidth.toString().toUpperCase() !== "FILL") {
+    							data.prevCellWidth = data.cellWidth;
+    						}
 
-    					// else {
-    					// 	console.log("set previous width", data.cellWidth)
-    					// 	data.prevCellWidth = data.cellWidth
-    					// }
-    					data.cellWidth = "FILL";
+    						data.cellWidth = "FILL";
+    					}
 
     					return data;
     				});
-    			} else {
+    			} else // else if (value.trim() === "$") {
+    			// }
+    			{
     				// Anything else entered, reset to orig value
     				$$invalidate(0, value = origValue);
 
@@ -716,12 +716,12 @@ var ui = (function () {
     					data.tableWidth = opts.tableWidth;
     					return data;
     				});
-    			} else if (!isNaN(value) || value.trim() === "$") {
+    			} else if (!isNaN(value)) {
     				valueStore.update(data => {
     					data.tableWidth = "HUG";
     					return data;
     				});
-    			} else {
+    			} else if (value.trim() === "$") ; else {
     				$$invalidate(0, value = origValue);
 
     				valueStore.update(data => {

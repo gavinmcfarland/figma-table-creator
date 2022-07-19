@@ -526,7 +526,7 @@ async function toggleColumnResizing(selection) {
 			let settings = getTableSettings(oldTable)
 
 			if (i === 0) {
-				firstTableColumnResizing = settings.table.options.axis
+				firstTableColumnResizing = settings.table.options.resizing
 			}
 
 			if (firstTableColumnResizing) {
@@ -627,10 +627,10 @@ function switchColumnsOrRows(selection) {
 				if (i === 0) {
 					vectorType = settings.table.options.axis
 
-					if (vectorType === 'rows') {
+					if (vectorType === 'ROWS') {
 						firstTableLayoutMode = 'VERTICAL'
 					}
-					if (vectorType === 'columns') {
+					if (vectorType === 'COLUMNS') {
 						firstTableLayoutMode = 'HORIZONTAL'
 					}
 				}
@@ -926,9 +926,7 @@ async function createTableInstance(opts) {
 		// Add template to settings
 		opts.table.template = getPluginData(templateComponent, 'template')
 
-		let tableInstance = createTable(templateComponent, opts)
-
-		console.log('->', opts)
+		let tableInstance = await createTable(templateComponent, opts)
 
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
@@ -945,6 +943,12 @@ async function createTableInstance(opts) {
 async function main() {
 	// Set default preferences
 	await updateClientStorageAsync('userPreferences', (data) => {
+		// let files = [
+		// 	{
+		// 		id: ,
+		// 		template: {}
+		// 	}
+		// ]
 		let defaultData = {
 			table: {
 				template: null,
@@ -963,8 +967,6 @@ async function main() {
 		if (!data?.table) {
 			data = defaultData
 		}
-
-		console.log('pref', data)
 
 		// Merge user's data with deafult
 		data = Object.assign(defaultData, data || {})
@@ -1134,7 +1136,7 @@ async function main() {
 
 						item1 = item1.toString().trim()
 						item2 = item2.toString().trim()
-						console.log(item1, item2)
+
 						item1 = convertToNumber(item1)
 						item2 = convertToNumber(item2)
 
@@ -1188,9 +1190,8 @@ async function main() {
 					]
 
 					// Reorder array so that default template is at the top
-					let indexFrom = suggestions.findIndex((item) => item.data === userPreferences.table.alignment[0])
-					let element = suggestions.splice(indexFrom, 1)[0]
-					suggestions.splice(0, 0, element)
+					let indexFrom = suggestions.findIndex((item) => item.data[0] === userPreferences.table.alignment[0])
+					move(suggestions, indexFrom, 0)
 					suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
 
 					result.setSuggestions(suggestions)
@@ -1293,8 +1294,6 @@ async function main() {
 					if (parameters.header === false || parameters.header === true) {
 						settings.table.options.header = parameters.header
 					}
-
-					console.log({ settings })
 
 					createTableInstance(settings)
 				} else {
@@ -1430,7 +1429,6 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			console.log(msg)
 			createTableInstance(msg.data)
 		})
 

@@ -64,23 +64,26 @@
 					return data
 				})
 			}
-			else if (!isNaN(value) || value.trim() === "$") {
+			else if (!isNaN(value)) {
 				// If table width is a number
 				valueStore.update((data) => {
 
-						if (data.cellWidth.toString().toUpperCase() !== 'FILL') {
-							data.prevCellWidth = data.cellWidth
+						if (data.cellWidth.toString().trim() !== "$") {
+							if (data.cellWidth.toString().toUpperCase() !== 'FILL') {
+								data.prevCellWidth = data.cellWidth
+							}
+
+							data.cellWidth = "FILL"
+
 						}
 
-					// else {
-					// 	console.log("set previous width", data.cellWidth)
-					// 	data.prevCellWidth = data.cellWidth
-					// }
-					data.cellWidth = "FILL"
-					return data
+						return data
 				})
 
 			}
+			// else if (value.trim() === "$") {
+
+			// }
 			else {
 				// Anything else entered, reset to orig value
 				value = origValue
@@ -128,11 +131,14 @@
 					return data
 				})
 			}
-			else if (!isNaN(value) || value.trim() === "$") {
+			else if (!isNaN(value)) {
 				valueStore.update((data) => {
 					data.tableWidth = "HUG"
 					return data
 				})
+			}
+			else if (value.trim() === "$") {
+
 			}
 			else {
 				value = origValue

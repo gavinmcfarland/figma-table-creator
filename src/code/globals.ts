@@ -49,7 +49,7 @@ function extractValues(objectArray) {
 	}, {})
 }
 
-function copyTemplatePart(partParent, node, index, templateSettings, tableSettings?) {
+async function copyTemplatePart(partParent, node, index, templateSettings, tableSettings?, rowIndex?) {
 	// TODO: Copy across overrides like text, and instance swaps
 
 	// Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
@@ -61,15 +61,31 @@ function copyTemplatePart(partParent, node, index, templateSettings, tableSettin
 
 	// Copy across width
 	if (tableSettings) {
-		console.log('cellWidth', tableSettings.table.cell[0][0])
 		let cellWidth
 		if (tableSettings.table.cell[0][0] === '$') {
 			cellWidth = templateCell.width
 		} else {
 			cellWidth = tableSettings.table.cell[0][0]
 		}
-		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
+
+		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG' && templateCell.layoutGrow !== 1) {
 			node.resizeWithoutConstraints(cellWidth, node.height)
+		}
+
+		// If templateCell === FILL
+		if (templateCell.layoutGrow === 1 && tableSettings.table.cell[0][0] === '$') {
+			node.layoutGrow = 1
+		}
+
+		// If templateCell === HUG
+		if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.table.cell[0][0] === '$') {
+			node.layoutGrow = 0
+			node.counterAxisSizingMode = 'AUTO'
+		}
+
+		// Change size of cells
+		if (tableSettings.table.size[0][0] && tableSettings.table.size[0][0] !== 'HUG' && tableSettings.table.cell[0][0] !== '$') {
+			node.layoutGrow = 1
 		}
 	}
 
@@ -77,9 +93,25 @@ function copyTemplatePart(partParent, node, index, templateSettings, tableSettin
 	if (templateCell.componentProperties) {
 		node.setProperties(extractValues(templateCell.componentProperties))
 	}
+
+	if (rowIndex || rowIndex === 0) {
+		let templateText = templateCell.findOne((node) => node.name === 'Text')
+
+		if (templateText) {
+			let number = convertToNumber(templateText.characters)
+
+			if (Number(number)) {
+				let tableText = node.findOne((node) => node.name === 'Text')
+				await figma.loadFontAsync(templateText.fontName)
+				if (tableText) {
+					tableText.characters = (number + rowIndex).toString()
+				}
+			}
+		}
+	}
 }
 
-export function createTable(templateComponent, settings, type?) {
+export async function createTable(templateComponent, settings, type?) {
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -127,8 +159,6 @@ export function createTable(templateComponent, settings, type?) {
 	// if (settings.table.cell[0][0] === '$') {
 	// 	tableSettings.table.cell[0][0] = templateSettings.table.size[0][0]
 	// }
-
-	console.log(templateSettings.table.cell[0][0], tableSettings.table.cell[0][0])
 
 	if (settings.table.cell[0][1] === '$') {
 		tableSettings.table.cell[0][1] = templateSettings.table.cell[0][1]
@@ -232,11 +262,6 @@ export function createTable(templateComponent, settings, type?) {
 				duplicateCell = part.td.mainComponent.createInstance()
 			}
 
-			// Change size of cells
-			if (tableSettings.table.size[0][0] && tableSettings.table.size[0][0] !== 'HUG') {
-				duplicateCell.layoutGrow = 1
-			}
-
 			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
 
 			firstRow.appendChild(duplicateCell)
@@ -253,7 +278,7 @@ export function createTable(templateComponent, settings, type?) {
 		}
 
 		// Create rest of rows
-		for (var i = 1; i < tableSettings.table.matrix[0][1]; i++) {
+		for (var r = tableSettings.table.matrix[0][1] - 2; r >= 0; r--) {
 			var duplicateRow
 
 			if (firstRow.type === 'COMPONENT') {
@@ -281,7 +306,7 @@ export function createTable(templateComponent, settings, type?) {
 					// Set component properties on instances
 					// cell.setProperties(extractValues(part.td.componentProperties))
 
-					copyTemplatePart(part.table.children[1], cell, i, templateSettings)
+					copyTemplatePart(part.table.children[1], cell, i, templateSettings, null, r)
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
@@ -307,7 +332,7 @@ export function createTable(templateComponent, settings, type?) {
 				// }
 
 				// Need first row which is the header
-				copyTemplatePart(part.table.children[0], child, i, templateSettings)
+				copyTemplatePart(part.table.children[0], child, i, templateSettings, null, 0)
 
 				// child.mainComponent = part.th.mainComponent
 			}
@@ -322,6 +347,14 @@ export function createTable(templateComponent, settings, type?) {
 		}
 		if (tableSettings.table.size[0][1] && !(typeof tableSettings.table.size[0][1] === 'string')) {
 			tableInstance.resize(tableInstance.width, convertToNumber(tableSettings.table.size[0][1]))
+		}
+
+		if (tableSettings.table.size[0][0] === 'HUG') {
+			tableInstance.counterAxisSizingMode = 'AUTO'
+		}
+
+		if (tableSettings.table.size[0][1] === 'HUG') {
+			tableInstance.primaryAxisSizingMode = 'AUTO'
 		}
 
 		return tableInstance
@@ -552,7 +585,7 @@ export async function updateTables(template) {
 export function getTableSettings(tableNode) {
 	let rowCount = 0
 	let columnCount = 0
-	let usingColumnsOrRows = 'rows'
+	let usingColumnsOrRows = null
 
 	let table = {
 		matrix: [[0, 0]],
@@ -617,6 +650,7 @@ export function getTableSettings(tableNode) {
 	]
 	table.options.axis = usingColumnsOrRows
 	table.options.header = getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false
+	table.options.resizing = firstRow.type === 'COMPONENT' ? true : false
 
 	return { table }
 }

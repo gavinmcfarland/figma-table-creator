@@ -33,6 +33,7 @@ export async function getPublishedComponents(array) {
 	}
 }
 export async function lookForComponent(template) {
+	// FIXME: Need to take notify out because causes error in params
 	// Import component first?
 	// If fails, then look for it by id? What if same id is confused with local component?
 	// Needs to know if component is remote?
