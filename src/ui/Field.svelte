@@ -56,30 +56,6 @@
 		}
 
 
-		// if (id === "columnCount") {
-		// 	valueStore.update((data) => {
-		// 		data.tableWidth = "HUG"
-		// 		return data
-		// 	})
-		// }
-
-
-			valueStore.update((data) => {
-				// input.addEventListener('keydown', function (e) {
-					if (id === "columnCount") {
-						console.log("test")
-						if (e.which === 38) {
-
-							data[id] = value + 10
-						}
-					}
-				// })
-
-
-				return data
-			})
-
-
 		if (id === "tableWidth") {
 
 			if (value.toUpperCase() === 'HUG') {
@@ -105,9 +81,9 @@
 				})
 
 			}
-			// else if (value.trim() === "$") {
+			else if (value.trim() === "$") {
 
-			// }
+			}
 			else {
 				// Anything else entered, reset to orig value
 				value = origValue

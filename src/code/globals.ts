@@ -10,10 +10,10 @@ import {
 	getDocumentData,
 	setDocumentData,
 	genUID,
+	updateClientStorageAsync,
 	getRemoteFiles,
 } from '@fignite/helpers'
 import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, getComponentById, isEmpty } from './helpers'
-import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
@@ -246,6 +246,20 @@ export async function createTable(templateComponent, settings, type?) {
 		// Change size of cells
 		if (tableSettings.table.size[0][1] && tableSettings.table.size[0][1] !== 'HUG') {
 			firstRow.layoutGrow = 1
+		}
+
+		// If Height of cell defined then resize row height
+		let cellHeight
+		if (tableSettings.table.cell[0][1] === '$') {
+			cellHeight = templateCell.height
+		} else {
+			cellHeight = tableSettings.table.cell[0][1]
+		}
+
+		if (cellHeight && cellHeight !== 'FILL' && cellHeight !== 'HUG') {
+			firstRow.resizeWithoutConstraints(firstRow.width, cellHeight)
+			firstRow.layoutGrow = 0
+			firstRow.counterAxisSizingMode = 'FIXED'
 		}
 
 		// MANDATORY PROP as can't guarentee user will or figma will honour this
@@ -508,6 +522,7 @@ export function getDefaultTemplate() {
 
 export async function determineDefaultTemplate() {
 	let { table } = await getClientStorageAsync('userPreferences')
+
 	let defaultTemplates = table.templates
 	let fileId = getDocumentData('fileId')
 
@@ -542,10 +557,9 @@ export async function determineDefaultTemplate() {
 		}
 	} else {
 		// In the event defaultTemplate not set, but there are templates
-
-		if (localTemplates.length > 0) {
+		if (localTemplates?.length > 0) {
 			defaultTemplate = localTemplates[0]
-		} else if (remoteFiles.length > 0) {
+		} else if (remoteFiles?.length > 0) {
 			defaultTemplate = remoteFiles[0].data[0]
 		}
 	}

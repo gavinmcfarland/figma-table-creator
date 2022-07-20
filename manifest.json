@@ -27,7 +27,7 @@
           {
             "name": "Size",
             "key": "size",
-            "description": "Size width x height, eg 500xHUG"
+            "description": "Table size width x height, eg 500xHUG"
         },
         {
             "name": "Cell",

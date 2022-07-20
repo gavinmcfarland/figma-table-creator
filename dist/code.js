@@ -2218,7 +2218,7 @@ _._ = _;
 async function getClientStorageAsync(key) {
     return await figma.clientStorage.getAsync(key);
 }
-async function updateClientStorageAsync$1(key, callback) {
+async function updateClientStorageAsync(key, callback) {
     var data = await figma.clientStorage.getAsync(key);
     data = callback(data);
     // What should happen if user doesn't return anything in callback?
@@ -2905,7 +2905,7 @@ async function getRecentFilesAsync(fileData, opts) {
     // Should it include an option top only add published components/data?
     // const publishedComponents = await getPublishedComponents(fileData)
     fileData = fileData || getDocumentData("fileData");
-    let recentFiles = await updateClientStorageAsync$1("recentFiles", (recentFiles) => {
+    let recentFiles = await updateClientStorageAsync("recentFiles", (recentFiles) => {
         recentFiles = recentFiles || [];
         const currentFile = new File$1(fileData);
         // We have to check if the array is empty because we can't filter an empty array
@@ -3111,7 +3111,7 @@ var resize_1 = resize;
 var setDocumentData_1 = setDocumentData;
 var setPluginData_1 = setPluginData;
 var ungroup_1 = ungroup;
-var updateClientStorageAsync_1 = updateClientStorageAsync$1;
+var updateClientStorageAsync_1 = updateClientStorageAsync;
 var updatePluginData_1 = updatePluginData;
 
 /* istanbul ignore next */
@@ -4892,18 +4892,6 @@ async function createTemplateComponents() {
     };
 }
 
-async function updateClientStorageAsync(key, callback) {
-    var data = await figma.clientStorage.getAsync(key);
-    data = callback(data);
-    await figma.clientStorage.setAsync(key, data);
-    // What should happen if user doesn't return anything in callback?
-    if (!data) {
-        data = null;
-    }
-    // node.setPluginData(key, JSON.stringify(data))
-    return data;
-}
-
 let defaultRelaunchData = {
     detachTable: 'Detaches table and rows',
     toggleColumnResizing: 'Apply or remove column resizing',
@@ -4919,7 +4907,7 @@ function convertToNumber(data) {
     }
 }
 async function updatePluginVersion(semver) {
-    return updateClientStorageAsync('pluginVersion', (pluginVersion) => {
+    return updateClientStorageAsync_1('pluginVersion', (pluginVersion) => {
         // Remove plugin version from document for now
         if (figma.root.getPluginData('pluginVersion'))
             figma.root.setPluginData('pluginVersion', '');
@@ -5104,6 +5092,19 @@ async function createTable(templateComponent, settings, type) {
         // Change size of cells
         if (tableSettings.table.size[0][1] && tableSettings.table.size[0][1] !== 'HUG') {
             firstRow.layoutGrow = 1;
+        }
+        // If Height of cell defined then resize row height
+        let cellHeight;
+        if (tableSettings.table.cell[0][1] === '$') {
+            cellHeight = templateCell.height;
+        }
+        else {
+            cellHeight = tableSettings.table.cell[0][1];
+        }
+        if (cellHeight && cellHeight !== 'FILL' && cellHeight !== 'HUG') {
+            firstRow.resizeWithoutConstraints(firstRow.width, cellHeight);
+            firstRow.layoutGrow = 0;
+            firstRow.counterAxisSizingMode = 'FIXED';
         }
         // MANDATORY PROP as can't guarentee user will or figma will honour this
         firstRow.layoutAlign = 'STRETCH';
@@ -5339,10 +5340,10 @@ async function determineDefaultTemplate() {
     }
     else {
         // In the event defaultTemplate not set, but there are templates
-        if (localTemplates.length > 0) {
+        if ((localTemplates === null || localTemplates === void 0 ? void 0 : localTemplates.length) > 0) {
             defaultTemplate = localTemplates[0];
         }
-        else if (remoteFiles.length > 0) {
+        else if ((remoteFiles === null || remoteFiles === void 0 ? void 0 : remoteFiles.length) > 0) {
             defaultTemplate = remoteFiles[0].data[0];
         }
     }
@@ -6233,7 +6234,12 @@ async function createTableUI() {
     // const remoteFiles = getDocumentData('remoteFiles')
     const fileId = getDocumentData_1('fileId');
     let defaultTemplate = await determineDefaultTemplate();
-    setDocumentData_1('defaultTemplate', defaultTemplate);
+    if (defaultTemplate) {
+        setDocumentData_1('defaultTemplate', defaultTemplate);
+    }
+    // else {
+    // 	setDocumentData('defaultTemplate', '')
+    // }
     figma.showUI(__uiFiles__.main, {
         width: 240,
         height: 474 + 8 + 8,
@@ -6277,7 +6283,7 @@ async function createTableInstance(opts) {
             updateClientStorageAsync_1('userPreferences', (data) => {
                 // Add template to settings
                 let pluginData = opts.table.templates[0];
-                // TODO: There's an issue if using remote component, the file ID will not be the current fileID. Need to use the fileId of the current file
+                pluginData.file.id = getDocumentData_1('fileId');
                 opts.table.templates = upsert(data.table.templates, (item) => item.component.key === pluginData.component.key, pluginData);
                 return Object.assign(data, opts);
             }).then(() => {
@@ -6473,7 +6479,7 @@ async function main() {
         plugin.command('createTable', async ({ ui }) => {
             let userPreferences = await getClientStorageAsync_1('userPreferences');
             let localTemplates = getLocalTemplatesWithoutUpdating();
-            let remoteFiles = getDocumentData_1('remoteFiles');
+            let remoteFiles = getDocumentData_1('remoteFiles') || [];
             let remoteTemplates = [];
             let defaultTemplate = await determineDefaultTemplate();
             for (let i = 0; i < remoteFiles.length; i++) {
@@ -6525,7 +6531,7 @@ async function main() {
                             item1 = false;
                         }
                         // ---
-                        if (!item2 || item2 === userPreferences.table[key][0][0]) {
+                        if (!item2 || item2 === userPreferences.table[key][0][1]) {
                             item2 = '';
                         }
                         else if (!Number(item2)) {
@@ -6543,13 +6549,13 @@ async function main() {
                             item2 = false;
                         }
                         // ---
-                        if (item1 && item2 !== false) {
+                        if (item1 && !item2 && item2 !== false) {
                             suggestions.push({
                                 name: `${item1} x ${item2 || userPreferences.table[key][0][1]}`,
                                 data: [item1, item2 || userPreferences.table[key][0][1]],
                             });
                         }
-                        if (item1 !== false && item2) {
+                        if (!item1 && item1 !== false && item2) {
                             suggestions.push({
                                 name: `${item1 || userPreferences.table[key][0][0]} x ${item2}`,
                                 data: [item1 || userPreferences.table[key][0][1], item2],
@@ -6638,6 +6644,7 @@ async function main() {
                     if (parameters.template) {
                         // replaceItem(settings.table.templates, (item) => item.component.key === parameters.template.component.key)
                         // settings.table.templates = updateEntryInArray(settings.table.templates, parameters.template)
+                        parameters.template.file.id = getDocumentData_1('fileId');
                         settings.table.templates = upsert(settings.table.templates, (item) => item.component.key === parameters.template.component.key, parameters.template);
                     }
                     if (parameters.matrix) {

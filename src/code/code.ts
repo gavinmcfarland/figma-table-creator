@@ -878,7 +878,12 @@ async function createTableUI() {
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await determineDefaultTemplate()
-	setDocumentData('defaultTemplate', defaultTemplate)
+	if (defaultTemplate) {
+		setDocumentData('defaultTemplate', defaultTemplate)
+	}
+	// else {
+	// 	setDocumentData('defaultTemplate', '')
+	// }
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240,
@@ -935,7 +940,7 @@ async function createTableInstance(opts) {
 			updateClientStorageAsync('userPreferences', (data) => {
 				// Add template to settings
 				let pluginData = opts.table.templates[0]
-				// TODO: There's an issue if using remote component, the file ID will not be the current fileID. Need to use the fileId of the current file
+				pluginData.file.id = getDocumentData('fileId')
 				opts.table.templates = upsert(data.table.templates, (item) => item.component.key === pluginData.component.key, pluginData)
 
 				return Object.assign(data, opts)
@@ -1177,7 +1182,7 @@ async function main() {
 		plugin.command('createTable', async ({ ui }) => {
 			let userPreferences = await getClientStorageAsync('userPreferences')
 			let localTemplates = getLocalTemplatesWithoutUpdating()
-			let remoteFiles = getDocumentData('remoteFiles')
+			let remoteFiles = getDocumentData('remoteFiles') || []
 			let remoteTemplates = []
 			let defaultTemplate = await determineDefaultTemplate()
 
@@ -1238,7 +1243,7 @@ async function main() {
 
 						// ---
 
-						if (!item2 || item2 === userPreferences.table[key][0][0]) {
+						if (!item2 || item2 === userPreferences.table[key][0][1]) {
 							item2 = ''
 						} else if (!Number(item2)) {
 							if (key === 'matrix' && item2 !== '$') {
@@ -1256,13 +1261,13 @@ async function main() {
 
 						// ---
 
-						if (item1 && item2 !== false) {
+						if (item1 && !item2 && item2 !== false) {
 							suggestions.push({
 								name: `${item1} x ${item2 || userPreferences.table[key][0][1]}`,
 								data: [item1, item2 || userPreferences.table[key][0][1]],
 							})
 						}
-						if (item1 !== false && item2) {
+						if (!item1 && item1 !== false && item2) {
 							suggestions.push({
 								name: `${item1 || userPreferences.table[key][0][0]} x ${item2}`,
 								data: [item1 || userPreferences.table[key][0][1], item2],
@@ -1371,6 +1376,8 @@ async function main() {
 						// replaceItem(settings.table.templates, (item) => item.component.key === parameters.template.component.key)
 
 						// settings.table.templates = updateEntryInArray(settings.table.templates, parameters.template)
+
+						parameters.template.file.id = getDocumentData('fileId')
 
 						settings.table.templates = upsert(
 							settings.table.templates,

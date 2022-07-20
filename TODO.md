@@ -10,7 +10,7 @@
 14. Figure out why UI isn't loading DONE
 
 
-2. Look at adding error messages for using parameters
+2. Look at adding error messages for using parameters DONE
 3. Optimise so takes less time to create table
 5. Think of how to tighten up usage of column resizing
 6. Check logic works in UI and parameters for when hug, fill, previous used
