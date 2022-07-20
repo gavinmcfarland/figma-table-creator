@@ -5305,10 +5305,14 @@ function getDefaultTemplate() {
 }
 async function determineDefaultTemplate() {
     let { table } = await getClientStorageAsync_1('userPreferences');
-    let defaultTemplate = table.template;
+    let defaultTemplates = table.templates;
+    let fileId = getDocumentData_1('fileId');
+    let defaultTemplate;
+    if (defaultTemplates.length > 0) {
+        defaultTemplate = defaultTemplates.find((item) => item.file.id === fileId);
+    }
     let localTemplates = getLocalTemplatesWithoutUpdating();
     let remoteFiles = getDocumentData_1('remoteFiles');
-    let fileId = getDocumentData_1('fileId');
     if (defaultTemplate && !isEmpty(defaultTemplate)) {
         if (defaultTemplate.file.id === fileId) {
             let templateComponent = getComponentById(defaultTemplate.id);
@@ -5620,28 +5624,6 @@ async function upgradeOldComponentsToTemplate() {
 // TODO: When template renamed, default data no updated
 // TODO: Should default template be stored in usersPreferences? different for each file
 console.clear();
-// createTooltip(
-// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
-// ).then((tooltip) => {
-// 	positionInCenterOfViewport(tooltip)
-// })
-// createTemplateComponents().then((array) => {
-// 	let group = figma.group(array, figma.currentPage)
-// 	positionInCenterOfViewport(group)
-// 	figma.ungroup(group)
-// })
-// setClientStorageAsync('userPreferences', undefined).then(() => {
-// 	figma.closePlugin('User preferences reset')
-// })
-// figma.clientStorage.deleteAsync('recentFiles')
-// figma.clientStorage.deleteAsync('pluginVersion')
-// figma.root.setPluginData('remoteFiles', '')
-// figma.root.setPluginData('fileId', '')
-// figma.root.setPluginData('defaultTemplate', '')
-// figma.clientStorage.deleteAsync('userPreferences')
-function onlySpaces(str) {
-    return str.trim().length === 0;
-}
 function move(array, from, to) {
     let element = array.splice(from, 1)[0];
     array.splice(to, 0, element);
@@ -6269,7 +6251,7 @@ async function createTableUI() {
     updatePluginVersion('7.0.0');
 }
 async function createTableInstance(opts) {
-    const templateComponent = await lookForComponent(opts.table.template);
+    const templateComponent = await lookForComponent(opts.table.templates[0]);
     // const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
     if (templateComponent) {
         // if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
@@ -6288,19 +6270,84 @@ async function createTableInstance(opts) {
         // 	opts.data.cellHeight = opts.data.cellHeight.toUpperCase()
         // 	opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
         // }
-        // Add template to settings
-        opts.table.template = getPluginData_1(templateComponent, 'template');
         let tableInstance = await createTable(templateComponent, opts);
         if (tableInstance) {
             positionInCenterOfViewport(tableInstance);
             figma.currentPage.selection = [tableInstance];
             updateClientStorageAsync_1('userPreferences', (data) => {
+                // Add template to settings
+                let pluginData = opts.table.templates[0];
+                // TODO: There's an issue if using remote component, the file ID will not be the current fileID. Need to use the fileId of the current file
+                opts.table.templates = upsert(data.table.templates, (item) => item.component.key === pluginData.component.key, pluginData);
                 return Object.assign(data, opts);
             }).then(() => {
                 figma.closePlugin('Table created');
             });
         }
     }
+}
+// _.isEqual(item, entry)
+// function (callback) {
+// 	for (let i = 0; i < this.length; i++) {
+// 	  if ( true == callback(this[i], i, this)) {
+// 		return {element:this[i],index:i,array:this};
+// 	  }
+// 	}
+//   };
+function upsert(array, cb, entry) {
+    array.some((item, index) => {
+        let result = false;
+        if (true === cb(array[index])) {
+            result = true;
+            // move to top
+            console.log('move to top');
+            move(array, index, 0);
+        }
+        return result;
+    });
+    let matchFound = false;
+    array.map((item, index) => {
+        if (true === cb(array[index])) {
+            matchFound = true;
+        }
+    });
+    if (!matchFound) {
+        console.log('add to array');
+        array.unshift(entry);
+    }
+    if (array.length > 4) {
+        array = array.slice(0, 4);
+    }
+    return array;
+}
+function updateEntryInArray(array, entry) {
+    // Add to recents
+    // If it doesn't exist add it to top of array
+    // else if it does, move it to top of array
+    array.some((item, index) => {
+        let result = false;
+        if (_.isEqual(item, entry)) {
+            result = true;
+            // move to top
+            console.log('move to top');
+            move(array, index, 0);
+        }
+        return result;
+    });
+    let matchFound = false;
+    array.map((item, index) => {
+        if (_.isEqual(item, entry)) {
+            matchFound = true;
+        }
+    });
+    if (!matchFound) {
+        console.log('add to array');
+        array.unshift(entry);
+    }
+    if (array.length > 4) {
+        array = array.slice(0, 4);
+    }
+    return array;
 }
 async function main() {
     // Set default preferences
@@ -6313,7 +6360,7 @@ async function main() {
         // ]
         let defaultData = {
             table: {
-                template: null,
+                templates: [],
                 matrix: [[(data === null || data === void 0 ? void 0 : data.columnCount) || 4, (data === null || data === void 0 ? void 0 : data.rowCount) || 4]],
                 size: [[(data === null || data === void 0 ? void 0 : data.tableWidth) || 'HUG', (data === null || data === void 0 ? void 0 : data.tableHeight) || 'HUG']],
                 cell: [[(data === null || data === void 0 ? void 0 : data.cellWidth) || 120, (data === null || data === void 0 ? void 0 : data.cellHeight) || 'FILL']],
@@ -6453,17 +6500,67 @@ async function main() {
                     let suggestions = [];
                     if (query) {
                         let [item1, item2] = query.split('x');
-                        if (!item1 || onlySpaces(item1)) {
-                            item1 = userPreferences.table[key][0][0];
+                        if (item1) {
+                            item1 = convertToNumber(item1.toUpperCase().toString().trim());
                         }
-                        if (!item2 || onlySpaces(item2)) {
-                            item2 = userPreferences.table[key][0][1];
+                        if (item2) {
+                            item2 = convertToNumber(item2.toUpperCase().toString().trim());
                         }
-                        item1 = item1.toString().trim();
-                        item2 = item2.toString().trim();
-                        item1 = convertToNumber(item1);
-                        item2 = convertToNumber(item2);
-                        suggestions.push({ name: `${item1} x ${item2}`, data: [item1, item2] });
+                        // ---
+                        if (!item1 || item1 === userPreferences.table[key][0][0]) {
+                            item1 = '';
+                        }
+                        else if (!Number(item1)) {
+                            if (key === 'matrix' && item1 !== '$') {
+                                item1 = false;
+                            }
+                            if (key === 'size' && item1 !== 'HUG' && item1 !== '$') {
+                                item1 = false;
+                            }
+                            if (key === 'cell' && item1 !== 'FILL' && item1 !== '$') {
+                                item1 = false;
+                            }
+                        }
+                        else if (Number(item1) < 1) {
+                            item1 = false;
+                        }
+                        // ---
+                        if (!item2 || item2 === userPreferences.table[key][0][0]) {
+                            item2 = '';
+                        }
+                        else if (!Number(item2)) {
+                            if (key === 'matrix' && item2 !== '$') {
+                                item2 = false;
+                            }
+                            if (key === 'size' && item2 !== 'HUG' && item2 !== '$') {
+                                item2 = false;
+                            }
+                            if (key === 'cell' && item2 !== 'FILL' && item2 !== '$') {
+                                item2 = false;
+                            }
+                        }
+                        else if (Number(item2) < 1) {
+                            item2 = false;
+                        }
+                        // ---
+                        if (item1 && item2 !== false) {
+                            suggestions.push({
+                                name: `${item1} x ${item2 || userPreferences.table[key][0][1]}`,
+                                data: [item1, item2 || userPreferences.table[key][0][1]],
+                            });
+                        }
+                        if (item1 !== false && item2) {
+                            suggestions.push({
+                                name: `${item1 || userPreferences.table[key][0][0]} x ${item2}`,
+                                data: [item1 || userPreferences.table[key][0][1], item2],
+                            });
+                        }
+                        if (item1 && item2) {
+                            suggestions.push({
+                                name: `${item1} x ${item2}`,
+                                data: [item1, item2],
+                            });
+                        }
                     }
                     for (let i = 0; i < userPreferences.table[key].length; i++) {
                         let item = userPreferences.table[key][i];
@@ -6479,11 +6576,11 @@ async function main() {
                     // TODO: Add remote templates if they exist
                     // TODO: Add icon for remote templates
                     // TODO: reorder so that defaultTemplate is first in array
-                    localTemplates = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
                     let suggestions = [...localTemplates, ...remoteTemplates];
                     // Reorder array so that default template is at the top
                     let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key);
                     suggestions = move(suggestions, indexOfDefaultTemplate, 0);
+                    suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
                     result.setSuggestions(suggestions);
                 }
                 if (key === 'matrix') {
@@ -6527,35 +6624,6 @@ async function main() {
             });
             figma.on('run', async ({ parameters }) => {
                 let settings = userPreferences;
-                function updateEntryInArray(array, entry) {
-                    // Add to recents
-                    // If it doesn't exist add it to top of array
-                    // else if it does, move it to top of array
-                    array.some((item, index) => {
-                        let result = false;
-                        if (_.isEqual(item, entry)) {
-                            result = true;
-                            // move to top
-                            console.log('move to top');
-                            move(array, index, 0);
-                        }
-                        return result;
-                    });
-                    let matchFound = false;
-                    array.map((item, index) => {
-                        if (_.isEqual(item, entry)) {
-                            matchFound = true;
-                        }
-                    });
-                    if (!matchFound) {
-                        console.log('add to array');
-                        array.unshift(entry);
-                    }
-                    if (array.length > 4) {
-                        array = array.slice(0, 4);
-                    }
-                    return array;
-                }
                 if (parameters) {
                     // ---- Because we can't set data when parameters is launched we need to retrospectively update template components that may have been copied and have the out of date template data on them
                     let localTemplatesWithoutUpdating = getLocalTemplatesWithoutUpdating();
@@ -6568,10 +6636,13 @@ async function main() {
                     }
                     // ----
                     if (parameters.template) {
-                        settings.table.template = parameters.template;
+                        // replaceItem(settings.table.templates, (item) => item.component.key === parameters.template.component.key)
+                        // settings.table.templates = updateEntryInArray(settings.table.templates, parameters.template)
+                        settings.table.templates = upsert(settings.table.templates, (item) => item.component.key === parameters.template.component.key, parameters.template);
                     }
                     if (parameters.matrix) {
-                        settings.table.matrix = updateEntryInArray(settings.table.matrix, parameters.matrix);
+                        settings.table.matrix = upsert(settings.table.matrix, (item) => _.isEqual(item, parameters.matrix), parameters.matrix);
+                        // settings.table.matrix = updateEntryInArray(settings.table.matrix, parameters.matrix)
                     }
                     if (parameters.size) {
                         settings.table.size = updateEntryInArray(settings.table.size, parameters.size);

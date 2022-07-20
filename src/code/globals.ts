@@ -508,11 +508,17 @@ export function getDefaultTemplate() {
 
 export async function determineDefaultTemplate() {
 	let { table } = await getClientStorageAsync('userPreferences')
-	let defaultTemplate = table.template
+	let defaultTemplates = table.templates
+	let fileId = getDocumentData('fileId')
+
+	let defaultTemplate
+
+	if (defaultTemplates.length > 0) {
+		defaultTemplate = defaultTemplates.find((item) => item.file.id === fileId)
+	}
+
 	let localTemplates = getLocalTemplatesWithoutUpdating()
 	let remoteFiles = getDocumentData('remoteFiles')
-
-	let fileId = getDocumentData('fileId')
 
 	if (defaultTemplate && !isEmpty(defaultTemplate)) {
 		if (defaultTemplate.file.id === fileId) {

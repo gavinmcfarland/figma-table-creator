@@ -27,6 +27,21 @@
 
 	const dispatch = createEventDispatcher()
 
+	const handleKeypress = (e) => {
+		valueStore.update((data) => {
+			if ((id === "columnCount" || id === "rowCount") && value.toString().trim() !== "$") {
+				if (e.which === 38 && !(value >= 50)) {
+					data[id] = value + 1
+				}
+				if (e.which === 40 && !(value <= 1)) {
+					data[id] = value - 1
+				}
+			}
+
+			return data
+		})
+	}
+
 	const handleInput = (e) => {
 
 		let origValue = value
@@ -48,13 +63,22 @@
 		// 	})
 		// }
 
-		if (id === "columnCount") {
+
 			valueStore.update((data) => {
-				// data.tableWidth = "HUG"
+				// input.addEventListener('keydown', function (e) {
+					if (id === "columnCount") {
+						console.log("test")
+						if (e.which === 38) {
+
+							data[id] = value + 10
+						}
+					}
+				// })
+
 
 				return data
 			})
-		}
+
 
 		if (id === "tableWidth") {
 
@@ -233,6 +257,6 @@
 			{min}
 			{max}
 			{step}
-			on:change={handleInput} />
+			on:change={handleInput} on:keydown={handleKeypress} />
 	</label>
 </div>

@@ -538,10 +538,14 @@ var ui = (function () {
     			append(span, t0);
     			append(label_1, t1);
     			append(label_1, input_1);
-    			/*input_1_binding*/ ctx[14](input_1);
+    			/*input_1_binding*/ ctx[15](input_1);
 
     			if (!mounted) {
-    				dispose = listen(input_1, "change", /*handleInput*/ ctx[11]);
+    				dispose = [
+    					listen(input_1, "change", /*handleInput*/ ctx[12]),
+    					listen(input_1, "keydown", /*handleKeypress*/ ctx[11])
+    				];
+
     				mounted = true;
     			}
     		},
@@ -588,9 +592,9 @@ var ui = (function () {
     		o: noop,
     		d(detaching) {
     			if (detaching) detach(div);
-    			/*input_1_binding*/ ctx[14](null);
+    			/*input_1_binding*/ ctx[15](null);
     			mounted = false;
-    			dispose();
+    			run_all(dispose);
     		}
     	};
     }
@@ -618,6 +622,22 @@ var ui = (function () {
 
     	createEventDispatcher();
 
+    	const handleKeypress = e => {
+    		valueStore.update(data => {
+    			if ((id === "columnCount" || id === "rowCount") && value.toString().trim() !== "$") {
+    				if (e.which === 38 && !(value >= 50)) {
+    					data[id] = value + 1;
+    				}
+
+    				if (e.which === 40 && !(value <= 1)) {
+    					data[id] = value - 1;
+    				}
+    			}
+
+    			return data;
+    		});
+    	};
+
     	const handleInput = e => {
     		let origValue = value;
 
@@ -637,12 +657,19 @@ var ui = (function () {
     		// 		return data
     		// 	})
     		// }
-    		if (id === "columnCount") {
-    			valueStore.update(data => {
-    				// data.tableWidth = "HUG"
-    				return data;
-    			});
-    		}
+    		valueStore.update(data => {
+    			// input.addEventListener('keydown', function (e) {
+    			if (id === "columnCount") {
+    				console.log("test");
+
+    				if (e.which === 38) {
+    					data[id] = value + 10;
+    				}
+    			}
+
+    			// })
+    			return data;
+    		});
 
     		if (id === "tableWidth") {
     			if (value.toUpperCase() === "HUG") {
@@ -750,7 +777,7 @@ var ui = (function () {
     	}
 
     	$$self.$$set = $$props => {
-    		if ("placeholder" in $$props) $$invalidate(12, placeholder = $$props.placeholder);
+    		if ("placeholder" in $$props) $$invalidate(13, placeholder = $$props.placeholder);
     		if ("value" in $$props) $$invalidate(0, value = $$props.value);
     		if ("label" in $$props) $$invalidate(1, label = $$props.label);
     		if ("disabled" in $$props) $$invalidate(2, disabled = $$props.disabled);
@@ -761,7 +788,7 @@ var ui = (function () {
     		if ("step" in $$props) $$invalidate(7, step = $$props.step);
     		if ("classes" in $$props) $$invalidate(8, classes = $$props.classes);
     		if ("style" in $$props) $$invalidate(9, style = $$props.style);
-    		if ("opts" in $$props) $$invalidate(13, opts = $$props.opts);
+    		if ("opts" in $$props) $$invalidate(14, opts = $$props.opts);
     	};
 
     	return [
@@ -776,6 +803,7 @@ var ui = (function () {
     		classes,
     		style,
     		input,
+    		handleKeypress,
     		handleInput,
     		placeholder,
     		opts,
@@ -788,7 +816,7 @@ var ui = (function () {
     		super();
 
     		init(this, options, instance$7, create_fragment$7, safe_not_equal, {
-    			placeholder: 12,
+    			placeholder: 13,
     			value: 0,
     			label: 1,
     			disabled: 2,
@@ -799,7 +827,7 @@ var ui = (function () {
     			step: 7,
     			classes: 8,
     			style: 9,
-    			opts: 13
+    			opts: 14
     		});
     	}
     }
@@ -6823,7 +6851,7 @@ var ui = (function () {
     					type: "create-table-instance",
     					data: {
     						table: {
-    							template: data.defaultTemplate,
+    							templates: [data.defaultTemplate],
     							matrix: [[columnCount, rowCount]],
     							size: [[tableWidth, tableHeight]],
     							cell: [[cellWidth, cellHeight]],
