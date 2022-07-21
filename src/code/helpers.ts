@@ -40,7 +40,9 @@ export async function lookForComponent(template) {
 
 	var component
 
-	var localComponent = getComponentById(template.component.id)
+	// We pass in the key, to be doubly sure it's the correct component
+	var localComponent = getComponentById(template.component.id, template.component.key)
+	// var localComponent = getComponentByKey(template.component.key)
 
 	try {
 		// If can find the component, and it's key is the same as the templates this assumes the node is in the file it originated from?
@@ -77,7 +79,7 @@ export function isEmpty(obj) {
 	return JSON.stringify(obj) === JSON.stringify({})
 }
 
-export function getComponentById(id) {
+export function getComponentById(id, key) {
 	// var pages = figma.root.children
 	// var component
 
@@ -97,7 +99,7 @@ export function getComponentById(id) {
 		if (node) {
 			if (node.parent === null || node.parent.parent === null) {
 				return false
-			} else {
+			} else if (node.key === key) {
 				return node
 			}
 		} else {
@@ -105,6 +107,7 @@ export function getComponentById(id) {
 		}
 	}
 }
+
 export function createPage(name) {
 	var newPage = figma.createPage()
 	newPage.name = name

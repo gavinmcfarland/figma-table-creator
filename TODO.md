@@ -11,17 +11,24 @@
 
 
 2. Look at adding error messages for using parameters DONE
-3. Optimise so takes less time to create table
-5. Think of how to tighten up usage of column resizing
-6. Check logic works in UI and parameters for when hug, fill, previous used
-8. Check support for cell height works
-13. Solve why aligment order isn't changing in paramters DONE
-7. Check for weird combinations of HUG, FILL etc
-16. Enable previous cell, table size dimensions
-17. Add UI creations to recents
-18. Turn off notify in lookForComponent
+8. Check support for cell height works DONE
 19. Add arrow functionality to rows DONE
+13. Solve why aligment order isn't changing in paramters DONE
+7. Check for weird combinations of HUG, FILL etc DONE
+6. Check logic works in UI and parameters for when hug, fill, previous used DONE
+16. Enable previous cell, table size dimensions DONE
 
+
+20. Fix bug with same id for node in different documents DONE
+21. Fix issue with needing to know original file id but can't in current object structure DONE
+18. Turn off notify in lookForComponent
+5. Think of how to tighten up usage of column resizing
+3. Optimise so takes less time to create table
+21. Disable numbering before publishing
+
+
+
+19. Add cell height to UI
 
 
 1. Wait for fix for setting component properties has been released

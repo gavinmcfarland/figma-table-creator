@@ -101,9 +101,17 @@ function onlySpaces(str) {
 	}
 }
 
-function move(array, from, to) {
+function move(array, from, to, replaceWith?) {
+	// Remove from array
 	let element = array.splice(from, 1)[0]
-	array.splice(to, 0, element)
+
+	// Add to array
+	if (replaceWith) {
+		array.splice(to, 0, replaceWith)
+	} else {
+		array.splice(to, 0, element)
+	}
+
 	return array
 }
 
@@ -881,6 +889,8 @@ async function createTableUI() {
 	if (defaultTemplate) {
 		setDocumentData('defaultTemplate', defaultTemplate)
 	}
+
+	console.log('sent to UI', defaultTemplate)
 	// else {
 	// 	setDocumentData('defaultTemplate', '')
 	// }
@@ -908,30 +918,11 @@ async function createTableUI() {
 }
 
 async function createTableInstance(opts) {
-	const templateComponent = await lookForComponent(opts.table.templates[0])
+	console.log('create this one', opts.table.templates[0].template)
+	const templateComponent = await lookForComponent(opts.table.templates[0].template)
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
-		// if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
-		// 	opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
-		// 	opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
-		// }
-
-		// if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
-		// 	opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
-		// 	opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
-		// }
-
-		// if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
-		// 	opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
-		// 	opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
-		// }
-
-		// if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
-		// 	opts.data.cellHeight = opts.data.cellHeight.toUpperCase()
-		// 	opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
-		// }
-
 		let tableInstance = await createTable(templateComponent, opts)
 
 		if (tableInstance) {
@@ -939,9 +930,15 @@ async function createTableInstance(opts) {
 			figma.currentPage.selection = [tableInstance]
 			updateClientStorageAsync('userPreferences', (data) => {
 				// Add template to settings
-				let pluginData = opts.table.templates[0]
-				pluginData.file.id = getDocumentData('fileId')
-				opts.table.templates = upsert(data.table.templates, (item) => item.component.key === pluginData.component.key, pluginData)
+				opts.table.templates = upsert(
+					data.table.templates,
+					(item) =>
+						item.template.component.key === opts.table.templates[0].template.component.key && item.file.id === getDocumentData('fileId'),
+					{
+						template: opts.table.templates[0].template,
+						file: { id: getDocumentData('fileId') },
+					}
+				)
 
 				return Object.assign(data, opts)
 			}).then(() => {
@@ -968,7 +965,12 @@ function upsert(array, cb, entry?) {
 			result = true
 			// move to top
 			console.log('move to top')
-			move(array, index, 0)
+			console.log('entry', entry)
+			if (entry) {
+				move(array, index, 0, entry)
+			} else {
+				move(array, index, 0)
+			}
 		}
 
 		return result
@@ -1208,6 +1210,11 @@ async function main() {
 				}
 			})
 
+			console.log(remoteFiles, localTemplates, defaultTemplate)
+
+			if (!defaultTemplate && !localTemplates && !remoteFiles) {
+			}
+
 			figma.parameters.on('input', ({ query, result, key }) => {
 				function genSuggestions(key, query) {
 					let suggestions = []
@@ -1293,62 +1300,71 @@ async function main() {
 					return suggestions
 				}
 
-				if (key === 'template') {
-					// TODO: Add remote templates if they exist
-					// TODO: Add icon for remote templates
-					// TODO: reorder so that defaultTemplate is first in array
-					let suggestions = [...localTemplates, ...remoteTemplates]
-					// Reorder array so that default template is at the top
-					let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key)
-					suggestions = move(suggestions, indexOfDefaultTemplate, 0)
-					suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
-					result.setSuggestions(suggestions)
-				}
+				if (localTemplates.length > 0 || remoteFiles.length > 0) {
+					if (key === 'template') {
+						// TODO: Add remote templates if they exist
+						// TODO: Add icon for remote templates
+						// TODO: reorder so that defaultTemplate is first in array
+						let suggestions = [...localTemplates, ...remoteTemplates]
 
-				if (key === 'matrix') {
-					result.setSuggestions(genSuggestions('matrix', query))
-				}
-				if (key === 'size') {
-					result.setSuggestions(genSuggestions('size', query))
-				}
+						// Reorder array so that default template is at the top
+						let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key)
+						suggestions = move(suggestions, indexOfDefaultTemplate, 0)
+						if (suggestions.length > 0) {
+							suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+							result.setSuggestions(suggestions)
+						}
 
-				// Optional parameters
-
-				if (key === 'cell') {
-					let suggestions = genSuggestions('cell', query)
-
-					result.setSuggestions(suggestions)
-				}
-				if (key === 'alignment') {
-					let suggestions = [
-						{ name: 'Top', data: ['MIN', 'MIN'] },
-						{ name: 'Center', data: ['CENTER', 'MIN'] },
-						{ name: 'Bottom', data: ['MAX', 'MIN'] },
-					]
-
-					// Reorder array so that default template is at the top
-					let indexFrom = suggestions.findIndex((item) => item.data[0] === userPreferences.table.alignment[0])
-					move(suggestions, indexFrom, 0)
-					suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
-
-					result.setSuggestions(suggestions)
-				}
-
-				if (key === 'header') {
-					let suggestions = []
-					let first
-					let second
-					if (userPreferences.table.options.header) {
-						first = { name: 'True', data: true }
-						second = { name: 'False', data: false }
-					} else {
-						first = { name: 'False', data: false }
-						second = { name: 'True', data: true }
+						console.log(suggestions)
 					}
 
-					suggestions = [first, second].filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+					if (key === 'matrix') {
+						result.setSuggestions(genSuggestions('matrix', query))
+					}
+					if (key === 'size') {
+						result.setSuggestions(genSuggestions('size', query))
+					}
 
-					result.setSuggestions(suggestions)
+					// Optional parameters
+
+					if (key === 'cell') {
+						let suggestions = genSuggestions('cell', query)
+
+						result.setSuggestions(suggestions)
+					}
+					if (key === 'alignment') {
+						let suggestions = [
+							{ name: 'Top', data: ['MIN', 'MIN'] },
+							{ name: 'Center', data: ['CENTER', 'MIN'] },
+							{ name: 'Bottom', data: ['MAX', 'MIN'] },
+						]
+
+						// Reorder array so that default template is at the top
+						let indexFrom = suggestions.findIndex((item) => item.data[0] === userPreferences.table.alignment[0])
+						move(suggestions, indexFrom, 0)
+						suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+
+						result.setSuggestions(suggestions)
+					}
+
+					if (key === 'header') {
+						let suggestions = []
+						let first
+						let second
+						if (userPreferences.table.options.header) {
+							first = { name: 'True', data: true }
+							second = { name: 'False', data: false }
+						} else {
+							first = { name: 'False', data: false }
+							second = { name: 'True', data: true }
+						}
+
+						suggestions = [first, second].filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+
+						result.setSuggestions(suggestions)
+					}
+				} else {
+					result.setError('No templates found. Run plugin without parameters.')
 				}
 			})
 
@@ -1371,18 +1387,13 @@ async function main() {
 					}
 
 					// ----
+					console.log('settings', settings)
 
 					if (parameters.template) {
-						// replaceItem(settings.table.templates, (item) => item.component.key === parameters.template.component.key)
-
-						// settings.table.templates = updateEntryInArray(settings.table.templates, parameters.template)
-
-						parameters.template.file.id = getDocumentData('fileId')
-
 						settings.table.templates = upsert(
 							settings.table.templates,
-							(item) => item.component.key === parameters.template.component.key,
-							parameters.template
+							(item) => item.template.component.key === parameters.template.component.key && item.file.id === getDocumentData('fileId'),
+							{ template: parameters.template, file: { id: getDocumentData('fileId') } }
 						)
 					}
 

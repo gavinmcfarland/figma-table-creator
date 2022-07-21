@@ -529,14 +529,20 @@ export async function determineDefaultTemplate() {
 	let defaultTemplate
 
 	if (defaultTemplates.length > 0) {
-		defaultTemplate = defaultTemplates.find((item) => item.file.id === fileId)
+		if (defaultTemplates[0].file.id === fileId) {
+			defaultTemplate = defaultTemplates[0].template
+		}
 	}
+
+	console.log('defaultTemplates ->', defaultTemplates)
+	console.log('defaultTemplate ->', defaultTemplate)
 
 	let localTemplates = getLocalTemplatesWithoutUpdating()
 	let remoteFiles = getDocumentData('remoteFiles')
 
 	if (defaultTemplate && !isEmpty(defaultTemplate)) {
 		if (defaultTemplate.file.id === fileId) {
+			console.log('template comes from same file')
 			let templateComponent = getComponentById(defaultTemplate.id)
 			if (!templateComponent) {
 				if (localTemplates.length > 0) {

@@ -3803,7 +3803,9 @@ async function lookForComponent(template) {
     // If fails, then look for it by id? What if same id is confused with local component?
     // Needs to know if component is remote?
     var component;
-    var localComponent = getComponentById(template.component.id);
+    // We pass in the key, to be doubly sure it's the correct component
+    var localComponent = getComponentById(template.component.id, template.component.key);
+    // var localComponent = getComponentByKey(template.component.key)
     try {
         // If can find the component, and it's key is the same as the templates this assumes the node is in the file it originated from?
         // TRY: Another way could be to just check that the component is a template component? Maybe still not reliable. Maybe need to check file details with the file it's in.
@@ -3836,7 +3838,7 @@ function isEmpty(obj) {
     }
     return JSON.stringify(obj) === JSON.stringify({});
 }
-function getComponentById(id) {
+function getComponentById(id, key) {
     // var pages = figma.root.children
     // var component
     // // Look through each page to see if matches node id
@@ -3852,7 +3854,7 @@ function getComponentById(id) {
             if (node.parent === null || node.parent.parent === null) {
                 return false;
             }
-            else {
+            else if (node.key === key) {
                 return node;
             }
         }
@@ -5310,12 +5312,17 @@ async function determineDefaultTemplate() {
     let fileId = getDocumentData_1('fileId');
     let defaultTemplate;
     if (defaultTemplates.length > 0) {
-        defaultTemplate = defaultTemplates.find((item) => item.file.id === fileId);
+        if (defaultTemplates[0].file.id === fileId) {
+            defaultTemplate = defaultTemplates[0].template;
+        }
     }
+    console.log('defaultTemplates ->', defaultTemplates);
+    console.log('defaultTemplate ->', defaultTemplate);
     let localTemplates = getLocalTemplatesWithoutUpdating();
     let remoteFiles = getDocumentData_1('remoteFiles');
     if (defaultTemplate && !isEmpty(defaultTemplate)) {
         if (defaultTemplate.file.id === fileId) {
+            console.log('template comes from same file');
             let templateComponent = getComponentById(defaultTemplate.id);
             if (!templateComponent) {
                 if (localTemplates.length > 0) {
@@ -5625,9 +5632,16 @@ async function upgradeOldComponentsToTemplate() {
 // TODO: When template renamed, default data no updated
 // TODO: Should default template be stored in usersPreferences? different for each file
 console.clear();
-function move(array, from, to) {
+function move(array, from, to, replaceWith) {
+    // Remove from array
     let element = array.splice(from, 1)[0];
-    array.splice(to, 0, element);
+    // Add to array
+    if (replaceWith) {
+        array.splice(to, 0, replaceWith);
+    }
+    else {
+        array.splice(to, 0, element);
+    }
     return array;
 }
 function daysToMilliseconds(days) {
@@ -6237,6 +6251,7 @@ async function createTableUI() {
     if (defaultTemplate) {
         setDocumentData_1('defaultTemplate', defaultTemplate);
     }
+    console.log('sent to UI', defaultTemplate);
     // else {
     // 	setDocumentData('defaultTemplate', '')
     // }
@@ -6257,34 +6272,20 @@ async function createTableUI() {
     updatePluginVersion('7.0.0');
 }
 async function createTableInstance(opts) {
-    const templateComponent = await lookForComponent(opts.table.templates[0]);
+    console.log('create this one', opts.table.templates[0].template);
+    const templateComponent = await lookForComponent(opts.table.templates[0].template);
     // const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
     if (templateComponent) {
-        // if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
-        // 	opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
-        // 	opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
-        // }
-        // if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
-        // 	opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
-        // 	opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
-        // }
-        // if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
-        // 	opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
-        // 	opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
-        // }
-        // if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
-        // 	opts.data.cellHeight = opts.data.cellHeight.toUpperCase()
-        // 	opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
-        // }
         let tableInstance = await createTable(templateComponent, opts);
         if (tableInstance) {
             positionInCenterOfViewport(tableInstance);
             figma.currentPage.selection = [tableInstance];
             updateClientStorageAsync_1('userPreferences', (data) => {
                 // Add template to settings
-                let pluginData = opts.table.templates[0];
-                pluginData.file.id = getDocumentData_1('fileId');
-                opts.table.templates = upsert(data.table.templates, (item) => item.component.key === pluginData.component.key, pluginData);
+                opts.table.templates = upsert(data.table.templates, (item) => item.template.component.key === opts.table.templates[0].template.component.key && item.file.id === getDocumentData_1('fileId'), {
+                    template: opts.table.templates[0].template,
+                    file: { id: getDocumentData_1('fileId') },
+                });
                 return Object.assign(data, opts);
             }).then(() => {
                 figma.closePlugin('Table created');
@@ -6307,7 +6308,13 @@ function upsert(array, cb, entry) {
             result = true;
             // move to top
             console.log('move to top');
-            move(array, index, 0);
+            console.log('entry', entry);
+            if (entry) {
+                move(array, index, 0, entry);
+            }
+            else {
+                move(array, index, 0);
+            }
         }
         return result;
     });
@@ -6501,6 +6508,7 @@ async function main() {
                     data: item,
                 };
             });
+            console.log(remoteFiles, localTemplates, defaultTemplate);
             figma.parameters.on('input', ({ query, result, key }) => {
                 function genSuggestions(key, query) {
                     let suggestions = [];
@@ -6578,54 +6586,62 @@ async function main() {
                     }
                     return suggestions;
                 }
-                if (key === 'template') {
-                    // TODO: Add remote templates if they exist
-                    // TODO: Add icon for remote templates
-                    // TODO: reorder so that defaultTemplate is first in array
-                    let suggestions = [...localTemplates, ...remoteTemplates];
-                    // Reorder array so that default template is at the top
-                    let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key);
-                    suggestions = move(suggestions, indexOfDefaultTemplate, 0);
-                    suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
-                    result.setSuggestions(suggestions);
-                }
-                if (key === 'matrix') {
-                    result.setSuggestions(genSuggestions('matrix', query));
-                }
-                if (key === 'size') {
-                    result.setSuggestions(genSuggestions('size', query));
-                }
-                // Optional parameters
-                if (key === 'cell') {
-                    let suggestions = genSuggestions('cell', query);
-                    result.setSuggestions(suggestions);
-                }
-                if (key === 'alignment') {
-                    let suggestions = [
-                        { name: 'Top', data: ['MIN', 'MIN'] },
-                        { name: 'Center', data: ['CENTER', 'MIN'] },
-                        { name: 'Bottom', data: ['MAX', 'MIN'] },
-                    ];
-                    // Reorder array so that default template is at the top
-                    let indexFrom = suggestions.findIndex((item) => item.data[0] === userPreferences.table.alignment[0]);
-                    move(suggestions, indexFrom, 0);
-                    suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
-                    result.setSuggestions(suggestions);
-                }
-                if (key === 'header') {
-                    let suggestions = [];
-                    let first;
-                    let second;
-                    if (userPreferences.table.options.header) {
-                        first = { name: 'True', data: true };
-                        second = { name: 'False', data: false };
+                if (localTemplates.length > 0 || remoteFiles.length > 0) {
+                    if (key === 'template') {
+                        // TODO: Add remote templates if they exist
+                        // TODO: Add icon for remote templates
+                        // TODO: reorder so that defaultTemplate is first in array
+                        let suggestions = [...localTemplates, ...remoteTemplates];
+                        // Reorder array so that default template is at the top
+                        let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key);
+                        suggestions = move(suggestions, indexOfDefaultTemplate, 0);
+                        if (suggestions.length > 0) {
+                            suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
+                            result.setSuggestions(suggestions);
+                        }
+                        console.log(suggestions);
                     }
-                    else {
-                        first = { name: 'False', data: false };
-                        second = { name: 'True', data: true };
+                    if (key === 'matrix') {
+                        result.setSuggestions(genSuggestions('matrix', query));
                     }
-                    suggestions = [first, second].filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
-                    result.setSuggestions(suggestions);
+                    if (key === 'size') {
+                        result.setSuggestions(genSuggestions('size', query));
+                    }
+                    // Optional parameters
+                    if (key === 'cell') {
+                        let suggestions = genSuggestions('cell', query);
+                        result.setSuggestions(suggestions);
+                    }
+                    if (key === 'alignment') {
+                        let suggestions = [
+                            { name: 'Top', data: ['MIN', 'MIN'] },
+                            { name: 'Center', data: ['CENTER', 'MIN'] },
+                            { name: 'Bottom', data: ['MAX', 'MIN'] },
+                        ];
+                        // Reorder array so that default template is at the top
+                        let indexFrom = suggestions.findIndex((item) => item.data[0] === userPreferences.table.alignment[0]);
+                        move(suggestions, indexFrom, 0);
+                        suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
+                        result.setSuggestions(suggestions);
+                    }
+                    if (key === 'header') {
+                        let suggestions = [];
+                        let first;
+                        let second;
+                        if (userPreferences.table.options.header) {
+                            first = { name: 'True', data: true };
+                            second = { name: 'False', data: false };
+                        }
+                        else {
+                            first = { name: 'False', data: false };
+                            second = { name: 'True', data: true };
+                        }
+                        suggestions = [first, second].filter((s) => s.name.toUpperCase().includes(query.toUpperCase()));
+                        result.setSuggestions(suggestions);
+                    }
+                }
+                else {
+                    result.setError('No templates found. Run plugin without parameters.');
                 }
             });
             figma.on('run', async ({ parameters }) => {
@@ -6641,11 +6657,9 @@ async function main() {
                         parameters.template = localTemplates[indexOfDefaultTemplate];
                     }
                     // ----
+                    console.log('settings', settings);
                     if (parameters.template) {
-                        // replaceItem(settings.table.templates, (item) => item.component.key === parameters.template.component.key)
-                        // settings.table.templates = updateEntryInArray(settings.table.templates, parameters.template)
-                        parameters.template.file.id = getDocumentData_1('fileId');
-                        settings.table.templates = upsert(settings.table.templates, (item) => item.component.key === parameters.template.component.key, parameters.template);
+                        settings.table.templates = upsert(settings.table.templates, (item) => item.template.component.key === parameters.template.component.key && item.file.id === getDocumentData_1('fileId'), { template: parameters.template, file: { id: getDocumentData_1('fileId') } });
                     }
                     if (parameters.matrix) {
                         settings.table.matrix = upsert(settings.table.matrix, (item) => _.isEqual(item, parameters.matrix), parameters.matrix);

@@ -24,6 +24,14 @@
 		});
 	})
 
+	export function convertToNumber(data) {
+	if (Number(data)) {
+		return Number(data)
+	} else {
+		return data
+	}
+}
+
 
 	const dispatch = createEventDispatcher()
 
@@ -44,21 +52,26 @@
 
 	const handleInput = (e) => {
 
-		let origValue = value
+		let origValue = convertToNumber(value)
+
 		// in here, you can switch on type and implement
 		// whatever behaviour you need
 		value = type.match(/^(number|range)$/)
 			? +e.target.value
 			: e.target.value
 
+
+
 		if (typeof value === 'string' || value instanceof String) {
 			value = value.toUpperCase()
 		}
 
+		value = convertToNumber(value)
+
 
 		if (id === "tableWidth") {
 
-			if (value.toUpperCase() === 'HUG') {
+			if (value.toString().toUpperCase() === 'HUG') {
 				valueStore.update((data) => {
 					data.cellWidth = data.prevCellWidth
 					return data
@@ -96,7 +109,7 @@
 		}
 
 		if (id === "tableHeight") {
-			if (value.toUpperCase() === 'HUG') {
+			if (value.toString().toUpperCase() === 'HUG') {
 				valueStore.update((data) => {
 					data.prevCellHeight = data.cellHeight || 120
 					return data
@@ -122,7 +135,7 @@
 
 		if (id === "cellWidth") {
 
-			if (value.toUpperCase() === 'FILL') {
+			if (value.toString().toUpperCase() === 'FILL') {
 				valueStore.update((data) => {
 					if (origValue.toString().toUpperCase() !== 'FILL') {
 						data.prevCellWidth = origValue
@@ -170,7 +183,24 @@
 
 		//   if (id === "columns") {
 		valueStore.update((data) => {
-			data[id] = value
+
+			if (id === "columnCount" || id === "rowCount") {
+
+				if (value.toString().trim() === "$" || (Number.isInteger(value) && value <= 50)) {
+					data[id] = value
+				}
+				else {
+					// This updates value in UI
+					value = origValue
+					// This updates value in store
+					data[id] = origValue
+				}
+			}
+			else {
+				data[id] = value
+			}
+
+
 			return data
 		})
 

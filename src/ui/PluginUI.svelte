@@ -95,7 +95,8 @@
 
 
 		for (var i in data.localTemplates) {
-			if (template.component.id === data.localTemplates[i].component.id) {
+			// We have to check both id and key, because two nodes in different files can have the same id
+			if (template.component.id === data.localTemplates[i].component.id && template.component.key === data.localTemplates[i].component.key) {
 				data.localTemplates[i].selected = true
 			}
 		}
@@ -132,7 +133,7 @@
 					type: "create-table-instance",
 					data: {
 						table: {
-							templates: [data.defaultTemplate],
+							templates: [{template: data.defaultTemplate }],
 							matrix: [[ columnCount, rowCount]],
 							size: [[tableWidth, tableHeight]],
 							cell: [[cellWidth, cellHeight]],
@@ -299,7 +300,8 @@
 		}
 		else {
 
-			let index = data.localTemplates.findIndex((template) => template.id === data?.defaultTemplate?.id)
+			// We have to check both id and key because two nodes in different files can have same id
+			let index = data.localTemplates.findIndex((template) => template.component.id === data?.defaultTemplate?.component.id && template.component.key === data?.defaultTemplate?.component.key)
 
 
 			if (index !== -1) {
@@ -385,6 +387,7 @@
 	async function onLoad(event) {
 		var message = await event.data.pluginMessage
 
+		console.log("ui", message)
 
 		if (message.type === "show-create-table-ui") {
 			data = message
