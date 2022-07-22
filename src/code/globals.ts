@@ -13,7 +13,33 @@ import {
 	updateClientStorageAsync,
 	getRemoteFiles,
 } from '@fignite/helpers'
-import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, getComponentById, isEmpty } from './helpers'
+import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, getComponentById, isEmpty, upsert } from './helpers'
+
+type File = {
+	id: string
+	name: string
+}
+
+type Template = {
+	component: {
+		id: number
+		key: number
+	}
+	file: File
+}
+
+type TableSettings = {
+	template: Template
+	file: File
+	matrix?: []
+	size?: []
+	cells?: []
+	axisType?: 'ROWS'
+	resizing?: true
+	heading?: true
+}
+
+type RecentTables = TableSettings[]
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
@@ -489,18 +515,32 @@ export function getLocalTemplates() {
 	return templates
 }
 
-export async function setDefaultTemplate(templateData) {
-	// Only set prevoious template if default template has been set once
-	// let previousTemplate = getDocumentData('defaultTemplate') ? getDocumentData('defaultTemplate') : null
-
+export async function setDefaultTemplate(templateData: Template) {
 	await getRemoteFilesAsync()
 	await getRecentFilesAsync(getLocalTemplates())
-	setDocumentData('defaultTemplate', templateData)
 
-	figma.ui.postMessage({
-		type: 'post-default-template',
-		defaultTemplate: templateData,
-		localTemplates: getLocalTemplates(),
+	let currentFileId = getDocumentData('fileId')
+
+	await updateClientStorageAsync('recentTables', (recentTables: TableSettings[]) => {
+		recentTables = recentTables || []
+		recentTables = upsert(recentTables, (item) => item.template.component.key === templateData.component.key && item.file.id === currentFileId, {
+			template: templateData,
+			file: { id: currentFileId },
+		})
+
+		let defaultTemplate = recentTables[0].template
+
+		try {
+			figma.ui.postMessage({
+				type: 'post-default-template',
+				defaultTemplate,
+				localTemplates: getLocalTemplates(),
+			})
+		} catch (e) {
+			console.log(e)
+		}
+
+		return recentTables
 	})
 
 	// if (previousTemplate) {
@@ -508,22 +548,23 @@ export async function setDefaultTemplate(templateData) {
 	// }
 }
 
-export function getDefaultTemplate() {
-	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
-	var defaultTemplate = getDocumentData('defaultTemplate')
+// export function getDefaultTemplate() {
+// 	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
+// 	var defaultTemplate = getDocumentData('defaultTemplate')
 
-	// FIXME: Should I be doing more, like checking if the component has been published at this point?
-	if (usingRemoteTemplate) {
-		return defaultTemplate
-	} else {
-		return getComponentById(defaultTemplate?.component?.id) ? defaultTemplate : undefined
-	}
-}
+// 	// FIXME: Should I be doing more, like checking if the component has been published at this point?
+// 	if (usingRemoteTemplate) {
+// 		return defaultTemplate
+// 	} else {
+// 		return getComponentById(defaultTemplate?.component?.id, defaultTemplate?.component.id) ? defaultTemplate : undefined
+// 	}
+// }
 
-export async function determineDefaultTemplate() {
-	let { table } = await getClientStorageAsync('userPreferences')
+export async function getDefaultTemplate() {
+	// let { table } = await getClientStorageAsync('userPreferences')
+	let recentTables = (await getClientStorageAsync('recentTables')) || []
 
-	let defaultTemplates = table.templates
+	let defaultTemplates = recentTables
 	let fileId = getDocumentData('fileId')
 
 	let defaultTemplate
@@ -543,7 +584,8 @@ export async function determineDefaultTemplate() {
 	if (defaultTemplate && !isEmpty(defaultTemplate)) {
 		if (defaultTemplate.file.id === fileId) {
 			console.log('template comes from same file')
-			let templateComponent = getComponentById(defaultTemplate.id)
+			let templateComponent = getComponentById(defaultTemplate.component.id, defaultTemplate.component.key)
+			// console.log(templateComponent)
 			if (!templateComponent) {
 				if (localTemplates.length > 0) {
 					defaultTemplate = localTemplates[0]

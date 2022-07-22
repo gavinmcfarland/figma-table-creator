@@ -55,10 +55,9 @@ import {
 	getTableSettings,
 	convertToNumber,
 	getLocalTemplatesWithoutUpdating,
-	determineDefaultTemplate,
 	getDefaultTemplate,
 } from './globals'
-import { swapInstance, convertToNumber, isEmpty } from './helpers'
+import { swapInstance, convertToNumber, isEmpty, move } from './helpers'
 
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
@@ -99,20 +98,6 @@ function onlySpaces(str) {
 	} else {
 		return false
 	}
-}
-
-function move(array, from, to, replaceWith?) {
-	// Remove from array
-	let element = array.splice(from, 1)[0]
-
-	// Add to array
-	if (replaceWith) {
-		array.splice(to, 0, replaceWith)
-	} else {
-		array.splice(to, 0, element)
-	}
-
-	return array
 }
 
 function daysToMilliseconds(days) {
@@ -885,10 +870,7 @@ async function createTableUI() {
 	// const remoteFiles = getDocumentData('remoteFiles')
 	const fileId = getDocumentData('fileId')
 
-	let defaultTemplate = await determineDefaultTemplate()
-	if (defaultTemplate) {
-		setDocumentData('defaultTemplate', defaultTemplate)
-	}
+	let defaultTemplate = await getDefaultTemplate()
 
 	console.log('sent to UI', defaultTemplate)
 	// else {
@@ -917,9 +899,8 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(opts) {
-	console.log('create this one', opts.table.templates[0].template)
-	const templateComponent = await lookForComponent(opts.table.templates[0].template)
+async function createTableInstance(opts, template) {
+	const templateComponent = await lookForComponent(template)
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
@@ -928,20 +909,10 @@ async function createTableInstance(opts) {
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]
-			updateClientStorageAsync('userPreferences', (data) => {
-				// Add template to settings
-				opts.table.templates = upsert(
-					data.table.templates,
-					(item) =>
-						item.template.component.key === opts.table.templates[0].template.component.key && item.file.id === getDocumentData('fileId'),
-					{
-						template: opts.table.templates[0].template,
-						file: { id: getDocumentData('fileId') },
-					}
-				)
 
-				return Object.assign(data, opts)
-			}).then(() => {
+			await setDefaultTemplate(template)
+
+			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, opts)).then(() => {
 				figma.closePlugin('Table created')
 			})
 		}
@@ -1042,7 +1013,6 @@ async function main() {
 		// ]
 		let defaultData = {
 			table: {
-				templates: [],
 				matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
 				size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
 				cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
@@ -1186,7 +1156,7 @@ async function main() {
 			let localTemplates = getLocalTemplatesWithoutUpdating()
 			let remoteFiles = getDocumentData('remoteFiles') || []
 			let remoteTemplates = []
-			let defaultTemplate = await determineDefaultTemplate()
+			let defaultTemplate = await getDefaultTemplate()
 
 			for (let i = 0; i < remoteFiles.length; i++) {
 				let file = remoteFiles[i]
@@ -1390,11 +1360,12 @@ async function main() {
 					console.log('settings', settings)
 
 					if (parameters.template) {
-						settings.table.templates = upsert(
-							settings.table.templates,
-							(item) => item.template.component.key === parameters.template.component.key && item.file.id === getDocumentData('fileId'),
-							{ template: parameters.template, file: { id: getDocumentData('fileId') } }
-						)
+						// settings.table.templates = upsert(
+						// 	settings.table.templates,
+						// 	(item) => item.template.component.key === parameters.template.component.key && item.file.id === getDocumentData('fileId'),
+						// 	{ template: parameters.template, file: { id: getDocumentData('fileId') } }
+						// )
+						await setDefaultTemplate(parameters.template)
 					}
 
 					if (parameters.matrix) {
@@ -1418,7 +1389,7 @@ async function main() {
 						settings.table.options.header = parameters.header
 					}
 
-					createTableInstance(settings)
+					createTableInstance(settings, parameters.template)
 				} else {
 					createTableUI()
 				}
@@ -1552,7 +1523,7 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			createTableInstance(msg.data)
+			createTableInstance(msg.data, msg.data.table.templates[0].template)
 		})
 
 		plugin.command('updateTables', () => {

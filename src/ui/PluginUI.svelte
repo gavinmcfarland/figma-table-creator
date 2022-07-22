@@ -19,7 +19,7 @@
 	let columnCount
 	let rowCount
 	let includeHeader
-	let cellWidth = 100
+	let cellWidth
 	let cellHeight
 	let cellAlignment
 	let selectedFile
@@ -143,7 +143,7 @@
 								resizing: columnResizing,
 							}
 						},
-						prevCellWidth: prevCellWidth,
+						// prevCellWidth: prevCellWidth,
 
 					}
 				},
@@ -392,6 +392,8 @@
 		if (message.type === "show-create-table-ui") {
 			data = message
 
+			console.log("cellWidth", data)
+
 
 			let store = {
 				pageState,
@@ -406,7 +408,7 @@
 				columnResizing: data.table.options.resizing,
 				tableWidth: data.table.size[0][0],
 				tableHeight: data.table.size[0][1],
-				prevCellWidth: data.prevCellWidth,
+				prevCellWidth: data.table.cell[0][0],
 				prevCellHeight: data.prevCellHeight
 			}
 			valueStore.set(store)

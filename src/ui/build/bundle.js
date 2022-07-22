@@ -2934,7 +2934,7 @@ var ui = (function () {
     	return child_ctx;
     }
 
-    // (496:0) {#if pageState.chooseRemoteTemplate}
+    // (498:0) {#if pageState.chooseRemoteTemplate}
     function create_if_block_20(ctx) {
     	let div;
     	let t;
@@ -3018,7 +3018,7 @@ var ui = (function () {
     	};
     }
 
-    // (523:2) {:else}
+    // (525:2) {:else}
     function create_else_block_3(ctx) {
     	let p;
 
@@ -3037,7 +3037,7 @@ var ui = (function () {
     	};
     }
 
-    // (499:2) {#if data.recentFiles.length > 0}
+    // (501:2) {#if data.recentFiles.length > 0}
     function create_if_block_22(ctx) {
     	let p;
     	let t1;
@@ -3105,7 +3105,7 @@ var ui = (function () {
     	};
     }
 
-    // (511:4) {:else}
+    // (513:4) {:else}
     function create_else_block_2(ctx) {
     	let div;
     	let span;
@@ -3147,7 +3147,7 @@ var ui = (function () {
     	};
     }
 
-    // (503:4) {#if showToggles}
+    // (505:4) {#if showToggles}
     function create_if_block_23(ctx) {
     	let div;
     	let span;
@@ -3189,7 +3189,7 @@ var ui = (function () {
     	};
     }
 
-    // (502:3) {#each data.recentFiles as file}
+    // (504:3) {#each data.recentFiles as file}
     function create_each_block_6(ctx) {
     	let if_block_anchor;
 
@@ -3230,7 +3230,7 @@ var ui = (function () {
     	};
     }
 
-    // (527:2) {#if showToggles}
+    // (529:2) {#if showToggles}
     function create_if_block_21(ctx) {
     	let div;
     	let span;
@@ -3292,7 +3292,7 @@ var ui = (function () {
     	};
     }
 
-    // (529:65) <Button id="create-table">
+    // (531:65) <Button id="create-table">
     function create_default_slot_11(ctx) {
     	let t;
 
@@ -3309,7 +3309,7 @@ var ui = (function () {
     	};
     }
 
-    // (535:0) {#if pageState.chooseTemplate}
+    // (537:0) {#if pageState.chooseTemplate}
     function create_if_block_17(ctx) {
     	let div;
     	let p;
@@ -3353,7 +3353,7 @@ var ui = (function () {
     	};
     }
 
-    // (539:2) {#if data.recentFiles.length > 0}
+    // (541:2) {#if data.recentFiles.length > 0}
     function create_if_block_18(ctx) {
     	let each_1_anchor;
     	let each_value_4 = /*data*/ ctx[0].recentFiles;
@@ -3409,7 +3409,7 @@ var ui = (function () {
     	};
     }
 
-    // (543:4) {#if selectedFile?.id === file.id}
+    // (545:4) {#if selectedFile?.id === file.id}
     function create_if_block_19(ctx) {
     	let div;
     	let t;
@@ -3471,7 +3471,7 @@ var ui = (function () {
     	};
     }
 
-    // (545:6) {#each file.data as template}
+    // (547:6) {#each file.data as template}
     function create_each_block_5(ctx) {
     	let div;
     	let t_value = /*template*/ ctx[62].name + "";
@@ -3510,7 +3510,7 @@ var ui = (function () {
     	};
     }
 
-    // (541:3) {#each data.recentFiles as file}
+    // (543:3) {#each data.recentFiles as file}
     function create_each_block_4(ctx) {
     	let if_block_anchor;
     	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[65].id && create_if_block_19(ctx);
@@ -3545,7 +3545,7 @@ var ui = (function () {
     	};
     }
 
-    // (562:0) {#if pageState.welcomePageActive}
+    // (564:0) {#if pageState.welcomePageActive}
     function create_if_block_8(ctx) {
     	let t0;
     	let t1;
@@ -3733,7 +3733,7 @@ var ui = (function () {
     	};
     }
 
-    // (563:1) {#if welcomeSlides[0]}
+    // (565:1) {#if welcomeSlides[0]}
     function create_if_block_16(ctx) {
     	let div5;
     	let div1;
@@ -3841,7 +3841,7 @@ var ui = (function () {
     	};
     }
 
-    // (593:57) <Button classes="secondary" iconRight="arrow-right">
+    // (595:57) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_10(ctx) {
     	let t;
 
@@ -3858,7 +3858,7 @@ var ui = (function () {
     	};
     }
 
-    // (600:1) {#if welcomeSlides[1]}
+    // (602:1) {#if welcomeSlides[1]}
     function create_if_block_15(ctx) {
     	let div5;
     	let div1;
@@ -3990,7 +3990,7 @@ var ui = (function () {
     	};
     }
 
-    // (618:56) <Button classes="secondary" iconRight="arrow-right">
+    // (620:56) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_9(ctx) {
     	let t;
 
@@ -4007,7 +4007,7 @@ var ui = (function () {
     	};
     }
 
-    // (623:1) {#if welcomeSlides[2]}
+    // (625:1) {#if welcomeSlides[2]}
     function create_if_block_14(ctx) {
     	let div5;
     	let div1;
@@ -4139,7 +4139,7 @@ var ui = (function () {
     	};
     }
 
-    // (641:57) <Button classes="secondary" iconRight="arrow-right">
+    // (643:57) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_8(ctx) {
     	let t;
 
@@ -4156,7 +4156,7 @@ var ui = (function () {
     	};
     }
 
-    // (646:1) {#if welcomeSlides[3]}
+    // (648:1) {#if welcomeSlides[3]}
     function create_if_block_13(ctx) {
     	let div5;
     	let div1;
@@ -4288,7 +4288,7 @@ var ui = (function () {
     	};
     }
 
-    // (673:7) <Button classes="secondary" iconRight="arrow-right">
+    // (675:7) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_7(ctx) {
     	let t;
 
@@ -4305,7 +4305,7 @@ var ui = (function () {
     	};
     }
 
-    // (678:1) {#if welcomeSlides[4]}
+    // (680:1) {#if welcomeSlides[4]}
     function create_if_block_9(ctx) {
     	let div;
     	let current_block_type_index;
@@ -4377,7 +4377,7 @@ var ui = (function () {
     	};
     }
 
-    // (692:2) {:else}
+    // (694:2) {:else}
     function create_else_block(ctx) {
     	let div1;
     	let t0;
@@ -4526,7 +4526,7 @@ var ui = (function () {
     	};
     }
 
-    // (680:2) {#if data.pluginUsingOldComponents}
+    // (682:2) {#if data.pluginUsingOldComponents}
     function create_if_block_10(ctx) {
     	let div1;
     	let t0;
@@ -4626,7 +4626,7 @@ var ui = (function () {
     	};
     }
 
-    // (702:3) {:else}
+    // (704:3) {:else}
     function create_else_block_1(ctx) {
     	let p;
 
@@ -4644,7 +4644,7 @@ var ui = (function () {
     	};
     }
 
-    // (700:3) {#if data.recentFiles.length > 0}
+    // (702:3) {#if data.recentFiles.length > 0}
     function create_if_block_12(ctx) {
     	let p;
 
@@ -4662,7 +4662,7 @@ var ui = (function () {
     	};
     }
 
-    // (708:58) <Button classes="secondary">
+    // (710:58) <Button classes="secondary">
     function create_default_slot_6(ctx) {
     	let t;
 
@@ -4679,7 +4679,7 @@ var ui = (function () {
     	};
     }
 
-    // (709:4) {#if data.recentFiles.length > 0}
+    // (711:4) {#if data.recentFiles.length > 0}
     function create_if_block_11(ctx) {
     	let span;
     	let button;
@@ -4737,7 +4737,7 @@ var ui = (function () {
     	};
     }
 
-    // (712:9) <Button classes="secondary">
+    // (714:9) <Button classes="secondary">
     function create_default_slot_5(ctx) {
     	let t;
 
@@ -4754,7 +4754,7 @@ var ui = (function () {
     	};
     }
 
-    // (689:60) <Button classes="secondary">
+    // (691:60) <Button classes="secondary">
     function create_default_slot_4(ctx) {
     	let t;
 
@@ -4771,7 +4771,7 @@ var ui = (function () {
     	};
     }
 
-    // (722:0) {#if pageState.createTablePageActive}
+    // (724:0) {#if pageState.createTablePageActive}
     function create_if_block_1(ctx) {
     	let div8;
     	let div1;
@@ -5188,7 +5188,7 @@ var ui = (function () {
     	};
     }
 
-    // (727:5) <slot slot="label">{data.defaultTemplate?.name}
+    // (729:5) <slot slot="label">{data.defaultTemplate?.name}
     function create_label_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -5232,7 +5232,7 @@ var ui = (function () {
     	};
     }
 
-    // (727:24) {data.defaultTemplate?.name}
+    // (729:24) {data.defaultTemplate?.name}
     function fallback_block_5(ctx) {
     	let t_value = /*data*/ ctx[0].defaultTemplate?.name + "";
     	let t;
@@ -5253,7 +5253,7 @@ var ui = (function () {
     	};
     }
 
-    // (736:9) <slot slot="label">           {selectedFile?.name}
+    // (738:9) <slot slot="label">           {selectedFile?.name}
     function create_label_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -5297,7 +5297,7 @@ var ui = (function () {
     	};
     }
 
-    // (736:28)            
+    // (738:28)            
     function fallback_block_4(ctx) {
     	let t_value = /*selectedFile*/ ctx[7]?.name + "";
     	let t;
@@ -5318,7 +5318,7 @@ var ui = (function () {
     	};
     }
 
-    // (756:12) {#if data.remoteFiles.length > 0}
+    // (758:12) {#if data.remoteFiles.length > 0}
     function create_if_block_7(ctx) {
     	let span;
 
@@ -5336,7 +5336,7 @@ var ui = (function () {
     	};
     }
 
-    // (759:12) {#if data.remoteFiles.length > 0}
+    // (761:12) {#if data.remoteFiles.length > 0}
     function create_if_block_6(ctx) {
     	let each_1_anchor;
     	let each_value_3 = /*data*/ ctx[0].remoteFiles;
@@ -5392,7 +5392,7 @@ var ui = (function () {
     	};
     }
 
-    // (760:13) {#each data.remoteFiles as file}
+    // (762:13) {#each data.remoteFiles as file}
     function create_each_block_3(ctx) {
     	let div;
     	let input;
@@ -5469,7 +5469,7 @@ var ui = (function () {
     	};
     }
 
-    // (744:9) <slot slot="content">           <div class="tooltip">             <!-- {#if data.localTemplates.length > 0}
+    // (746:9) <slot slot="content">           <div class="tooltip">             <!-- {#if data.localTemplates.length > 0}
     function create_content_slot_2(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -5513,7 +5513,7 @@ var ui = (function () {
     	};
     }
 
-    // (744:30)            
+    // (746:30)            
     function fallback_block_3(ctx) {
     	let div2;
     	let div0;
@@ -5640,7 +5640,7 @@ var ui = (function () {
     	};
     }
 
-    // (735:8) <Dropdown id="tooltip">
+    // (737:8) <Dropdown id="tooltip">
     function create_default_slot_3(ctx) {
     	let t;
 
@@ -5660,7 +5660,7 @@ var ui = (function () {
     	};
     }
 
-    // (814:9) {#if data.remoteFiles.length > 0}
+    // (816:9) {#if data.remoteFiles.length > 0}
     function create_if_block_4(ctx) {
     	let each_1_anchor;
     	let each_value_1 = /*data*/ ctx[0].remoteFiles;
@@ -5716,7 +5716,7 @@ var ui = (function () {
     	};
     }
 
-    // (789:8) {#if selectedFile?.id === data.fileId}
+    // (791:8) {#if selectedFile?.id === data.fileId}
     function create_if_block_2(ctx) {
     	let t;
     	let div;
@@ -5771,7 +5771,7 @@ var ui = (function () {
     	};
     }
 
-    // (817:12) {#if selectedFile?.id === file.id}
+    // (819:12) {#if selectedFile?.id === file.id}
     function create_if_block_5(ctx) {
     	let ul;
     	let t;
@@ -5861,7 +5861,7 @@ var ui = (function () {
     	};
     }
 
-    // (819:15) {#each file.data as template}
+    // (821:15) {#each file.data as template}
     function create_each_block_2(ctx) {
     	let li;
     	let t0_value = /*template*/ ctx[62].name + "";
@@ -5927,7 +5927,7 @@ var ui = (function () {
     	};
     }
 
-    // (816:11) {#each data.remoteFiles as file}
+    // (818:11) {#each data.remoteFiles as file}
     function create_each_block_1(ctx) {
     	let if_block_anchor;
     	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[65].id && create_if_block_5(ctx);
@@ -5962,7 +5962,7 @@ var ui = (function () {
     	};
     }
 
-    // (790:9) {#if data.localTemplates.length > 0}
+    // (792:9) {#if data.localTemplates.length > 0}
     function create_if_block_3(ctx) {
     	let ul;
     	let each_value = /*data*/ ctx[0].localTemplates;
@@ -6020,7 +6020,7 @@ var ui = (function () {
     	};
     }
 
-    // (792:10) {#each data.localTemplates as template}
+    // (794:10) {#each data.localTemplates as template}
     function create_each_block(ctx) {
     	let li;
     	let t0_value = /*template*/ ctx[62].name + "";
@@ -6100,7 +6100,7 @@ var ui = (function () {
     	};
     }
 
-    // (729:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Templates</p>          <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
+    // (731:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Templates</p>          <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
     function create_content_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -6144,7 +6144,7 @@ var ui = (function () {
     	};
     }
 
-    // (729:26)        
+    // (731:26)        
     function fallback_block_2(ctx) {
     	let div2;
     	let div0;
@@ -6243,7 +6243,7 @@ var ui = (function () {
     	};
     }
 
-    // (726:4) <Dropdown fill icon="component" id="menu">
+    // (728:4) <Dropdown fill icon="component" id="menu">
     function create_default_slot_2(ctx) {
     	let t;
 
@@ -6263,7 +6263,7 @@ var ui = (function () {
     	};
     }
 
-    // (847:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (849:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_hitThing_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -6303,7 +6303,7 @@ var ui = (function () {
     	};
     }
 
-    // (847:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
+    // (849:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
     function fallback_block_1(ctx) {
     	let span;
 
@@ -6323,7 +6323,7 @@ var ui = (function () {
     	};
     }
 
-    // (848:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (850:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_content_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -6367,7 +6367,7 @@ var ui = (function () {
     	};
     }
 
-    // (848:26)        
+    // (850:26)        
     function fallback_block(ctx) {
     	let div1;
     	let div0;
@@ -6421,7 +6421,7 @@ var ui = (function () {
     	};
     }
 
-    // (846:4) <Dropdown>
+    // (848:4) <Dropdown>
     function create_default_slot_1(ctx) {
     	let t;
 
@@ -6441,7 +6441,7 @@ var ui = (function () {
     	};
     }
 
-    // (893:7) <Button id="create-table">
+    // (895:7) <Button id="create-table">
     function create_default_slot(ctx) {
     	let t;
 
@@ -6458,7 +6458,7 @@ var ui = (function () {
     	};
     }
 
-    // (899:0) {#if pageState.templateSettingsPageActive}
+    // (901:0) {#if pageState.templateSettingsPageActive}
     function create_if_block(ctx) {
     	let div;
     	let templatesettings;
@@ -6797,7 +6797,7 @@ var ui = (function () {
     	let columnCount;
     	let rowCount;
     	let includeHeader;
-    	let cellWidth = 100;
+    	let cellWidth;
     	let cellHeight;
     	let cellAlignment;
     	let selectedFile;
@@ -6868,9 +6868,9 @@ var ui = (function () {
     								header: includeHeader,
     								resizing: columnResizing
     							}
-    						},
-    						prevCellWidth
-    					}
+    						}
+    					}, // prevCellWidth: prevCellWidth,
+    					
     				}
     			},
     			"*"
@@ -6951,6 +6951,7 @@ var ui = (function () {
 
     		if (message.type === "show-create-table-ui") {
     			$$invalidate(0, data = message);
+    			console.log("cellWidth", data);
 
     			let store = {
     				pageState,
@@ -6965,7 +6966,7 @@ var ui = (function () {
     				columnResizing: data.table.options.resizing,
     				tableWidth: data.table.size[0][0],
     				tableHeight: data.table.size[0][1],
-    				prevCellWidth: data.prevCellWidth,
+    				prevCellWidth: data.table.cell[0][0],
     				prevCellHeight: data.prevCellHeight
     			};
 

@@ -159,6 +159,55 @@ export function isInsideComponent(node: SceneNode): boolean {
 		return false
 	}
 }
+export function move(array, from, to, replaceWith?) {
+	// Remove from array
+	let element = array.splice(from, 1)[0]
+
+	// Add to array
+	if (replaceWith) {
+		array.splice(to, 0, replaceWith)
+	} else {
+		array.splice(to, 0, element)
+	}
+
+	return array
+}
+export function upsert(array, cb, entry?) {
+	array.some((item, index) => {
+		let result = false
+		if (true === cb(array[index])) {
+			result = true
+			// move to top
+			console.log('move to top')
+			console.log('entry', entry)
+			if (entry) {
+				move(array, index, 0, entry)
+			} else {
+				move(array, index, 0)
+			}
+		}
+
+		return result
+	})
+
+	let matchFound = false
+	array.map((item, index) => {
+		if (true === cb(array[index])) {
+			matchFound = true
+		}
+	})
+
+	if (!matchFound) {
+		console.log('add to array')
+		array.unshift(entry)
+	}
+
+	if (array.length > 4) {
+		array = array.slice(0, 4)
+	}
+
+	return array
+}
 export function getParentComponent(node: SceneNode) {
 	const parent = node.parent
 
