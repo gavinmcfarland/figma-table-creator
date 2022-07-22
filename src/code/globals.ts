@@ -521,7 +521,7 @@ export async function setDefaultTemplate(templateData: Template) {
 
 	let currentFileId = getDocumentData('fileId')
 
-	await updateClientStorageAsync('recentTables', (recentTables: TableSettings[]) => {
+	await updateClientStorageAsync('recentTemplates', (recentTables: TableSettings[]) => {
 		recentTables = recentTables || []
 		recentTables = upsert(recentTables, (item) => item.template.component.key === templateData.component.key && item.file.id === currentFileId, {
 			template: templateData,
