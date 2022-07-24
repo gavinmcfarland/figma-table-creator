@@ -1,0 +1,59 @@
+.vscode-dark a {
+	color: #61AFEF;
+}
+
+.vscode-dark p {
+	color: #c9d1d9;
+
+}
+
+.vscode-dark h2 {
+	margin-top: 1.5em;
+	margin-bottom: 1em;
+}
+
+.vscode-dark h3 {
+	margin-bottom: 1em;
+	margin-bottom: 0.5em;
+}
+
+.vscode-dark h1,
+.vscode-dark h2,
+.vscode-dark h3,
+.vscode-dark h4,
+.vscode-dark h5,
+.vscode-dark h6 {
+	font-weight: 600;
+	/* color: #E06C75; */
+}
+
+.vscode-dark,
+.vscode-dark pre code {
+	color: #ABB2BF;
+}
+
+.vscode-dark code {
+	color: #90C378;
+}
+
+.vscode-dark pre:not(.hljs),
+.vscode-dark code>div {
+	background-color: #161b22;
+}
+
+.vscode-dark table>thead>tr>th {
+	border-color: #2C323C;
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table>tbody>tr+tr>td {
+	border-color: #2C323C;
+}
+
+.vscode-dark blockquote {
+	color: #5C6370;
+	font-style: italic;
+	background: transparent;
+	border-color: #2C323C;
+}

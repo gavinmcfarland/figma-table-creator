@@ -3,135 +3,108 @@
 
 ## Table creation
 
-Table Creator uses a component create tables from. This component is refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
+Table Creator uses a component to create tables from. This component is refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
 
-## Document Data
+## Types
 
-### File Id
+### File
 
-```js
-getDocumentData('fileId')
+```
+id: string
+```
+The id of the file.
+
+```
+name: string
+```
+The name of the file.
+
+---
+
+### Template
+
+```
+id: string
+```
+The id of the component the template belongs to.
+
+```
+key: string
+```
+The key of the component the template belongs to.
+
+```
+file: File
+```
+The file the component originated from.
+
+---
+
+### TableSettings
+
+```
+template?: Template
+```
+The template used to create the table.
+
+```
+file?: File
 ```
 
-### Deafult Template
+The file the table was created in.
 
-The currently selected template used by the plugin.
-
-```js
-getDocumentData('defaultTemplate')
+```
+matrix?: [number | '$', number | '$']
 ```
 
-```js
-{
-    id: "OhpMUnOGG4",
-    name: "Table 1",
-    component: {
-        id: "1:31"
-        key: "2b3dc4866208404c549c73ea0d26f1ad12e8af00"
-    },
-    file: {
-        id: "tv1E89ceMN",
-        name: "Untitled"
-    }
-}
+The number of columns and rows of the table.
+
+```
+size?: [number | 'HUG' | '$', number | 'HUG' | '$']
 ```
 
-### Previous Template
+The size of the table.
 
-The previous template the user used with the plugin.
-
-```js
-getDocumentData('previousTemplate')
+```
+cell?: [number | '$', number | '$']
 ```
 
-```js
-{
-    id: "OhpMUnOGG4",
-    name: "Table 1",
-    component: {
-        id: "1:31"
-        key: "2b3dc4866208404c549c73ea0d26f1ad12e8af00",
-    },
-    file: {
-        id: "tv1E89ceMN",
-        name: "Untitled"
-    }
-}
+The size of the cell.
+
+```
+alignment?: ['MIN' | 'MAX', 'MIN' | 'MAX']
 ```
 
-### Local Templates (depreciated)
+The alignment of the conent in the cells.
 
-A list of templates used by the plugin locally.
-
-```js
-getDocumentData('localTemplates')
 ```
-
-```js
-[
-    {
-        id: String,
-        name: String,
-        component: {
-            id: String,
-            key: String,
-        }
-    }
-]
+axis?: 'ROWS' | 'COLUMNS'
 ```
+The main axis used for the table.
+
+```
+resizing?: boolean
+```
+If the table uses a local component for resizing.
+
+```
+header?: boolean
+```
+If the table includes a header.
+
+
+
+
 
 ### Remote Files
 
-A list of files stored on the `document` used by the plugin. This is so the user can select a new default template to create tables from. These files are taken from clientStorage and therefore makes one person's recent files with data visible to another user.
+A list of files stored on the `document` used by the plugin. This is so one user can add a template to the current file, so other users can use that remote template to create tables from.
 
 ```js
 getDocumentData('remoteFiles')
 ```
 
-```js
-[
-    {
-        id: String,
-        name: String,
-        templates: [
-            {
-                id: String,
-                name: String,
-                component: {
-                    id: String,
-                    key: String,
-                }
-            }
-        ]
-    }
-    
-]
-```
-
 ## Node Data
-
-### Template
-
-Each table contains a reference to the template used to create it. When a table is copied to another file these details can be used to import the component that's used to create the table.
-
-```js
-getPluginData(node, 'template')
-```
-
-```js
-{
-    file: {
-        id: String,
-        name: String
-    },
-    id: String,
-    name: String,
-    component: {
-        id: String,
-        key: String,
-    }
-}
-```
 
 ## Client Storage
 
