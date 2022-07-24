@@ -91,6 +91,7 @@ console.clear()
 // figma.root.setPluginData('fileId', '')
 // figma.root.setPluginData('defaultTemplate', '')
 // figma.clientStorage.deleteAsync('userPreferences')
+// figma.clientStorage.deleteAsync('recentTables')
 
 function onlySpaces(str) {
 	if (typeof str === 'string') {
@@ -296,7 +297,7 @@ function postCurrentSelection(templateNodeId) {
 
 	function postSelection() {
 		let sel = figma.currentPage.selection[0]
-		// console.log('sel', sel.type)
+
 		if (
 			figma.currentPage.selection.length === 1 &&
 			isInsideTemplate(figma.currentPage.selection[0]) &&
@@ -410,7 +411,7 @@ function postCurrentSelection(templateNodeId) {
 // 						})
 // 					})
 // 					.catch((error) => {
-// 						console.log(error)
+
 // 						// FIXME: Do I need to do something here if component is deleted?
 // 						// FIXME: Is this the wrong time to check if component is published?
 // 						// figma.notify("Please check component is published")
@@ -480,7 +481,6 @@ function detachTable(selection) {
 			table.findAll((node) => {
 				if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
 					if (node.type === 'INSTANCE') {
-						// console.log(node.type, node.id)
 						node.detachInstance()
 					}
 					if (node.type === 'COMPONENT') {
@@ -523,7 +523,7 @@ async function toggleColumnResizing(selection) {
 			let settings = getTableSettings(oldTable)
 
 			if (i === 0) {
-				firstTableColumnResizing = settings.table.options.resizing
+				firstTableColumnResizing = settings.resizing
 			}
 
 			if (firstTableColumnResizing) {
@@ -532,7 +532,7 @@ async function toggleColumnResizing(selection) {
 				newSelection.push(newTable)
 			} else {
 				result = 'applied'
-				settings.table.options.resizing = !firstTableColumnResizing
+				settings.resizing = !firstTableColumnResizing
 
 				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
 				let oldTablePrimaryAxisSizingMode = oldTable.primaryAxisSizingMode
@@ -561,10 +561,8 @@ async function toggleColumnResizing(selection) {
 
 								newTableCell.swapComponent(oldTableCell.mainComponent)
 
-								// console.log('vp', oldTableCell.variantProperties, newTableCell.variantProperties)
-
 								await swapInstance(oldTableCell, newTableCell)
-								// console.log('tableCell', oldTableCell.width, newTableCell)
+
 								// replace(newTableCell, oldTableCell)
 								// newTableCell.swapComponent(oldTableCell.mainComponent)
 								resize(newTableCell, oldTableCell.width, oldTableCell.height)
@@ -602,7 +600,7 @@ function switchColumnsOrRows(selection) {
 	// TODO: Fix localise component to take account of rows or columns
 	// FIXME: Change cell to
 
-	let settings
+	let settings: TableSettings
 	let firstTableLayoutMode
 
 	for (let i = 0; i < selection.length; i++) {
@@ -622,7 +620,7 @@ function switchColumnsOrRows(selection) {
 				settings = getTableSettings(table)
 
 				if (i === 0) {
-					vectorType = settings.table.options.axis
+					vectorType = settings.axis
 
 					if (vectorType === 'ROWS') {
 						firstTableLayoutMode = 'VERTICAL'
@@ -642,7 +640,7 @@ function switchColumnsOrRows(selection) {
 					var rowContainerObject = nodeToObject(rowContainer)
 
 					// Change the table container
-					if (settings.table.options.axis === 'ROWS') {
+					if (settings.axis === 'ROWS') {
 						rowContainer.layoutMode = 'HORIZONTAL'
 					}
 
@@ -673,7 +671,7 @@ function switchColumnsOrRows(selection) {
 
 								var cells = row.children
 
-								if (settings.table.options.axis === 'COLUMNS') {
+								if (settings.axis === 'COLUMNS') {
 									row.name = row.name.replace('Col', 'Row')
 									row.layoutMode = 'HORIZONTAL'
 									row.layoutGrow = 0
@@ -681,7 +679,7 @@ function switchColumnsOrRows(selection) {
 								}
 
 								if (i < origRowlength) {
-									for (let c = 0; c < settings.table.matrix[0][0]; c++) {
+									for (let c = 0; c < settings.matrix[0][0]; c++) {
 										var cell = cells[c]
 										var cellWidth = cell.width
 										// var cellLocation = [c + 1, r + 1]
@@ -702,7 +700,7 @@ function switchColumnsOrRows(selection) {
 											}
 
 											if (row.parent.children[oppositeIndex]) {
-												if (settings.table.options.axis === 'ROWS') {
+												if (settings.axis === 'ROWS') {
 													row.parent.children[oppositeIndex].appendChild(cell)
 													row.parent.children[oppositeIndex].resize(
 														rowContainerObject.children[i].children[c].width,
@@ -735,13 +733,13 @@ function switchColumnsOrRows(selection) {
 								row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
 							}
 
-							if (settings.table.options.axis === 'ROWS' && isRow(row)) {
+							if (settings.axis === 'ROWS' && isRow(row)) {
 								row.name = row.name.replace('Row', 'Col')
 								row.layoutMode = 'VERTICAL'
 							}
 						}
 
-						if (settings.table.options.axis === 'COLUMNS') {
+						if (settings.axis === 'COLUMNS') {
 							rowContainer.layoutMode = 'VERTICAL'
 						}
 
@@ -764,15 +762,14 @@ function switchColumnsOrRows(selection) {
 
 							if (isRow(row)) {
 								// Settings is original settings, not new settings
-								if (settings.table.options.axis === 'COLUMNS') {
+								if (settings.axis === 'COLUMNS') {
 									row.counterAxisSizingMode = 'AUTO'
 									row.layoutAlign = 'STRETCH'
 
 									// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
 
 									var cells = row.children
-									var length =
-										settings.table.options.axis === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length
+									var length = settings.axis === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
@@ -785,7 +782,7 @@ function switchColumnsOrRows(selection) {
 									}
 								} else {
 									var cells = row.children
-									var length = settings.table.options.axis === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length
+									var length = settings.axis === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length
 
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
@@ -793,7 +790,7 @@ function switchColumnsOrRows(selection) {
 										if (cell) {
 											if (row.parent.children[getNodeIndex(firstRow) + c]) {
 												// NOTE: temporary fix. Could be better
-												if (settings.table.size[0][0] === 'HUG') {
+												if (settings.size[0][0] === 'HUG') {
 													cell.layoutGrow = 0
 													cell.primaryAxisSizingMode = 'AUTO'
 												} else {
@@ -867,12 +864,13 @@ async function createTableUI() {
 	let usingRemoteTemplate = await getDocumentData('usingRemoteTemplate')
 	let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
 
+	let tableSettings = userPreferences.table
+
 	// const remoteFiles = getDocumentData('remoteFiles')
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await getDefaultTemplate()
 
-	console.log('sent to UI', defaultTemplate)
 	// else {
 	// 	setDocumentData('defaultTemplate', '')
 	// }
@@ -884,7 +882,7 @@ async function createTableUI() {
 	})
 	figma.ui.postMessage({
 		type: 'show-create-table-ui',
-		...userPreferences,
+		...tableSettings,
 		remoteFiles,
 		recentFiles,
 		localTemplates,
@@ -899,12 +897,12 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(opts, template) {
+async function createTableInstance(settings, template) {
 	const templateComponent = await lookForComponent(template)
 	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
-		let tableInstance = await createTable(templateComponent, opts)
+		let tableInstance = await createTable(templateComponent, settings)
 
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
@@ -912,7 +910,12 @@ async function createTableInstance(opts, template) {
 
 			await setDefaultTemplate(template)
 
-			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, opts)).then(() => {
+			updateClientStorageAsync('userPreferences', (data) => {
+				data = {
+					table: Object.assign(data.table, settings),
+				}
+				return data
+			}).then(() => {
 				figma.closePlugin('Table created')
 			})
 		}
@@ -935,8 +938,6 @@ function upsert(array, cb, entry?) {
 		if (true === cb(array[index])) {
 			result = true
 			// move to top
-			console.log('move to top')
-			console.log('entry', entry)
 			if (entry) {
 				move(array, index, 0, entry)
 			} else {
@@ -955,7 +956,6 @@ function upsert(array, cb, entry?) {
 	})
 
 	if (!matchFound) {
-		console.log('add to array')
 		array.unshift(entry)
 	}
 
@@ -976,7 +976,6 @@ function updateEntryInArray(array, entry) {
 		if (_.isEqual(item, entry)) {
 			result = true
 			// move to top
-			console.log('move to top')
 			move(array, index, 0)
 		}
 
@@ -991,7 +990,6 @@ function updateEntryInArray(array, entry) {
 	})
 
 	if (!matchFound) {
-		console.log('add to array')
 		array.unshift(entry)
 	}
 
@@ -1011,17 +1009,17 @@ async function main() {
 		// 		template: {}
 		// 	}
 		// ]
+		let table: TableSettings = {
+			matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
+			size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
+			cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
+			alignment: [data?.cellAlignment || 'MIN', 'MIN'],
+			header: data?.includeHeader || true,
+			resizing: data?.columnResizing || true,
+		}
+
 		let defaultData = {
-			table: {
-				matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
-				size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
-				cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
-				alignment: [data?.cellAlignment || 'MIN', 'MIN'],
-				options: {
-					header: data?.includeHeader || true,
-					resizing: data?.columnResizing || true,
-				},
-			},
+			table,
 		}
 
 		// If the property table deosn't exist, then declare new defaultData
@@ -1153,6 +1151,7 @@ async function main() {
 
 		plugin.command('createTable', async ({ ui }) => {
 			let userPreferences = await getClientStorageAsync('userPreferences')
+			let tableSettings: TableSettings = userPreferences.table
 			let localTemplates = getLocalTemplatesWithoutUpdating()
 			let remoteFiles = getDocumentData('remoteFiles') || []
 			let remoteTemplates = []
@@ -1180,8 +1179,6 @@ async function main() {
 				}
 			})
 
-			console.log(remoteFiles, localTemplates, defaultTemplate)
-
 			if (!defaultTemplate && !localTemplates && !remoteFiles) {
 			}
 
@@ -1202,7 +1199,7 @@ async function main() {
 
 						// ---
 
-						if (!item1 || item1 === userPreferences.table[key][0][0]) {
+						if (!item1 || item1 === tableSettings[key][0][0]) {
 							item1 = ''
 						} else if (!Number(item1)) {
 							if (key === 'matrix' && item1 !== '$') {
@@ -1220,7 +1217,7 @@ async function main() {
 
 						// ---
 
-						if (!item2 || item2 === userPreferences.table[key][0][1]) {
+						if (!item2 || item2 === tableSettings[key][0][1]) {
 							item2 = ''
 						} else if (!Number(item2)) {
 							if (key === 'matrix' && item2 !== '$') {
@@ -1240,14 +1237,14 @@ async function main() {
 
 						if (item1 && !item2 && item2 !== false) {
 							suggestions.push({
-								name: `${item1} x ${item2 || userPreferences.table[key][0][1]}`,
-								data: [item1, item2 || userPreferences.table[key][0][1]],
+								name: `${item1} x ${item2 || tableSettings[key][0][1]}`,
+								data: [item1, item2 || tableSettings[key][0][1]],
 							})
 						}
 						if (!item1 && item1 !== false && item2) {
 							suggestions.push({
-								name: `${item1 || userPreferences.table[key][0][0]} x ${item2}`,
-								data: [item1 || userPreferences.table[key][0][1], item2],
+								name: `${item1 || tableSettings[key][0][0]} x ${item2}`,
+								data: [item1 || tableSettings[key][0][1], item2],
 							})
 						}
 						if (item1 && item2) {
@@ -1258,8 +1255,8 @@ async function main() {
 						}
 					}
 
-					for (let i = 0; i < userPreferences.table[key].length; i++) {
-						let item = userPreferences.table[key][i]
+					for (let i = 0; i < tableSettings[key].length; i++) {
+						let item = tableSettings[key][i]
 						let obj = {
 							name: `${item[0].toString().toUpperCase()} x ${item[1].toString().toUpperCase()}`,
 							data: item,
@@ -1284,8 +1281,6 @@ async function main() {
 							suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
 							result.setSuggestions(suggestions)
 						}
-
-						console.log(suggestions)
 					}
 
 					if (key === 'matrix') {
@@ -1310,7 +1305,7 @@ async function main() {
 						]
 
 						// Reorder array so that default template is at the top
-						let indexFrom = suggestions.findIndex((item) => item.data[0] === userPreferences.table.alignment[0])
+						let indexFrom = suggestions.findIndex((item) => item.data[0] === tableSettings.alignment[0])
 						move(suggestions, indexFrom, 0)
 						suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
 
@@ -1321,7 +1316,7 @@ async function main() {
 						let suggestions = []
 						let first
 						let second
-						if (userPreferences.table.options.header) {
+						if (tableSettings.header) {
 							first = { name: 'True', data: true }
 							second = { name: 'False', data: false }
 						} else {
@@ -1339,7 +1334,7 @@ async function main() {
 			})
 
 			figma.on('run', async ({ parameters }) => {
-				let settings = userPreferences
+				let settings: TableSettings = userPreferences.table
 
 				if (parameters) {
 					// ---- Because we can't set data when parameters is launched we need to retrospectively update template components that may have been copied and have the out of date template data on them
@@ -1357,7 +1352,6 @@ async function main() {
 					}
 
 					// ----
-					console.log('settings', settings)
 
 					if (parameters.template) {
 						// settings.table.templates = upsert(
@@ -1369,24 +1363,23 @@ async function main() {
 					}
 
 					if (parameters.matrix) {
-						settings.table.matrix = upsert(settings.table.matrix, (item) => _.isEqual(item, parameters.matrix), parameters.matrix)
-						// settings.table.matrix = updateEntryInArray(settings.table.matrix, parameters.matrix)
+						settings.matrix = upsert(settings.matrix, (item) => _.isEqual(item, parameters.matrix), parameters.matrix)
 					}
 
 					if (parameters.size) {
-						settings.table.size = updateEntryInArray(settings.table.size, parameters.size)
+						settings.size = updateEntryInArray(settings.size, parameters.size)
 					}
 
 					if (parameters.cell) {
-						settings.table.cell = updateEntryInArray(settings.table.cell, parameters.cell)
+						settings.cell = updateEntryInArray(settings.cell, parameters.cell)
 					}
 
 					if (parameters.alignment) {
-						settings.table.alignment = parameters.alignment
+						settings.alignment = parameters.alignment
 					}
 
 					if (parameters.header === false || parameters.header === true) {
-						settings.table.options.header = parameters.header
+						settings.header = parameters.header
 					}
 
 					createTableInstance(settings, parameters.template)
@@ -1523,7 +1516,7 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			createTableInstance(msg.data, msg.data.table.templates[0].template)
+			createTableInstance(msg.data, msg.data.template)
 		})
 
 		plugin.command('updateTables', () => {
