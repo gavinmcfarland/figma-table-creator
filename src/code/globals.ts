@@ -11,7 +11,7 @@ import {
 	setDocumentData,
 	genUID,
 } from '@fignite/helpers'
-import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle } from './helpers'
+import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, sleep } from './helpers'
 import { updateClientStorageAsync } from './old-helpers'
 
 export let defaultRelaunchData = {
@@ -511,28 +511,49 @@ export async function setPreviousTemplate(templateData) {
 }
 
 export async function updateTables(template) {
-	// FIXME: Template file name not up to date for some reason
-
-	var tables = figma.root.findAll((node) => getPluginData(node, 'template')?.id === template.id)
-	// getAllTableInstances()
-
 	var templateComponent = await lookForComponent(template)
 
-	if (templateComponent && tables) {
-		var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+	// FIXME: Template file name not up to date for some reason
 
-		for (let b = 0; b < tables.length; b++) {
-			var table = tables[b]
+	let pages = figma.root.children
 
-			// Don't apply if an instance
-			if (table.type !== 'INSTANCE') {
-				copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] })
+	figma.notify(`Updating tables on page 1 of ${pages.length}...`)
 
-				table.findAll((node) => {
-					if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
-						copyPasteStyle(rowTemplate, node, { exclude: ['name', 'layoutMode'] })
-					}
-				})
+	await sleep()
+
+	let handler = {}
+
+	for (let p = 0; p < pages.length; p++) {
+		let page = pages[p]
+
+		if (handler?.cancel) {
+			handler.cancel()
+		}
+
+		handler = figma.notify(`Updating tables on page ${p + 1} of ${pages.length}...`, { timeout: 1 })
+
+		await sleep()
+
+		var tables = page.findAll((node) => getPluginData(node, 'template')?.id === template.id && node.type === 'FRAME')
+
+		if (templateComponent && tables) {
+			var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
+			for (let b = 0; b < tables.length; b++) {
+				var table = tables[b]
+
+				// Don't apply if an instance
+				if (table.type !== 'INSTANCE') {
+					console.log(`Updating table ${b + 1} of ${tables.length} on page ${p + 1}`)
+
+					copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] })
+
+					table.findAll((node) => {
+						if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
+							copyPasteStyle(rowTemplate, node, { exclude: ['name', 'layoutMode'] })
+						}
+					})
+				}
 			}
 		}
 	}

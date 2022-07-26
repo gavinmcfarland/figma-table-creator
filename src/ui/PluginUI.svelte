@@ -668,10 +668,10 @@
 			</div>
 			<div class="dots"></div>
 			<div class="content">
-				<h6>Update components</h6>
-				<p>The table components in this file need updating. This will convert your existing table components into a single component to use as a template.</p>
+				<h6>Update tables</h6>
+				<p>The tables in this file need updating. This will update your existing tables and convert your table components into a single component to use as a template.</p>
 			<div class="buttons">
-				<span class="next" on:click={() => upgradeToTemplate()}><Button classes="secondary">Update Components</Button></span>
+				<span class="next" on:click={() => upgradeToTemplate()}><Button classes="secondary">Update Tables</Button></span>
 			</div>
 		</div>
 		{:else}

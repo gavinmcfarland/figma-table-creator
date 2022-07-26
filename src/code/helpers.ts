@@ -456,3 +456,7 @@ export async function swapInstance(target, source) {
 		await overrideChildrenChars2(target.children, source.children, target.mainComponent.children, source.mainComponent.children)
 	}
 }
+
+export function sleep(ms = 0) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}

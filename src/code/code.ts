@@ -1445,8 +1445,8 @@ async function main() {
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})
 		})
-		plugin.on('upgrade-to-template', () => {
-			upgradeOldComponentsToTemplate()
+		plugin.on('upgrade-to-template', async () => {
+			await upgradeOldComponentsToTemplate()
 
 			figma.notify('Template created')
 			createTableUI()
