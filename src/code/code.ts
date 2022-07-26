@@ -26,6 +26,7 @@ import {
 } from '@fignite/helpers'
 import {
 	getComponentById,
+	getComponentByIdAndKey,
 	createPage,
 	animateNodeIntoView,
 	selectAndZoomIntoView,
@@ -899,7 +900,6 @@ async function createTableUI() {
 
 async function createTableInstance(settings, template) {
 	const templateComponent = await lookForComponent(template)
-	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
 
 	if (templateComponent) {
 		let tableInstance = await createTable(templateComponent, settings)
@@ -1460,7 +1460,7 @@ async function main() {
 					remoteFiles: remoteFiles,
 				})
 			} else {
-				let templateComponent = getComponentById(msg.template.id)
+				let templateComponent = getComponentByIdAndKey(msg.template.id, msg.template.component.key)
 
 				templateComponent.remove()
 
@@ -1573,8 +1573,8 @@ async function main() {
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})
 		})
-		plugin.on('upgrade-to-template', () => {
-			upgradeOldComponentsToTemplate()
+		plugin.on('upgrade-to-template', async () => {
+			await upgradeOldComponentsToTemplate()
 
 			figma.notify('Template created')
 			createTableUI()

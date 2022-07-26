@@ -13,7 +13,17 @@ import {
 	updateClientStorageAsync,
 	getRemoteFiles,
 } from '@fignite/helpers'
-import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, getComponentById, isEmpty, upsert } from './helpers'
+import {
+	removeChildren,
+	getTemplateParts,
+	genRandomId,
+	lookForComponent,
+	copyPasteStyle,
+	getComponentById,
+	getComponentByIdAndKey,
+	isEmpty,
+	upsert,
+} from './helpers'
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
@@ -522,18 +532,6 @@ export async function setDefaultTemplate(templateData: Template) {
 	// }
 }
 
-// export function getDefaultTemplate() {
-// 	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
-// 	var defaultTemplate = getDocumentData('defaultTemplate')
-
-// 	// FIXME: Should I be doing more, like checking if the component has been published at this point?
-// 	if (usingRemoteTemplate) {
-// 		return defaultTemplate
-// 	} else {
-// 		return getComponentById(defaultTemplate?.component?.id, defaultTemplate?.component.id) ? defaultTemplate : undefined
-// 	}
-// }
-
 export async function getDefaultTemplate() {
 	// let { table } = await getClientStorageAsync('userPreferences')
 	let recentTables = (await getClientStorageAsync('recentTables')) || []
@@ -557,7 +555,7 @@ export async function getDefaultTemplate() {
 
 	if (defaultTemplate && !isEmpty(defaultTemplate)) {
 		if (defaultTemplate.file.id === fileId) {
-			let templateComponent = getComponentById(defaultTemplate.component.id, defaultTemplate.component.key)
+			let templateComponent = getComponentByIdAndKey(defaultTemplate.component.id, defaultTemplate.component.key)
 
 			if (!templateComponent) {
 				if (localTemplates.length > 0) {

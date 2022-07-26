@@ -1,5 +1,5 @@
 
-(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35732/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
+(function(l, r) { if (l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (window.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(window.document);
 var ui = (function () {
     'use strict';
 
@@ -2934,7 +2934,7 @@ var ui = (function () {
     	return child_ctx;
     }
 
-    // (490:0) {#if pageState.chooseRemoteTemplate}
+    // (489:0) {#if pageState.chooseRemoteTemplate}
     function create_if_block_20(ctx) {
     	let div;
     	let t;
@@ -3018,7 +3018,7 @@ var ui = (function () {
     	};
     }
 
-    // (517:2) {:else}
+    // (516:2) {:else}
     function create_else_block_3(ctx) {
     	let p;
 
@@ -3037,7 +3037,7 @@ var ui = (function () {
     	};
     }
 
-    // (493:2) {#if data.recentFiles.length > 0}
+    // (492:2) {#if data.recentFiles.length > 0}
     function create_if_block_22(ctx) {
     	let p;
     	let t1;
@@ -3105,7 +3105,7 @@ var ui = (function () {
     	};
     }
 
-    // (505:4) {:else}
+    // (504:4) {:else}
     function create_else_block_2(ctx) {
     	let div;
     	let span;
@@ -3147,7 +3147,7 @@ var ui = (function () {
     	};
     }
 
-    // (497:4) {#if showToggles}
+    // (496:4) {#if showToggles}
     function create_if_block_23(ctx) {
     	let div;
     	let span;
@@ -3189,7 +3189,7 @@ var ui = (function () {
     	};
     }
 
-    // (496:3) {#each data.recentFiles as file}
+    // (495:3) {#each data.recentFiles as file}
     function create_each_block_6(ctx) {
     	let if_block_anchor;
 
@@ -3230,7 +3230,7 @@ var ui = (function () {
     	};
     }
 
-    // (521:2) {#if showToggles}
+    // (520:2) {#if showToggles}
     function create_if_block_21(ctx) {
     	let div;
     	let span;
@@ -3292,7 +3292,7 @@ var ui = (function () {
     	};
     }
 
-    // (523:65) <Button id="create-table">
+    // (522:65) <Button id="create-table">
     function create_default_slot_11(ctx) {
     	let t;
 
@@ -3309,7 +3309,7 @@ var ui = (function () {
     	};
     }
 
-    // (529:0) {#if pageState.chooseTemplate}
+    // (528:0) {#if pageState.chooseTemplate}
     function create_if_block_17(ctx) {
     	let div;
     	let p;
@@ -3353,7 +3353,7 @@ var ui = (function () {
     	};
     }
 
-    // (533:2) {#if data.recentFiles.length > 0}
+    // (532:2) {#if data.recentFiles.length > 0}
     function create_if_block_18(ctx) {
     	let each_1_anchor;
     	let each_value_4 = /*data*/ ctx[0].recentFiles;
@@ -3409,7 +3409,7 @@ var ui = (function () {
     	};
     }
 
-    // (537:4) {#if selectedFile?.id === file.id}
+    // (536:4) {#if selectedFile?.id === file.id}
     function create_if_block_19(ctx) {
     	let div;
     	let t;
@@ -3471,7 +3471,7 @@ var ui = (function () {
     	};
     }
 
-    // (539:6) {#each file.data as template}
+    // (538:6) {#each file.data as template}
     function create_each_block_5(ctx) {
     	let div;
     	let t_value = /*template*/ ctx[62].name + "";
@@ -3510,7 +3510,7 @@ var ui = (function () {
     	};
     }
 
-    // (535:3) {#each data.recentFiles as file}
+    // (534:3) {#each data.recentFiles as file}
     function create_each_block_4(ctx) {
     	let if_block_anchor;
     	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[65].id && create_if_block_19(ctx);
@@ -3545,7 +3545,7 @@ var ui = (function () {
     	};
     }
 
-    // (556:0) {#if pageState.welcomePageActive}
+    // (555:0) {#if pageState.welcomePageActive}
     function create_if_block_8(ctx) {
     	let t0;
     	let t1;
@@ -3733,7 +3733,7 @@ var ui = (function () {
     	};
     }
 
-    // (557:1) {#if welcomeSlides[0]}
+    // (556:1) {#if welcomeSlides[0]}
     function create_if_block_16(ctx) {
     	let div5;
     	let div1;
@@ -3841,7 +3841,7 @@ var ui = (function () {
     	};
     }
 
-    // (587:57) <Button classes="secondary" iconRight="arrow-right">
+    // (586:57) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_10(ctx) {
     	let t;
 
@@ -3858,7 +3858,7 @@ var ui = (function () {
     	};
     }
 
-    // (594:1) {#if welcomeSlides[1]}
+    // (593:1) {#if welcomeSlides[1]}
     function create_if_block_15(ctx) {
     	let div5;
     	let div1;
@@ -3990,7 +3990,7 @@ var ui = (function () {
     	};
     }
 
-    // (612:56) <Button classes="secondary" iconRight="arrow-right">
+    // (611:56) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_9(ctx) {
     	let t;
 
@@ -4007,7 +4007,7 @@ var ui = (function () {
     	};
     }
 
-    // (617:1) {#if welcomeSlides[2]}
+    // (616:1) {#if welcomeSlides[2]}
     function create_if_block_14(ctx) {
     	let div5;
     	let div1;
@@ -4139,7 +4139,7 @@ var ui = (function () {
     	};
     }
 
-    // (635:57) <Button classes="secondary" iconRight="arrow-right">
+    // (634:57) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_8(ctx) {
     	let t;
 
@@ -4156,7 +4156,7 @@ var ui = (function () {
     	};
     }
 
-    // (640:1) {#if welcomeSlides[3]}
+    // (639:1) {#if welcomeSlides[3]}
     function create_if_block_13(ctx) {
     	let div5;
     	let div1;
@@ -4288,7 +4288,7 @@ var ui = (function () {
     	};
     }
 
-    // (667:7) <Button classes="secondary" iconRight="arrow-right">
+    // (666:7) <Button classes="secondary" iconRight="arrow-right">
     function create_default_slot_7(ctx) {
     	let t;
 
@@ -4305,7 +4305,7 @@ var ui = (function () {
     	};
     }
 
-    // (672:1) {#if welcomeSlides[4]}
+    // (671:1) {#if welcomeSlides[4]}
     function create_if_block_9(ctx) {
     	let div;
     	let current_block_type_index;
@@ -4377,7 +4377,7 @@ var ui = (function () {
     	};
     }
 
-    // (686:2) {:else}
+    // (685:2) {:else}
     function create_else_block(ctx) {
     	let div1;
     	let t0;
@@ -4526,7 +4526,7 @@ var ui = (function () {
     	};
     }
 
-    // (674:2) {#if data.pluginUsingOldComponents}
+    // (673:2) {#if data.pluginUsingOldComponents}
     function create_if_block_10(ctx) {
     	let div1;
     	let t0;
@@ -4561,10 +4561,10 @@ var ui = (function () {
     			t1 = space();
     			div4 = element("div");
     			h6 = element("h6");
-    			h6.textContent = "Update components";
+    			h6.textContent = "Update tables";
     			t3 = space();
     			p = element("p");
-    			p.textContent = "The table components in this file need updating. This will convert your existing table components into a single component to use as a template.";
+    			p.textContent = "The tables in this file need updating. This will update your existing tables and convert your table components into a single component to use as a template.";
     			t5 = space();
     			div3 = element("div");
     			span = element("span");
@@ -4626,7 +4626,7 @@ var ui = (function () {
     	};
     }
 
-    // (696:3) {:else}
+    // (695:3) {:else}
     function create_else_block_1(ctx) {
     	let p;
 
@@ -4644,7 +4644,7 @@ var ui = (function () {
     	};
     }
 
-    // (694:3) {#if data.recentFiles.length > 0}
+    // (693:3) {#if data.recentFiles.length > 0}
     function create_if_block_12(ctx) {
     	let p;
 
@@ -4662,7 +4662,7 @@ var ui = (function () {
     	};
     }
 
-    // (702:58) <Button classes="secondary">
+    // (701:58) <Button classes="secondary">
     function create_default_slot_6(ctx) {
     	let t;
 
@@ -4679,7 +4679,7 @@ var ui = (function () {
     	};
     }
 
-    // (703:4) {#if data.recentFiles.length > 0}
+    // (702:4) {#if data.recentFiles.length > 0}
     function create_if_block_11(ctx) {
     	let span;
     	let button;
@@ -4737,7 +4737,7 @@ var ui = (function () {
     	};
     }
 
-    // (706:9) <Button classes="secondary">
+    // (705:9) <Button classes="secondary">
     function create_default_slot_5(ctx) {
     	let t;
 
@@ -4754,13 +4754,13 @@ var ui = (function () {
     	};
     }
 
-    // (683:60) <Button classes="secondary">
+    // (682:60) <Button classes="secondary">
     function create_default_slot_4(ctx) {
     	let t;
 
     	return {
     		c() {
-    			t = text("Update Components");
+    			t = text("Update Tables");
     		},
     		m(target, anchor) {
     			insert(target, t, anchor);
@@ -4771,7 +4771,7 @@ var ui = (function () {
     	};
     }
 
-    // (716:0) {#if pageState.createTablePageActive}
+    // (715:0) {#if pageState.createTablePageActive}
     function create_if_block_1(ctx) {
     	let div8;
     	let div1;
@@ -5188,7 +5188,7 @@ var ui = (function () {
     	};
     }
 
-    // (721:5) <slot slot="label">{data.defaultTemplate?.name}
+    // (720:5) <slot slot="label">{data.defaultTemplate?.name}
     function create_label_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -5232,7 +5232,7 @@ var ui = (function () {
     	};
     }
 
-    // (721:24) {data.defaultTemplate?.name}
+    // (720:24) {data.defaultTemplate?.name}
     function fallback_block_5(ctx) {
     	let t_value = /*data*/ ctx[0].defaultTemplate?.name + "";
     	let t;
@@ -5253,7 +5253,7 @@ var ui = (function () {
     	};
     }
 
-    // (730:9) <slot slot="label">           {selectedFile?.name}
+    // (729:9) <slot slot="label">           {selectedFile?.name}
     function create_label_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -5297,7 +5297,7 @@ var ui = (function () {
     	};
     }
 
-    // (730:28)            
+    // (729:28)            
     function fallback_block_4(ctx) {
     	let t_value = /*selectedFile*/ ctx[7]?.name + "";
     	let t;
@@ -5318,7 +5318,7 @@ var ui = (function () {
     	};
     }
 
-    // (750:12) {#if data.remoteFiles.length > 0}
+    // (749:12) {#if data.remoteFiles.length > 0}
     function create_if_block_7(ctx) {
     	let span;
 
@@ -5336,7 +5336,7 @@ var ui = (function () {
     	};
     }
 
-    // (753:12) {#if data.remoteFiles.length > 0}
+    // (752:12) {#if data.remoteFiles.length > 0}
     function create_if_block_6(ctx) {
     	let each_1_anchor;
     	let each_value_3 = /*data*/ ctx[0].remoteFiles;
@@ -5392,7 +5392,7 @@ var ui = (function () {
     	};
     }
 
-    // (754:13) {#each data.remoteFiles as file}
+    // (753:13) {#each data.remoteFiles as file}
     function create_each_block_3(ctx) {
     	let div;
     	let input;
@@ -5469,7 +5469,7 @@ var ui = (function () {
     	};
     }
 
-    // (738:9) <slot slot="content">           <div class="tooltip">             <!-- {#if data.localTemplates.length > 0}
+    // (737:9) <slot slot="content">           <div class="tooltip">             <!-- {#if data.localTemplates.length > 0}
     function create_content_slot_2(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -5513,7 +5513,7 @@ var ui = (function () {
     	};
     }
 
-    // (738:30)            
+    // (737:30)            
     function fallback_block_3(ctx) {
     	let div2;
     	let div0;
@@ -5640,7 +5640,7 @@ var ui = (function () {
     	};
     }
 
-    // (729:8) <Dropdown id="tooltip">
+    // (728:8) <Dropdown id="tooltip">
     function create_default_slot_3(ctx) {
     	let t;
 
@@ -5660,7 +5660,7 @@ var ui = (function () {
     	};
     }
 
-    // (808:9) {#if data.remoteFiles.length > 0}
+    // (807:9) {#if data.remoteFiles.length > 0}
     function create_if_block_4(ctx) {
     	let each_1_anchor;
     	let each_value_1 = /*data*/ ctx[0].remoteFiles;
@@ -5716,7 +5716,7 @@ var ui = (function () {
     	};
     }
 
-    // (783:8) {#if selectedFile?.id === data.fileId}
+    // (782:8) {#if selectedFile?.id === data.fileId}
     function create_if_block_2(ctx) {
     	let t;
     	let div;
@@ -5771,7 +5771,7 @@ var ui = (function () {
     	};
     }
 
-    // (811:12) {#if selectedFile?.id === file.id}
+    // (810:12) {#if selectedFile?.id === file.id}
     function create_if_block_5(ctx) {
     	let ul;
     	let t;
@@ -5861,7 +5861,7 @@ var ui = (function () {
     	};
     }
 
-    // (813:15) {#each file.data as template}
+    // (812:15) {#each file.data as template}
     function create_each_block_2(ctx) {
     	let li;
     	let t0_value = /*template*/ ctx[62].name + "";
@@ -5927,7 +5927,7 @@ var ui = (function () {
     	};
     }
 
-    // (810:11) {#each data.remoteFiles as file}
+    // (809:11) {#each data.remoteFiles as file}
     function create_each_block_1(ctx) {
     	let if_block_anchor;
     	let if_block = /*selectedFile*/ ctx[7]?.id === /*file*/ ctx[65].id && create_if_block_5(ctx);
@@ -5962,7 +5962,7 @@ var ui = (function () {
     	};
     }
 
-    // (784:9) {#if data.localTemplates.length > 0}
+    // (783:9) {#if data.localTemplates.length > 0}
     function create_if_block_3(ctx) {
     	let ul;
     	let each_value = /*data*/ ctx[0].localTemplates;
@@ -6020,7 +6020,7 @@ var ui = (function () {
     	};
     }
 
-    // (786:10) {#each data.localTemplates as template}
+    // (785:10) {#each data.localTemplates as template}
     function create_each_block(ctx) {
     	let li;
     	let t0_value = /*template*/ ctx[62].name + "";
@@ -6100,7 +6100,7 @@ var ui = (function () {
     	};
     }
 
-    // (723:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Templates</p>          <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
+    // (722:5) <slot slot="content">       <div class="menu">        <div class="Title">          <p style="font-weight: 600">Templates</p>          <Dropdown id="tooltip">          <slot slot="label">           {selectedFile?.name}
     function create_content_slot_1(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -6144,7 +6144,7 @@ var ui = (function () {
     	};
     }
 
-    // (723:26)        
+    // (722:26)        
     function fallback_block_2(ctx) {
     	let div2;
     	let div0;
@@ -6243,7 +6243,7 @@ var ui = (function () {
     	};
     }
 
-    // (720:4) <Dropdown fill icon="component" id="menu">
+    // (719:4) <Dropdown fill icon="component" id="menu">
     function create_default_slot_2(ctx) {
     	let t;
 
@@ -6263,7 +6263,7 @@ var ui = (function () {
     	};
     }
 
-    // (841:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (840:5) <slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses"></span></slot>      <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_hitThing_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -6303,7 +6303,7 @@ var ui = (function () {
     	};
     }
 
-    // (841:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
+    // (840:27) <span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses">
     function fallback_block_1(ctx) {
     	let span;
 
@@ -6323,7 +6323,7 @@ var ui = (function () {
     	};
     }
 
-    // (842:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
+    // (841:5) <slot slot="content">       <div class="tooltip wTriangle">        <!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing}
     function create_content_slot(ctx) {
     	let current;
     	const default_slot_template = /*#slots*/ ctx[24].default;
@@ -6367,7 +6367,7 @@ var ui = (function () {
     	};
     }
 
-    // (842:26)        
+    // (841:26)        
     function fallback_block(ctx) {
     	let div1;
     	let div0;
@@ -6421,7 +6421,7 @@ var ui = (function () {
     	};
     }
 
-    // (840:4) <Dropdown>
+    // (839:4) <Dropdown>
     function create_default_slot_1(ctx) {
     	let t;
 
@@ -6441,7 +6441,7 @@ var ui = (function () {
     	};
     }
 
-    // (887:7) <Button id="create-table">
+    // (886:7) <Button id="create-table">
     function create_default_slot(ctx) {
     	let t;
 
@@ -6458,7 +6458,7 @@ var ui = (function () {
     	};
     }
 
-    // (893:0) {#if pageState.templateSettingsPageActive}
+    // (892:0) {#if pageState.templateSettingsPageActive}
     function create_if_block(ctx) {
     	let div;
     	let templatesettings;
@@ -6983,12 +6983,11 @@ var ui = (function () {
     				$$invalidate(0, data = value.data);
     			});
 
+    			console.log("UI", data.pluginVersion, data.localTemplates, data.remoteFiles, data.pluginUsingOldComponents);
+
     			if (data.pluginVersion === "7.0.0") {
     				// If localTemplates or remoteFiles exist then show create table page
-    				if (data.pluginUsingOldComponents) {
-    					// Shows page to either convert old components to template, or create new template
-    					setActivePage("welcomePageActive", 4);
-    				} else if (data.localTemplates.length > 0 || data.remoteFiles.length > 0) {
+    				if ((data.localTemplates.length > 0 || data.remoteFiles.length > 0) && !data.pluginUsingOldComponents) {
     					setActivePage("createTablePageActive");
     					updateSelectedTemplate(data);
     					updateSelectedFile(data);
@@ -6997,6 +6996,7 @@ var ui = (function () {
     					setActivePage("welcomePageActive", 4);
     				}
     			} else {
+    				// If not seen this version before, then show them the welcome onboarding screens
     				setActivePage("welcomePageActive", 0);
     			}
     		}

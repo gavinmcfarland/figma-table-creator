@@ -423,15 +423,13 @@
 
 			})
 
+			console.log("UI", data.pluginVersion, data.localTemplates, data.remoteFiles, data.pluginUsingOldComponents)
+
 
 			if (data.pluginVersion === "7.0.0") {
 
 				// If localTemplates or remoteFiles exist then show create table page
-				if (data.pluginUsingOldComponents) {
-					// Shows page to either convert old components to template, or create new template
-					setActivePage("welcomePageActive", 4)
-				}
-				else if (data.localTemplates.length > 0 || data.remoteFiles.length > 0) {
+				if ((data.localTemplates.length > 0 || data.remoteFiles.length > 0) && !data.pluginUsingOldComponents) {
 					setActivePage("createTablePageActive")
 					updateSelectedTemplate(data)
 					updateSelectedFile(data)
@@ -443,6 +441,7 @@
 
 			}
 			else {
+				// If not seen this version before, then show them the welcome onboarding screens
 				setActivePage("welcomePageActive", 0)
 			}
 		}
@@ -677,10 +676,10 @@
 			</div>
 			<div class="dots"></div>
 			<div class="content">
-				<h6>Update components</h6>
-				<p>The table components in this file need updating. This will convert your existing table components into a single component to use as a template.</p>
+				<h6>Update tables</h6>
+				<p>The tables in this file need updating. This will update your existing tables and convert your table components into a single component to use as a template.</p>
 			<div class="buttons">
-				<span class="next" on:click={() => upgradeToTemplate()}><Button classes="secondary">Update Components</Button></span>
+				<span class="next" on:click={() => upgradeToTemplate()}><Button classes="secondary">Update Tables</Button></span>
 			</div>
 		</div>
 		{:else}

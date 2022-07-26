@@ -41,7 +41,7 @@ export async function lookForComponent(template) {
 	var component
 
 	// We pass in the key, to be doubly sure it's the correct component
-	var localComponent = getComponentById(template.component.id, template.component.key)
+	var localComponent = getComponentByIdAndKey(template.component.id, template.component.key)
 	// var localComponent = getComponentByKey(template.component.key)
 
 	try {
@@ -79,7 +79,7 @@ export function isEmpty(obj) {
 	return JSON.stringify(obj) === JSON.stringify({})
 }
 
-export function getComponentById(id, key) {
+export function getComponentByIdAndKey(id, key) {
 	// var pages = figma.root.children
 	// var component
 
@@ -104,6 +104,20 @@ export function getComponentById(id, key) {
 			}
 		} else {
 			return null
+		}
+	}
+}
+
+export function getComponentById(id) {
+	var node = figma.getNodeById(id)
+
+	if (node) {
+		if (node.type === 'COMPONENT') {
+			if (node.parent === null || node.parent.parent === null) {
+				return false
+			} else {
+				return node
+			}
 		}
 	}
 }
