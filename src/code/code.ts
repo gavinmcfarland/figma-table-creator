@@ -2,9 +2,7 @@ import plugma from 'plugma'
 import _ from 'underscore'
 import {
 	replace,
-	getOverrides,
 	nodeToObject,
-	getPageNode,
 	resize,
 	getPluginData,
 	setDocumentData,
@@ -17,7 +15,6 @@ import {
 	getClientStorageAsync,
 	updateClientStorageAsync,
 	removeChildren,
-	setClientStorageAsync,
 	getRecentFilesAsync,
 	getRemoteFilesAsync,
 	ungroup,
@@ -29,18 +26,14 @@ import {
 	getComponentByIdAndKey,
 	createPage,
 	animateNodeIntoView,
-	selectAndZoomIntoView,
 	positionInCenterOfViewport,
-	unique,
-	getPublishedComponents,
 	lookForComponent,
 	getSelectionName,
 	isInsideComponent,
 	getParentComponent,
 	swapAxises,
 	clone,
-	genRandomId,
-	copyPasteStyle,
+	upsert,
 } from './helpers'
 import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
@@ -54,11 +47,10 @@ import {
 	updateTables,
 	setDefaultTemplate,
 	getTableSettings,
-	convertToNumber,
 	getLocalTemplatesWithoutUpdating,
 	getDefaultTemplate,
 } from './globals'
-import { swapInstance, convertToNumber, isEmpty, move } from './helpers'
+import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
@@ -70,22 +62,6 @@ import { swapInstance, convertToNumber, isEmpty, move } from './helpers'
 
 console.clear()
 
-// createTooltip(
-// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
-// ).then((tooltip) => {
-// 	positionInCenterOfViewport(tooltip)
-// })
-
-// createTemplateComponents().then((array) => {
-// 	let group = figma.group(array, figma.currentPage)
-// 	positionInCenterOfViewport(group)
-// 	figma.ungroup(group)
-// })
-
-// setClientStorageAsync('userPreferences', undefined).then(() => {
-// 	figma.closePlugin('User preferences reset')
-// })
-
 // figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
 // figma.root.setPluginData('remoteFiles', '')
@@ -93,19 +69,6 @@ console.clear()
 // figma.root.setPluginData('defaultTemplate', '')
 // figma.clientStorage.deleteAsync('userPreferences')
 // figma.clientStorage.deleteAsync('recentTables')
-
-function onlySpaces(str) {
-	if (typeof str === 'string') {
-		return str.trim().length === 0
-	} else {
-		return false
-	}
-}
-
-function daysToMilliseconds(days) {
-	// 👇️        hour  min  sec  ms
-	return days * 24 * 60 * 60 * 1000
-}
 
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
@@ -133,58 +96,6 @@ function addTemplateToRemoteFiles(node) {
 	})
 
 	figma.notify(`Imported ${node.name}`)
-}
-function removeTemplateFromFile() {}
-// function incrementName(name, array?) {
-// 	let nameToMatch = name
-
-// 	if (array && array.length > 1) {
-// 		array.sort((a, b) => {
-// 			if (a.name === b.name) return 0
-
-// 			return a.name > b.name ? -1 : 1
-// 		})
-
-// 		nameToMatch = array[0].name
-// 	}
-
-// 	let matches = nameToMatch.match(/^(.*\S)(\s*)(\d+)$/)
-
-// 	// And increment by 1
-// 	// Ignores if array is empty
-// 	if (matches && !(array && array.length === 0)) {
-// 		name = `${matches[1]}${matches[2]}${parseInt(matches[3], 10) + 1}`
-// 	}
-
-// 	return name
-// }
-function fetchTemplateParts() {}
-function setTemplateData(node) {
-	if (node.type === 'COMPONENT') {
-		setPluginData(node, 'template', {
-			file: {
-				id: getPluginData(figma.root, 'fileId'),
-				name: figma.root.name,
-			},
-			name: node.name,
-			id: genRandomId(),
-			component: {
-				key: node.key,
-				id: node.id,
-			},
-		})
-	}
-}
-function setSemantics(node, element) {
-	// Should this be split into markNode and setTemplate?
-
-	setPluginData(node, `elementSemantics`, {
-		is: element,
-	})
-
-	if (element === 'table') {
-		setTemplateData(node)
-	}
 }
 
 function addElement(element) {
@@ -244,10 +155,6 @@ function importTemplate(node) {
 		figma.notify('No template found')
 	}
 }
-
-// function getUserPreferencesAsync() {
-// 	return getRecentFilesAsync()
-// }
 
 function getTemplateParts(templateNode) {
 	// find nodes with certain pluginData
@@ -337,92 +244,6 @@ function postCurrentSelection(templateNodeId) {
 	})
 }
 
-// /**
-//  * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
-//  * @param {String} key A key to store data under
-//  * @param {any} data Data to be stored
-//  */
-// async function syncRecentFilesAsync(data) {
-// 	// NOTE: Should function add file, when there is no data?
-// 	// const publishedComponents = await getPublishedComponents(data)
-
-// 	return updateClientStorageAsync('recentFiles', (recentFiles) => {
-// 		recentFiles = recentFiles || []
-// 		const newFile = new File(data)
-
-// 		// We have to check if the array is empty because we can't filter an empty array
-// 		if (recentFiles.length === 0) {
-// 			if (data.length > 0) recentFiles.push(newFile)
-// 		} else {
-// 			recentFiles.filter((item) => {
-// 				if (item.id === newFile.id) {
-// 					item.data = data
-// 				} else {
-// 					if (data.length > 0) recentFiles.push(newFile)
-// 				}
-// 			})
-// 		}
-
-// 		return recentFiles
-// 	})
-// }
-// async function getRecentFilesAsync() {
-// 	return await getClientStorageAsync('recentFiles')
-// }
-
-// // This makes sure the list of local and remote templates are up to date
-// async function syncRemoteFilesAsync() {
-// 	var recentFiles = await getClientStorageAsync('recentFiles')
-
-// 	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-// 		remoteFiles = remoteFiles || []
-
-// 		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
-// 		if (recentFiles.length > 0) {
-// 			// if (!remoteFiles) remoteFiles = []
-
-// 			// I think this is a method of merging files, maybe removing duplicates?
-// 			var ids = new Set(remoteFiles.map((file) => file.id))
-// 			var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))]
-
-// 			// Exclude current file (because we want remote files to this file only)
-// 			merged = merged.filter((file) => {
-// 				return !(file.id === getPluginData(figma.root, 'fileId'))
-// 			})
-
-// 			remoteFiles = merged
-// 		}
-
-// 		// Then I check to see if the file name has changed and make sure it's up to date
-// 		// For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
-// 		if (remoteFiles.length > 0) {
-// 			for (var i = 0; i < remoteFiles.length; i++) {
-// 				var file = remoteFiles[i]
-// 				figma
-// 					.importComponentByKeyAsync(file.data[0].component.key)
-// 					.then((component) => {
-// 						var remoteTemplate = getPluginData(component, 'template')
-// 						updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-// 							remoteFiles.map((file) => {
-// 								if (file.id === remoteTemplate.file.id) {
-// 									file.name = remoteTemplate.file.name
-// 								}
-// 							})
-// 							return remoteFiles
-// 						})
-// 					})
-// 					.catch((error) => {
-
-// 						// FIXME: Do I need to do something here if component is deleted?
-// 						// FIXME: Is this the wrong time to check if component is published?
-// 						// figma.notify("Please check component is published")
-// 					})
-// 			}
-// 		}
-// 		return remoteFiles
-// 	})
-// }
-
 function selectTableCells(direction) {
 	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
 	var regex = RegExp(/\[ignore\]/, 'g')
@@ -508,7 +329,7 @@ function detachTable(selection) {
 
 	return newSelection
 }
-function spawnTable() {}
+
 async function toggleColumnResizing(selection) {
 	// FIXME: Something weird happening with resizing of cell/text
 	// FIXME: check width fill, fixed, fill when applied
@@ -867,14 +688,9 @@ async function createTableUI() {
 
 	let tableSettings = userPreferences.table
 
-	// const remoteFiles = getDocumentData('remoteFiles')
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await getDefaultTemplate()
-
-	// else {
-	// 	setDocumentData('defaultTemplate', '')
-	// }
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240,
@@ -922,93 +738,9 @@ async function createTableInstance(settings, template) {
 	}
 }
 
-// _.isEqual(item, entry)
-
-// function (callback) {
-// 	for (let i = 0; i < this.length; i++) {
-// 	  if ( true == callback(this[i], i, this)) {
-// 		return {element:this[i],index:i,array:this};
-// 	  }
-// 	}
-//   };
-
-function upsert(array, cb, entry?) {
-	array.some((item, index) => {
-		let result = false
-		if (true === cb(array[index])) {
-			result = true
-			// move to top
-			if (entry) {
-				move(array, index, 0, entry)
-			} else {
-				move(array, index, 0)
-			}
-		}
-
-		return result
-	})
-
-	let matchFound = false
-	array.map((item, index) => {
-		if (true === cb(array[index])) {
-			matchFound = true
-		}
-	})
-
-	if (!matchFound) {
-		array.unshift(entry)
-	}
-
-	if (array.length > 4) {
-		array = array.slice(0, 4)
-	}
-
-	return array
-}
-
-function updateEntryInArray(array, entry) {
-	// Add to recents
-	// If it doesn't exist add it to top of array
-	// else if it does, move it to top of array
-
-	array.some((item, index) => {
-		let result = false
-		if (_.isEqual(item, entry)) {
-			result = true
-			// move to top
-			move(array, index, 0)
-		}
-
-		return result
-	})
-
-	let matchFound = false
-	array.map((item, index) => {
-		if (_.isEqual(item, entry)) {
-			matchFound = true
-		}
-	})
-
-	if (!matchFound) {
-		array.unshift(entry)
-	}
-
-	if (array.length > 4) {
-		array = array.slice(0, 4)
-	}
-
-	return array
-}
-
 async function main() {
 	// Set default preferences
 	await updateClientStorageAsync('userPreferences', (data) => {
-		// let files = [
-		// 	{
-		// 		id: ,
-		// 		template: {}
-		// 	}
-		// ]
 		let table: TableSettings = {
 			matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
 			size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
@@ -1354,24 +1086,22 @@ async function main() {
 					// ----
 
 					if (parameters.template) {
-						// settings.table.templates = upsert(
-						// 	settings.table.templates,
-						// 	(item) => item.template.component.key === parameters.template.component.key && item.file.id === getDocumentData('fileId'),
-						// 	{ template: parameters.template, file: { id: getDocumentData('fileId') } }
-						// )
 						await setDefaultTemplate(parameters.template)
 					}
 
 					if (parameters.matrix) {
 						settings.matrix = upsert(settings.matrix, (item) => _.isEqual(item, parameters.matrix), parameters.matrix)
+						settings.matrix = settings.matrix.slice(0, 4)
 					}
 
 					if (parameters.size) {
-						settings.size = updateEntryInArray(settings.size, parameters.size)
+						settings.size = upsert(settings.size, (item) => _.isEqual(item, parameters.size), parameters.size)
+						settings.size = settings.size.slice(0, 4)
 					}
 
 					if (parameters.cell) {
-						settings.cell = updateEntryInArray(settings.cell, parameters.cell)
+						settings.cell = upsert(settings.cell, (item) => _.isEqual(item, parameters.cell), parameters.cell)
+						settings.cell = settings.cell.slice(0, 4)
 					}
 
 					if (parameters.alignment) {
@@ -1396,7 +1126,6 @@ async function main() {
 				figma.closePlugin(`Can't detach template`)
 			}
 		})
-		plugin.command('spawnTable', spawnTable)
 		plugin.command('toggleColumnResizing', () => {
 			toggleColumnResizing(figma.currentPage.selection).then((result) => {
 				if (result) {
@@ -1435,8 +1164,8 @@ async function main() {
 			let templateData = getPluginData(templateComponent, 'template')
 			setDefaultTemplate(templateData)
 		})
-		plugin.on('remove-template', (msg) => {
-			let currentTemplate = getDefaultTemplate()
+		plugin.on('remove-template', async (msg) => {
+			let currentTemplate = await getDefaultTemplate()
 			let previousTemplate = getDocumentData('previousTemplate')
 
 			if (msg.file) {
@@ -1472,7 +1201,7 @@ async function main() {
 				})
 			}
 
-			if (currentTemplate.id === msg.template.id) {
+			if (currentTemplate.component.id === msg.template.id) {
 				let localTemplates = getLocalTemplates()
 				setDefaultTemplate(localTemplates[localTemplates.length - 1])
 			}

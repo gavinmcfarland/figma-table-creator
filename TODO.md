@@ -24,7 +24,11 @@
 18. Turn off notify in lookForComponent
 5. Think of how to tighten up usage of column resizing
 3. Optimise so takes less time to create table
-21. Disable numbering before publishing
+21. Disable numbering before publishing DONE
+22. Increase limit for recentTables DONE
+23. Seporate slice function from upsert function DONE
+24. Remove the component property from templates?
+25. Decide how I want tableSettings to be defined
 
 
 

@@ -5,13 +5,11 @@ import {
 	getPluginData,
 	getNodeIndex,
 	setPluginData,
-	setClientStorageAsync,
 	getClientStorageAsync,
 	getDocumentData,
 	setDocumentData,
 	genUID,
 	updateClientStorageAsync,
-	getRemoteFiles,
 } from '@fignite/helpers'
 import {
 	removeChildren,
@@ -19,10 +17,10 @@ import {
 	genRandomId,
 	lookForComponent,
 	copyPasteStyle,
-	getComponentById,
 	getComponentByIdAndKey,
 	isEmpty,
 	upsert,
+	convertToNumber,
 } from './helpers'
 
 export let defaultRelaunchData = {
@@ -32,11 +30,15 @@ export let defaultRelaunchData = {
 	updateTables: 'Refresh tables already created',
 }
 
-export function convertToNumber(data) {
-	if (Number(data)) {
-		return Number(data)
-	} else {
-		return data
+export function isTemplateNode(node) {
+	if (node.type === 'COMPONENT' && getPluginData('template')) {
+		return node
+	}
+}
+
+export function isTableNode(node) {
+	if (node.type === 'FRAME' || (node.type === 'INSTANCE' && getPluginData('template'))) {
+		return node
 	}
 }
 
@@ -80,7 +82,7 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 			cellWidth = tableSettings.cell[0][0]
 		}
 
-		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG' && templateCell.layoutGrow !== 1) {
+		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
 			node.resizeWithoutConstraints(cellWidth, node.height)
 		}
 
@@ -106,21 +108,22 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 		node.setProperties(extractValues(templateCell.componentProperties))
 	}
 
-	if (rowIndex || rowIndex === 0) {
-		let templateText = templateCell.findOne((node) => node.name === 'Text')
+	// // Add table numbering
+	// if (rowIndex || rowIndex === 0) {
+	// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
 
-		if (templateText) {
-			let number = convertToNumber(templateText.characters)
+	// 	if (templateText) {
+	// 		let number = convertToNumber(templateText.characters)
 
-			if (Number(number)) {
-				let tableText = node.findOne((node) => node.name === 'Text')
-				await figma.loadFontAsync(templateText.fontName)
-				if (tableText) {
-					tableText.characters = (number + rowIndex).toString()
-				}
-			}
-		}
-	}
+	// 		if (Number(number)) {
+	// 			let tableText = node.findOne((node) => node.name === 'Text')
+	// 			await figma.loadFontAsync(templateText.fontName)
+	// 			if (tableText) {
+	// 				tableText.characters = (number + rowIndex).toString()
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 export async function createTable(templateComponent, settings: TableSettings, type?) {
@@ -406,29 +409,41 @@ let defaultParts = {
 	},
 }
 
-export function File(data?) {
-	// TODO: if fileId doesn't exist then create random ID and set fileId
-
-	this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
-	// this.name = `{figma.getNodeById("0:1").name}`
-	this.name = figma.root.name
-	if (data) this.data = data
-}
-
-export function Template(node) {
-	this.id = node.id
-	this.name = node.name
-	this.component = {
-		id: node.id,
-		key: node.key,
-	}
-	this.file = {
-		id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
-		name: figma.root.name,
+export class File {
+	id: string
+	name: string
+	data?: [] | {}
+	constructor(data?) {
+		// TODO: if fileId doesn't exist then create random ID and set fileId
+		this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
+		// this.name = `{figma.getNodeById("0:1").name}`
+		this.name = figma.root.name
+		if (data) this.data = data
 	}
 }
 
-export function getLocalTemplatesWithoutUpdating() {
+export class Template {
+	name: string
+	component: {
+		id: number
+		key: number
+	}
+	file: File
+
+	constructor(node) {
+		this.name = node.name
+		this.component = {
+			id: node.id,
+			key: node.key,
+		}
+		this.file = {
+			id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
+			name: figma.root.name,
+		}
+	}
+}
+
+export function getLocalTemplatesWithoutUpdating(): Template[] {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
@@ -455,7 +470,7 @@ export function getLocalTemplatesWithoutUpdating() {
 	return templates
 }
 
-export function getLocalTemplates() {
+export function getLocalTemplates(): Template[] {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
@@ -499,7 +514,7 @@ export function getLocalTemplates() {
 	return templates
 }
 
-export async function setDefaultTemplate(templateData: Template) {
+export async function setDefaultTemplate(templateData: Template): Promise<void> {
 	await getRemoteFilesAsync()
 	await getRecentFilesAsync(getLocalTemplates())
 
@@ -511,6 +526,7 @@ export async function setDefaultTemplate(templateData: Template) {
 			template: templateData,
 			file: { id: currentFileId },
 		})
+		recentTables = recentTables.slice(0, 10)
 
 		let defaultTemplate = recentTables[0].template
 
@@ -526,13 +542,9 @@ export async function setDefaultTemplate(templateData: Template) {
 
 		return recentTables
 	})
-
-	// if (previousTemplate) {
-	// 	setPreviousTemplate(previousTemplate)
-	// }
 }
 
-export async function getDefaultTemplate() {
+export async function getDefaultTemplate(): Promise<Template> {
 	// let { table } = await getClientStorageAsync('userPreferences')
 	let recentTables = (await getClientStorageAsync('recentTables')) || []
 
@@ -546,9 +558,6 @@ export async function getDefaultTemplate() {
 			defaultTemplate = defaultTemplates[0].template
 		}
 	}
-
-	console.log('defaultTemplates ->', defaultTemplates)
-	console.log('defaultTemplate ->', defaultTemplate)
 
 	let localTemplates = getLocalTemplatesWithoutUpdating()
 	let remoteFiles = getDocumentData('remoteFiles')
@@ -584,13 +593,6 @@ export async function getDefaultTemplate() {
 	}
 
 	return defaultTemplate
-}
-
-export async function setPreviousTemplate(templateData) {
-	// await getRemoteFilesAsync()
-	// await getRecentFilesAsync(getLocalTemplates())
-	setDocumentData('previousTemplate', templateData)
-	return templateData
 }
 
 export async function updateTables(template) {

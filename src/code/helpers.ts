@@ -186,14 +186,24 @@ export function move(array, from, to, replaceWith?) {
 
 	return array
 }
+export function daysToMilliseconds(days) {
+	// 👇️        hour  min  sec  ms
+	return days * 24 * 60 * 60 * 1000
+}
+export function onlySpaces(str) {
+	if (typeof str === 'string') {
+		return str.trim().length === 0
+	} else {
+		return false
+	}
+}
+
 export function upsert(array, cb, entry?) {
 	array.some((item, index) => {
 		let result = false
 		if (true === cb(array[index])) {
 			result = true
 			// move to top
-			console.log('move to top')
-			console.log('entry', entry)
 			if (entry) {
 				move(array, index, 0, entry)
 			} else {
@@ -212,12 +222,7 @@ export function upsert(array, cb, entry?) {
 	})
 
 	if (!matchFound) {
-		console.log('add to array')
 		array.unshift(entry)
-	}
-
-	if (array.length > 4) {
-		array = array.slice(0, 4)
 	}
 
 	return array

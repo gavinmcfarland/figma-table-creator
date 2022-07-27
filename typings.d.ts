@@ -1,9 +1,11 @@
 type File = {
 	id: string
 	name: string
+	data?: [] | {}
 }
 
 type Template = {
+	name: string
 	component: {
 		id: number
 		key: number
@@ -14,9 +16,9 @@ type Template = {
 type TableSettings = {
 	template?: Template
 	file?: File
-	matrix?: [[number | '$', number | '$']]
-	size?: [[number | 'HUG' | '$', number | 'HUG' | '$']]
-	cell?: [[number | '$', number | '$']]
+	matrix?: [number | '$', number | '$'][]
+	size?: [number | 'HUG' | '$', number | 'HUG' | '$'][]
+	cell?: [number | '$', number | '$'][]
 	alignment?: ['MIN' | 'MAX', 'MIN' | 'MAX']
 	axis?: 'ROWS' | 'COLUMNS'
 	resizing?: Boolean

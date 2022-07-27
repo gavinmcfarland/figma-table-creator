@@ -1,9 +1,72 @@
-# Develpoper Readme
+# Developer Readme
 
 
 ## Table creation
 
 Table Creator uses a component to create tables from. This component is refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
+
+- [Nodes](#nodes)
+- [Types](#types)
+- [Functions](#functions)
+- [Commands](#commands)
+
+## Nodes
+
+### TemplateNode
+
+A template node is a component with pluginData of `"template"`.
+
+```ts
+isTemplateNode()
+```
+
+### TableNode
+
+A table created from a template, can be a frame or instance and has pluginData or `"template"`.
+
+```ts
+isTableNode()
+```
+
+## Functions
+
+### Recent Files
+
+Returns a list of recent files which the plugin has been run on.
+
+```js
+getClientStorageAsync('recentFiles'): Promise<File[]>
+```
+
+### Remote Files
+
+Returns a list of files stored on the `document` used by the plugin. This is so one user can add a template to the current file, so other users can use that remote template to create tables from.
+
+```ts
+getDocumentData('remoteFiles'): File[]
+```
+
+### User Preferences
+
+Returns the user's preferences.
+
+```ts
+getClientStorageAsync('userPreferences'): Promise<object>
+```
+
+### Recent Tables
+
+```ts
+getClientStorageAsync('recentTables'): Promise<TableSettings[]>
+```
+
+### Get Default Template
+
+Determines which template is the default by checking if the template from the most recently created table exists. If it doesn't exist then it checks for a remote templates and then a local templates.
+
+```ts
+getDefaultTemplate(): Template | null
+```
 
 ## Types
 
@@ -11,152 +74,31 @@ Table Creator uses a component to create tables from. This component is refered 
 
 ```
 id: string
-```
-The id of the file.
-
-```
 name: string
 ```
-The name of the file.
-
----
 
 ### Template
 
 ```
 id: string
-```
-The id of the component the template belongs to.
-
-```
 key: string
-```
-The key of the component the template belongs to.
-
-```
 file: File
 ```
-The file the component originated from.
-
----
 
 ### TableSettings
 
 ```
 template?: Template
-```
-The template used to create the table.
-
-```
 file?: File
-```
-
-The file the table was created in.
-
-```
 matrix?: [number | '$', number | '$']
-```
-
-The number of columns and rows of the table.
-
-```
 size?: [number | 'HUG' | '$', number | 'HUG' | '$']
-```
-
-The size of the table.
-
-```
 cell?: [number | '$', number | '$']
-```
-
-The size of the cell.
-
-```
 alignment?: ['MIN' | 'MAX', 'MIN' | 'MAX']
-```
-
-The alignment of the conent in the cells.
-
-```
 axis?: 'ROWS' | 'COLUMNS'
-```
-The main axis used for the table.
-
-```
 resizing?: boolean
-```
-If the table uses a local component for resizing.
-
-```
 header?: boolean
 ```
-If the table includes a header.
 
-
-
-
-
-### Remote Files
-
-A list of files stored on the `document` used by the plugin. This is so one user can add a template to the current file, so other users can use that remote template to create tables from.
-
-```js
-getDocumentData('remoteFiles')
-```
-
-## Node Data
-
-## Client Storage
-
-### Recent Files
-
-A list of files which the plugin has been run on.
-
-```js
-getClientStorageAsync('recentFiles')
-```
-
-```js
-[
-    {
-        id: String,
-        name: String,
-        templates: [
-            {
-                id: String,
-                name: String,
-                component: {
-                    id: String,
-                    key: String,
-                }
-            }
-        ]
-    }
-    
-]
-```
-
-
-### User Preferences
-
-The user's preferences are stored on the `client`. This avoids any preferences which may conflict with other users.
-
-```js
-getClientStorageAsync('userPreferences')
-```
-
-```js
-{
-    defaultTemplate: {}
-    columnCount: 4,
-    rowCount: 4,
-    cellWidth: 100,
-    remember: true,
-    includeHeader: true,
-    columnResizing: true,
-    cellAlignment: "MIN"
-}
-```
 
 ## Commands
 
