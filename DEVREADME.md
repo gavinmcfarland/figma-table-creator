@@ -75,6 +75,7 @@ getDefaultTemplate(): Template | null
 ```
 id: string
 name: string
+data?: [] | {}
 ```
 
 ### Template

@@ -1,4 +1,5 @@
 import { getRemoteFilesAsync, getRecentFilesAsync } from '@fignite/helpers'
+import _ from 'underscore'
 import {
 	convertToFrame,
 	convertToComponent,
@@ -30,6 +31,40 @@ export let defaultRelaunchData = {
 	updateTables: 'Refresh tables already created',
 }
 
+export async function applyTableSettings(target, source) {
+	if (source.template) {
+		await setDefaultTemplate(source.template)
+		target.template = source.template
+	}
+
+	if (source.matrix) {
+		target.matrix = upsert(target.matrix, (item) => _.isEqual(item, source.matrix), source.matrix)
+		target.matrix = target.matrix.slice(0, 4)
+	}
+
+	if (source.size) {
+		target.size = upsert(target.size, (item) => _.isEqual(item, source.size), source.size)
+		target.size = target.size.slice(0, 4)
+	}
+
+	if (source.cell) {
+		target.cell = upsert(target.cell, (item) => _.isEqual(item, source.cell), source.cell)
+		target.cell = target.cell.slice(0, 4)
+	}
+
+	if (source.alignment) {
+		target.alignment = source.alignment
+	}
+
+	target.resizing = source.resizing
+
+	if (source.header === false || source.header === true) {
+		target.header = source.header
+	}
+
+	return target
+}
+
 export function isTemplateNode(node) {
 	if (node.type === 'COMPONENT' && getPluginData('template')) {
 		return node
@@ -52,12 +87,12 @@ export async function updatePluginVersion(semver) {
 
 function extractValues(objectArray) {
 	return Object.entries(objectArray).reduce(function (acc, obj) {
-		let [key, value] = obj
-		let thing
+		let [key, value]: any = obj
+		let newObj
 		// if (value.type !== 'VARIANT') {
-		thing = { [key]: value.value }
+		newObj = { [key]: value.value }
 		// }
-		return { ...acc, ...thing }
+		return { ...acc, ...newObj }
 	}, {})
 }
 
@@ -65,9 +100,9 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 	// TODO: Copy across overrides like text, and instance swaps
 
 	// Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
-	if (templateSettings.matrix[0][0] !== '$') {
-		if (index > templateSettings.matrix[0][0] - 1) {
-			index = templateSettings.matrix[0][0] - 1
+	if (templateSettings.matrix[0] !== '$') {
+		if (index > templateSettings.matrix[0] - 1) {
+			index = templateSettings.matrix[0] - 1
 		}
 	}
 
@@ -76,10 +111,10 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 	// Copy across width
 	if (tableSettings) {
 		let cellWidth
-		if (tableSettings.cell[0][0] === '$') {
+		if (tableSettings.cell[0] === '$') {
 			cellWidth = templateCell.width
 		} else {
-			cellWidth = tableSettings.cell[0][0]
+			cellWidth = tableSettings.cell[0]
 		}
 
 		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
@@ -87,26 +122,26 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 		}
 
 		// If templateCell === FILL
-		if (templateCell.layoutGrow === 1 && tableSettings.cell[0][0] === '$') {
+		if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
 			node.layoutGrow = 1
 		}
 
 		// If templateCell === HUG
-		if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0][0] === '$') {
+		if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
 			node.layoutGrow = 0
 			node.counterAxisSizingMode = 'AUTO'
 		}
 
 		// Change size of cells
-		if (tableSettings.size[0][0] && tableSettings.size[0][0] !== 'HUG' && tableSettings.cell[0][0] !== '$') {
+		if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
 			node.layoutGrow = 1
 		}
 	}
 
-	// Set component properties on instances
-	if (templateCell.componentProperties) {
-		node.setProperties(extractValues(templateCell.componentProperties))
-	}
+	// // Set component properties on instances
+	// if (templateCell.componentProperties) {
+	// 	node.setProperties(extractValues(templateCell.componentProperties))
+	// }
 
 	// // Add table numbering
 	// if (rowIndex || rowIndex === 0) {
@@ -137,35 +172,35 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 	let templateSettings: TableSettings = getTableSettings(part.table)
 
 	// Santitize data
-	settings.matrix[0][0] = convertToNumber(settings.matrix[0][0])
-	settings.matrix[0][1] = convertToNumber(settings.matrix[0][1])
-	settings.size[0][0] = convertToNumber(settings.size[0][0])
-	settings.size[0][1] = convertToNumber(settings.size[0][1])
-	settings.cell[0][0] = convertToNumber(settings.cell[0][0])
-	settings.cell[0][1] = convertToNumber(settings.cell[0][1])
+	settings.matrix[0] = convertToNumber(settings.matrix[0])
+	settings.matrix[1] = convertToNumber(settings.matrix[1])
+	settings.size[0] = convertToNumber(settings.size[0])
+	settings.size[1] = convertToNumber(settings.size[1])
+	settings.cell[0] = convertToNumber(settings.cell[0])
+	settings.cell[1] = convertToNumber(settings.cell[1])
 
 	// Could be better. Need a way to avoid mutating original object (settings)
 	let tableSettings: TableSettings = {
-		matrix: [[settings.matrix[0][0], settings.matrix[0][1]]],
-		size: [[settings.size[0][0], settings.size[0][1]]],
-		cell: [[settings.cell[0][0], settings.cell[0][1]]],
+		matrix: [settings.matrix[0], settings.matrix[1]],
+		size: [settings.size[0], settings.size[1]],
+		cell: [settings.cell[0], settings.cell[1]],
 	}
 
 	// Get settings from template
-	if (settings.matrix[0][0] === '$') {
-		tableSettings.matrix[0][0] = templateSettings.matrix[0][0]
+	if (settings.matrix[0] === '$') {
+		tableSettings.matrix[0] = templateSettings.matrix[0]
 	}
 
-	if (settings.matrix[0][1] === '$') {
-		tableSettings.matrix[0][1] = templateSettings.matrix[0][1]
+	if (settings.matrix[1] === '$') {
+		tableSettings.matrix[1] = templateSettings.matrix[1]
 	}
 
-	if (settings.size[0][0] === '$') {
-		tableSettings.size[0][0] = templateSettings.size[0][0]
+	if (settings.size[0] === '$') {
+		tableSettings.size[0] = templateSettings.size[0]
 	}
 
-	if (settings.size[0][1] === '$') {
-		tableSettings.size[0][1] = templateSettings.size[0][1]
+	if (settings.size[1] === '$') {
+		tableSettings.size[1] = templateSettings.size[1]
 	}
 
 	// Can't set this here because needs to happen inside template
@@ -173,8 +208,8 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 	// 	tableSettings.table.cell[0][0] = templateSettings.table.size[0][0]
 	// }
 
-	if (settings.cell[0][1] === '$') {
-		tableSettings.cell[0][1] = templateSettings.cell[0][1]
+	if (settings.cell[1] === '$') {
+		tableSettings.cell[1] = templateSettings.cell[0][1]
 	}
 
 	if (!part.table || !part.tr || !part.td || (!part.th && settings.header)) {
@@ -257,16 +292,16 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		// If height specified then make rows grow to height
 		// Change size of cells
-		if (tableSettings.size[0][1] && tableSettings.size[0][1] !== 'HUG') {
+		if (tableSettings.size[1] && tableSettings.size[1] !== 'HUG') {
 			firstRow.layoutGrow = 1
 		}
 
 		// If Height of cell defined then resize row height
 		let cellHeight
-		if (tableSettings.cell[0][1] === '$') {
+		if (tableSettings.cell[1] === '$') {
 			cellHeight = templateCell.height
 		} else {
-			cellHeight = tableSettings.cell[0][1]
+			cellHeight = tableSettings.cell[1]
 		}
 
 		if (cellHeight && cellHeight !== 'FILL' && cellHeight !== 'HUG') {
@@ -280,7 +315,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		// Create columns in first row
 
-		for (let i = 0; i < tableSettings.matrix[0][0]; i++) {
+		for (let i = 0; i < tableSettings.matrix[0]; i++) {
 			var duplicateCell
 			if (part.td.type === 'COMPONENT') {
 				duplicateCell = part.td.clone()
@@ -305,7 +340,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 		}
 
 		// Create rest of rows
-		for (var r = tableSettings.matrix[0][1] - 2; r >= 0; r--) {
+		for (var r = tableSettings.matrix[1] - 2; r >= 0; r--) {
 			var duplicateRow
 
 			if (firstRow.type === 'COMPONENT') {
@@ -316,7 +351,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				duplicateRow = firstRow.clone()
 			}
 
-			if (tableSettings.size[0][1] && tableSettings.size[0][1] !== 'HUG') {
+			if (tableSettings.size[1] && tableSettings.size[1] !== 'HUG') {
 				duplicateRow.layoutGrow = 1
 			}
 
@@ -369,18 +404,18 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		// Set width of table
 
-		if (tableSettings.size[0][0] && !(typeof tableSettings.size[0][0] === 'string')) {
-			tableInstance.resize(convertToNumber(tableSettings.size[0][0]), tableInstance.height)
+		if (tableSettings.size[0] && !(typeof tableSettings.size[0] === 'string')) {
+			tableInstance.resize(convertToNumber(tableSettings.size[0]), tableInstance.height)
 		}
-		if (tableSettings.size[0][1] && !(typeof tableSettings.size[0][1] === 'string')) {
-			tableInstance.resize(tableInstance.width, convertToNumber(tableSettings.size[0][1]))
+		if (tableSettings.size[1] && !(typeof tableSettings.size[1] === 'string')) {
+			tableInstance.resize(tableInstance.width, convertToNumber(tableSettings.size[1]))
 		}
 
-		if (tableSettings.size[0][0] === 'HUG') {
+		if (tableSettings.size[0] === 'HUG') {
 			tableInstance.counterAxisSizingMode = 'AUTO'
 		}
 
-		if (tableSettings.size[0][1] === 'HUG') {
+		if (tableSettings.size[1] === 'HUG') {
 			tableInstance.primaryAxisSizingMode = 'AUTO'
 		}
 
@@ -629,9 +664,9 @@ export function getTableSettings(tableNode): TableSettings {
 	let usingColumnsOrRows = null
 
 	let table: TableSettings = {
-		matrix: [[0, 0]],
-		size: [[0, 0]],
-		cell: [[0, 0]],
+		matrix: [0, 0],
+		size: [0, 0],
+		cell: ['FILL', 'FILL'],
 		alignment: ['MIN', 'MIN'],
 		resizing: true,
 		header: true,
@@ -667,25 +702,23 @@ export function getTableSettings(tableNode): TableSettings {
 		}
 	}
 
-	table.matrix = [[columnCount, rowCount]]
+	table.matrix = [columnCount, rowCount]
 	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]
 	table.size = [
-		[
-			(() => {
-				if (tableNode.counterAxisSizingMode === 'AUTO') {
-					return 'HUG'
-				} else {
-					return tableNode.width
-				}
-			})(),
-			(() => {
-				if (tableNode.primaryAxisSizingMode === 'AUTO') {
-					return 'HUG'
-				} else {
-					return tableNode.height
-				}
-			})(),
-		],
+		(() => {
+			if (tableNode.counterAxisSizingMode === 'AUTO') {
+				return 'HUG'
+			} else {
+				return tableNode.width
+			}
+		})(),
+		(() => {
+			if (tableNode.primaryAxisSizingMode === 'AUTO') {
+				return 'HUG'
+			} else {
+				return tableNode.height
+			}
+		})(),
 	]
 	table.axis = usingColumnsOrRows
 	table.header = getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false

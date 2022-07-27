@@ -92,8 +92,6 @@
 		// Set default checked radio
 		table_state[rowState][columnState].checked = true
 
-		console.log(rowCount, columnCount)
-
 		// Set default state
 		set_state("selected", [rowCount, columnCount])
 	}

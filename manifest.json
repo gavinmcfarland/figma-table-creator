@@ -78,7 +78,7 @@
         {"command": "createTable", "name": "Create Table"},
         {"command": "updateTables", "name": "Refresh Tables"},
         {"command": "switchColumnsOrRows", "name": "Switch Axes",  "multipleSelection": true},
-        {"command": "toggleColumnResizing", "name": "Column Resizing",  "multipleSelection": true},
+        {"command": "toggleColumnResizing", "name": "Toggle Resizing",  "multipleSelection": true},
 
         {"command": "detachTable", "name": "Detach Table"},
         {"command": "selectColumn", "name": "Select Column", "multipleSelection": true},

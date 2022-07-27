@@ -61,7 +61,12 @@ export async function lookForComponent(template) {
 		} catch (e) {
 			if (e.startsWith('Could not find a published component with the key')) {
 				console.log('Template: ', template)
-				figma.notify('Check component is published', { error: true })
+
+				try {
+					figma.notify('Check component is published', { error: true })
+				} catch (e) {
+					console.log(e)
+				}
 			}
 		}
 	}

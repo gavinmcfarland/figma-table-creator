@@ -20,6 +20,7 @@ import {
 	ungroup,
 	incrementName,
 	removeRemoteFile,
+	setClientStoragAsync,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -49,6 +50,7 @@ import {
 	getTableSettings,
 	getLocalTemplatesWithoutUpdating,
 	getDefaultTemplate,
+	applyTableSettings,
 } from './globals'
 import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
@@ -501,7 +503,7 @@ function switchColumnsOrRows(selection) {
 								}
 
 								if (i < origRowlength) {
-									for (let c = 0; c < settings.matrix[0][0]; c++) {
+									for (let c = 0; c < settings.matrix[0]; c++) {
 										var cell = cells[c]
 										var cellWidth = cell.width
 										// var cellLocation = [c + 1, r + 1]
@@ -612,7 +614,7 @@ function switchColumnsOrRows(selection) {
 										if (cell) {
 											if (row.parent.children[getNodeIndex(firstRow) + c]) {
 												// NOTE: temporary fix. Could be better
-												if (settings.size[0][0] === 'HUG') {
+												if (settings.size[0] === 'HUG') {
 													cell.layoutGrow = 0
 													cell.primaryAxisSizingMode = 'AUTO'
 												} else {
@@ -688,6 +690,8 @@ async function createTableUI() {
 
 	let tableSettings = userPreferences.table
 
+	console.log('UI', tableSettings)
+
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await getDefaultTemplate()
@@ -714,24 +718,26 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(settings, template) {
-	const templateComponent = await lookForComponent(template)
+async function createTableInstance(tableSettings) {
+	console.log('tableSettings', tableSettings)
+	const templateComponent = await lookForComponent(tableSettings.template)
 
 	if (templateComponent) {
-		let tableInstance = await createTable(templateComponent, settings)
+		let tableInstance = await createTable(templateComponent, tableSettings)
 
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]
 
-			await setDefaultTemplate(template)
+			await setDefaultTemplate(tableSettings.template)
 
-			updateClientStorageAsync('userPreferences', (data) => {
-				data = {
-					table: Object.assign(data.table, settings),
-				}
-				return data
-			}).then(() => {
+			let userPreferences = await getClientStorageAsync('userPreferences')
+
+			let newUserPreferences = await applyTableSettings(userPreferences.table, tableSettings)
+
+			console.log('newUserPreferences', newUserPreferences)
+
+			figma.clientStorage.setAsync('userPreferences', { table: newUserPreferences }).then(() => {
 				figma.closePlugin('Table created')
 			})
 		}
@@ -756,6 +762,7 @@ async function main() {
 
 		// If the property table deosn't exist, then declare new defaultData
 		if (!data?.table) {
+			console.log("doesn't exist")
 			data = defaultData
 		}
 
@@ -898,7 +905,7 @@ async function main() {
 						name: template.name,
 						data: template,
 						icon: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path fill-rule="evenodd" clip-rule="evenodd" d="M1.92228 7.04535L7.42826 1.53783L6.72106 0.830822L1.21508 6.33834C0.678207 6.87536 0.678299 7.74591 1.21529 8.28282L6.1029 13.1697C6.63989 13.7066 7.51044 13.7066 8.04738 13.1696L13.5528 7.66416L12.8457 6.95706L7.34027 12.4625C7.19383 12.609 6.9564 12.609 6.80995 12.4625L1.92234 7.57566C1.77589 7.42923 1.77586 7.19181 1.92228 7.04535ZM11.8885 1.99731H8.82605V2.99731H10.6814L7.16 6.51875L7.8671 7.22586L11.3885 3.70441V5.55981H12.3885V2.49731V1.99731H11.8885Z" fill="black" fill-opacity="0.5"/>
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M1.9223 7.04535L7.42828 1.53783L6.72107 0.830826L1.21509 6.33834C0.678222 6.87536 0.678314 7.74592 1.2153 8.28282L6.10292 13.1697C6.6399 13.7066 7.51045 13.7066 8.04739 13.1696L13.5528 7.66416L12.8457 6.95706L7.34028 12.4625C7.19384 12.609 6.95642 12.609 6.80997 12.4625L1.92235 7.57566C1.7759 7.42923 1.77588 7.19181 1.9223 7.04535ZM11.8886 1.99731H8.82607V2.99731H10.6815L7.16001 6.51876L7.86712 7.22586L11.3886 3.70442V5.55981H12.3886V2.49731V1.99731H11.8886Z" fill="#818181" fill-opacity="0.5"/>
 						</svg>`,
 					})
 				}
@@ -910,9 +917,6 @@ async function main() {
 					data: item,
 				}
 			})
-
-			if (!defaultTemplate && !localTemplates && !remoteFiles) {
-			}
 
 			figma.parameters.on('input', ({ query, result, key }) => {
 				function genSuggestions(key, query) {
@@ -1066,7 +1070,7 @@ async function main() {
 			})
 
 			figma.on('run', async ({ parameters }) => {
-				let settings: TableSettings = userPreferences.table
+				let userSettings = userPreferences.table
 
 				if (parameters) {
 					// ---- Because we can't set data when parameters is launched we need to retrospectively update template components that may have been copied and have the out of date template data on them
@@ -1085,34 +1089,18 @@ async function main() {
 
 					// ----
 
-					if (parameters.template) {
-						await setDefaultTemplate(parameters.template)
+					console.log(userSettings, parameters)
+
+					// Matrix, size and template will get replaced by parameters
+					let tableSettings = Object.assign(userSettings, parameters)
+
+					if (!parameters.cell) {
+						tableSettings.cell = userSettings.cell[0]
 					}
 
-					if (parameters.matrix) {
-						settings.matrix = upsert(settings.matrix, (item) => _.isEqual(item, parameters.matrix), parameters.matrix)
-						settings.matrix = settings.matrix.slice(0, 4)
-					}
+					console.log('tableSettings', tableSettings, userSettings.cell[0])
 
-					if (parameters.size) {
-						settings.size = upsert(settings.size, (item) => _.isEqual(item, parameters.size), parameters.size)
-						settings.size = settings.size.slice(0, 4)
-					}
-
-					if (parameters.cell) {
-						settings.cell = upsert(settings.cell, (item) => _.isEqual(item, parameters.cell), parameters.cell)
-						settings.cell = settings.cell.slice(0, 4)
-					}
-
-					if (parameters.alignment) {
-						settings.alignment = parameters.alignment
-					}
-
-					if (parameters.header === false || parameters.header === true) {
-						settings.header = parameters.header
-					}
-
-					createTableInstance(settings, parameters.template)
+					createTableInstance(tableSettings)
 				} else {
 					createTableUI()
 				}
@@ -1245,7 +1233,7 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			createTableInstance(msg.data, msg.data.template)
+			createTableInstance(msg.data)
 		})
 
 		plugin.command('updateTables', () => {

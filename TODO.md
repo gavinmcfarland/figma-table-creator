@@ -27,8 +27,8 @@
 21. Disable numbering before publishing DONE
 22. Increase limit for recentTables DONE
 23. Seporate slice function from upsert function DONE
-24. Remove the component property from templates?
-25. Decide how I want tableSettings to be defined
+24. Remove the component property from templates? UNCHANGED
+25. Decide how I want tableSettings to be defined DONE
 
 
 
