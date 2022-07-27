@@ -690,8 +690,6 @@ async function createTableUI() {
 
 	let tableSettings = userPreferences.table
 
-	console.log('UI', tableSettings)
-
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await getDefaultTemplate()
@@ -719,7 +717,6 @@ async function createTableUI() {
 }
 
 async function createTableInstance(tableSettings) {
-	console.log('tableSettings', tableSettings)
 	const templateComponent = await lookForComponent(tableSettings.template)
 
 	if (templateComponent) {
@@ -734,8 +731,6 @@ async function createTableInstance(tableSettings) {
 			let userPreferences = await getClientStorageAsync('userPreferences')
 
 			let newUserPreferences = await applyTableSettings(userPreferences.table, tableSettings)
-
-			console.log('newUserPreferences', newUserPreferences)
 
 			figma.clientStorage.setAsync('userPreferences', { table: newUserPreferences }).then(() => {
 				figma.closePlugin('Table created')

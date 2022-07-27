@@ -26,7 +26,7 @@ import {
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
-	toggleColumnResizing: 'Apply or remove column resizing',
+	toggleColumnResizing: 'Apply or remove component to first row or column',
 	switchColumnsOrRows: 'Switch between using columns or rows',
 	updateTables: 'Refresh tables already created',
 }

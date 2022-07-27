@@ -54,23 +54,23 @@
         "separator": true
     },
     {
-      "name": "Select Column",
-      "command": "selectColumn"
-    },
-    {
-      "name": "Select Row",
-      "command": "selectRow"
-    },
-    {
-        "separator": true
-    },
-    {
         "name": "Switch Axes",
         "command": "switchColumnsOrRows"
     },
     {
         "name": "Toggle Resizing",
         "command": "toggleColumnResizing"
+    },
+    {
+        "separator": true
+    },
+    {
+      "name": "Select Column",
+      "command": "selectColumn"
+    },
+    {
+      "name": "Select Row",
+      "command": "selectRow"
     }
   ],
   "relaunchButtons": [
