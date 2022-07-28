@@ -169,8 +169,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 	let part = getTemplateParts(templateComponent)
 	let tableInstance
 
-	let templateSettings: TableSettings = getTableSettings(part.table)
-
 	// Santitize data
 	settings.matrix[0] = convertToNumber(settings.matrix[0])
 	settings.matrix[1] = convertToNumber(settings.matrix[1])
@@ -184,32 +182,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 		matrix: [settings.matrix[0], settings.matrix[1]],
 		size: [settings.size[0], settings.size[1]],
 		cell: [settings.cell[0], settings.cell[1]],
-	}
-
-	// Get settings from template
-	if (settings.matrix[0] === '$') {
-		tableSettings.matrix[0] = templateSettings.matrix[0]
-	}
-
-	if (settings.matrix[1] === '$') {
-		tableSettings.matrix[1] = templateSettings.matrix[1]
-	}
-
-	if (settings.size[0] === '$') {
-		tableSettings.size[0] = templateSettings.size[0]
-	}
-
-	if (settings.size[1] === '$') {
-		tableSettings.size[1] = templateSettings.size[1]
-	}
-
-	// Can't set this here because needs to happen inside template
-	// if (settings.table.cell[0][0] === '$') {
-	// 	tableSettings.table.cell[0][0] = templateSettings.table.size[0][0]
-	// }
-
-	if (settings.cell[1] === '$') {
-		tableSettings.cell[1] = templateSettings.cell[0][1]
 	}
 
 	if (!part.table || !part.tr || !part.td || (!part.th && settings.header)) {
@@ -226,6 +198,34 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 		}
 		tableInstance = false
 	} else {
+		let templateSettings: TableSettings = getTableSettings(part.table)
+
+		// Get settings from template
+		if (settings.matrix[0] === '$') {
+			tableSettings.matrix[0] = templateSettings.matrix[0]
+		}
+
+		if (settings.matrix[1] === '$') {
+			tableSettings.matrix[1] = templateSettings.matrix[1]
+		}
+
+		if (settings.size[0] === '$') {
+			tableSettings.size[0] = templateSettings.size[0]
+		}
+
+		if (settings.size[1] === '$') {
+			tableSettings.size[1] = templateSettings.size[1]
+		}
+
+		// Can't set this here because needs to happen inside template
+		// if (settings.table.cell[0][0] === '$') {
+		// 	tableSettings.table.cell[0][0] = templateSettings.table.size[0][0]
+		// }
+
+		if (settings.cell[1] === '$') {
+			tableSettings.cell[1] = templateSettings.cell[0][1]
+		}
+
 		tableInstance = convertToFrame(templateComponent.clone())
 
 		var table

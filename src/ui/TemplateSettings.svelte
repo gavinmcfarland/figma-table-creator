@@ -41,7 +41,6 @@
 
 
 	function doneEditing() {
-		console.log("done editing")
 		pageState = {
 			welcomePageActive: false,
 			createTablePageActive: true,
@@ -58,7 +57,7 @@
 	function addRemoveElement(event, part, i) {
 		let {name, element, id} = part
 		let button = event.target
-		console.log(button)
+
 		if (typeof name === "undefined") {
 			parts[i].name = currentSelection.name
 			artworkTarget.classList.add('taken')
@@ -85,14 +84,13 @@
 
 		if (message.type === "template-parts") {
 			parts = Object.values(message.parts)
-			console.log("template-parts-updated")
 		}
 
 		if (message.type === "current-selection") {
 			currentSelection = message.selection
 
 			if (currentSelection) {
-				console.log("currentSelection", currentSelection)
+
 				if (currentSelection.element) {
 
 					if (previousSelection && previousSelection.element) {
@@ -105,16 +103,24 @@
 					previousSelection = message.selection
 				}
 				else {
+
 					if(!currentlyHovering) {
-						artworkTarget.classList.remove(previousSelection.element)
+						if (previousSelection) {
+							artworkTarget.classList.remove(previousSelection.element)
+						}
+
 					}
 					artworkTarget.classList.remove('current')
-					artworkTarget.classList.remove('current-' + previousSelection.element)
+
+					if (previousSelection) {
+						artworkTarget.classList.remove('current-' + previousSelection.element)
+					}
 
 					previousSelection = undefined
 				}
 			}
 			else {
+
 				if (previousSelection) {
 					artworkTarget.classList.remove('current')
 					artworkTarget.classList.remove('current-' + previousSelection.element)

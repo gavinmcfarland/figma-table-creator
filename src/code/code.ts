@@ -757,7 +757,6 @@ async function main() {
 
 		// If the property table deosn't exist, then declare new defaultData
 		if (!data?.table) {
-			console.log("doesn't exist")
 			data = defaultData
 		}
 
@@ -1084,16 +1083,12 @@ async function main() {
 
 					// ----
 
-					console.log(userSettings, parameters)
-
 					// Matrix, size and template will get replaced by parameters
 					let tableSettings = Object.assign(userSettings, parameters)
 
 					if (!parameters.cell) {
 						tableSettings.cell = userSettings.cell[0]
 					}
-
-					console.log('tableSettings', tableSettings, userSettings.cell[0])
 
 					createTableInstance(tableSettings)
 				} else {
@@ -1281,6 +1276,8 @@ async function main() {
 						id: parts?.th?.id,
 					},
 				}
+
+				console.log(msg)
 
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})

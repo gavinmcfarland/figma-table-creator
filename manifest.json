@@ -17,7 +17,8 @@
 
         {
             "name": "Template",
-            "key": "template"
+            "key": "template",
+            "description": "Choose a template to create tables from"
         },
         {
             "name": "Matrix",

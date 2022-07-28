@@ -381,8 +381,6 @@
 	async function onLoad(event) {
 		var message = await event.data.pluginMessage
 
-		// console.log("ui", message)
-
 		if (message.type === "show-create-table-ui") {
 			data = message
 
@@ -839,7 +837,6 @@
 					<slot slot="content">
 						<div class="tooltip wTriangle">
 							<!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing} on:click={(event) => {
-									console.log("columnResizing", columnResizing)
 									getDropdown('tooltip').close()
 									}}/> -->
 							<div>

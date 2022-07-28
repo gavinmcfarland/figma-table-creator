@@ -285,8 +285,6 @@ export async function upgradeOldTablesToNewTables(templateData) {
 }
 
 export async function upgradeOldComponentsToTemplate() {
-	console.log(figma.root.getPluginData('cellComponentID'), getDocumentData('pluginVersion'))
-
 	if (getComponentById(figma.root.getPluginData('cellComponentID'))) {
 		const templateComponent = createTemplateComponent()
 
