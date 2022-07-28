@@ -66,7 +66,7 @@ export async function applyTableSettings(target, source) {
 }
 
 export function isTemplateNode(node) {
-	if (node.type === 'COMPONENT' && getPluginData('template')) {
+	if (node.type === 'COMPONENT' && getPluginData(node, 'template')) {
 		return node
 	}
 }
@@ -87,12 +87,12 @@ export async function updatePluginVersion(semver) {
 
 function extractValues(objectArray) {
 	return Object.entries(objectArray).reduce(function (acc, obj) {
-		let [key, value]: any = obj
-		let newObj
+		let [key, value] = obj
+		let thing
 		// if (value.type !== 'VARIANT') {
-		newObj = { [key]: value.value }
+		thing = { [key]: value.value }
 		// }
-		return { ...acc, ...newObj }
+		return { ...acc, ...thing }
 	}, {})
 }
 
@@ -105,60 +105,65 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 			index = templateSettings.matrix[0] - 1
 		}
 	}
-
 	let templateCell = partParent.children[index]
+	console.log(templateCell.name)
 
-	// Copy across width
 	if (tableSettings) {
-		let cellWidth
-		if (tableSettings.cell[0] === '$') {
-			cellWidth = templateCell.width
-		} else {
-			cellWidth = tableSettings.cell[0]
-		}
+		if (templateCell) {
+			// Copy across width
+			if (tableSettings) {
+				let cellWidth
+				if (tableSettings.cell[0] === '$') {
+					cellWidth = templateCell.width
+				} else {
+					cellWidth = tableSettings.cell[0]
+				}
 
-		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
-			node.resizeWithoutConstraints(cellWidth, node.height)
-		}
+				if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
+					node.resizeWithoutConstraints(cellWidth, node.height)
+				}
 
-		// If templateCell === FILL
-		if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
-			node.layoutGrow = 1
-		}
+				// If templateCell === FILL
+				if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
+					node.layoutGrow = 1
+				}
 
-		// If templateCell === HUG
-		if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
-			node.layoutGrow = 0
-			node.counterAxisSizingMode = 'AUTO'
-		}
+				// If templateCell === HUG
+				if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
+					node.layoutGrow = 0
+					node.counterAxisSizingMode = 'AUTO'
+				}
 
-		// Change size of cells
-		if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
-			node.layoutGrow = 1
+				// If specific table width specified
+				if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
+					node.layoutGrow = 1
+					node.counterAxisSizingMode = 'AUTO'
+				}
+			}
+
+			// Set component properties on instances
+			if (templateCell.componentProperties) {
+				node.setProperties(extractValues(templateCell.componentProperties))
+			}
+
+			// // Add table numbering
+			// if (rowIndex || rowIndex === 0) {
+			// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
+
+			// 	if (templateText) {
+			// 		let number = convertToNumber(templateText.characters)
+
+			// 		if (Number(number)) {
+			// 			let tableText = node.findOne((node) => node.name === 'Text')
+			// 			await figma.loadFontAsync(templateText.fontName)
+			// 			if (tableText) {
+			// 				tableText.characters = (number + rowIndex).toString()
+			// 			}
+			// 		}
+			// 	}
+			// }
 		}
 	}
-
-	// // Set component properties on instances
-	// if (templateCell.componentProperties) {
-	// 	node.setProperties(extractValues(templateCell.componentProperties))
-	// }
-
-	// // Add table numbering
-	// if (rowIndex || rowIndex === 0) {
-	// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
-
-	// 	if (templateText) {
-	// 		let number = convertToNumber(templateText.characters)
-
-	// 		if (Number(number)) {
-	// 			let tableText = node.findOne((node) => node.name === 'Text')
-	// 			await figma.loadFontAsync(templateText.fontName)
-	// 			if (tableText) {
-	// 				tableText.characters = (number + rowIndex).toString()
-	// 			}
-	// 		}
-	// 	}
-	// }
 }
 
 export async function createTable(templateComponent, settings: TableSettings, type?) {
@@ -226,11 +231,14 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			tableSettings.cell[1] = templateSettings.cell[0][1]
 		}
 
+		// Create a copy and convert the table container to a frame
 		tableInstance = convertToFrame(templateComponent.clone())
 
 		var table
+		var tableIsContainer = part.table.id === templateComponent.id
 
-		if (part.table.id === templateComponent.id) {
+		// If the table is the container
+		if (tableIsContainer) {
 			if (type === 'COMPONENT') {
 				table = convertToComponent(tableInstance)
 				tableInstance = table
@@ -238,12 +246,14 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				table = tableInstance
 			}
 		} else {
-			// Remove table from template
+			// If not, remove the table from the container
 			tableInstance.findAll((node) => {
 				if (getPluginData(node, 'elementSemantics')?.is === 'table') {
 					node.remove()
 				}
 			})
+
+			table = part.table.clone()
 
 			var tableIndex = getNodeIndex(part.table)
 
@@ -356,7 +366,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			}
 
 			// If using columnResizing and header swap non headers to default cells
-			if (settings.resizing && type !== 'COMPONENT' && settings.header) {
+			if (settings.resizing && settings.header) {
 				for (let i = 0; i < duplicateRow.children.length; i++) {
 					var cell = duplicateRow.children[i]
 					// cell.swapComponent(part.th)
@@ -368,10 +378,11 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 					// Set component properties on instances
 					// cell.setProperties(extractValues(part.td.componentProperties))
 
-					copyTemplatePart(part.table.children[1], cell, i, templateSettings, null, r)
+					copyTemplatePart(part.table.children[1], cell, i, templateSettings, tableSettings, r)
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
+
 					cell.primaryAxisAlignItems = settings.alignment[0]
 				}
 			}
@@ -394,11 +405,10 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				// }
 
 				// Need first row which is the header
-				copyTemplatePart(part.table.children[0], child, i, templateSettings, null, 0)
+				copyTemplatePart(part.table.children[0], child, i, templateSettings, tableSettings, 0)
 
 				// child.mainComponent = part.th.mainComponent
-
-				cell.primaryAxisAlignItems = settings.cellAlignment
+				child.primaryAxisAlignItems = settings.alignment[0]
 			}
 		}
 
@@ -419,6 +429,23 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		if (tableSettings.size[1] === 'HUG') {
 			tableInstance.primaryAxisSizingMode = 'AUTO'
+		}
+
+		if (!tableIsContainer) {
+			if (tableSettings.size[0] === 'HUG') {
+				table.counterAxisSizingMode = 'AUTO'
+			} else {
+				table.layoutAlign = 'STRETCH'
+				table.counterAxisSizingMode = 'FIXED'
+			}
+
+			if (tableSettings.size[1] === 'HUG') {
+				table.layoutGrow = 0
+				table.primaryAxisSizingMode = 'AUTO'
+			} else {
+				table.layoutGrow = 1
+				table.primaryAxisSizingMode = 'FIXED'
+			}
 		}
 
 		return tableInstance
@@ -591,9 +618,8 @@ export async function getDefaultTemplate(): Promise<Template> {
 	let defaultTemplate
 
 	if (defaultTemplates.length > 0) {
-		if (defaultTemplates[0].file.id === fileId) {
-			defaultTemplate = defaultTemplates[0].template
-		}
+		let lastTemplateUsedWithFile = defaultTemplates.find((item) => item.file.id === fileId)
+		defaultTemplate = lastTemplateUsedWithFile.template
 	}
 
 	let localTemplates = getLocalTemplatesWithoutUpdating()
@@ -666,8 +692,6 @@ export async function updateTables(template) {
 
 				// Don't apply if an instance
 				if (table.type !== 'INSTANCE') {
-					console.log(`Updating table ${b + 1} of ${tables.length} on page ${p + 1}`)
-
 					copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] })
 
 					table.findAll((node) => {

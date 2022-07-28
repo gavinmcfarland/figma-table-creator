@@ -51,6 +51,7 @@ import {
 	getLocalTemplatesWithoutUpdating,
 	getDefaultTemplate,
 	applyTableSettings,
+	isTemplateNode,
 } from './globals'
 import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
@@ -177,11 +178,14 @@ function getTemplateParts(templateNode) {
 		results[elementName] = parts
 	}
 
-	if (!results['table']) {
-		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
-			results['table'] = templateNode
-		}
-	}
+	console.log('results', results)
+
+	// If can't find table part, then assume container is table
+	// if (!results['table']) {
+	// 	if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
+	// 		results['table'] = templateNode
+	// 	}
+	// }
 
 	// // For instances assign the mainComponent as the parts
 	// for (let [key, value] of Object.entries(results)) {
@@ -198,7 +202,7 @@ function postCurrentSelection(templateNodeId) {
 
 	function isInsideTemplate(node) {
 		let parentComponent = node.type === 'COMPONENT' ? node : getParentComponent(node)
-		if ((isInsideComponent(node) || node.type === 'COMPONENT') && parentComponent) {
+		if (isInsideComponent(node)) {
 			if (getPluginData(parentComponent, 'template') && parentComponent.id === templateNodeId) {
 				return true
 			}
@@ -206,12 +210,9 @@ function postCurrentSelection(templateNodeId) {
 	}
 
 	function postSelection() {
-		let sel = figma.currentPage.selection[0]
-
 		if (
 			figma.currentPage.selection.length === 1 &&
-			isInsideTemplate(figma.currentPage.selection[0]) &&
-			(sel.type === 'COMPONENT' || sel.type === 'FRAME' || sel.type === 'INSTANCE')
+			(isInsideTemplate(figma.currentPage.selection[0]) || isTemplateNode(figma.currentPage.selection[0]))
 		) {
 			let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
 			selection = {
@@ -235,6 +236,7 @@ function postCurrentSelection(templateNodeId) {
 
 			figma.ui.postMessage({ type: 'current-selection', selection: selection })
 		} else {
+			console.log("don't send selection", figma.currentPage.selection[0].type)
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
 	}

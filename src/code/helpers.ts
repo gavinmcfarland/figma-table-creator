@@ -369,11 +369,17 @@ export function getTemplateParts(templateNode) {
 		results[elementName] = part
 	}
 
+	console.log(results)
+
 	if (!results['table']) {
 		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
 			results['table'] = templateNode
 		}
 	}
+
+	results['container'] = templateNode
+
+	console.log(results)
 
 	// // For instances assign the mainComponent as the part
 	// for (let [key, value] of Object.entries(results)) {

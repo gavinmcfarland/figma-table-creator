@@ -30,6 +30,8 @@
 24. Remove the component property from templates? UNCHANGED
 25. Decide how I want tableSettings to be defined DONE
 
+26. Fix bug with correct default template being selected when switching between files
+
 
 
 19. Add cell height to UI
