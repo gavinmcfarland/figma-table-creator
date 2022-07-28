@@ -398,7 +398,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 				// child.mainComponent = part.th.mainComponent
 
-				cell.primaryAxisAlignItems = settings.cellAlignment
+				child.primaryAxisAlignItems = settings.alignment[0]
 			}
 		}
 
