@@ -1,9 +1,8 @@
 import plugma from 'plugma'
+import _ from 'underscore'
 import {
 	replace,
-	getOverrides,
 	nodeToObject,
-	getPageNode,
 	resize,
 	getPluginData,
 	setDocumentData,
@@ -16,29 +15,26 @@ import {
 	getClientStorageAsync,
 	updateClientStorageAsync,
 	removeChildren,
-	setClientStorageAsync,
 	getRecentFilesAsync,
 	getRemoteFilesAsync,
 	ungroup,
 	incrementName,
 	removeRemoteFile,
+	setClientStoragAsync,
 } from '@fignite/helpers'
 import {
 	getComponentById,
+	getComponentByIdAndKey,
 	createPage,
 	animateNodeIntoView,
-	selectAndZoomIntoView,
 	positionInCenterOfViewport,
-	unique,
-	getPublishedComponents,
 	lookForComponent,
 	getSelectionName,
 	isInsideComponent,
 	getParentComponent,
 	swapAxises,
 	clone,
-	genRandomId,
-	copyPasteStyle,
+	upsert,
 } from './helpers'
 import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
@@ -51,36 +47,22 @@ import {
 	File,
 	updateTables,
 	setDefaultTemplate,
-	setPreviousTemplate,
 	getTableSettings,
-	convertToNumber,
-	getLocalTemplateWithoutUpdating,
+	getLocalTemplatesWithoutUpdating,
+	getDefaultTemplate,
+	applyTableSettings,
 } from './globals'
-import { swapInstance } from './helpers'
+import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 // FIXME: Column resizing doesn't work on table without headers
 // FIXME: When turning column resizing off component does not resize with table DONE
 // TODO: Consider removing number when creating table
+// TODO: When template renamed, default data no updated
+// TODO: Should default template be stored in usersPreferences? different for each file
 
 console.clear()
-
-// createTooltip(
-// 	'Your table components have been upgraded into a template. A template is single component used by Table Creator to create tables from. You may discard the other components previously used by the plugin.'
-// ).then((tooltip) => {
-// 	positionInCenterOfViewport(tooltip)
-// })
-
-// createTemplateComponents().then((array) => {
-// 	let group = figma.group(array, figma.currentPage)
-// 	positionInCenterOfViewport(group)
-// 	figma.ungroup(group)
-// })
-
-// setClientStorageAsync('userPreferences', undefined).then(() => {
-// 	figma.closePlugin('User preferences reset')
-// })
 
 // figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
@@ -88,21 +70,7 @@ console.clear()
 // figma.root.setPluginData('fileId', '')
 // figma.root.setPluginData('defaultTemplate', '')
 // figma.clientStorage.deleteAsync('userPreferences')
-
-function daysToMilliseconds(days) {
-	// 👇️        hour  min  sec  ms
-	return days * 24 * 60 * 60 * 1000
-}
-
-function isEmpty(obj) {
-	for (var prop in obj) {
-		if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-			return false
-		}
-	}
-
-	return JSON.stringify(obj) === JSON.stringify({})
-}
+// figma.clientStorage.deleteAsync('recentTables')
 
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
@@ -130,58 +98,6 @@ function addTemplateToRemoteFiles(node) {
 	})
 
 	figma.notify(`Imported ${node.name}`)
-}
-function removeTemplateFromFile() {}
-// function incrementName(name, array?) {
-// 	let nameToMatch = name
-
-// 	if (array && array.length > 1) {
-// 		array.sort((a, b) => {
-// 			if (a.name === b.name) return 0
-
-// 			return a.name > b.name ? -1 : 1
-// 		})
-
-// 		nameToMatch = array[0].name
-// 	}
-
-// 	let matches = nameToMatch.match(/^(.*\S)(\s*)(\d+)$/)
-
-// 	// And increment by 1
-// 	// Ignores if array is empty
-// 	if (matches && !(array && array.length === 0)) {
-// 		name = `${matches[1]}${matches[2]}${parseInt(matches[3], 10) + 1}`
-// 	}
-
-// 	return name
-// }
-function fetchTemplateParts() {}
-function setTemplateData(node) {
-	if (node.type === 'COMPONENT') {
-		setPluginData(node, 'template', {
-			file: {
-				id: getPluginData(figma.root, 'fileId'),
-				name: figma.root.name,
-			},
-			name: node.name,
-			id: genRandomId(),
-			component: {
-				key: node.key,
-				id: node.id,
-			},
-		})
-	}
-}
-function setSemantics(node, element) {
-	// Should this be split into markNode and setTemplate?
-
-	setPluginData(node, `elementSemantics`, {
-		is: element,
-	})
-
-	if (element === 'table') {
-		setTemplateData(node)
-	}
 }
 
 function addElement(element) {
@@ -242,22 +158,6 @@ function importTemplate(node) {
 	}
 }
 
-// function getUserPreferencesAsync() {
-// 	return getRecentFilesAsync()
-// }
-
-function getDefaultTemplate() {
-	var usingRemoteTemplate = getDocumentData('usingRemoteTemplate')
-	var defaultTemplate = getDocumentData('defaultTemplate')
-
-	// FIXME: Should I be doing more, like checking if the component has been published at this point?
-	if (usingRemoteTemplate) {
-		return defaultTemplate
-	} else {
-		return getComponentById(defaultTemplate?.component?.id) ? defaultTemplate : undefined
-	}
-}
-
 function getTemplateParts(templateNode) {
 	// find nodes with certain pluginData
 	let elements = ['tr', 'td', 'th', 'table']
@@ -307,7 +207,7 @@ function postCurrentSelection(templateNodeId) {
 
 	function postSelection() {
 		let sel = figma.currentPage.selection[0]
-		// console.log('sel', sel.type)
+
 		if (
 			figma.currentPage.selection.length === 1 &&
 			isInsideTemplate(figma.currentPage.selection[0]) &&
@@ -345,92 +245,6 @@ function postCurrentSelection(templateNodeId) {
 		postSelection()
 	})
 }
-
-// /**
-//  * Adds new files to recentFiles in localStorage if they don't exist and updates them if they do
-//  * @param {String} key A key to store data under
-//  * @param {any} data Data to be stored
-//  */
-// async function syncRecentFilesAsync(data) {
-// 	// NOTE: Should function add file, when there is no data?
-// 	// const publishedComponents = await getPublishedComponents(data)
-
-// 	return updateClientStorageAsync('recentFiles', (recentFiles) => {
-// 		recentFiles = recentFiles || []
-// 		const newFile = new File(data)
-
-// 		// We have to check if the array is empty because we can't filter an empty array
-// 		if (recentFiles.length === 0) {
-// 			if (data.length > 0) recentFiles.push(newFile)
-// 		} else {
-// 			recentFiles.filter((item) => {
-// 				if (item.id === newFile.id) {
-// 					item.data = data
-// 				} else {
-// 					if (data.length > 0) recentFiles.push(newFile)
-// 				}
-// 			})
-// 		}
-
-// 		return recentFiles
-// 	})
-// }
-// async function getRecentFilesAsync() {
-// 	return await getClientStorageAsync('recentFiles')
-// }
-
-// // This makes sure the list of local and remote templates are up to date
-// async function syncRemoteFilesAsync() {
-// 	var recentFiles = await getClientStorageAsync('recentFiles')
-
-// 	return updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-// 		remoteFiles = remoteFiles || []
-
-// 		// Merge recentFiles into remoteFiles (because we need to add them if they don't exist, and update them if they do)
-// 		if (recentFiles.length > 0) {
-// 			// if (!remoteFiles) remoteFiles = []
-
-// 			// I think this is a method of merging files, maybe removing duplicates?
-// 			var ids = new Set(remoteFiles.map((file) => file.id))
-// 			var merged = [...remoteFiles, ...recentFiles.filter((file) => !ids.has(file.id))]
-
-// 			// Exclude current file (because we want remote files to this file only)
-// 			merged = merged.filter((file) => {
-// 				return !(file.id === getPluginData(figma.root, 'fileId'))
-// 			})
-
-// 			remoteFiles = merged
-// 		}
-
-// 		// Then I check to see if the file name has changed and make sure it's up to date
-// 		// For now I've decided to include unpublished components in remote files, to act as a reminder to people to publish them
-// 		if (remoteFiles.length > 0) {
-// 			for (var i = 0; i < remoteFiles.length; i++) {
-// 				var file = remoteFiles[i]
-// 				figma
-// 					.importComponentByKeyAsync(file.data[0].component.key)
-// 					.then((component) => {
-// 						var remoteTemplate = getPluginData(component, 'template')
-// 						updatePluginData(figma.root, 'remoteFiles', (remoteFiles) => {
-// 							remoteFiles.map((file) => {
-// 								if (file.id === remoteTemplate.file.id) {
-// 									file.name = remoteTemplate.file.name
-// 								}
-// 							})
-// 							return remoteFiles
-// 						})
-// 					})
-// 					.catch((error) => {
-// 						console.log(error)
-// 						// FIXME: Do I need to do something here if component is deleted?
-// 						// FIXME: Is this the wrong time to check if component is published?
-// 						// figma.notify("Please check component is published")
-// 					})
-// 			}
-// 		}
-// 		return remoteFiles
-// 	})
-// }
 
 function selectTableCells(direction) {
 	// Needs a way to exclude things which aren't rows/columns, or a way to include only rows/columns
@@ -491,7 +305,6 @@ function detachTable(selection) {
 			table.findAll((node) => {
 				if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
 					if (node.type === 'INSTANCE') {
-						// console.log(node.type, node.id)
 						node.detachInstance()
 					}
 					if (node.type === 'COMPONENT') {
@@ -518,7 +331,7 @@ function detachTable(selection) {
 
 	return newSelection
 }
-function spawnTable() {}
+
 async function toggleColumnResizing(selection) {
 	// FIXME: Something weird happening with resizing of cell/text
 	// FIXME: check width fill, fixed, fill when applied
@@ -534,7 +347,7 @@ async function toggleColumnResizing(selection) {
 			let settings = getTableSettings(oldTable)
 
 			if (i === 0) {
-				firstTableColumnResizing = settings.columnResizing
+				firstTableColumnResizing = settings.resizing
 			}
 
 			if (firstTableColumnResizing) {
@@ -543,7 +356,7 @@ async function toggleColumnResizing(selection) {
 				newSelection.push(newTable)
 			} else {
 				result = 'applied'
-				settings.columnResizing = !firstTableColumnResizing
+				settings.resizing = !firstTableColumnResizing
 
 				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
 				let oldTablePrimaryAxisSizingMode = oldTable.primaryAxisSizingMode
@@ -572,10 +385,8 @@ async function toggleColumnResizing(selection) {
 
 								newTableCell.swapComponent(oldTableCell.mainComponent)
 
-								// console.log('vp', oldTableCell.variantProperties, newTableCell.variantProperties)
-
 								await swapInstance(oldTableCell, newTableCell)
-								// console.log('tableCell', oldTableCell.width, newTableCell)
+
 								// replace(newTableCell, oldTableCell)
 								// newTableCell.swapComponent(oldTableCell.mainComponent)
 								resize(newTableCell, oldTableCell.width, oldTableCell.height)
@@ -613,7 +424,7 @@ function switchColumnsOrRows(selection) {
 	// TODO: Fix localise component to take account of rows or columns
 	// FIXME: Change cell to
 
-	let settings
+	let settings: TableSettings
 	let firstTableLayoutMode
 
 	for (let i = 0; i < selection.length; i++) {
@@ -633,12 +444,12 @@ function switchColumnsOrRows(selection) {
 				settings = getTableSettings(table)
 
 				if (i === 0) {
-					vectorType = settings.usingColumnsOrRows
+					vectorType = settings.axis
 
-					if (vectorType === 'rows') {
+					if (vectorType === 'ROWS') {
 						firstTableLayoutMode = 'VERTICAL'
 					}
-					if (vectorType === 'columns') {
+					if (vectorType === 'COLUMNS') {
 						firstTableLayoutMode = 'HORIZONTAL'
 					}
 				}
@@ -653,7 +464,7 @@ function switchColumnsOrRows(selection) {
 					var rowContainerObject = nodeToObject(rowContainer)
 
 					// Change the table container
-					if (settings.usingColumnsOrRows === 'rows') {
+					if (settings.axis === 'ROWS') {
 						rowContainer.layoutMode = 'HORIZONTAL'
 					}
 
@@ -684,7 +495,7 @@ function switchColumnsOrRows(selection) {
 
 								var cells = row.children
 
-								if (settings.usingColumnsOrRows === 'columns') {
+								if (settings.axis === 'COLUMNS') {
 									row.name = row.name.replace('Col', 'Row')
 									row.layoutMode = 'HORIZONTAL'
 									row.layoutGrow = 0
@@ -692,7 +503,7 @@ function switchColumnsOrRows(selection) {
 								}
 
 								if (i < origRowlength) {
-									for (let c = 0; c < settings.columnCount; c++) {
+									for (let c = 0; c < settings.matrix[0]; c++) {
 										var cell = cells[c]
 										var cellWidth = cell.width
 										// var cellLocation = [c + 1, r + 1]
@@ -713,7 +524,7 @@ function switchColumnsOrRows(selection) {
 											}
 
 											if (row.parent.children[oppositeIndex]) {
-												if (settings.usingColumnsOrRows === 'rows') {
+												if (settings.axis === 'ROWS') {
 													row.parent.children[oppositeIndex].appendChild(cell)
 													row.parent.children[oppositeIndex].resize(
 														rowContainerObject.children[i].children[c].width,
@@ -746,13 +557,13 @@ function switchColumnsOrRows(selection) {
 								row.resize(rowContainerObject.children[i].height, rowContainerObject.children[i].width)
 							}
 
-							if (settings.usingColumnsOrRows === 'rows' && isRow(row)) {
+							if (settings.axis === 'ROWS' && isRow(row)) {
 								row.name = row.name.replace('Row', 'Col')
 								row.layoutMode = 'VERTICAL'
 							}
 						}
 
-						if (settings.usingColumnsOrRows === 'columns') {
+						if (settings.axis === 'COLUMNS') {
 							rowContainer.layoutMode = 'VERTICAL'
 						}
 
@@ -775,15 +586,14 @@ function switchColumnsOrRows(selection) {
 
 							if (isRow(row)) {
 								// Settings is original settings, not new settings
-								if (settings.usingColumnsOrRows === 'columns') {
+								if (settings.axis === 'COLUMNS') {
 									row.counterAxisSizingMode = 'AUTO'
 									row.layoutAlign = 'STRETCH'
 
 									// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
 
 									var cells = row.children
-									var length =
-										settings.usingColumnsOrRows === 'columns' ? firstRow.parent.children.length : firstRow.children.length
+									var length = settings.axis === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
@@ -796,7 +606,7 @@ function switchColumnsOrRows(selection) {
 									}
 								} else {
 									var cells = row.children
-									var length = settings.usingColumnsOrRows === 'rows' ? firstRow.parent.children.length : firstRow.children.length
+									var length = settings.axis === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length
 
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
@@ -804,7 +614,7 @@ function switchColumnsOrRows(selection) {
 										if (cell) {
 											if (row.parent.children[getNodeIndex(firstRow) + c]) {
 												// NOTE: temporary fix. Could be better
-												if (settings.tableHeight === 'HUG') {
+												if (settings.size[0] === 'HUG') {
 													cell.layoutGrow = 0
 													cell.primaryAxisSizingMode = 'AUTO'
 												} else {
@@ -878,48 +688,11 @@ async function createTableUI() {
 	let usingRemoteTemplate = await getDocumentData('usingRemoteTemplate')
 	let pluginUsingOldComponents = getComponentById(figma.root.getPluginData('cellComponentID')) ? true : false
 
-	// const remoteFiles = getDocumentData('remoteFiles')
+	let tableSettings = userPreferences.table
+
 	const fileId = getDocumentData('fileId')
 
-	let defaultTemplate = getDefaultTemplate()
-
-	if (defaultTemplate) {
-		if (defaultTemplate.file.id === fileId) {
-			let templateComponent = getComponentById(defaultTemplate.id)
-			if (!templateComponent) {
-				if (localTemplates.length > 0) {
-					defaultTemplate = localTemplates[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				} else if (remoteFiles.length > 0) {
-					defaultTemplate = remoteFiles[0].data[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				}
-			}
-		} else {
-			let templateComponent = await lookForComponent(defaultTemplate)
-			if (!templateComponent) {
-				if (remoteFiles.length > 0) {
-					defaultTemplate = remoteFiles[0].data[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				} else if (localTemplates.length > 0) {
-					defaultTemplate = localTemplates[0]
-					setDocumentData('defaultTemplate', defaultTemplate)
-				}
-			}
-		}
-	} else {
-		// In the event defaultTemplate not set, but there are templates
-
-		if (localTemplates.length > 0) {
-			defaultTemplate = localTemplates[0]
-			setDocumentData('defaultTemplate', defaultTemplate)
-		} else if (remoteFiles.length > 0) {
-			defaultTemplate = remoteFiles[0].data[0]
-			setDocumentData('defaultTemplate', defaultTemplate)
-		}
-	}
-
-	// console.log({ localTemplates, defaultTemplate })
+	let defaultTemplate = await getDefaultTemplate()
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240,
@@ -928,7 +701,7 @@ async function createTableUI() {
 	})
 	figma.ui.postMessage({
 		type: 'show-create-table-ui',
-		...userPreferences,
+		...tableSettings,
 		remoteFiles,
 		recentFiles,
 		localTemplates,
@@ -943,40 +716,23 @@ async function createTableUI() {
 	updatePluginVersion('7.0.0')
 }
 
-async function createTableInstance(opts) {
-	// TODO: Modify to support custom template being passed in
-	const remoteFiles = await getRemoteFilesAsync()
-	const templateComponent = await lookForComponent(getDocumentData('defaultTemplate'))
-	// const templateComponent = await getComponentById(getDocumentData('defaultTemplate').id)
+async function createTableInstance(tableSettings) {
+	const templateComponent = await lookForComponent(tableSettings.template)
 
 	if (templateComponent) {
-		if (typeof opts.data.tableWidth === 'string' || opts.data.tableWidth instanceof String) {
-			opts.data.tableWidth = opts.data.tableWidth.toUpperCase()
-			opts.data.tableWidth = convertToNumber(opts.data.tableWidth)
-		}
-
-		if (typeof opts.data.tableHeight === 'string' || opts.data.tableHeight instanceof String) {
-			opts.data.tableHeight = opts.data.tableHeight.toUpperCase()
-			opts.data.tableHeight = convertToNumber(opts.data.tableHeight)
-		}
-
-		if (typeof opts.data.cellWidth === 'string' || opts.data.cellWidth instanceof String) {
-			opts.data.cellWidth = opts.data.cellWidth.toUpperCase()
-			opts.data.cellWidth = convertToNumber(opts.data.cellWidth)
-		}
-
-		if (typeof opts.data.cellHeight === 'string' || opts.data.cellHeight instanceof String) {
-			opts.data.cellHeight = opts.data.tableHeight.toUpperCase()
-			opts.data.cellHeight = convertToNumber(opts.data.cellHeight)
-		}
-
-		let tableInstance = createTable(templateComponent, opts.data)
+		let tableInstance = await createTable(templateComponent, tableSettings)
 
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]
 
-			updateClientStorageAsync('userPreferences', (data) => Object.assign(data, opts.data)).then(() => {
+			await setDefaultTemplate(tableSettings.template)
+
+			let userPreferences = await getClientStorageAsync('userPreferences')
+
+			let newUserPreferences = await applyTableSettings(userPreferences.table, tableSettings)
+
+			figma.clientStorage.setAsync('userPreferences', { table: newUserPreferences }).then(() => {
 				figma.closePlugin('Table created')
 			})
 		}
@@ -986,17 +742,22 @@ async function createTableInstance(opts) {
 async function main() {
 	// Set default preferences
 	await updateClientStorageAsync('userPreferences', (data) => {
+		let table: TableSettings = {
+			matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
+			size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
+			cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
+			alignment: [data?.cellAlignment || 'MIN', 'MIN'],
+			header: data?.includeHeader || true,
+			resizing: data?.columnResizing || true,
+		}
+
 		let defaultData = {
-			columnCount: 4,
-			rowCount: 4,
-			cellWidth: 120,
-			remember: true,
-			includeHeader: true,
-			columnResizing: true,
-			cellAlignment: 'MIN',
-			tableWidth: 'HUG',
-			tableHeight: 'HUG',
-			prevCellWidth: 120,
+			table,
+		}
+
+		// If the property table deosn't exist, then declare new defaultData
+		if (!data?.table) {
+			data = defaultData
 		}
 
 		// Merge user's data with deafult
@@ -1122,143 +883,218 @@ async function main() {
 		}
 
 		plugin.command('createTable', async ({ ui }) => {
-			// let userPreferences = await getClientStorageAsync('userPreferences')
-			// let localTemplates = getLocalTemplateWithoutUpdating()
+			let userPreferences = await getClientStorageAsync('userPreferences')
+			let tableSettings: TableSettings = userPreferences.table
+			let localTemplates = getLocalTemplatesWithoutUpdating()
+			let remoteFiles = getDocumentData('remoteFiles') || []
+			let remoteTemplates = []
+			let defaultTemplate = await getDefaultTemplate()
 
-			// figma.parameters.on('input', ({ query, result, key }) => {
-			// 	// console.log('query', query, key, name)
-			// 	// result.setSuggestions()
-			// 	if (key === 'matrix') {
-			// 		let suggestions = []
-			// 		if (query) {
-			// 			let [cols, rows] = query.split('x')
-			// 			let colsx
-			// 			let rowsx
+			for (let i = 0; i < remoteFiles.length; i++) {
+				let file = remoteFiles[i]
 
-			// 			if (cols) {
-			// 				colsx = cols
-			// 			} else {
-			// 				colsx = userPreferences.columnCount
-			// 			}
+				for (let x = 0; x < file.data.length; x++) {
+					let template = file.data[x]
+					remoteTemplates.push({
+						name: template.name,
+						data: template,
+						icon: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path fill-rule="evenodd" clip-rule="evenodd" d="M1.9223 7.04535L7.42828 1.53783L6.72107 0.830826L1.21509 6.33834C0.678222 6.87536 0.678314 7.74592 1.2153 8.28282L6.10292 13.1697C6.6399 13.7066 7.51045 13.7066 8.04739 13.1696L13.5528 7.66416L12.8457 6.95706L7.34028 12.4625C7.19384 12.609 6.95642 12.609 6.80997 12.4625L1.92235 7.57566C1.7759 7.42923 1.77588 7.19181 1.9223 7.04535ZM11.8886 1.99731H8.82607V2.99731H10.6815L7.16001 6.51876L7.86712 7.22586L11.3886 3.70442V5.55981H12.3886V2.49731V1.99731H11.8886Z" fill="#818181" fill-opacity="0.5"/>
+						</svg>`,
+					})
+				}
+			}
 
-			// 			if (rows) {
-			// 				rowsx = rows
-			// 			} else {
-			// 				rowsx = userPreferences.rowCount
-			// 			}
+			localTemplates = localTemplates.map((item) => {
+				return {
+					name: item.name,
+					data: item,
+				}
+			})
 
-			// 			suggestions.push({ name: `${colsx} x ${rowsx}` })
-			// 			// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-			// 		} else {
-			// 			suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-			// 		}
+			figma.parameters.on('input', ({ query, result, key }) => {
+				function genSuggestions(key, query) {
+					let suggestions = []
 
-			// 		result.setSuggestions(suggestions)
-			// 	}
-			// 	if (key === 'size') {
-			// 		let suggestions = []
-			// 		if (query) {
-			// 			let [width, height] = query.split('x')
-			// 			let widthx
-			// 			let heightx
+					if (query) {
+						let [item1, item2] = query.split('x')
 
-			// 			if (width) {
-			// 				widthx = width
-			// 			} else {
-			// 				widthx = userPreferences.tableWidth
-			// 			}
+						if (item1) {
+							item1 = convertToNumber(item1.toUpperCase().toString().trim())
+						}
 
-			// 			if (height) {
-			// 				heightx = height
-			// 			} else {
-			// 				heightx = userPreferences.tableHeight
-			// 			}
+						if (item2) {
+							item2 = convertToNumber(item2.toUpperCase().toString().trim())
+						}
 
-			// 			suggestions.push({ name: `${widthx.toString().toUpperCase()} x ${heightx.toString().toUpperCase()}` })
-			// 			// suggestions.push({ name: `${userPreferences.columnCount} x ${userPreferences.rowCount}` })
-			// 		} else {
-			// 			suggestions.push({
-			// 				name: `${userPreferences.tableWidth.toString().toUpperCase()} x ${userPreferences.tableHeight.toString().toUpperCase()}`,
-			// 			})
-			// 		}
+						// ---
 
-			// 		result.setSuggestions(suggestions)
-			// 	}
-			// 	// if (key === 'tableWidth') {
-			// 	// 	let suggestions = []
-			// 	// 	if (query) {
-			// 	// 		// result.setSuggestions([`${query}`])
-			// 	// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
-			// 	// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
-			// 	// 	} else {
-			// 	// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
-			// 	// 		suggestions.push({ name: `${userPreferences.tableWidth}` })
-			// 	// 	}
+						if (!item1 || item1 === tableSettings[key][0][0]) {
+							item1 = ''
+						} else if (!Number(item1)) {
+							if (key === 'matrix' && item1 !== '$') {
+								item1 = false
+							}
+							if (key === 'size' && item1 !== 'HUG' && item1 !== '$') {
+								item1 = false
+							}
+							if (key === 'cell' && item1 !== 'FILL' && item1 !== '$') {
+								item1 = false
+							}
+						} else if (Number(item1) < 1) {
+							item1 = false
+						}
 
-			// 	// 	result.setSuggestions(suggestions)
-			// 	// }
-			// 	// if (key === 'tableHeight') {
-			// 	// 	let suggestions = []
-			// 	// 	if (query) {
-			// 	// 		// result.setSuggestions([`${query}`])
-			// 	// 		suggestions.push({ name: `${query.toLocaleUpperCase()}` })
-			// 	// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
-			// 	// 	} else {
-			// 	// 		// result.setSuggestions([`${userPreferences.tableWidth}`])
-			// 	// 		suggestions.push({ name: `${userPreferences.tableHeight}` })
-			// 	// 	}
-			// 	// 	result.setSuggestions(suggestions)
-			// 	// }
+						// ---
 
-			// 	if (key === 'template') {
-			// 		// TODO: Add remote templates if they exist
-			// 		// TODO: Add icon for remote templates
-			// 		// TODO: reorder so that defaultTemplate is first in array
-			// 		let matches = localTemplates.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
-			// 		result.setSuggestions(matches)
-			// 	}
-			// })
+						if (!item2 || item2 === tableSettings[key][0][1]) {
+							item2 = ''
+						} else if (!Number(item2)) {
+							if (key === 'matrix' && item2 !== '$') {
+								item2 = false
+							}
+							if (key === 'size' && item2 !== 'HUG' && item2 !== '$') {
+								item2 = false
+							}
+							if (key === 'cell' && item2 !== 'FILL' && item2 !== '$') {
+								item2 = false
+							}
+						} else if (Number(item2) < 1) {
+							item2 = false
+						}
 
-			figma.on('run', ({ parameters }) => {
-				// TODO: Need to update localTemplates on file and then cross reference that with ones from paramters so they are up to date
-				// let settings = {
-				// 	cellAlignment: 'CENTER',
-				// 	cellHeight: undefined,
-				// 	cellWidth: 120,
-				// 	columnCount: 2,
-				// 	columnResizing: false,
-				// 	includeHeader: true,
-				// 	prevCellWidth: 120,
-				// 	remember: true,
-				// 	rowCount: 2,
-				// 	tableHeight: 500,
-				// 	tableWidth: 600,
-				// }
+						// ---
+
+						if (item1 && !item2 && item2 !== false) {
+							suggestions.push({
+								name: `${item1} x ${item2 || tableSettings[key][0][1]}`,
+								data: [item1, item2 || tableSettings[key][0][1]],
+							})
+						}
+						if (!item1 && item1 !== false && item2) {
+							suggestions.push({
+								name: `${item1 || tableSettings[key][0][0]} x ${item2}`,
+								data: [item1 || tableSettings[key][0][1], item2],
+							})
+						}
+						if (item1 && item2) {
+							suggestions.push({
+								name: `${item1} x ${item2}`,
+								data: [item1, item2],
+							})
+						}
+					}
+
+					for (let i = 0; i < tableSettings[key].length; i++) {
+						let item = tableSettings[key][i]
+						let obj = {
+							name: `${item[0].toString().toUpperCase()} x ${item[1].toString().toUpperCase()}`,
+							data: item,
+						}
+						suggestions.push(obj)
+					}
+
+					return suggestions
+				}
+
+				if (localTemplates.length > 0 || remoteFiles.length > 0) {
+					if (key === 'template') {
+						// TODO: Add remote templates if they exist
+						// TODO: Add icon for remote templates
+						// TODO: reorder so that defaultTemplate is first in array
+						let suggestions = [...localTemplates, ...remoteTemplates]
+
+						// Reorder array so that default template is at the top
+						let indexOfDefaultTemplate = suggestions.findIndex((item) => item.data.component.key === defaultTemplate.component.key)
+						suggestions = move(suggestions, indexOfDefaultTemplate, 0)
+						if (suggestions.length > 0) {
+							suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+							result.setSuggestions(suggestions)
+						}
+					}
+
+					if (key === 'matrix') {
+						result.setSuggestions(genSuggestions('matrix', query))
+					}
+					if (key === 'size') {
+						result.setSuggestions(genSuggestions('size', query))
+					}
+
+					// Optional parameters
+
+					if (key === 'cell') {
+						let suggestions = genSuggestions('cell', query)
+
+						result.setSuggestions(suggestions)
+					}
+					if (key === 'alignment') {
+						let suggestions = [
+							{ name: 'Top', data: ['MIN', 'MIN'] },
+							{ name: 'Center', data: ['CENTER', 'MIN'] },
+							{ name: 'Bottom', data: ['MAX', 'MIN'] },
+						]
+
+						// Reorder array so that default template is at the top
+						let indexFrom = suggestions.findIndex((item) => item.data[0] === tableSettings.alignment[0])
+						move(suggestions, indexFrom, 0)
+						suggestions = suggestions.filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+
+						result.setSuggestions(suggestions)
+					}
+
+					if (key === 'header') {
+						let suggestions = []
+						let first
+						let second
+						if (tableSettings.header) {
+							first = { name: 'True', data: true }
+							second = { name: 'False', data: false }
+						} else {
+							first = { name: 'False', data: false }
+							second = { name: 'True', data: true }
+						}
+
+						suggestions = [first, second].filter((s) => s.name.toUpperCase().includes(query.toUpperCase()))
+
+						result.setSuggestions(suggestions)
+					}
+				} else {
+					result.setError('No templates found. Run plugin without parameters.')
+				}
+			})
+
+			figma.on('run', async ({ parameters }) => {
+				let userSettings = userPreferences.table
 
 				if (parameters) {
-					// if (parameters.matrix) {
-					// 	let [cols, rows] = parameters.matrix.split('x')
-					// 	settings.columnCount = cols
-					// 	settings.rowCount = rows
-					// }
-					// if (parameters.size) {
-					// 	// TODO: pass correct cell width when hug used
-					// 	let [width, height] = parameters.size.split('x')
-					// 	settings.tableWidth = width
-					// 	settings.tableHeight = height
-					// 	if (width.trim() == 'HUG') {
-					// 		// settings.cellWidth = userPreferences.cellWidth
-					// 	}
-					// }
-					// createTableInstance({ data: settings })
+					// ---- Because we can't set data when parameters is launched we need to retrospectively update template components that may have been copied and have the out of date template data on them
+					let localTemplatesWithoutUpdating = getLocalTemplatesWithoutUpdating()
+					let indexOfDefaultTemplate = localTemplatesWithoutUpdating.findIndex(
+						(item) => item.component.key === parameters.template.component.key
+					)
+
+					// Updates components as it gets them
+					let localTemplates = getLocalTemplates()
+
+					// We need to reassign the template now as it may have changed
+					if (indexOfDefaultTemplate > -1) {
+						parameters.template = localTemplates[indexOfDefaultTemplate]
+					}
+
+					// ----
+
+					// Matrix, size and template will get replaced by parameters
+					let tableSettings = Object.assign(userSettings, parameters)
+
+					if (!parameters.cell) {
+						tableSettings.cell = userSettings.cell[0]
+					}
+
+					createTableInstance(tableSettings)
 				} else {
 					createTableUI()
 				}
 			})
-
-			// if (parametersNotUsed) {
-			// 	createTableUI()
-			// }
 		})
 		plugin.command('detachTable', () => {
 			let tables = detachTable(figma.currentPage.selection)
@@ -1268,7 +1104,6 @@ async function main() {
 				figma.closePlugin(`Can't detach template`)
 			}
 		})
-		plugin.command('spawnTable', spawnTable)
 		plugin.command('toggleColumnResizing', () => {
 			toggleColumnResizing(figma.currentPage.selection).then((result) => {
 				if (result) {
@@ -1307,8 +1142,8 @@ async function main() {
 			let templateData = getPluginData(templateComponent, 'template')
 			setDefaultTemplate(templateData)
 		})
-		plugin.on('remove-template', (msg) => {
-			let currentTemplate = getDefaultTemplate()
+		plugin.on('remove-template', async (msg) => {
+			let currentTemplate = await getDefaultTemplate()
 			let previousTemplate = getDocumentData('previousTemplate')
 
 			if (msg.file) {
@@ -1332,7 +1167,7 @@ async function main() {
 					remoteFiles: remoteFiles,
 				})
 			} else {
-				let templateComponent = getComponentById(msg.template.id)
+				let templateComponent = getComponentByIdAndKey(msg.template.id, msg.template.component.key)
 
 				templateComponent.remove()
 
@@ -1344,7 +1179,7 @@ async function main() {
 				})
 			}
 
-			if (currentTemplate.id === msg.template.id) {
+			if (currentTemplate.component.id === msg.template.id) {
 				let localTemplates = getLocalTemplates()
 				setDefaultTemplate(localTemplates[localTemplates.length - 1])
 			}
@@ -1388,7 +1223,7 @@ async function main() {
 		})
 
 		plugin.on('create-table-instance', async (msg) => {
-			createTableInstance(msg)
+			createTableInstance(msg.data)
 		})
 
 		plugin.command('updateTables', () => {
@@ -1441,6 +1276,8 @@ async function main() {
 						id: parts?.th?.id,
 					},
 				}
+
+				console.log(msg)
 
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})

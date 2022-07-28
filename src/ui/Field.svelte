@@ -24,41 +24,54 @@
 		});
 	})
 
+	export function convertToNumber(data) {
+	if (Number(data)) {
+		return Number(data)
+	} else {
+		return data
+	}
+}
+
 
 	const dispatch = createEventDispatcher()
 
+	const handleKeypress = (e) => {
+		valueStore.update((data) => {
+			if ((id === "columnCount" || id === "rowCount") && value.toString().trim() !== "$") {
+				if (e.which === 38 && !(value >= 50)) {
+					data[id] = value + 1
+				}
+				if (e.which === 40 && !(value <= 1)) {
+					data[id] = value - 1
+				}
+			}
+
+			return data
+		})
+	}
+
 	const handleInput = (e) => {
 
-		let origValue = value
+		let origValue = convertToNumber(value)
+
 		// in here, you can switch on type and implement
 		// whatever behaviour you need
 		value = type.match(/^(number|range)$/)
 			? +e.target.value
 			: e.target.value
 
+
+
 		if (typeof value === 'string' || value instanceof String) {
 			value = value.toUpperCase()
 		}
 
+		value = convertToNumber(value)
 
-		// if (id === "columnCount") {
-		// 	valueStore.update((data) => {
-		// 		data.tableWidth = "HUG"
-		// 		return data
-		// 	})
-		// }
-
-		if (id === "columnCount") {
-			valueStore.update((data) => {
-				// data.tableWidth = "HUG"
-
-				return data
-			})
-		}
 
 		if (id === "tableWidth") {
 
-			if (value.toUpperCase() === 'HUG') {
+			if (value.toString().toUpperCase() === 'HUG') {
 				valueStore.update((data) => {
 					data.cellWidth = data.prevCellWidth
 					return data
@@ -68,17 +81,20 @@
 				// If table width is a number
 				valueStore.update((data) => {
 
-						if (data.cellWidth.toString().toUpperCase() !== 'FILL') {
-							data.prevCellWidth = data.cellWidth
+						if (data.cellWidth.toString().trim() !== "$") {
+							if (data.cellWidth.toString().toUpperCase() !== 'FILL') {
+								data.prevCellWidth = data.cellWidth
+							}
+
+							data.cellWidth = "FILL"
+
 						}
 
-					// else {
-					// 	console.log("set previous width", data.cellWidth)
-					// 	data.prevCellWidth = data.cellWidth
-					// }
-					data.cellWidth = "FILL"
-					return data
+						return data
 				})
+
+			}
+			else if (value.trim() === "$") {
 
 			}
 			else {
@@ -93,14 +109,14 @@
 		}
 
 		if (id === "tableHeight") {
-			if (value.toUpperCase() === 'HUG') {
+			if (value.toString().toUpperCase() === 'HUG') {
 				valueStore.update((data) => {
 					data.prevCellHeight = data.cellHeight || 120
 					return data
 
 				})
 			}
-			else if (!isNaN(value)) {
+			else if (!isNaN(value) || value.trim() === "$") {
 				// valueStore.update((data) => {
 				// 	data.prevCellHeight = data.cellHeight
 				// 	data.cellHeight = "FILL"
@@ -119,7 +135,7 @@
 
 		if (id === "cellWidth") {
 
-			if (value.toUpperCase() === 'FILL') {
+			if (value.toString().toUpperCase() === 'FILL') {
 				valueStore.update((data) => {
 					if (origValue.toString().toUpperCase() !== 'FILL') {
 						data.prevCellWidth = origValue
@@ -133,6 +149,9 @@
 					data.tableWidth = "HUG"
 					return data
 				})
+			}
+			else if (value.trim() === "$") {
+
 			}
 			else {
 				value = origValue
@@ -164,7 +183,24 @@
 
 		//   if (id === "columns") {
 		valueStore.update((data) => {
-			data[id] = value
+
+			if (id === "columnCount" || id === "rowCount") {
+
+				if (value.toString().trim() === "$" || (Number.isInteger(value) && value <= 50)) {
+					data[id] = value
+				}
+				else {
+					// This updates value in UI
+					value = origValue
+					// This updates value in store
+					data[id] = origValue
+				}
+			}
+			else {
+				data[id] = value
+			}
+
+
 			return data
 		})
 
@@ -227,6 +263,6 @@
 			{min}
 			{max}
 			{step}
-			on:change={handleInput} />
+			on:change={handleInput} on:keydown={handleKeypress} />
 	</label>
 </div>

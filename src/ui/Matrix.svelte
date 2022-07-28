@@ -50,13 +50,34 @@
 		// Reset to no state
 
 		set_state("selected", [grid[0], grid[1]], false)
-		set_state("selected", [value.rowCount - 1, value.columnCount - 1])
+
+
+		set_state("selected", [value.rowCount, value.columnCount])
+
 	})
+
+	export function convertToNumber(data) {
+	if (Number(data)) {
+		return Number(data)
+	} else {
+		return data
+	}
+}
 
 	function on_load(node) {
 
-		let rowState = rowCount - 1
-		let columnState = columnCount - 1
+		rowCount = convertToNumber(rowCount)
+		columnCount = convertToNumber(columnCount)
+
+		// TODO: If input is $, then don't select matrix
+
+		let rowState = rowCount === "$" ? 8 : false || rowCount - 1
+		let columnState = columnCount === "$" ? 8 : false || columnCount - 1
+
+
+
+		// let rowState = rowCount - 1
+		// let columnState = columnCount - 1
 
 		if (rowState > 7) {
 			rowState = 7
@@ -66,27 +87,54 @@
 			columnState = 7
 		}
 
+
+
 		// Set default checked radio
 		table_state[rowState][columnState].checked = true
 
 		// Set default state
-		set_state("selected", [rowState, columnState])
+		set_state("selected", [rowCount, columnCount])
 	}
 
 	function enter(x, y) {
-		hover_end = [x, y]
+		hover_end = [x + 1, y + 1]
 		set_state("hover", hover_end)
 		// valueStore.set({ columnCount: x + 1, rowCount: y + 1 })
 	}
 
 	function leave(x, y) {
-		hover_end = [x, y]
+		hover_end = [x + 1, y + 1]
 		set_state("hover", hover_end, false)
 		// valueStore.set({ columnCount: origColumnCount, rowCount: origRowCount })
 	}
 
 	function set_state(type, end, value = true) {
 		let [x2, y2] = end
+
+		x2 = convertToNumber(x2)
+		y2 = convertToNumber(y2)
+
+		if (x2 === "$") {
+			x2 = 8
+		}
+
+		if (y2 === "$") {
+			y2 = 8
+		}
+
+		// Cap to 7
+		if (x2 > 8) {
+			x2 = 8
+		}
+
+		if (y2 > 8) {
+			y2 = 8
+		}
+
+		x2 = x2 - 1
+		y2 = y2 - 1
+
+
 
 		table_state = table_state.map((a, x) =>
 			a.map((obj, y) => {

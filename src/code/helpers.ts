@@ -1,6 +1,14 @@
 import { getPageNode, getPluginData, copyPaste } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
+export function convertToNumber(data) {
+	if (Number(data)) {
+		return Number(data)
+	} else {
+		return data
+	}
+}
+
 export function unique(array, value) {
 	return array.length === 0 || !array.some((item) => item.id === value)
 }
@@ -25,13 +33,16 @@ export async function getPublishedComponents(array) {
 	}
 }
 export async function lookForComponent(template) {
+	// FIXME: Need to take notify out because causes error in params
 	// Import component first?
 	// If fails, then look for it by id? What if same id is confused with local component?
 	// Needs to know if component is remote?
 
 	var component
 
-	var localComponent = getComponentById(template.component.id)
+	// We pass in the key, to be doubly sure it's the correct component
+	var localComponent = getComponentByIdAndKey(template.component.id, template.component.key)
+	// var localComponent = getComponentByKey(template.component.key)
 
 	try {
 		// If can find the component, and it's key is the same as the templates this assumes the node is in the file it originated from?
@@ -50,14 +61,30 @@ export async function lookForComponent(template) {
 		} catch (e) {
 			if (e.startsWith('Could not find a published component with the key')) {
 				console.log('Template: ', template)
-				figma.notify('Check component is published', { error: true })
+
+				try {
+					figma.notify('Check component is published', { error: true })
+				} catch (e) {
+					console.log(e)
+				}
 			}
 		}
 	}
 
 	return component
 }
-export function getComponentById(id) {
+
+export function isEmpty(obj) {
+	for (var prop in obj) {
+		if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+			return false
+		}
+	}
+
+	return JSON.stringify(obj) === JSON.stringify({})
+}
+
+export function getComponentByIdAndKey(id, key) {
 	// var pages = figma.root.children
 	// var component
 
@@ -76,18 +103,30 @@ export function getComponentById(id) {
 	if (node && node.type === 'COMPONENT') {
 		if (node) {
 			if (node.parent === null || node.parent.parent === null) {
-				figma.root.setPluginData('cellComponentState', 'exists')
 				return false
-			} else {
-				figma.root.setPluginData('cellComponentState', 'removed')
+			} else if (node.key === key) {
 				return node
 			}
 		} else {
-			figma.root.setPluginData('cellComponentState', 'deleted')
 			return null
 		}
 	}
 }
+
+export function getComponentById(id) {
+	var node = figma.getNodeById(id)
+
+	if (node) {
+		if (node.type === 'COMPONENT') {
+			if (node.parent === null || node.parent.parent === null) {
+				return false
+			} else {
+				return node
+			}
+		}
+	}
+}
+
 export function createPage(name) {
 	var newPage = figma.createPage()
 	newPage.name = name
@@ -138,6 +177,60 @@ export function isInsideComponent(node: SceneNode): boolean {
 	} else {
 		return false
 	}
+}
+export function move(array, from, to, replaceWith?) {
+	// Remove from array
+	let element = array.splice(from, 1)[0]
+
+	// Add to array
+	if (replaceWith) {
+		array.splice(to, 0, replaceWith)
+	} else {
+		array.splice(to, 0, element)
+	}
+
+	return array
+}
+export function daysToMilliseconds(days) {
+	// 👇️        hour  min  sec  ms
+	return days * 24 * 60 * 60 * 1000
+}
+export function onlySpaces(str) {
+	if (typeof str === 'string') {
+		return str.trim().length === 0
+	} else {
+		return false
+	}
+}
+
+export function upsert(array, cb, entry?) {
+	array.some((item, index) => {
+		let result = false
+		if (true === cb(array[index])) {
+			result = true
+			// move to top
+			if (entry) {
+				move(array, index, 0, entry)
+			} else {
+				move(array, index, 0)
+			}
+		}
+
+		return result
+	})
+
+	let matchFound = false
+	array.map((item, index) => {
+		if (true === cb(array[index])) {
+			matchFound = true
+		}
+	})
+
+	if (!matchFound) {
+		array.unshift(entry)
+	}
+
+	return array
 }
 export function getParentComponent(node: SceneNode) {
 	const parent = node.parent

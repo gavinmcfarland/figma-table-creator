@@ -3,10 +3,12 @@
         "target": "es2017",
         "typeRoots": [
             "./node_modules/@types",
-            "./node_modules/@figma"
+            "./node_modules/@figma",
+            "./typings.d.ts"
         ],
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "allowSyntheticDefaultImports": true
-    }
+        "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true
+    },
 }

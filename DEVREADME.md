@@ -1,189 +1,105 @@
-# Develpoper Readme
+# Developer Readme
 
 
 ## Table creation
 
-Table Creator uses a component create tables from. This component is refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
+Table Creator uses a component to create tables from. This component is refered to as a template. When a table is created it contains a reference to the template used to create it. Although tables are not instances of components they can be updated because they contain a reference to the template used to create them.
 
-## Document Data
+- [Nodes](#nodes)
+- [Types](#types)
+- [Functions](#functions)
+- [Commands](#commands)
 
-### File Id
+## Nodes
 
-```js
-getDocumentData('fileId')
+### TemplateNode
+
+A template node is a component with pluginData of `"template"`.
+
+```ts
+isTemplateNode()
 ```
 
-### Deafult Template
+### TableNode
 
-The currently selected template used by the plugin.
+A table created from a template, can be a frame or instance and has pluginData or `"template"`.
 
-```js
-getDocumentData('defaultTemplate')
+```ts
+isTableNode()
 ```
 
-```js
-{
-    id: "OhpMUnOGG4",
-    name: "Table 1",
-    component: {
-        id: "1:31"
-        key: "2b3dc4866208404c549c73ea0d26f1ad12e8af00"
-    },
-    file: {
-        id: "tv1E89ceMN",
-        name: "Untitled"
-    }
-}
-```
+## Functions
 
-### Previous Template
+### Recent Files
 
-The previous template the user used with the plugin.
+Returns a list of recent files which the plugin has been run on.
 
 ```js
-getDocumentData('previousTemplate')
-```
-
-```js
-{
-    id: "OhpMUnOGG4",
-    name: "Table 1",
-    component: {
-        id: "1:31"
-        key: "2b3dc4866208404c549c73ea0d26f1ad12e8af00",
-    },
-    file: {
-        id: "tv1E89ceMN",
-        name: "Untitled"
-    }
-}
-```
-
-### Local Templates (depreciated)
-
-A list of templates used by the plugin locally.
-
-```js
-getDocumentData('localTemplates')
-```
-
-```js
-[
-    {
-        id: String,
-        name: String,
-        component: {
-            id: String,
-            key: String,
-        }
-    }
-]
+getClientStorageAsync('recentFiles'): Promise<File[]>
 ```
 
 ### Remote Files
 
-A list of files stored on the `document` used by the plugin. This is so the user can select a new default template to create tables from. These files are taken from clientStorage and therefore makes one person's recent files with data visible to another user.
+Returns a list of files stored on the `document` used by the plugin. This is so one user can add a template to the current file, so other users can use that remote template to create tables from.
 
-```js
-getDocumentData('remoteFiles')
+```ts
+getDocumentData('remoteFiles'): File[]
 ```
-
-```js
-[
-    {
-        id: String,
-        name: String,
-        templates: [
-            {
-                id: String,
-                name: String,
-                component: {
-                    id: String,
-                    key: String,
-                }
-            }
-        ]
-    }
-    
-]
-```
-
-## Node Data
-
-### Template
-
-Each table contains a reference to the template used to create it. When a table is copied to another file these details can be used to import the component that's used to create the table.
-
-```js
-getPluginData(node, 'template')
-```
-
-```js
-{
-    file: {
-        id: String,
-        name: String
-    },
-    id: String,
-    name: String,
-    component: {
-        id: String,
-        key: String,
-    }
-}
-```
-
-## Client Storage
-
-### Recent Files
-
-A list of files which the plugin has been run on.
-
-```js
-getClientStorageAsync('recentFiles')
-```
-
-```js
-[
-    {
-        id: String,
-        name: String,
-        templates: [
-            {
-                id: String,
-                name: String,
-                component: {
-                    id: String,
-                    key: String,
-                }
-            }
-        ]
-    }
-    
-]
-```
-
 
 ### User Preferences
 
-The user's preferences are stored on the `client`. This avoids any preferences which may conflict with other users.
+Returns the user's preferences.
 
-```js
-getClientStorageAsync('userPreferences')
+```ts
+getClientStorageAsync('userPreferences'): Promise<object>
 ```
 
-```js
-{
-    defaultTemplate: {}
-    columnCount: 4,
-    rowCount: 4,
-    cellWidth: 100,
-    remember: true,
-    includeHeader: true,
-    columnResizing: true,
-    cellAlignment: "MIN"
-}
+### Recent Tables
+
+```ts
+getClientStorageAsync('recentTables'): Promise<TableSettings[]>
 ```
+
+### Get Default Template
+
+Determines which template is the default by checking if the template from the most recently created table exists. If it doesn't exist then it checks for a remote templates and then a local templates.
+
+```ts
+getDefaultTemplate(): Template | null
+```
+
+## Types
+
+### File
+
+```
+id: string
+name: string
+data?: [] | {}
+```
+
+### Template
+
+```
+id: string
+key: string
+file: File
+```
+
+### TableSettings
+
+```
+template?: Template
+file?: File
+matrix?: [number | '$', number | '$']
+size?: [number | 'HUG' | '$', number | 'HUG' | '$']
+cell?: [number | '$', number | '$']
+alignment?: ['MIN' | 'MAX', 'MIN' | 'MAX']
+axis?: 'ROWS' | 'COLUMNS'
+resizing?: boolean
+header?: boolean
+```
+
 
 ## Commands
 

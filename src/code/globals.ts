@@ -1,31 +1,79 @@
 import { getRemoteFilesAsync, getRecentFilesAsync } from '@fignite/helpers'
+import _ from 'underscore'
 import {
 	convertToFrame,
 	convertToComponent,
 	getPluginData,
 	getNodeIndex,
 	setPluginData,
-	setClientStorageAsync,
 	getClientStorageAsync,
 	getDocumentData,
 	setDocumentData,
 	genUID,
+	updateClientStorageAsync,
 } from '@fignite/helpers'
-import { removeChildren, getTemplateParts, genRandomId, lookForComponent, copyPasteStyle, sleep } from './helpers'
-import { updateClientStorageAsync } from './old-helpers'
+import {
+	removeChildren,
+	getTemplateParts,
+	genRandomId,
+	lookForComponent,
+	copyPasteStyle,
+	getComponentByIdAndKey,
+	isEmpty,
+	upsert,
+	convertToNumber,
+} from './helpers'
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
-	toggleColumnResizing: 'Apply or remove column resizing',
+	toggleColumnResizing: 'Apply or remove component to first row or column',
 	switchColumnsOrRows: 'Switch between using columns or rows',
 	updateTables: 'Refresh tables already created',
 }
 
-export function convertToNumber(data) {
-	if (Number(data)) {
-		return Number(data)
-	} else {
-		return data
+export async function applyTableSettings(target, source) {
+	if (source.template) {
+		await setDefaultTemplate(source.template)
+		target.template = source.template
+	}
+
+	if (source.matrix) {
+		target.matrix = upsert(target.matrix, (item) => _.isEqual(item, source.matrix), source.matrix)
+		target.matrix = target.matrix.slice(0, 4)
+	}
+
+	if (source.size) {
+		target.size = upsert(target.size, (item) => _.isEqual(item, source.size), source.size)
+		target.size = target.size.slice(0, 4)
+	}
+
+	if (source.cell) {
+		target.cell = upsert(target.cell, (item) => _.isEqual(item, source.cell), source.cell)
+		target.cell = target.cell.slice(0, 4)
+	}
+
+	if (source.alignment) {
+		target.alignment = source.alignment
+	}
+
+	target.resizing = source.resizing
+
+	if (source.header === false || source.header === true) {
+		target.header = source.header
+	}
+
+	return target
+}
+
+export function isTemplateNode(node) {
+	if (node.type === 'COMPONENT' && getPluginData('template')) {
+		return node
+	}
+}
+
+export function isTableNode(node) {
+	if (node.type === 'FRAME' || (node.type === 'INSTANCE' && getPluginData('template'))) {
+		return node
 	}
 }
 
@@ -39,16 +87,81 @@ export async function updatePluginVersion(semver) {
 
 function extractValues(objectArray) {
 	return Object.entries(objectArray).reduce(function (acc, obj) {
-		let [key, value] = obj
-		let thing
+		let [key, value]: any = obj
+		let newObj
 		// if (value.type !== 'VARIANT') {
-		thing = { [key]: value.value }
+		newObj = { [key]: value.value }
 		// }
-		return { ...acc, ...thing }
+		return { ...acc, ...newObj }
 	}, {})
 }
 
-export function createTable(templateComponent, settings, type?) {
+async function copyTemplatePart(partParent, node, index, templateSettings: TableSettings, tableSettings?: TableSettings, rowIndex?) {
+	// TODO: Copy across overrides like text, and instance swaps
+
+	// Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
+	if (templateSettings.matrix[0] !== '$') {
+		if (index > templateSettings.matrix[0] - 1) {
+			index = templateSettings.matrix[0] - 1
+		}
+	}
+
+	let templateCell = partParent.children[index]
+
+	// Copy across width
+	if (tableSettings) {
+		let cellWidth
+		if (tableSettings.cell[0] === '$') {
+			cellWidth = templateCell.width
+		} else {
+			cellWidth = tableSettings.cell[0]
+		}
+
+		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
+			node.resizeWithoutConstraints(cellWidth, node.height)
+		}
+
+		// If templateCell === FILL
+		if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
+			node.layoutGrow = 1
+		}
+
+		// If templateCell === HUG
+		if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
+			node.layoutGrow = 0
+			node.counterAxisSizingMode = 'AUTO'
+		}
+
+		// Change size of cells
+		if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
+			node.layoutGrow = 1
+		}
+	}
+
+	// // Set component properties on instances
+	// if (templateCell.componentProperties) {
+	// 	node.setProperties(extractValues(templateCell.componentProperties))
+	// }
+
+	// // Add table numbering
+	// if (rowIndex || rowIndex === 0) {
+	// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
+
+	// 	if (templateText) {
+	// 		let number = convertToNumber(templateText.characters)
+
+	// 		if (Number(number)) {
+	// 			let tableText = node.findOne((node) => node.name === 'Text')
+	// 			await figma.loadFontAsync(templateText.fontName)
+	// 			if (tableText) {
+	// 				tableText.characters = (number + rowIndex).toString()
+	// 			}
+	// 		}
+	// 	}
+	// }
+}
+
+export async function createTable(templateComponent, settings: TableSettings, type?) {
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -56,11 +169,26 @@ export function createTable(templateComponent, settings, type?) {
 	let part = getTemplateParts(templateComponent)
 	let tableInstance
 
-	if (!part.table || !part.tr || !part.td || (!part.th && settings.includeHeader)) {
+	// Santitize data
+	settings.matrix[0] = convertToNumber(settings.matrix[0])
+	settings.matrix[1] = convertToNumber(settings.matrix[1])
+	settings.size[0] = convertToNumber(settings.size[0])
+	settings.size[1] = convertToNumber(settings.size[1])
+	settings.cell[0] = convertToNumber(settings.cell[0])
+	settings.cell[1] = convertToNumber(settings.cell[1])
+
+	// Could be better. Need a way to avoid mutating original object (settings)
+	let tableSettings: TableSettings = {
+		matrix: [settings.matrix[0], settings.matrix[1]],
+		size: [settings.size[0], settings.size[1]],
+		cell: [settings.cell[0], settings.cell[1]],
+	}
+
+	if (!part.table || !part.tr || !part.td || (!part.th && settings.header)) {
 		let array = []
 		part.table ? null : array.push('table')
 		part.tr ? null : array.push('row')
-		!part.th && settings.includeHeader ? array.push('header') : null
+		!part.th && settings.header ? array.push('header') : null
 		part.td ? null : array.push('cell')
 
 		if (array.length > 1) {
@@ -70,6 +198,34 @@ export function createTable(templateComponent, settings, type?) {
 		}
 		tableInstance = false
 	} else {
+		let templateSettings: TableSettings = getTableSettings(part.table)
+
+		// Get settings from template
+		if (settings.matrix[0] === '$') {
+			tableSettings.matrix[0] = templateSettings.matrix[0]
+		}
+
+		if (settings.matrix[1] === '$') {
+			tableSettings.matrix[1] = templateSettings.matrix[1]
+		}
+
+		if (settings.size[0] === '$') {
+			tableSettings.size[0] = templateSettings.size[0]
+		}
+
+		if (settings.size[1] === '$') {
+			tableSettings.size[1] = templateSettings.size[1]
+		}
+
+		// Can't set this here because needs to happen inside template
+		// if (settings.table.cell[0][0] === '$') {
+		// 	tableSettings.table.cell[0][0] = templateSettings.table.size[0][0]
+		// }
+
+		if (settings.cell[1] === '$') {
+			tableSettings.cell[1] = templateSettings.cell[0][1]
+		}
+
 		tableInstance = convertToFrame(templateComponent.clone())
 
 		var table
@@ -112,7 +268,7 @@ export function createTable(templateComponent, settings, type?) {
 			}
 		})
 
-		if (settings.columnResizing && type !== 'COMPONENT') {
+		if (settings.resizing && type !== 'COMPONENT') {
 			// First row should be a component
 			firstRow = convertToComponent(part.tr.clone())
 			firstRow.layoutAlign = part.tr.layoutAlign
@@ -132,21 +288,26 @@ export function createTable(templateComponent, settings, type?) {
 
 		rowParent.insertChild(rowIndex, firstRow)
 
-		// Remove children which are tds and ths
-		// firstRow.findAll((node) => {
-		// 	if (node) {
-		// 		if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
-		// 			node.remove()
-		// 		}
-		// 	}
-		// })
-
 		removeChildren(firstRow)
 
 		// If height specified then make rows grow to height
 		// Change size of cells
-		if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+		if (tableSettings.size[1] && tableSettings.size[1] !== 'HUG') {
 			firstRow.layoutGrow = 1
+		}
+
+		// If Height of cell defined then resize row height
+		let cellHeight
+		if (tableSettings.cell[1] === '$') {
+			cellHeight = templateCell.height
+		} else {
+			cellHeight = tableSettings.cell[1]
+		}
+
+		if (cellHeight && cellHeight !== 'FILL' && cellHeight !== 'HUG') {
+			firstRow.resizeWithoutConstraints(firstRow.width, cellHeight)
+			firstRow.layoutGrow = 0
+			firstRow.counterAxisSizingMode = 'FIXED'
 		}
 
 		// MANDATORY PROP as can't guarentee user will or figma will honour this
@@ -154,7 +315,7 @@ export function createTable(templateComponent, settings, type?) {
 
 		// Create columns in first row
 
-		for (let i = 0; i < settings.columnCount; i++) {
+		for (let i = 0; i < tableSettings.matrix[0]; i++) {
 			var duplicateCell
 			if (part.td.type === 'COMPONENT') {
 				duplicateCell = part.td.clone()
@@ -162,32 +323,14 @@ export function createTable(templateComponent, settings, type?) {
 			if (part.td.type === 'INSTANCE') {
 				duplicateCell = part.td.mainComponent.createInstance()
 			}
-			if (settings.cellWidth && settings.cellWidth !== 'FILL') {
-				// if (settings.cellWidth === 'FILL') {
-				// 	duplicateCell.layoutGrow = 1
-				// } else {
-				// let origLayoutAlign = duplicateCell.layoutAlign
-				duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height)
-				// duplicateCell.layoutAlign = origLayoutAlign
-				// }
-			}
-
-			// Change size of cells
-			if (settings.tableWidth && settings.tableWidth !== 'HUG') {
-				duplicateCell.layoutGrow = 1
-			}
 
 			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
 
-			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
-
-			// // Set component properties on instances
-			// if (part.td.componentProperties) {
-			// 	console.log(extractValues(part.td.componentProperties))
-			// 	duplicateCell.setProperties(extractValues(part.td.componentProperties))
-			// }
-
 			firstRow.appendChild(duplicateCell)
+
+			copyTemplatePart(part.table.children[1], duplicateCell, i, templateSettings, tableSettings)
+
+			duplicateCell.primaryAxisAlignItems = settings.alignment[0]
 
 			// We want to always force the cells to stretch to height of row regardless of users settings
 			duplicateCell.layoutAlign = 'STRETCH'
@@ -197,7 +340,7 @@ export function createTable(templateComponent, settings, type?) {
 		}
 
 		// Create rest of rows
-		for (var i = 1; i < settings.rowCount; i++) {
+		for (var r = tableSettings.matrix[1] - 2; r >= 0; r--) {
 			var duplicateRow
 
 			if (firstRow.type === 'COMPONENT') {
@@ -208,12 +351,12 @@ export function createTable(templateComponent, settings, type?) {
 				duplicateRow = firstRow.clone()
 			}
 
-			if (settings.tableHeight && settings.tableHeight !== 'HUG') {
+			if (tableSettings.size[1] && tableSettings.size[1] !== 'HUG') {
 				duplicateRow.layoutGrow = 1
 			}
 
 			// If using columnResizing and header swap non headers to default cells
-			if (settings.columnResizing && type !== 'COMPONENT' && settings.includeHeader) {
+			if (settings.resizing && type !== 'COMPONENT' && settings.header) {
 				for (let i = 0; i < duplicateRow.children.length; i++) {
 					var cell = duplicateRow.children[i]
 					// cell.swapComponent(part.th)
@@ -222,11 +365,14 @@ export function createTable(templateComponent, settings, type?) {
 					cell.mainComponent = part.td.mainComponent
 					setPluginData(cell, 'elementSemantics', { is: 'td' })
 
-					// // Set component properties on instances. Doesn't need to be set when using column resizing?
+					// Set component properties on instances
 					// cell.setProperties(extractValues(part.td.componentProperties))
+
+					copyTemplatePart(part.table.children[1], cell, i, templateSettings, null, r)
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
+					cell.primaryAxisAlignItems = settings.alignment[0]
 				}
 			}
 
@@ -234,7 +380,7 @@ export function createTable(templateComponent, settings, type?) {
 		}
 
 		// Swap first row to use header cell
-		if (settings.includeHeader && part.th) {
+		if (settings.header && part.th) {
 			for (var i = 0; i < firstRow.children.length; i++) {
 				var child = firstRow.children[i]
 				// FIXME: Check if instance or main component
@@ -247,6 +393,9 @@ export function createTable(templateComponent, settings, type?) {
 				// 	child.setProperties(extractValues(part.th.componentProperties))
 				// }
 
+				// Need first row which is the header
+				copyTemplatePart(part.table.children[0], child, i, templateSettings, null, 0)
+
 				// child.mainComponent = part.th.mainComponent
 
 				cell.primaryAxisAlignItems = settings.cellAlignment
@@ -257,11 +406,19 @@ export function createTable(templateComponent, settings, type?) {
 
 		// Set width of table
 
-		if (settings.tableWidth && !(typeof settings.tableWidth === 'string')) {
-			tableInstance.resize(convertToNumber(settings.tableWidth), tableInstance.height)
+		if (tableSettings.size[0] && !(typeof tableSettings.size[0] === 'string')) {
+			tableInstance.resize(convertToNumber(tableSettings.size[0]), tableInstance.height)
 		}
-		if (settings.tableHeight && !(typeof settings.tableHeight === 'string')) {
-			tableInstance.resize(tableInstance.width, convertToNumber(settings.tableHeight))
+		if (tableSettings.size[1] && !(typeof tableSettings.size[1] === 'string')) {
+			tableInstance.resize(tableInstance.width, convertToNumber(tableSettings.size[1]))
+		}
+
+		if (tableSettings.size[0] === 'HUG') {
+			tableInstance.counterAxisSizingMode = 'AUTO'
+		}
+
+		if (tableSettings.size[1] === 'HUG') {
+			tableInstance.primaryAxisSizingMode = 'AUTO'
 		}
 
 		return tableInstance
@@ -289,138 +446,41 @@ let defaultParts = {
 	},
 }
 
-export function tableFactory(templateComponent) {
-	let parts = getTemplateParts(templateComponent)
-
-	// Find the parent of the row because row might be in another frame inside table
-	let rowParent = !parts.tr ? parts.table : parts.tr.parent
-
-	function checkForHeaderComponent() {
-		if (opts.settings.includeHeader && !opts.parts.th) {
-			figma.notify('No Header Cell component found')
-
-			// FIXME: Check for header cell sooner so table creation doesn't start
-			return
-		}
-	}
-	function checkIfTableSameAsContainer() {
-		if (parts.table.id === templateComponent.id) {
-			if (type === 'COMPONENT') {
-				table = convertToComponent(tableContainer)
-				tableContainer = table
-			} else {
-				table = tableContainer
-			}
-		} else {
-			// Remove table from template
-			tableContainer.findAll((node) => {
-				if (getPluginData(node, 'elementSemantics')?.is === 'table') {
-					node.remove()
-				}
-			})
-
-			var tableIndex = getNodeIndex(parts.table)
-
-			// Add table back to template
-			tableContainer.insertChild(tableIndex, table)
-		}
-	}
-	function createFirstRow() {
-		let firstRow
-
-		if (opts.settings.columnResizing && opts.type !== 'COMPONENT') {
-			firstRow = convertToComponent(parts.tr.clone())
-		} else {
-			firstRow = convertToFrame(parts.tr.clone())
-		}
-
-		setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
-
-		// Remove table cells from row so that they can prepopulated
-		firstRow.findAll((node) => {
-			if (node) {
-				if (getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th') {
-					node.remove()
-				}
-			}
-		})
-
-		if (tableMissing) {
-			removeChildren(firstRow)
-		}
-
-		return firstRow
-	}
-	function createColumnCells() {
-		let firstRow = createFirstRow()
-
-		// Only remove the rows
-		rowParent.findAll((node) => {
-			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-				node.remove()
-			}
-		})
-
-		// If a row part can't be found then this needs to inserted at 0
-		rowParent.insertChild(!parts.tr ? 0 : getNodeIndex(parts.tr), firstRow)
-
-		// Create columns in first row
-		for (let i = 0; i < settings.columnCount; i++) {
-			var duplicateCell
-			if (parts.td.type === 'COMPONENT') {
-				duplicateCell = parts.td.createInstance()
-			}
-			if (parts.td.type === 'INSTANCE') {
-				duplicateCell = parts.td.mainComponent.createInstance()
-			}
-			if (settings.cellWidth) {
-				// let origLayoutAlign = duplicateCell.layoutAlign
-				duplicateCell.resizeWithoutConstraints(settings.cellWidth, duplicateCell.height)
-				// duplicateCell.layoutAlign = origLayoutAlign
-			}
-
-			setPluginData(duplicateCell, 'elementSemantics', { is: 'td' })
-			// Figma doesn't automatically inherit this property
-			duplicateCell.layoutAlign = parts.td.layoutAlign
-			duplicateCell.primaryAxisAlignItems = settings.cellAlignment
-			firstRow.appendChild(duplicateCell)
-		}
-	}
-
-	// !parts.table ? (parts.table = defaultParts.table()) : null
-	// !parts.tr ? (parts.tr = defaultParts.tr()) : null
-
-	checkForHeaderComponent()
-	// checkIfTableSameAsContainer()
-	createColumnCells()
-}
-
-export function File(data?) {
-	// TODO: if fileId doesn't exist then create random ID and set fileId
-
-	this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
-	// this.name = `{figma.getNodeById("0:1").name}`
-	this.name = figma.root.name
-	if (data) this.data = data
-}
-
-export function Template(node) {
-	this.id = node.id
-	this.name = node.name
-	this.component = {
-		id: node.id,
-		key: node.key,
-	}
-	this.file = {
-		id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
-		name: figma.root.name,
+export class File {
+	id: string
+	name: string
+	data?: [] | {}
+	constructor(data?) {
+		// TODO: if fileId doesn't exist then create random ID and set fileId
+		this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
+		// this.name = `{figma.getNodeById("0:1").name}`
+		this.name = figma.root.name
+		if (data) this.data = data
 	}
 }
 
-// function getLocalTemplateComponents() {
-// 	return figma.root.findAll((node) => getPluginData(node, 'template') && node.type === 'COMPONENT')
-// }
-export function getLocalTemplateWithoutUpdating() {
+export class Template {
+	name: string
+	component: {
+		id: number
+		key: number
+	}
+	file: File
+
+	constructor(node) {
+		this.name = node.name
+		this.component = {
+			id: node.id,
+			key: node.key,
+		}
+		this.file = {
+			id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
+			name: figma.root.name,
+		}
+	}
+}
+
+export function getLocalTemplatesWithoutUpdating(): Template[] {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
@@ -430,17 +490,24 @@ export function getLocalTemplateWithoutUpdating() {
 		let node = components[i]
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
-			let obj = {}
-			obj.name = templateData.name
-			obj.data = templateData
-			templates.push(obj)
+			templateData.id = node.id
+			templateData.name = node.name
+			templateData.name = node.name
+			templateData.component.id = node.id
+			// KEY needs updating if template duplicated
+			templateData.component.key = node.key
+			// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
+			// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
+			let fileId = getDocumentData('fileId') || genUID()
+			templateData.file.id = fileId
+			templates.push(templateData)
 		}
 	}
 
 	return templates
 }
 
-export function getLocalTemplates() {
+export function getLocalTemplates(): Template[] {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
@@ -484,30 +551,85 @@ export function getLocalTemplates() {
 	return templates
 }
 
-export async function setDefaultTemplate(templateData) {
-	// Only set prevoious template if default template has been set once
-	// let previousTemplate = getDocumentData('defaultTemplate') ? getDocumentData('defaultTemplate') : null
-
+export async function setDefaultTemplate(templateData: Template): Promise<void> {
 	await getRemoteFilesAsync()
 	await getRecentFilesAsync(getLocalTemplates())
-	setDocumentData('defaultTemplate', templateData)
 
-	figma.ui.postMessage({
-		type: 'post-default-template',
-		defaultTemplate: templateData,
-		localTemplates: getLocalTemplates(),
+	let currentFileId = getDocumentData('fileId')
+
+	await updateClientStorageAsync('recentTables', (recentTables: TableSettings[]) => {
+		recentTables = recentTables || []
+		recentTables = upsert(recentTables, (item) => item.template.component.key === templateData.component.key && item.file.id === currentFileId, {
+			template: templateData,
+			file: { id: currentFileId },
+		})
+		recentTables = recentTables.slice(0, 10)
+
+		let defaultTemplate = recentTables[0].template
+
+		try {
+			figma.ui.postMessage({
+				type: 'post-default-template',
+				defaultTemplate,
+				localTemplates: getLocalTemplates(),
+			})
+		} catch (e) {
+			console.log(e)
+		}
+
+		return recentTables
 	})
-
-	// if (previousTemplate) {
-	// 	setPreviousTemplate(previousTemplate)
-	// }
 }
 
-export async function setPreviousTemplate(templateData) {
-	// await getRemoteFilesAsync()
-	// await getRecentFilesAsync(getLocalTemplates())
-	setDocumentData('previousTemplate', templateData)
-	return templateData
+export async function getDefaultTemplate(): Promise<Template> {
+	// let { table } = await getClientStorageAsync('userPreferences')
+	let recentTables = (await getClientStorageAsync('recentTables')) || []
+
+	let defaultTemplates = recentTables
+	let fileId = getDocumentData('fileId')
+
+	let defaultTemplate
+
+	if (defaultTemplates.length > 0) {
+		if (defaultTemplates[0].file.id === fileId) {
+			defaultTemplate = defaultTemplates[0].template
+		}
+	}
+
+	let localTemplates = getLocalTemplatesWithoutUpdating()
+	let remoteFiles = getDocumentData('remoteFiles')
+
+	if (defaultTemplate && !isEmpty(defaultTemplate)) {
+		if (defaultTemplate.file.id === fileId) {
+			let templateComponent = getComponentByIdAndKey(defaultTemplate.component.id, defaultTemplate.component.key)
+
+			if (!templateComponent) {
+				if (localTemplates.length > 0) {
+					defaultTemplate = localTemplates[0]
+				} else if (remoteFiles.length > 0) {
+					defaultTemplate = remoteFiles[0].data[0]
+				}
+			}
+		} else {
+			let templateComponent = await lookForComponent(defaultTemplate)
+			if (!templateComponent) {
+				if (remoteFiles.length > 0) {
+					defaultTemplate = remoteFiles[0].data[0]
+				} else if (localTemplates.length > 0) {
+					defaultTemplate = localTemplates[0]
+				}
+			}
+		}
+	} else {
+		// In the event defaultTemplate not set, but there are templates
+		if (localTemplates?.length > 0) {
+			defaultTemplate = localTemplates[0]
+		} else if (remoteFiles?.length > 0) {
+			defaultTemplate = remoteFiles[0].data[0]
+		}
+	}
+
+	return defaultTemplate
 }
 
 export async function updateTables(template) {
@@ -559,13 +681,20 @@ export async function updateTables(template) {
 	}
 }
 
-export function getTableSettings(tableNode) {
+export function getTableSettings(tableNode): TableSettings {
 	let rowCount = 0
 	let columnCount = 0
-	let usingColumnsOrRows = 'rows'
-	let tableWidth
-	let tableHeight
-	let cellAlignment
+	let usingColumnsOrRows = null
+
+	let table: TableSettings = {
+		matrix: [0, 0],
+		size: [0, 0],
+		cell: ['FILL', 'FILL'],
+		alignment: ['MIN', 'MIN'],
+		resizing: true,
+		header: true,
+		axis: 'COLUMNS',
+	}
 
 	for (let i = 0; i < tableNode.children.length; i++) {
 		var node = tableNode.children[i]
@@ -575,18 +704,17 @@ export function getTableSettings(tableNode) {
 	}
 
 	let firstRow = tableNode.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
 	let firstCell = firstRow.findOne(
 		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
 	)
 
-	cellAlignment = firstCell.primaryAxisAlignItems
-
 	if (firstRow.parent.layoutMode === 'VERTICAL') {
-		usingColumnsOrRows = 'rows'
+		usingColumnsOrRows = 'ROWS'
 	}
 
 	if (firstRow.parent.layoutMode === 'HORIZONTAL') {
-		usingColumnsOrRows = 'columns'
+		usingColumnsOrRows = 'COLUMNS'
 	}
 
 	for (let i = 0; i < firstRow.children.length; i++) {
@@ -597,27 +725,27 @@ export function getTableSettings(tableNode) {
 		}
 	}
 
-	return {
-		tableWidth: (() => {
+	table.matrix = [columnCount, rowCount]
+	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]
+	table.size = [
+		(() => {
 			if (tableNode.counterAxisSizingMode === 'AUTO') {
 				return 'HUG'
 			} else {
 				return tableNode.width
 			}
 		})(),
-		tableHeight: (() => {
+		(() => {
 			if (tableNode.primaryAxisSizingMode === 'AUTO') {
 				return 'HUG'
 			} else {
 				return tableNode.height
 			}
 		})(),
-		columnCount,
-		rowCount,
-		columnResizing: firstRow.type === 'COMPONENT' ? true : false,
-		includeHeader: getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false,
-		cellAlignment,
-		usingColumnsOrRows,
-		cellWidth: firstCell.width,
-	}
+	]
+	table.axis = usingColumnsOrRows
+	table.header = getPluginData(firstCell, 'elementSemantics')?.is === 'th' ? true : false
+	table.resizing = firstRow.type === 'COMPONENT' ? true : false
+
+	return { ...table }
 }
