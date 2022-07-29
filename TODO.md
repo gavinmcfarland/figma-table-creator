@@ -30,7 +30,14 @@
 24. Remove the component property from templates? UNCHANGED
 25. Decide how I want tableSettings to be defined DONE
 
-26. Fix bug with correct default template being selected when switching between files
+26. Fix bug with correct default template being selected when switching between files DONE
+27. Fix cell alignment bug
+
+30. Restrict table selection to template itself, or first child of template and must be a frame
+31. Check update tables work with inner table
+32. Tweak resizing and switch axes to work with inner tables. It should work on outter container and table
+33. Add support for zebra stripes
+34. Bug when setting cell width to fill (it changes table width to NaN)
 
 
 
