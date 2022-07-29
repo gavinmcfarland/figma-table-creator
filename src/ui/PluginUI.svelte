@@ -34,6 +34,7 @@
 	let rowCountField
 	let prevCellWidth
 	let prevCellHeight = 40
+	let prevTableWidth
 
 	let table
 
@@ -385,6 +386,7 @@
 			data = message
 
 
+			console.log(data.size)
 			let store = {
 				pageState,
 				selectedFile,
@@ -398,8 +400,9 @@
 				columnResizing: data.resizing,
 				tableWidth: data.size[0][0],
 				tableHeight: data.size[0][1],
-				prevCellWidth: data.cell[0][0],
-				prevCellHeight: data.prevCellHeight
+				prevCellWidth: data.cell[1][0],
+				prevCellHeight: data.prevCellHeight,
+				prevTableWidth: data.size[1][0]
 			}
 			valueStore.set(store)
 
@@ -417,6 +420,7 @@
 				tableHeight = value.tableHeight
 				prevCellWidth = value.prevCellWidth
 				prevCellHeight = value.prevCellHeight
+				prevTableWidth = value.prevTableWidth
 				data = value.data
 
 			})
@@ -866,7 +870,7 @@
 
 			<div class="text-bold SectionTitle">Cell</div>
 			<div class="field-group">
-				<Field style="width: 106px" id="cellWidth" label="W" type="text" step="1" min="1" max="1000" value={cellWidth} opts={{columnCount, cellWidth, tableWidth: columnCount * cellWidth}} />
+				<Field style="width: 106px" id="cellWidth" label="W" type="text" step="1" min="1" max="1000" value={cellWidth} opts={{columnCount, cellWidth, prevTableWidth}} />
 
 				<div class="RadioButtons" style="margin-left: 20px !important">
 					<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />

@@ -24,3 +24,11 @@ type TableSettings = {
 	resizing?: Boolean
 	header?: Boolean
 }
+
+type TableParts = {
+	container?: string
+	table: string
+	tr: string
+	td: string
+	th?: string
+}

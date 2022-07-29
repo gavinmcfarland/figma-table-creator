@@ -355,7 +355,7 @@ export function getTemplateParts(templateNode) {
 	let elements = ['tr', 'td', 'th', 'table']
 	let results = {}
 
-	// Loop though element definitions and find them in the template
+	// Loop though element definitions and find them in the template or table
 	for (let i = 0; i < elements.length; i++) {
 		let elementName = elements[i]
 		let part = templateNode.findOne((node) => {
@@ -369,8 +369,6 @@ export function getTemplateParts(templateNode) {
 		results[elementName] = part
 	}
 
-	console.log(results)
-
 	if (!results['table']) {
 		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
 			results['table'] = templateNode
@@ -378,8 +376,6 @@ export function getTemplateParts(templateNode) {
 	}
 
 	results['container'] = templateNode
-
-	console.log(results)
 
 	// // For instances assign the mainComponent as the part
 	// for (let [key, value] of Object.entries(results)) {

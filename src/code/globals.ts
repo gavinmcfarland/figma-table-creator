@@ -106,7 +106,6 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 		}
 	}
 	let templateCell = partParent.children[index]
-	console.log(templateCell.name)
 
 	if (tableSettings) {
 		if (templateCell) {
@@ -433,10 +432,11 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		if (!tableIsContainer) {
 			if (tableSettings.size[0] === 'HUG') {
+				// table.layoutAlign = 'INHERIT'
 				table.counterAxisSizingMode = 'AUTO'
 			} else {
 				table.layoutAlign = 'STRETCH'
-				table.counterAxisSizingMode = 'FIXED'
+				table.primaryAxisSizingMode = 'FIXED'
 			}
 
 			if (tableSettings.size[1] === 'HUG') {
@@ -444,7 +444,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				table.primaryAxisSizingMode = 'AUTO'
 			} else {
 				table.layoutGrow = 1
-				table.primaryAxisSizingMode = 'FIXED'
+				table.counterAxisSizingMode = 'FIXED'
 			}
 		}
 
@@ -720,14 +720,18 @@ export function getTableSettings(tableNode): TableSettings {
 		axis: 'COLUMNS',
 	}
 
-	for (let i = 0; i < tableNode.children.length; i++) {
-		var node = tableNode.children[i]
+	let templateParts = getTemplateParts(tableNode)
+
+	let tablePart = templateParts.table
+
+	for (let i = 0; i < tablePart.children.length; i++) {
+		var node = tablePart.children[i]
 		if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
 			rowCount++
 		}
 	}
 
-	let firstRow = tableNode.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+	let firstRow = tablePart.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
 	let firstCell = firstRow.findOne(
 		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
@@ -753,17 +757,17 @@ export function getTableSettings(tableNode): TableSettings {
 	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]
 	table.size = [
 		(() => {
-			if (tableNode.counterAxisSizingMode === 'AUTO') {
+			if (tablePart.counterAxisSizingMode === 'AUTO') {
 				return 'HUG'
 			} else {
-				return tableNode.width
+				return tablePart.width
 			}
 		})(),
 		(() => {
-			if (tableNode.primaryAxisSizingMode === 'AUTO') {
+			if (tablePart.primaryAxisSizingMode === 'AUTO') {
 				return 'HUG'
 			} else {
-				return tableNode.height
+				return tablePart.height
 			}
 		})(),
 	]

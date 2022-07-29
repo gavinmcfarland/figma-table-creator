@@ -178,14 +178,12 @@ function getTemplateParts(templateNode) {
 		results[elementName] = parts
 	}
 
-	console.log('results', results)
-
-	// If can't find table part, then assume container is table
-	// if (!results['table']) {
-	// 	if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
-	// 		results['table'] = templateNode
-	// 	}
-	// }
+	// If can't find table part, then check node itself is table
+	if (!results['table']) {
+		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
+			results['table'] = templateNode
+		}
+	}
 
 	// // For instances assign the mainComponent as the parts
 	// for (let [key, value] of Object.entries(results)) {
@@ -236,7 +234,6 @@ function postCurrentSelection(templateNodeId) {
 
 			figma.ui.postMessage({ type: 'current-selection', selection: selection })
 		} else {
-			console.log("don't send selection", figma.currentPage.selection[0].type)
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
 	}
@@ -432,18 +429,20 @@ function switchColumnsOrRows(selection) {
 	for (let i = 0; i < selection.length; i++) {
 		var table = selection[i]
 
-		if (getPluginData(table, 'template')) {
-			if (table.type !== 'COMPONENT') {
-				let firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+		if (getPluginData(table, 'template') || getPluginData(table, 'elementSemantics')?.is === 'table') {
+			let tableParts = getTemplateParts(table)
 
-				if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
-					table = detachTable(figma.currentPage.selection)[0]
+			if (tableParts.table.type !== 'COMPONENT') {
+				let firstRow = tableParts.table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
+				if (tableParts.table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
+					tableParts.table = detachTable(figma.currentPage.selection)[0]
 					// As it's a new table, we need to find the first row again
-					firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+					firstRow = tableParts.table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 				}
 				// else {
 
-				settings = getTableSettings(table)
+				settings = getTableSettings(tableParts.table)
 
 				if (i === 0) {
 					vectorType = settings.axis
@@ -522,7 +521,7 @@ function switchColumnsOrRows(selection) {
 
 												var clonedColumn = row.clone()
 												removeChildren(clonedColumn) // Need to remove children because they are clones
-												table.appendChild(clonedColumn)
+												tableParts.table.appendChild(clonedColumn)
 											}
 
 											if (row.parent.children[oppositeIndex]) {
@@ -572,8 +571,6 @@ function switchColumnsOrRows(selection) {
 						swapAxises(rowContainer)
 						resize(rowContainer, rowContainerObject.width, rowContainerObject.height)
 
-						rowContainer.primaryAxisSizingMode = 'AUTO'
-
 						// Because changing layout mode swaps sizingModes you need to loop children again
 						var rowlength = rowContainer.children.length
 
@@ -581,42 +578,56 @@ function switchColumnsOrRows(selection) {
 						let discardBucket = []
 
 						for (let i = 0; i < rowlength; i++) {
-							var row = rowContainer.children[i]
+							var block = rowContainer.children[i]
 
 							// This is the original object before rows are converted to columns, so may not always match new converted table
-							if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
+							if (rowContainerObject.children[i]?.layoutAlign) block.layoutAlign = rowContainerObject.children[i].layoutAlign
 
-							if (isRow(row)) {
+							// Checks if tr (could be row or column)
+							if (isRow(block)) {
 								// Settings is original settings, not new settings
 								if (settings.axis === 'COLUMNS') {
-									row.counterAxisSizingMode = 'AUTO'
-									row.layoutAlign = 'STRETCH'
+									block.counterAxisSizingMode = 'AUTO'
+									block.layoutAlign = 'STRETCH'
 
 									// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
 
-									var cells = row.children
+									var cells = block.children
 									var length = settings.axis === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
 										if (cell) {
-											if (row.parent.children[getNodeIndex(firstRow) + c]) {
+											if (block.parent.children[getNodeIndex(firstRow) + c]) {
 												cell.primaryAxisSizingMode = 'FIXED'
 												cell.layoutAlign = 'STRETCH'
 											}
 										}
 									}
+
+									if (settings.size[1] !== 'HUG') {
+										block.layoutGrow = 1
+									}
 								} else {
-									var cells = row.children
+									var cells = block.children
 									var length = settings.axis === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length
 
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
 										if (cell) {
-											if (row.parent.children[getNodeIndex(firstRow) + c]) {
+											if (block.parent.children[getNodeIndex(firstRow) + c]) {
 												// NOTE: temporary fix. Could be better
 												if (settings.size[0] === 'HUG') {
+													cell.layoutGrow = 0
+													cell.primaryAxisSizingMode = 'AUTO'
+												} else {
+													cell.layoutGrow = 1
+													cell.primaryAxisSizingMode = 'FIXED'
+												}
+
+												// If table height set to hug
+												if (settings.size[1] === 'HUG') {
 													cell.layoutGrow = 0
 													cell.primaryAxisSizingMode = 'AUTO'
 												} else {
@@ -627,15 +638,22 @@ function switchColumnsOrRows(selection) {
 										}
 									}
 
-									row.layoutAlign = 'STRETCH'
+									block.layoutAlign = 'STRETCH'
 								}
 
-								// If row ends up being empty, then assume it's not needed
-								if (row.children.length === 0) {
-									discardBucket.push(row)
+								// If block ends up being empty, then assume it's not needed
+								if (block.children.length === 0) {
+									discardBucket.push(block)
 								}
 							}
 						}
+
+						rowContainer.layoutGrow = rowContainerObject.layoutGrow
+						rowContainer.layoutAlign = rowContainerObject.layoutAlign
+
+						// Need to swap these around
+						rowContainer.primaryAxisSizingMode = rowContainerObject.counterAxisSizingMode
+						rowContainer.counterAxisSizingMode = rowContainerObject.primaryAxisSizingMode
 
 						for (let i = 0; i < discardBucket.length; i++) {
 							discardBucket[i].remove()
@@ -643,10 +661,7 @@ function switchColumnsOrRows(selection) {
 					}
 				}
 
-				if (vectorType === table.layoutMode) {
-				}
-
-				if (firstTableLayoutMode === table.layoutMode) {
+				if (firstTableLayoutMode === tableParts.table.layoutMode) {
 					iterateChildren()
 				}
 			}
@@ -656,7 +671,7 @@ function switchColumnsOrRows(selection) {
 	}
 
 	return {
-		vectorType: vectorType,
+		vectorType,
 	}
 }
 function selectTableVector(type) {
@@ -1120,7 +1135,7 @@ async function main() {
 			let { vectorType } = switchColumnsOrRows(figma.currentPage.selection)
 
 			if (vectorType) {
-				figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`)
+				figma.closePlugin(`Switched to ${vectorType === 'ROWS' ? 'columns' : 'rows'}`)
 			} else if (figma.currentPage.selection.length === 0) {
 				figma.closePlugin('Please select a table')
 			} else {
@@ -1278,8 +1293,6 @@ async function main() {
 						id: parts?.th?.id,
 					},
 				}
-
-				console.log(msg)
 
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})

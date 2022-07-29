@@ -2059,7 +2059,7 @@ function getTemplateParts$1(templateNode) {
     // find nodes with certain pluginData
     let elements = ['tr', 'td', 'th', 'table'];
     let results = {};
-    // Loop though element definitions and find them in the template
+    // Loop though element definitions and find them in the template or table
     for (let i = 0; i < elements.length; i++) {
         let elementName = elements[i];
         let part = templateNode.findOne((node) => {
@@ -2070,14 +2070,12 @@ function getTemplateParts$1(templateNode) {
         });
         results[elementName] = part;
     }
-    console.log(results);
     if (!results['table']) {
         if (getPluginData_1(templateNode, 'elementSemantics').is === 'table') {
             results['table'] = templateNode;
         }
     }
     results['container'] = templateNode;
-    console.log(results);
     // // For instances assign the mainComponent as the part
     // for (let [key, value] of Object.entries(results)) {
     // 	if (value.type === "INSTANCE") {
@@ -5029,7 +5027,6 @@ async function copyTemplatePart(partParent, node, index, templateSettings, table
         }
     }
     let templateCell = partParent.children[index];
-    console.log(templateCell.name);
     if (tableSettings) {
         if (templateCell) {
             // Copy across width
@@ -5298,11 +5295,12 @@ async function createTable(templateComponent, settings, type) {
         }
         if (!tableIsContainer) {
             if (tableSettings.size[0] === 'HUG') {
+                // table.layoutAlign = 'INHERIT'
                 table.counterAxisSizingMode = 'AUTO';
             }
             else {
                 table.layoutAlign = 'STRETCH';
-                table.counterAxisSizingMode = 'FIXED';
+                table.primaryAxisSizingMode = 'FIXED';
             }
             if (tableSettings.size[1] === 'HUG') {
                 table.layoutGrow = 0;
@@ -5310,7 +5308,7 @@ async function createTable(templateComponent, settings, type) {
             }
             else {
                 table.layoutGrow = 1;
-                table.primaryAxisSizingMode = 'FIXED';
+                table.counterAxisSizingMode = 'FIXED';
             }
         }
         return tableInstance;
@@ -5524,13 +5522,15 @@ function getTableSettings(tableNode) {
         header: true,
         axis: 'COLUMNS',
     };
-    for (let i = 0; i < tableNode.children.length; i++) {
-        var node = tableNode.children[i];
+    let templateParts = getTemplateParts$1(tableNode);
+    let tablePart = templateParts.table;
+    for (let i = 0; i < tablePart.children.length; i++) {
+        var node = tablePart.children[i];
         if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
             rowCount++;
         }
     }
-    let firstRow = tableNode.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+    let firstRow = tablePart.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
     let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
     if (firstRow.parent.layoutMode === 'VERTICAL') {
         usingColumnsOrRows = 'ROWS';
@@ -5549,19 +5549,19 @@ function getTableSettings(tableNode) {
     table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems];
     table.size = [
         (() => {
-            if (tableNode.counterAxisSizingMode === 'AUTO') {
+            if (tablePart.counterAxisSizingMode === 'AUTO') {
                 return 'HUG';
             }
             else {
-                return tableNode.width;
+                return tablePart.width;
             }
         })(),
         (() => {
-            if (tableNode.primaryAxisSizingMode === 'AUTO') {
+            if (tablePart.primaryAxisSizingMode === 'AUTO') {
                 return 'HUG';
             }
             else {
-                return tableNode.height;
+                return tablePart.height;
             }
         })(),
     ];
@@ -5905,13 +5905,12 @@ function getTemplateParts(templateNode) {
         });
         results[elementName] = parts;
     }
-    console.log('results', results);
-    // If can't find table part, then assume container is table
-    // if (!results['table']) {
-    // 	if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
-    // 		results['table'] = templateNode
-    // 	}
-    // }
+    // If can't find table part, then check node itself is table
+    if (!results['table']) {
+        if (getPluginData_1(templateNode, 'elementSemantics').is === 'table') {
+            results['table'] = templateNode;
+        }
+    }
     // // For instances assign the mainComponent as the parts
     // for (let [key, value] of Object.entries(results)) {
     // 	if (value.type === "INSTANCE") {
@@ -5956,7 +5955,6 @@ function postCurrentSelection(templateNodeId) {
             figma.ui.postMessage({ type: 'current-selection', selection: selection });
         }
         else {
-            console.log("don't send selection", figma.currentPage.selection[0].type);
             figma.ui.postMessage({ type: 'current-selection', selection: undefined });
         }
     }
@@ -6101,6 +6099,7 @@ async function toggleColumnResizing(selection) {
     return result;
 }
 function switchColumnsOrRows(selection) {
+    var _a;
     let vectorType;
     function isRow(node) {
         var _a;
@@ -6112,16 +6111,17 @@ function switchColumnsOrRows(selection) {
     let firstTableLayoutMode;
     for (let i = 0; i < selection.length; i++) {
         var table = selection[i];
-        if (getPluginData_1(table, 'template')) {
-            if (table.type !== 'COMPONENT') {
-                let firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-                if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
-                    table = detachTable(figma.currentPage.selection)[0];
+        if (getPluginData_1(table, 'template') || ((_a = getPluginData_1(table, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table') {
+            let tableParts = getTemplateParts(table);
+            if (tableParts.table.type !== 'COMPONENT') {
+                let firstRow = tableParts.table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+                if (tableParts.table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
+                    tableParts.table = detachTable(figma.currentPage.selection)[0];
                     // As it's a new table, we need to find the first row again
-                    firstRow = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+                    firstRow = tableParts.table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
                 }
                 // else {
-                settings = getTableSettings(table);
+                settings = getTableSettings(tableParts.table);
                 if (i === 0) {
                     vectorType = settings.axis;
                     if (vectorType === 'ROWS') {
@@ -6182,7 +6182,7 @@ function switchColumnsOrRows(selection) {
                                                 // If it's the first row and column doesn't exist then create a new column
                                                 var clonedColumn = row.clone();
                                                 removeChildren_1(clonedColumn); // Need to remove children because they are clones
-                                                table.appendChild(clonedColumn);
+                                                tableParts.table.appendChild(clonedColumn);
                                             }
                                             if (row.parent.children[oppositeIndex]) {
                                                 if (settings.axis === 'ROWS') {
@@ -6225,43 +6225,55 @@ function switchColumnsOrRows(selection) {
                         }
                         swapAxises(rowContainer);
                         resize_1(rowContainer, rowContainerObject.width, rowContainerObject.height);
-                        rowContainer.primaryAxisSizingMode = 'AUTO';
                         // Because changing layout mode swaps sizingModes you need to loop children again
                         var rowlength = rowContainer.children.length;
                         // For some reason can't remove nodes while in loop, so workaround is to add to an array.
                         let discardBucket = [];
                         for (let i = 0; i < rowlength; i++) {
-                            var row = rowContainer.children[i];
+                            var block = rowContainer.children[i];
                             // This is the original object before rows are converted to columns, so may not always match new converted table
                             if ((_a = rowContainerObject.children[i]) === null || _a === void 0 ? void 0 : _a.layoutAlign)
-                                row.layoutAlign = rowContainerObject.children[i].layoutAlign;
-                            if (isRow(row)) {
+                                block.layoutAlign = rowContainerObject.children[i].layoutAlign;
+                            // Checks if tr (could be row or column)
+                            if (isRow(block)) {
                                 // Settings is original settings, not new settings
                                 if (settings.axis === 'COLUMNS') {
-                                    row.counterAxisSizingMode = 'AUTO';
-                                    row.layoutAlign = 'STRETCH';
+                                    block.counterAxisSizingMode = 'AUTO';
+                                    block.layoutAlign = 'STRETCH';
                                     // We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
-                                    var cells = row.children;
+                                    var cells = block.children;
                                     var length = settings.axis === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length;
                                     for (let c = 0; c < length; c++) {
                                         var cell = cells[c];
                                         if (cell) {
-                                            if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                            if (block.parent.children[getNodeIndex_1(firstRow) + c]) {
                                                 cell.primaryAxisSizingMode = 'FIXED';
                                                 cell.layoutAlign = 'STRETCH';
                                             }
                                         }
                                     }
+                                    if (settings.size[1] !== 'HUG') {
+                                        block.layoutGrow = 1;
+                                    }
                                 }
                                 else {
-                                    var cells = row.children;
+                                    var cells = block.children;
                                     var length = settings.axis === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length;
                                     for (let c = 0; c < length; c++) {
                                         var cell = cells[c];
                                         if (cell) {
-                                            if (row.parent.children[getNodeIndex_1(firstRow) + c]) {
+                                            if (block.parent.children[getNodeIndex_1(firstRow) + c]) {
                                                 // NOTE: temporary fix. Could be better
                                                 if (settings.size[0] === 'HUG') {
+                                                    cell.layoutGrow = 0;
+                                                    cell.primaryAxisSizingMode = 'AUTO';
+                                                }
+                                                else {
+                                                    cell.layoutGrow = 1;
+                                                    cell.primaryAxisSizingMode = 'FIXED';
+                                                }
+                                                // If table height set to hug
+                                                if (settings.size[1] === 'HUG') {
                                                     cell.layoutGrow = 0;
                                                     cell.primaryAxisSizingMode = 'AUTO';
                                                 }
@@ -6272,21 +6284,25 @@ function switchColumnsOrRows(selection) {
                                             }
                                         }
                                     }
-                                    row.layoutAlign = 'STRETCH';
+                                    block.layoutAlign = 'STRETCH';
                                 }
-                                // If row ends up being empty, then assume it's not needed
-                                if (row.children.length === 0) {
-                                    discardBucket.push(row);
+                                // If block ends up being empty, then assume it's not needed
+                                if (block.children.length === 0) {
+                                    discardBucket.push(block);
                                 }
                             }
                         }
+                        rowContainer.layoutGrow = rowContainerObject.layoutGrow;
+                        rowContainer.layoutAlign = rowContainerObject.layoutAlign;
+                        // Need to swap these around
+                        rowContainer.primaryAxisSizingMode = rowContainerObject.counterAxisSizingMode;
+                        rowContainer.counterAxisSizingMode = rowContainerObject.primaryAxisSizingMode;
                         for (let i = 0; i < discardBucket.length; i++) {
                             discardBucket[i].remove();
                         }
                     }
                 }
-                if (vectorType === table.layoutMode) ;
-                if (firstTableLayoutMode === table.layoutMode) {
+                if (firstTableLayoutMode === tableParts.table.layoutMode) {
                     iterateChildren();
                 }
             }
@@ -6296,7 +6312,7 @@ function switchColumnsOrRows(selection) {
         }
     }
     return {
-        vectorType: vectorType,
+        vectorType,
     };
 }
 function selectTableVector(type) {
@@ -6682,7 +6698,7 @@ async function main() {
         plugin.command('switchColumnsOrRows', () => {
             let { vectorType } = switchColumnsOrRows(figma.currentPage.selection);
             if (vectorType) {
-                figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`);
+                figma.closePlugin(`Switched to ${vectorType === 'ROWS' ? 'columns' : 'rows'}`);
             }
             else if (figma.currentPage.selection.length === 0) {
                 figma.closePlugin('Please select a table');
@@ -6825,7 +6841,6 @@ async function main() {
                         id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
                     },
                 };
-                console.log(msg);
                 figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
             });
         });
