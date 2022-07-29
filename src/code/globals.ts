@@ -11,6 +11,8 @@ import {
 	setDocumentData,
 	genUID,
 	updateClientStorageAsync,
+	getNodeLocation,
+	replace,
 } from '@fignite/helpers'
 import {
 	removeChildren,
@@ -245,19 +247,29 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				table = tableInstance
 			}
 		} else {
-			// If not, remove the table from the container
-			tableInstance.findAll((node) => {
-				if (getPluginData(node, 'elementSemantics')?.is === 'table') {
-					node.remove()
-				}
-			})
-
 			table = part.table.clone()
 
-			var tableIndex = getNodeIndex(part.table)
+			// Because table could be inside several children we need to find its location in the template, then loop through the table instance and replace it
+			let nodeLocation = getNodeLocation(part.table, part.container)
+			nodeLocation.shift()
 
-			// Add table back to template
-			tableInstance.insertChild(tableIndex, table)
+			let nodeToReplace = tableInstance
+			for (let i = 0; i < nodeLocation.length; i++) {
+				let l = nodeLocation[i]
+
+				if (nodeToReplace.children) {
+					nodeToReplace = nodeToReplace.children[l]
+				}
+			}
+
+			// // If not, remove the table from the container
+			// tableInstance.findAll((node) => {
+			// 	if (getPluginData(node, 'elementSemantics')?.is === 'table') {
+			// 		node.remove()
+			// 	}
+			// })
+
+			replace(nodeToReplace, table)
 		}
 
 		table.layoutMode = 'VERTICAL'

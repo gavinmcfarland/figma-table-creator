@@ -665,6 +665,42 @@ function getNodeIndex(node) {
     return node.parent.children.indexOf(node);
 }
 
+/**
+ * Returns the location of the node
+ * @param {SceneNode} node A node you want the location of
+ * @param {SceneNode} container The container you would like to compare the node's location with
+ * @returns An array of node indexes. The first item is the container node
+ */
+function getNodeLocation(node, container = figma.currentPage, location = []) {
+    if (node && container) {
+        if (node.id === container.id) {
+            if (location.length > 0) {
+                location.push(container);
+                // Because nodesIndex have been captured in reverse
+                return location.reverse();
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            if (node.parent) {
+                var nodeIndex = getNodeIndex(node);
+                // if (node.parent.layoutMode == "HORIZONTAL" || node.parent.layoutMode === "VERTICAL") {
+                // 	nodeIndex = (node.parent.children.length - 1) - getNodeIndex(node)
+                // }
+                location.push(nodeIndex);
+                return getNodeLocation(node.parent, container, location);
+            }
+        }
+    }
+    else {
+        console.error("Node or container not defined");
+        return false;
+    }
+    return false;
+}
+
 const nodeToObject = (node, withoutRelations, removeConflicts) => {
     const props = Object.entries(Object.getOwnPropertyDescriptors(node.__proto__));
     const blacklist = ['parent', 'children', 'removed', 'masterComponent', 'horizontalPadding', 'verticalPadding'];
@@ -1074,6 +1110,7 @@ var genUID_1 = genUID;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getDocumentData_1 = getDocumentData;
 var getNodeIndex_1 = getNodeIndex;
+var getNodeLocation_1 = getNodeLocation;
 var getPageNode_1 = getPageNode;
 var getPluginData_1 = getPluginData;
 var getRecentFilesAsync_1 = getRecentFilesAsync;
@@ -5147,17 +5184,24 @@ async function createTable(templateComponent, settings, type) {
             }
         }
         else {
-            // If not, remove the table from the container
-            tableInstance.findAll((node) => {
-                var _a;
-                if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table') {
-                    node.remove();
-                }
-            });
             table = part.table.clone();
-            var tableIndex = getNodeIndex_1(part.table);
-            // Add table back to template
-            tableInstance.insertChild(tableIndex, table);
+            // Because table could be inside several children we need to find its location in the template, then loop through the table instance and replace it
+            let nodeLocation = getNodeLocation_1(part.table, part.container);
+            nodeLocation.shift();
+            let nodeToReplace = tableInstance;
+            for (let i = 0; i < nodeLocation.length; i++) {
+                let l = nodeLocation[i];
+                if (nodeToReplace.children) {
+                    nodeToReplace = nodeToReplace.children[l];
+                }
+            }
+            // // If not, remove the table from the container
+            // tableInstance.findAll((node) => {
+            // 	if (getPluginData(node, 'elementSemantics')?.is === 'table') {
+            // 		node.remove()
+            // 	}
+            // })
+            replace_1(nodeToReplace, table);
         }
         table.layoutMode = 'VERTICAL';
         var firstRow;
