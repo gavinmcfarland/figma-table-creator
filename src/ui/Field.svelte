@@ -73,7 +73,10 @@
 
 			if (value.toString().toUpperCase() === 'HUG') {
 				valueStore.update((data) => {
-					data.cellWidth = data.prevCellWidth
+					if (data.prevCellWidth) {
+						data.cellWidth = data.prevCellWidth
+					}
+
 					return data
 				})
 			}
@@ -134,13 +137,17 @@
 		}
 
 		if (id === "cellWidth") {
-
 			if (value.toString().toUpperCase() === 'FILL') {
 				valueStore.update((data) => {
 					if (origValue.toString().toUpperCase() !== 'FILL') {
 						data.prevCellWidth = origValue
 					}
-					data.tableWidth = opts.tableWidth
+
+					console.log(opts.prevTableWidth)
+					if (opts.prevTableWidth) {
+						data.tableWidth = opts.prevTableWidth
+					}
+
 					return data
 				})
 			}
