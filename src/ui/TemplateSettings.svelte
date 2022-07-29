@@ -26,13 +26,12 @@
 	}
 
 	function fetchTemplateParts(template) {
-		// Todo: Needs to be seperated into two
+
 		parent.postMessage({ pluginMessage: { type: "fetch-template-parts", template } }, "*")
 	}
 
 	function fetchCurrentSelection(template) {
-		// Todo: Needs to be seperated into two
-		parent.postMessage({ pluginMessage: { type: "fetch-current-selection"}, template}, "*")
+		parent.postMessage({ pluginMessage: { type: "fetch-current-selection", template } }, "*")
 	}
 
 	fetchTemplateParts(template)
@@ -88,6 +87,7 @@
 
 		if (message.type === "current-selection") {
 			currentSelection = message.selection
+
 
 			if (currentSelection) {
 
@@ -233,7 +233,7 @@
 		<div class="List" style="margin-bottom: 8px">
 			{#each parts as part, i}
 
-				<div class={currentSelection?.element === part.element ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
+				<div class={currentSelection?.element === part.element && part.id ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
 					<p title="{part.longName}" class="element">&lt;{part.element}&gt;<spa class={part.element === "th" ? "astrix" : "astrix-hide"}>*</spa></p>
 					{#if part.name}
 					<span>{part.name}</span>
@@ -241,7 +241,7 @@
 					<span class="currentSelectionName">{currentSelection ? currentSelection.name : ""}</span>
 					{/if}
 					<span class="templateButtons" style={part.name || currentSelection ? "" : "display: none;"}>
-						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i)}></span>
+						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i, template)}></span>
 					</span>
 				</div>
 

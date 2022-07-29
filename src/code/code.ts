@@ -196,7 +196,9 @@ function getTemplateParts(templateNode) {
 }
 
 function postCurrentSelection(templateNodeId) {
-	let selection
+	function isFrameORInstance(selection) {
+		return selection[0].type === 'FRAME' || selection[0].type === 'INSTANCE'
+	}
 
 	function isInsideTemplate(node) {
 		let parentComponent = node.type === 'COMPONENT' ? node : getParentComponent(node)
@@ -207,29 +209,30 @@ function postCurrentSelection(templateNodeId) {
 		}
 	}
 
-	function postSelection() {
-		if (
-			figma.currentPage.selection.length === 1 &&
-			(isInsideTemplate(figma.currentPage.selection[0]) || isTemplateNode(figma.currentPage.selection[0]))
-		) {
-			let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
-			selection = {
-				element: semanticName,
-				name: getSelectionName(figma.currentPage.selection[0]),
-				longName: (() => {
-					if (semanticName === 'table') {
-						return 'Table'
-					}
-					if (semanticName === 'tr') {
-						return 'Row'
-					}
-					if (semanticName === 'td') {
-						return 'Cell'
-					}
-					if (semanticName === 'th') {
-						return 'Header Cell'
-					}
-				})(),
+	function postSelection(selection) {
+		if (selection.length === 1 && (isInsideTemplate(selection[0]) || (isTemplateNode(selection[0]) && selection[0].id === templateNodeId))) {
+			if (isFrameORInstance(selection) || isTemplateNode(selection[0])) {
+				let semanticName = getPluginData(selection[0], 'elementSemantics')?.is
+				selection = {
+					element: semanticName,
+					name: getSelectionName(selection[0]),
+					longName: (() => {
+						if (semanticName === 'table') {
+							return 'Table'
+						}
+						if (semanticName === 'tr') {
+							return 'Row'
+						}
+						if (semanticName === 'td') {
+							return 'Cell'
+						}
+						if (semanticName === 'th') {
+							return 'Header Cell'
+						}
+					})(),
+				}
+			} else {
+				selection = null
 			}
 
 			figma.ui.postMessage({ type: 'current-selection', selection: selection })
@@ -238,10 +241,10 @@ function postCurrentSelection(templateNodeId) {
 		}
 	}
 
-	postSelection()
+	postSelection(figma.currentPage.selection)
 
 	figma.on('selectionchange', () => {
-		postSelection()
+		postSelection(figma.currentPage.selection)
 	})
 }
 
@@ -1258,7 +1261,6 @@ async function main() {
 		})
 
 		plugin.on('save-user-preferences', () => {})
-		plugin.on('fetch-template-part', () => {})
 		plugin.on('fetch-current-selection', (msg) => {
 			if (msg.template) {
 				lookForComponent(msg.template).then((templateNode) => {
@@ -1268,33 +1270,36 @@ async function main() {
 		})
 		plugin.on('fetch-template-parts', (msg) => {
 			lookForComponent(msg.template).then((templateNode) => {
-				// figma.viewport.scrollAndZoomIntoView([templateNode])
-				// figma.currentPage.selection = [templateNode]
-				let parts = getTemplateParts(templateNode)
-				let partsAsObject = {
-					table: {
-						name: getSelectionName(parts?.table),
-						element: 'table',
-						id: parts?.table?.id,
-					},
-					tr: {
-						name: getSelectionName(parts?.tr),
-						element: 'tr',
-						id: parts?.tr?.id,
-					},
-					td: {
-						name: getSelectionName(parts?.td),
-						element: 'td',
-						id: parts?.td?.id,
-					},
-					th: {
-						name: getSelectionName(parts?.th),
-						element: 'th',
-						id: parts?.th?.id,
-					},
+				function postTemplateParts(templateNode) {
+					// figma.viewport.scrollAndZoomIntoView([templateNode])
+					// figma.currentPage.selection = [templateNode]
+					let parts = getTemplateParts(templateNode)
+					let partsAsObject = {
+						table: {
+							name: getSelectionName(parts?.table),
+							element: 'table',
+							id: parts?.table?.id,
+						},
+						tr: {
+							name: getSelectionName(parts?.tr),
+							element: 'tr',
+							id: parts?.tr?.id,
+						},
+						td: {
+							name: getSelectionName(parts?.td),
+							element: 'td',
+							id: parts?.td?.id,
+						},
+						th: {
+							name: getSelectionName(parts?.th),
+							element: 'th',
+							id: parts?.th?.id,
+						},
+					}
+					figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 				}
 
-				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
+				postTemplateParts(templateNode)
 			})
 		})
 		plugin.on('upgrade-to-template', async () => {

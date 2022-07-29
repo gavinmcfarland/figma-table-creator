@@ -5159,6 +5159,7 @@ async function createTable(templateComponent, settings, type) {
             // Add table back to template
             tableInstance.insertChild(tableIndex, table);
         }
+        table.layoutMode = 'VERTICAL';
         var firstRow;
         var rowIndex = getNodeIndex_1(part.tr);
         function getRowParent() {
@@ -5166,13 +5167,14 @@ async function createTable(templateComponent, settings, type) {
             return row.parent;
         }
         var rowParent = getRowParent();
-        // Remove children which are trs
-        table.findAll((node) => {
-            var _a;
-            if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
-                node.remove();
-            }
-        });
+        // Remove all children of table
+        removeChildren(table);
+        // // Remove children which are trs
+        // table.findAll((node) => {
+        // 	if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+        // 		node.remove()
+        // 	}
+        // })
         if (settings.resizing && type !== 'COMPONENT') {
             // First row should be a component
             firstRow = convertToComponent_1(part.tr.clone());
@@ -5920,7 +5922,9 @@ function getTemplateParts(templateNode) {
     return results;
 }
 function postCurrentSelection(templateNodeId) {
-    let selection;
+    function isFrameORInstance(selection) {
+        return selection[0].type === 'FRAME' || selection[0].type === 'INSTANCE';
+    }
     function isInsideTemplate(node) {
         let parentComponent = node.type === 'COMPONENT' ? node : getParentComponent(node);
         if (isInsideComponent(node)) {
@@ -5929,38 +5933,42 @@ function postCurrentSelection(templateNodeId) {
             }
         }
     }
-    function postSelection() {
+    function postSelection(selection) {
         var _a;
-        if (figma.currentPage.selection.length === 1 &&
-            (isInsideTemplate(figma.currentPage.selection[0]) || isTemplateNode(figma.currentPage.selection[0]))) {
-            let semanticName = (_a = getPluginData_1(figma.currentPage.selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is;
-            selection = {
-                element: semanticName,
-                name: getSelectionName(figma.currentPage.selection[0]),
-                longName: (() => {
-                    if (semanticName === 'table') {
-                        return 'Table';
-                    }
-                    if (semanticName === 'tr') {
-                        return 'Row';
-                    }
-                    if (semanticName === 'td') {
-                        return 'Cell';
-                    }
-                    if (semanticName === 'th') {
-                        return 'Header Cell';
-                    }
-                })(),
-            };
+        if (selection.length === 1 && (isInsideTemplate(selection[0]) || (isTemplateNode(selection[0]) && selection[0].id === templateNodeId))) {
+            if (isFrameORInstance(selection) || isTemplateNode(selection[0])) {
+                let semanticName = (_a = getPluginData_1(selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is;
+                selection = {
+                    element: semanticName,
+                    name: getSelectionName(selection[0]),
+                    longName: (() => {
+                        if (semanticName === 'table') {
+                            return 'Table';
+                        }
+                        if (semanticName === 'tr') {
+                            return 'Row';
+                        }
+                        if (semanticName === 'td') {
+                            return 'Cell';
+                        }
+                        if (semanticName === 'th') {
+                            return 'Header Cell';
+                        }
+                    })(),
+                };
+            }
+            else {
+                selection = null;
+            }
             figma.ui.postMessage({ type: 'current-selection', selection: selection });
         }
         else {
             figma.ui.postMessage({ type: 'current-selection', selection: undefined });
         }
     }
-    postSelection();
+    postSelection(figma.currentPage.selection);
     figma.on('selectionchange', () => {
-        postSelection();
+        postSelection(figma.currentPage.selection);
     });
 }
 function selectTableCells(direction) {
@@ -6805,7 +6813,6 @@ async function main() {
             });
         });
         plugin.on('save-user-preferences', () => { });
-        plugin.on('fetch-template-part', () => { });
         plugin.on('fetch-current-selection', (msg) => {
             if (msg.template) {
                 lookForComponent(msg.template).then((templateNode) => {
@@ -6815,33 +6822,36 @@ async function main() {
         });
         plugin.on('fetch-template-parts', (msg) => {
             lookForComponent(msg.template).then((templateNode) => {
-                var _a, _b, _c, _d;
-                // figma.viewport.scrollAndZoomIntoView([templateNode])
-                // figma.currentPage.selection = [templateNode]
-                let parts = getTemplateParts(templateNode);
-                let partsAsObject = {
-                    table: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.table),
-                        element: 'table',
-                        id: (_a = parts === null || parts === void 0 ? void 0 : parts.table) === null || _a === void 0 ? void 0 : _a.id,
-                    },
-                    tr: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.tr),
-                        element: 'tr',
-                        id: (_b = parts === null || parts === void 0 ? void 0 : parts.tr) === null || _b === void 0 ? void 0 : _b.id,
-                    },
-                    td: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.td),
-                        element: 'td',
-                        id: (_c = parts === null || parts === void 0 ? void 0 : parts.td) === null || _c === void 0 ? void 0 : _c.id,
-                    },
-                    th: {
-                        name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
-                        element: 'th',
-                        id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
-                    },
-                };
-                figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
+                function postTemplateParts(templateNode) {
+                    var _a, _b, _c, _d;
+                    // figma.viewport.scrollAndZoomIntoView([templateNode])
+                    // figma.currentPage.selection = [templateNode]
+                    let parts = getTemplateParts(templateNode);
+                    let partsAsObject = {
+                        table: {
+                            name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.table),
+                            element: 'table',
+                            id: (_a = parts === null || parts === void 0 ? void 0 : parts.table) === null || _a === void 0 ? void 0 : _a.id,
+                        },
+                        tr: {
+                            name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.tr),
+                            element: 'tr',
+                            id: (_b = parts === null || parts === void 0 ? void 0 : parts.tr) === null || _b === void 0 ? void 0 : _b.id,
+                        },
+                        td: {
+                            name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.td),
+                            element: 'td',
+                            id: (_c = parts === null || parts === void 0 ? void 0 : parts.td) === null || _c === void 0 ? void 0 : _c.id,
+                        },
+                        th: {
+                            name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
+                            element: 'th',
+                            id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
+                        },
+                    };
+                    figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
+                }
+                postTemplateParts(templateNode);
             });
         });
         plugin.on('upgrade-to-template', async () => {

@@ -260,6 +260,8 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			tableInstance.insertChild(tableIndex, table)
 		}
 
+		table.layoutMode = 'VERTICAL'
+
 		var firstRow
 		var rowIndex = getNodeIndex(part.tr)
 		function getRowParent() {
@@ -270,12 +272,15 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		var rowParent = getRowParent()
 
-		// Remove children which are trs
-		table.findAll((node) => {
-			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-				node.remove()
-			}
-		})
+		// Remove all children of table
+		removeChildren(table)
+
+		// // Remove children which are trs
+		// table.findAll((node) => {
+		// 	if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+		// 		node.remove()
+		// 	}
+		// })
 
 		if (settings.resizing && type !== 'COMPONENT') {
 			// First row should be a component

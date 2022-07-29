@@ -2237,7 +2237,7 @@ var ui = (function () {
     			}
     		},
     		p(ctx, dirty) {
-    			if (dirty & /*currentSelection, parts, addRemoveElement*/ 42) {
+    			if (dirty & /*currentSelection, parts, addRemoveElement, template*/ 43) {
     				each_value = /*parts*/ ctx[1];
     				let i;
 
@@ -2388,7 +2388,7 @@ var ui = (function () {
     			? ""
     			: "display: none;");
 
-    			attr(div, "class", div_class_value = /*currentSelection*/ ctx[3]?.element === /*part*/ ctx[15].element
+    			attr(div, "class", div_class_value = /*currentSelection*/ ctx[3]?.element === /*part*/ ctx[15].element && /*part*/ ctx[15].id
     			? "ListItem currentlySelected"
     			: "ListItem");
     		},
@@ -2452,7 +2452,7 @@ var ui = (function () {
     				attr(span1, "style", span1_style_value);
     			}
 
-    			if (dirty & /*currentSelection, parts*/ 10 && div_class_value !== (div_class_value = /*currentSelection*/ ctx[3]?.element === /*part*/ ctx[15].element
+    			if (dirty & /*currentSelection, parts*/ 10 && div_class_value !== (div_class_value = /*currentSelection*/ ctx[3]?.element === /*part*/ ctx[15].element && /*part*/ ctx[15].id
     			? "ListItem currentlySelected"
     			: "ListItem")) {
     				attr(div, "class", div_class_value);
@@ -2652,7 +2652,6 @@ var ui = (function () {
     }
 
     function fetchTemplateParts(template) {
-    	// Todo: Needs to be seperated into two
     	parent.postMessage(
     		{
     			pluginMessage: { type: "fetch-template-parts", template }
@@ -2662,11 +2661,12 @@ var ui = (function () {
     }
 
     function fetchCurrentSelection(template) {
-    	// Todo: Needs to be seperated into two
     	parent.postMessage(
     		{
-    			pluginMessage: { type: "fetch-current-selection" },
-    			template
+    			pluginMessage: {
+    				type: "fetch-current-selection",
+    				template
+    			}
     		},
     		"*"
     	);
