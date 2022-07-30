@@ -386,7 +386,7 @@
 			data = message
 
 
-			console.log(data.size)
+
 			let store = {
 				pageState,
 				selectedFile,
@@ -400,11 +400,11 @@
 				columnResizing: data.resizing,
 				tableWidth: data.size[0][0],
 				tableHeight: data.size[0][1],
-				prevCellWidth: data.cell[1][0],
-				prevCellHeight: data.prevCellHeight,
-				prevTableWidth: data.size[1][0]
+				prevCellWidth: data.cell[1] ? data.cell[1][0] : data.cell[0][0],
+				prevTableWidth: data.size[1] ? data.size[1][0] : data.size[0][0]
 			}
 			valueStore.set(store)
+
 
 			valueStore.subscribe((value) => {
 				selectedFile = value.selectedFile
@@ -428,8 +428,10 @@
 
 			if (data.pluginVersion === "7.0.0") {
 
+
 				// If localTemplates or remoteFiles exist then show create table page
-				if ((data.localTemplates.length > 0 || data.remoteFiles.length > 0) && !data.pluginUsingOldComponents) {
+
+				if ((data.localTemplates.length > 0 || data.remoteFiles.length > 0) && !data.pluginUsingOldComponents && data.defaultTemplate) {
 					setActivePage("createTablePageActive")
 					updateSelectedTemplate(data)
 					updateSelectedFile(data)
