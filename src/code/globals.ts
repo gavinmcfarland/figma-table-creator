@@ -100,13 +100,14 @@ function extractValues(objectArray) {
 
 async function copyTemplatePart(partParent, node, index, templateSettings: TableSettings, tableSettings?: TableSettings, rowIndex?) {
 	// TODO: Copy across overrides like text, and instance swaps
-
+	console.log('b ', index, templateSettings.matrix[0])
 	// Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
 	if (templateSettings.matrix[0] !== '$') {
 		if (index > templateSettings.matrix[0] - 1) {
 			index = templateSettings.matrix[0] - 1
 		}
 	}
+	console.log('a ', index)
 	let templateCell = partParent.children[index]
 
 	if (tableSettings) {
@@ -206,6 +207,8 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 	} else {
 		let templateSettings: TableSettings = getTableSettings(part.table)
 
+		console.log(templateSettings)
+
 		// Get settings from template
 		if (settings.matrix[0] === '$') {
 			tableSettings.matrix[0] = templateSettings.matrix[0]
@@ -275,7 +278,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 		table.layoutMode = 'VERTICAL'
 
 		var firstRow
-		var rowIndex = getNodeIndex(part.tr)
 		function getRowParent() {
 			var row = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
@@ -312,7 +314,9 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 		}
 
-		rowParent.insertChild(rowIndex, firstRow)
+		console.log(part.tr)
+
+		rowParent.appendChild(firstRow)
 
 		removeChildren(firstRow)
 
@@ -393,7 +397,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 					// Set component properties on instances
 					// cell.setProperties(extractValues(part.td.componentProperties))
-
 					copyTemplatePart(part.table.children[1], cell, i, templateSettings, tableSettings, r)
 
 					// Needs to be applied here too
@@ -402,8 +405,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 					cell.primaryAxisAlignItems = settings.alignment[0]
 				}
 			}
-
-			rowParent.insertChild(rowIndex + 1, duplicateRow)
+			rowParent.appendChild(duplicateRow)
 		}
 
 		// Swap first row to use header cell
@@ -762,13 +764,17 @@ export function getTableSettings(tableNode): TableSettings {
 		usingColumnsOrRows = 'COLUMNS'
 	}
 
-	for (let i = 0; i < firstRow.children.length; i++) {
-		var node = firstRow.children[i]
-		var cellType = getPluginData(node, 'elementSemantics')?.is
-		if (cellType === 'td' || cellType === 'th') {
-			columnCount++
-		}
-	}
+	// for (let i = 0; i < firstRow.children.length; i++) {
+	// 	var node = firstRow.children[i]
+	// 	var cellType = getPluginData(node, 'elementSemantics')?.is
+	// 	if (cellType === 'td' || cellType === 'th') {
+	// 		columnCount++
+	// 	}
+	// }
+
+	// This option avoids relying on counting nodes inside row which have semantic data because difficult to guarentee that all elements will be marked
+
+	columnCount = firstRow.children.length - 1
 
 	table.matrix = [columnCount, rowCount]
 	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]

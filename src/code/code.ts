@@ -103,8 +103,11 @@ function addTemplateToRemoteFiles(node) {
 
 function addElement(element) {
 	let node = figma.currentPage.selection[0]
+
 	if (node.type === 'INSTANCE') {
-		setPluginData(node.mainComponent, 'elementSemantics', { is: element })
+		// Set node itself because difficult setting main component when using component set and component props
+		setPluginData(node, 'elementSemantics', { is: element })
+		// setPluginData(node.mainComponent, 'elementSemantics', { is: element })
 		// TODO: Add relaunch data for selecting row or column if td
 	} else {
 		setPluginData(node, 'elementSemantics', { is: element })
@@ -118,6 +121,7 @@ function removeElement(nodeId, element) {
 	templateContainer.findAll((node) => {
 		if (getPluginData(node, 'elementSemantics')?.is === element) {
 			if (node.type === 'INSTANCE') {
+				setPluginData(node, 'elementSemantics', '')
 				setPluginData(node.mainComponent, 'elementSemantics', '')
 			} else {
 				setPluginData(node, 'elementSemantics', '')
@@ -196,6 +200,7 @@ function getTemplateParts(templateNode) {
 }
 
 function postCurrentSelection(templateNodeId) {
+	let selectionToSend
 	function isFrameORInstance(selection) {
 		return selection[0].type === 'FRAME' || selection[0].type === 'INSTANCE'
 	}
@@ -213,7 +218,19 @@ function postCurrentSelection(templateNodeId) {
 		if (selection.length === 1 && (isInsideTemplate(selection[0]) || (isTemplateNode(selection[0]) && selection[0].id === templateNodeId))) {
 			if (isFrameORInstance(selection) || isTemplateNode(selection[0])) {
 				let semanticName = getPluginData(selection[0], 'elementSemantics')?.is
-				selection = {
+				let allow = []
+
+				if (isTemplateNode(selection[0]) || isTemplateNode(selection[0].parent)) {
+					allow.push('table')
+				}
+
+				if (!isTemplateNode(selection[0])) {
+					allow.push('tr')
+					allow.push('td')
+					allow.push('th')
+				}
+
+				selectionToSend = {
 					element: semanticName,
 					name: getSelectionName(selection[0]),
 					longName: (() => {
@@ -230,15 +247,17 @@ function postCurrentSelection(templateNodeId) {
 							return 'Header Cell'
 						}
 					})(),
+					allow,
 				}
 			} else {
-				selection = null
+				selectionToSend = null
 			}
 
-			figma.ui.postMessage({ type: 'current-selection', selection: selection })
+			figma.ui.postMessage({ type: 'current-selection', selection: selectionToSend })
 		} else {
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
+		console.log('send selection', selectionToSend)
 	}
 
 	postSelection(figma.currentPage.selection)

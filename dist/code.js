@@ -5057,12 +5057,14 @@ function extractValues(objectArray) {
 }
 async function copyTemplatePart(partParent, node, index, templateSettings, tableSettings, rowIndex) {
     // TODO: Copy across overrides like text, and instance swaps
+    console.log('b ', index, templateSettings.matrix[0]);
     // Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
     if (templateSettings.matrix[0] !== '$') {
         if (index > templateSettings.matrix[0] - 1) {
             index = templateSettings.matrix[0] - 1;
         }
     }
+    console.log('a ', index);
     let templateCell = partParent.children[index];
     if (tableSettings) {
         if (templateCell) {
@@ -5149,6 +5151,7 @@ async function createTable(templateComponent, settings, type) {
     }
     else {
         let templateSettings = getTableSettings(part.table);
+        console.log(templateSettings);
         // Get settings from template
         if (settings.matrix[0] === '$') {
             tableSettings.matrix[0] = templateSettings.matrix[0];
@@ -5205,7 +5208,6 @@ async function createTable(templateComponent, settings, type) {
         }
         table.layoutMode = 'VERTICAL';
         var firstRow;
-        var rowIndex = getNodeIndex_1(part.tr);
         function getRowParent() {
             var row = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
             return row.parent;
@@ -5236,7 +5238,8 @@ async function createTable(templateComponent, settings, type) {
             firstRow = convertToFrame_1(part.tr.clone());
             setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
         }
-        rowParent.insertChild(rowIndex, firstRow);
+        console.log(part.tr);
+        rowParent.appendChild(firstRow);
         removeChildren(firstRow);
         // If height specified then make rows grow to height
         // Change size of cells
@@ -5306,7 +5309,7 @@ async function createTable(templateComponent, settings, type) {
                     cell.primaryAxisAlignItems = settings.alignment[0];
                 }
             }
-            rowParent.insertChild(rowIndex + 1, duplicateRow);
+            rowParent.appendChild(duplicateRow);
         }
         // Swap first row to use header cell
         if (settings.header && part.th) {
@@ -5555,7 +5558,7 @@ async function updateTables(template) {
     }
 }
 function getTableSettings(tableNode) {
-    var _a, _b, _c;
+    var _a, _b;
     let rowCount = 0;
     let columnCount = 0;
     let usingColumnsOrRows = null;
@@ -5584,13 +5587,15 @@ function getTableSettings(tableNode) {
     if (firstRow.parent.layoutMode === 'HORIZONTAL') {
         usingColumnsOrRows = 'COLUMNS';
     }
-    for (let i = 0; i < firstRow.children.length; i++) {
-        var node = firstRow.children[i];
-        var cellType = (_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
-        if (cellType === 'td' || cellType === 'th') {
-            columnCount++;
-        }
-    }
+    // for (let i = 0; i < firstRow.children.length; i++) {
+    // 	var node = firstRow.children[i]
+    // 	var cellType = getPluginData(node, 'elementSemantics')?.is
+    // 	if (cellType === 'td' || cellType === 'th') {
+    // 		columnCount++
+    // 	}
+    // }
+    // This option avoids relying on counting nodes inside row which have semantic data because difficult to guarentee that all elements will be marked
+    columnCount = firstRow.children.length - 1;
     table.matrix = [columnCount, rowCount];
     table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems];
     table.size = [
@@ -5612,7 +5617,7 @@ function getTableSettings(tableNode) {
         })(),
     ];
     table.axis = usingColumnsOrRows;
-    table.header = ((_c = getPluginData_1(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false;
+    table.header = ((_b = getPluginData_1(firstCell, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th' ? true : false;
     table.resizing = firstRow.type === 'COMPONENT' ? true : false;
     return Object.assign({}, table);
 }
@@ -5882,7 +5887,9 @@ function addTemplateToRemoteFiles(node) {
 function addElement(element) {
     let node = figma.currentPage.selection[0];
     if (node.type === 'INSTANCE') {
-        setPluginData_1(node.mainComponent, 'elementSemantics', { is: element });
+        // Set node itself because difficult setting main component when using component set and component props
+        setPluginData_1(node, 'elementSemantics', { is: element });
+        // setPluginData(node.mainComponent, 'elementSemantics', { is: element })
         // TODO: Add relaunch data for selecting row or column if td
     }
     else {
@@ -5896,6 +5903,7 @@ function removeElement(nodeId, element) {
         var _a;
         if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === element) {
             if (node.type === 'INSTANCE') {
+                setPluginData_1(node, 'elementSemantics', '');
                 setPluginData_1(node.mainComponent, 'elementSemantics', '');
             }
             else {
@@ -5966,6 +5974,7 @@ function getTemplateParts(templateNode) {
     return results;
 }
 function postCurrentSelection(templateNodeId) {
+    let selectionToSend;
     function isFrameORInstance(selection) {
         return selection[0].type === 'FRAME' || selection[0].type === 'INSTANCE';
     }
@@ -5982,7 +5991,16 @@ function postCurrentSelection(templateNodeId) {
         if (selection.length === 1 && (isInsideTemplate(selection[0]) || (isTemplateNode(selection[0]) && selection[0].id === templateNodeId))) {
             if (isFrameORInstance(selection) || isTemplateNode(selection[0])) {
                 let semanticName = (_a = getPluginData_1(selection[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is;
-                selection = {
+                let allow = [];
+                if (isTemplateNode(selection[0]) || isTemplateNode(selection[0].parent)) {
+                    allow.push('table');
+                }
+                if (!isTemplateNode(selection[0])) {
+                    allow.push('tr');
+                    allow.push('td');
+                    allow.push('th');
+                }
+                selectionToSend = {
                     element: semanticName,
                     name: getSelectionName(selection[0]),
                     longName: (() => {
@@ -5999,16 +6017,18 @@ function postCurrentSelection(templateNodeId) {
                             return 'Header Cell';
                         }
                     })(),
+                    allow,
                 };
             }
             else {
-                selection = null;
+                selectionToSend = null;
             }
-            figma.ui.postMessage({ type: 'current-selection', selection: selection });
+            figma.ui.postMessage({ type: 'current-selection', selection: selectionToSend });
         }
         else {
             figma.ui.postMessage({ type: 'current-selection', selection: undefined });
         }
+        console.log('send selection', selectionToSend);
     }
     postSelection(figma.currentPage.selection);
     figma.on('selectionchange', () => {

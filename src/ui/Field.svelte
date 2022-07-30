@@ -143,7 +143,6 @@
 						data.prevCellWidth = origValue
 					}
 
-					console.log(opts.prevTableWidth)
 					if (opts.prevTableWidth) {
 						data.tableWidth = opts.prevTableWidth
 					}

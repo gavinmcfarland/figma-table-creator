@@ -385,8 +385,6 @@
 		if (message.type === "show-create-table-ui") {
 			data = message
 
-
-			console.log(data.size)
 			let store = {
 				pageState,
 				selectedFile,

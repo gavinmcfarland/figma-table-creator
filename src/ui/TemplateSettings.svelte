@@ -63,7 +63,7 @@
 			artworkTarget.classList.remove('not-taken')
 			// artworkTarget.classList.remove('add')
 			parent.postMessage({ pluginMessage: { type: "add-element", element } }, "*")
-
+			console.log("add element")
 		}
 		else {
 			parts[i].name = undefined
@@ -238,9 +238,9 @@
 					{#if part.name}
 					<span>{part.name}</span>
 					{:else}
-					<span class="currentSelectionName">{currentSelection ? currentSelection.name : ""}</span>
+					<span class="currentSelectionName">{currentSelection && currentSelection?.allow?.includes(part.element) ? currentSelection.name : ""}</span>
 					{/if}
-					<span class="templateButtons" style={part.name || currentSelection ? "" : "display: none;"}>
+					<span class="templateButtons" style={part.name || currentSelection && currentSelection?.allow?.includes(part.element) ? "" : "display: none;"}>
 						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i, template)}></span>
 					</span>
 				</div>
