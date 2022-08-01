@@ -638,7 +638,9 @@ export async function getDefaultTemplate(): Promise<Template> {
 
 	if (defaultTemplates.length > 0) {
 		let lastTemplateUsedWithFile = defaultTemplates.find((item) => item.file.id === fileId)
-		defaultTemplate = lastTemplateUsedWithFile.template
+		if (lastTemplateUsedWithFile) {
+			defaultTemplate = lastTemplateUsedWithFile.template
+		}
 	}
 
 	let localTemplates = getLocalTemplatesWithoutUpdating()

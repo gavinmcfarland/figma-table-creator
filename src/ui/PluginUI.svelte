@@ -398,9 +398,8 @@
 				columnResizing: data.resizing,
 				tableWidth: data.size[0][0],
 				tableHeight: data.size[0][1],
-				prevCellWidth: data.cell[1][0],
-				prevCellHeight: data.prevCellHeight,
-				prevTableWidth: data.size[1][0]
+				prevCellWidth: data.cell[1] ? data.cell[1][0] : data.cell[0][0],
+				prevTableWidth: data.size[1] ? data.size[1][0] : data.size[0][0]
 			}
 			valueStore.set(store)
 
