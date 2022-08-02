@@ -975,7 +975,7 @@ async function getRecentFilesAsync(fileData, opts) {
                         }
                     }
                 });
-                // Sort by firstVisitedByPlugin
+                // Sort by lastVisisted
                 recentFiles.sort((a, b) => {
                     if (a.lastVisited === b.lastVisited)
                         return 0;
@@ -994,6 +994,9 @@ async function getRecentFilesAsync(fileData, opts) {
                             }
                         }
                     });
+                }
+                if (opts.limit) {
+                    recentFiles = recentFiles.slice(0, opts.limit);
                 }
             }
         }
@@ -1989,10 +1992,6 @@ function move(array, from, to, replaceWith) {
         array.splice(to, 0, element);
     }
     return array;
-}
-function daysToMilliseconds(days) {
-    // 👇️        hour  min  sec  ms
-    return days * 24 * 60 * 60 * 1000;
 }
 function upsert(array, cb, entry) {
     array.some((item, index) => {
@@ -6415,7 +6414,7 @@ async function createTableUI() {
     // Whenever plugin run
     const localTemplates = getLocalTemplates();
     // Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-    var recentFiles = await getRecentFilesAsync_1(localTemplates, { expire: daysToMilliseconds(7) });
+    var recentFiles = await getRecentFilesAsync_1(localTemplates, { limit: 6 });
     var remoteFiles = await getRemoteFilesAsync_1();
     // Show create table UI
     let pluginVersion = await getClientStorageAsync_1('pluginVersion');

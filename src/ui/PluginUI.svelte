@@ -487,18 +487,11 @@
 	<div class="container choose-library" style="padding: var(--size-100) var(--size-200)">
 
 		{#if data.recentFiles.length > 0}
-		<p class="description">Choose library to add</p>
-		<div class="List">
-			{#each data.recentFiles as file}
-				{#if showToggles}
-				<div class="ListItem" on:click={(event) => {
-					updateSelectedFile(data, file)
-					usingRemoteTemplate(true)
-					setDefaultTemplate(file.data[0], data)
-					addRemoteFile(file)
-					setActivePage("createTablePageActive")
-				}}><span>{file.name}</span></div>
-				{:else}
+		<div class="main-content">
+			<p class="title2">Recent files</p>
+			<div class="List">
+				{#each data.recentFiles as file}
+					{#if showToggles}
 					<div class="ListItem" on:click={(event) => {
 						updateSelectedFile(data, file)
 						usingRemoteTemplate(true)
@@ -506,13 +499,26 @@
 						addRemoteFile(file)
 						setActivePage("createTablePageActive")
 					}}><span>{file.name}</span></div>
-				{/if}
+					{:else}
+						<div class="ListItem" on:click={(event) => {
+							updateSelectedFile(data, file)
+							usingRemoteTemplate(true)
+							setDefaultTemplate(file.data[0], data)
+							addRemoteFile(file)
+							setActivePage("createTablePageActive")
+						}}><span>{file.name}</span></div>
+					{/if}
 
-			{/each}
+				{/each}
+			</div>
+			<p class="description">Once the library is linked to this file, others will be able to use the templates from that library with this file. The templates in the library must be published.</p>
 		</div>
 		{:else}
-		<p>To use a template from a library, create a template in another file and publish the components.</p>
+		<div class="content">
+			<p>Files recently visited by the plugin will appear hear. To use a template from a team library, run the plugin in the file where the templates exist and make sure the template has been published.</p>
+		</div>
 		{/if}
+
 
 		{#if showToggles}
 		<div class="BottomBar">
@@ -688,18 +694,18 @@
 			<h6>Get started</h6>
 
 			{#if data.recentFiles.length > 0}
-				<p>Create a new template or use an existing template from a library.</p>
+				<p>Create a new template or use a template from a library by linking it to this file.</p>
 			{:else}
 				<p>Begin by creating a new template to create tables from.</p>
 			{/if}
 
 
 			<div class="buttons new-template">
-				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New template</Button></span>
+				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New Template</Button></span>
 				{#if data.recentFiles.length > 0}
 					<span on:click={() => {
 						chooseRemoteTemplate()
-						}}><Button classes="secondary">Existing Template</Button></span>
+						}}><Button classes="secondary">Link Library</Button></span>
 				{/if}
 			</div>
 		</div>
@@ -765,7 +771,7 @@
 														getDropdown('tooltip').close()
 														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 														chooseRemoteTemplate({entry: "MANAGE_LIBRARIES"})
-														}} for="linkLibrary">Add Library</label>
+														}} for="linkLibrary">Link Library</label>
 												</div>
 
 
@@ -892,6 +898,10 @@
 {/if}
 
 <style global>
+
+	.main-content {
+		margin-bottom: 48px;
+	}
 
 	.welcomePage .buttons .button {
 		margin-top: var(--margin-150);
@@ -1316,6 +1326,9 @@
 		border-bottom-right-radius: 2px;
 	}
 
+	.title2 {
+		font-weight: bold;
+	}
 
 
 	.Title {
@@ -1479,7 +1492,7 @@
 
 	.List {
 		margin-top: 8px;
-		margin-bottom: 48px;
+		margin-bottom: 8px;
 	}
 
 	.ListItem {
