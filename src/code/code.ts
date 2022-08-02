@@ -21,6 +21,7 @@ import {
 	incrementName,
 	removeRemoteFile,
 	setClientStoragAsync,
+	getNodeDepth,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -51,6 +52,7 @@ import {
 	getLocalTemplatesWithoutUpdating,
 	getDefaultTemplate,
 	applyTableSettings,
+	isTemplateNode,
 } from './globals'
 import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
@@ -102,7 +104,9 @@ function addTemplateToRemoteFiles(node) {
 
 function addElement(element) {
 	let node = figma.currentPage.selection[0]
+
 	if (node.type === 'INSTANCE') {
+		// Set node itself because difficult setting main component when using component set and component props
 		setPluginData(node.mainComponent, 'elementSemantics', { is: element })
 		// TODO: Add relaunch data for selecting row or column if td
 	} else {
@@ -177,6 +181,7 @@ function getTemplateParts(templateNode) {
 		results[elementName] = parts
 	}
 
+	// If can't find table part, then check node itself is table
 	if (!results['table']) {
 		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
 			results['table'] = templateNode
@@ -194,55 +199,75 @@ function getTemplateParts(templateNode) {
 }
 
 function postCurrentSelection(templateNodeId) {
-	let selection
+	let selectionToSend
+	function isFrameORInstance(selection) {
+		return selection[0].type === 'FRAME' || selection[0].type === 'INSTANCE'
+	}
 
 	function isInsideTemplate(node) {
 		let parentComponent = node.type === 'COMPONENT' ? node : getParentComponent(node)
-		if ((isInsideComponent(node) || node.type === 'COMPONENT') && parentComponent) {
+		if (isInsideComponent(node)) {
 			if (getPluginData(parentComponent, 'template') && parentComponent.id === templateNodeId) {
 				return true
 			}
 		}
 	}
 
-	function postSelection() {
-		let sel = figma.currentPage.selection[0]
+	function postSelection(selection) {
+		if (selection.length === 1 && (isInsideTemplate(selection[0]) || (isTemplateNode(selection[0]) && selection[0].id === templateNodeId))) {
+			if (isFrameORInstance(selection) || isTemplateNode(selection[0])) {
+				let semanticName = getPluginData(selection[0], 'elementSemantics')?.is
+				let allow = []
 
-		if (
-			figma.currentPage.selection.length === 1 &&
-			isInsideTemplate(figma.currentPage.selection[0]) &&
-			(sel.type === 'COMPONENT' || sel.type === 'FRAME' || sel.type === 'INSTANCE')
-		) {
-			let semanticName = getPluginData(figma.currentPage.selection[0], 'elementSemantics')?.is
-			selection = {
-				element: semanticName,
-				name: getSelectionName(figma.currentPage.selection[0]),
-				longName: (() => {
-					if (semanticName === 'table') {
-						return 'Table'
-					}
-					if (semanticName === 'tr') {
-						return 'Row'
-					}
-					if (semanticName === 'td') {
-						return 'Cell'
-					}
-					if (semanticName === 'th') {
-						return 'Header Cell'
-					}
-				})(),
+				if (isTemplateNode(selection[0]) || isTemplateNode(selection[0].parent)) {
+					allow.push('table')
+				}
+
+				if (!isTemplateNode(selection[0])) {
+					allow.push('tr')
+				}
+
+				let parentComponent = getParentComponent(selection[0])
+
+				if (getNodeDepth(selection[0], parentComponent) >= 2) {
+					allow.push('td')
+					allow.push('th')
+				}
+
+				selectionToSend = {
+					element: semanticName,
+					name: getSelectionName(selection[0]),
+					longName: (() => {
+						if (semanticName === 'table') {
+							return 'Table'
+						}
+						if (semanticName === 'tr') {
+							return 'Row'
+						}
+						if (semanticName === 'td') {
+							return 'Cell'
+						}
+						if (semanticName === 'th') {
+							return 'Header Cell'
+						}
+					})(),
+					allow,
+				}
+			} else {
+				selectionToSend = null
 			}
 
-			figma.ui.postMessage({ type: 'current-selection', selection: selection })
+			figma.ui.postMessage({ type: 'current-selection', selection: selectionToSend })
 		} else {
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
+		console.log('send selection', selectionToSend)
 	}
 
-	postSelection()
+	postSelection(figma.currentPage.selection)
 
 	figma.on('selectionchange', () => {
-		postSelection()
+		postSelection(figma.currentPage.selection)
 	})
 }
 
@@ -430,18 +455,20 @@ function switchColumnsOrRows(selection) {
 	for (let i = 0; i < selection.length; i++) {
 		var table = selection[i]
 
-		if (getPluginData(table, 'template')) {
-			if (table.type !== 'COMPONENT') {
-				let firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+		if (getPluginData(table, 'template') || getPluginData(table, 'elementSemantics')?.is === 'table') {
+			let tableParts = getTemplateParts(table)
 
-				if (table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
-					table = detachTable(figma.currentPage.selection)[0]
+			if (tableParts.table.type !== 'COMPONENT') {
+				let firstRow = tableParts.table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+
+				if (tableParts.table.type === 'INSTANCE' || firstRow.type === 'INSTANCE' || firstRow.type === 'COMPONENT') {
+					tableParts.table = detachTable(figma.currentPage.selection)[0]
 					// As it's a new table, we need to find the first row again
-					firstRow = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+					firstRow = tableParts.table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 				}
 				// else {
 
-				settings = getTableSettings(table)
+				settings = getTableSettings(tableParts.table)
 
 				if (i === 0) {
 					vectorType = settings.axis
@@ -520,7 +547,7 @@ function switchColumnsOrRows(selection) {
 
 												var clonedColumn = row.clone()
 												removeChildren(clonedColumn) // Need to remove children because they are clones
-												table.appendChild(clonedColumn)
+												tableParts.table.appendChild(clonedColumn)
 											}
 
 											if (row.parent.children[oppositeIndex]) {
@@ -570,8 +597,6 @@ function switchColumnsOrRows(selection) {
 						swapAxises(rowContainer)
 						resize(rowContainer, rowContainerObject.width, rowContainerObject.height)
 
-						rowContainer.primaryAxisSizingMode = 'AUTO'
-
 						// Because changing layout mode swaps sizingModes you need to loop children again
 						var rowlength = rowContainer.children.length
 
@@ -579,42 +604,56 @@ function switchColumnsOrRows(selection) {
 						let discardBucket = []
 
 						for (let i = 0; i < rowlength; i++) {
-							var row = rowContainer.children[i]
+							var block = rowContainer.children[i]
 
 							// This is the original object before rows are converted to columns, so may not always match new converted table
-							if (rowContainerObject.children[i]?.layoutAlign) row.layoutAlign = rowContainerObject.children[i].layoutAlign
+							if (rowContainerObject.children[i]?.layoutAlign) block.layoutAlign = rowContainerObject.children[i].layoutAlign
 
-							if (isRow(row)) {
+							// Checks if tr (could be row or column)
+							if (isRow(block)) {
 								// Settings is original settings, not new settings
 								if (settings.axis === 'COLUMNS') {
-									row.counterAxisSizingMode = 'AUTO'
-									row.layoutAlign = 'STRETCH'
+									block.counterAxisSizingMode = 'AUTO'
+									block.layoutAlign = 'STRETCH'
 
 									// We have to apply this after appending the cells because for some reason doing it before means that the width of the cells is incorrect
 
-									var cells = row.children
+									var cells = block.children
 									var length = settings.axis === 'COLUMNS' ? firstRow.parent.children.length : firstRow.children.length
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
 										if (cell) {
-											if (row.parent.children[getNodeIndex(firstRow) + c]) {
+											if (block.parent.children[getNodeIndex(firstRow) + c]) {
 												cell.primaryAxisSizingMode = 'FIXED'
 												cell.layoutAlign = 'STRETCH'
 											}
 										}
 									}
+
+									if (settings.size[1] !== 'HUG') {
+										block.layoutGrow = 1
+									}
 								} else {
-									var cells = row.children
+									var cells = block.children
 									var length = settings.axis === 'ROWS' ? firstRow.parent.children.length : firstRow.children.length
 
 									for (let c = 0; c < length; c++) {
 										var cell = cells[c]
 
 										if (cell) {
-											if (row.parent.children[getNodeIndex(firstRow) + c]) {
+											if (block.parent.children[getNodeIndex(firstRow) + c]) {
 												// NOTE: temporary fix. Could be better
 												if (settings.size[0] === 'HUG') {
+													cell.layoutGrow = 0
+													cell.primaryAxisSizingMode = 'AUTO'
+												} else {
+													cell.layoutGrow = 1
+													cell.primaryAxisSizingMode = 'FIXED'
+												}
+
+												// If table height set to hug
+												if (settings.size[1] === 'HUG') {
 													cell.layoutGrow = 0
 													cell.primaryAxisSizingMode = 'AUTO'
 												} else {
@@ -625,15 +664,22 @@ function switchColumnsOrRows(selection) {
 										}
 									}
 
-									row.layoutAlign = 'STRETCH'
+									block.layoutAlign = 'STRETCH'
 								}
 
-								// If row ends up being empty, then assume it's not needed
-								if (row.children.length === 0) {
-									discardBucket.push(row)
+								// If block ends up being empty, then assume it's not needed
+								if (block.children.length === 0) {
+									discardBucket.push(block)
 								}
 							}
 						}
+
+						rowContainer.layoutGrow = rowContainerObject.layoutGrow
+						rowContainer.layoutAlign = rowContainerObject.layoutAlign
+
+						// Need to swap these around
+						rowContainer.primaryAxisSizingMode = rowContainerObject.counterAxisSizingMode
+						rowContainer.counterAxisSizingMode = rowContainerObject.primaryAxisSizingMode
 
 						for (let i = 0; i < discardBucket.length; i++) {
 							discardBucket[i].remove()
@@ -641,10 +687,7 @@ function switchColumnsOrRows(selection) {
 					}
 				}
 
-				if (vectorType === table.layoutMode) {
-				}
-
-				if (firstTableLayoutMode === table.layoutMode) {
+				if (firstTableLayoutMode === tableParts.table.layoutMode) {
 					iterateChildren()
 				}
 			}
@@ -654,7 +697,7 @@ function switchColumnsOrRows(selection) {
 	}
 
 	return {
-		vectorType: vectorType,
+		vectorType,
 	}
 }
 function selectTableVector(type) {
@@ -679,7 +722,7 @@ async function createTableUI() {
 	const localTemplates = getLocalTemplates()
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	var recentFiles = await getRecentFilesAsync(localTemplates, { expire: daysToMilliseconds(7) })
+	var recentFiles = await getRecentFilesAsync(localTemplates, { limit: 8 })
 	var remoteFiles = await getRemoteFilesAsync()
 
 	// Show create table UI
@@ -1118,7 +1161,7 @@ async function main() {
 			let { vectorType } = switchColumnsOrRows(figma.currentPage.selection)
 
 			if (vectorType) {
-				figma.closePlugin(`Switched to ${vectorType === 'rows' ? 'columns' : 'rows'}`)
+				figma.closePlugin(`Switched to ${vectorType === 'ROWS' ? 'columns' : 'rows'}`)
 			} else if (figma.currentPage.selection.length === 0) {
 				figma.closePlugin('Please select a table')
 			} else {
@@ -1241,7 +1284,6 @@ async function main() {
 		})
 
 		plugin.on('save-user-preferences', () => {})
-		plugin.on('fetch-template-part', () => {})
 		plugin.on('fetch-current-selection', (msg) => {
 			if (msg.template) {
 				lookForComponent(msg.template).then((templateNode) => {
@@ -1251,33 +1293,36 @@ async function main() {
 		})
 		plugin.on('fetch-template-parts', (msg) => {
 			lookForComponent(msg.template).then((templateNode) => {
-				// figma.viewport.scrollAndZoomIntoView([templateNode])
-				// figma.currentPage.selection = [templateNode]
-				let parts = getTemplateParts(templateNode)
-				let partsAsObject = {
-					table: {
-						name: getSelectionName(parts?.table),
-						element: 'table',
-						id: parts?.table?.id,
-					},
-					tr: {
-						name: getSelectionName(parts?.tr),
-						element: 'tr',
-						id: parts?.tr?.id,
-					},
-					td: {
-						name: getSelectionName(parts?.td),
-						element: 'td',
-						id: parts?.td?.id,
-					},
-					th: {
-						name: getSelectionName(parts?.th),
-						element: 'th',
-						id: parts?.th?.id,
-					},
+				function postTemplateParts(templateNode) {
+					// figma.viewport.scrollAndZoomIntoView([templateNode])
+					// figma.currentPage.selection = [templateNode]
+					let parts = getTemplateParts(templateNode)
+					let partsAsObject = {
+						table: {
+							name: getSelectionName(parts?.table),
+							element: 'table',
+							id: parts?.table?.id,
+						},
+						tr: {
+							name: getSelectionName(parts?.tr),
+							element: 'tr',
+							id: parts?.tr?.id,
+						},
+						td: {
+							name: getSelectionName(parts?.td),
+							element: 'td',
+							id: parts?.td?.id,
+						},
+						th: {
+							name: getSelectionName(parts?.th),
+							element: 'th',
+							id: parts?.th?.id,
+						},
+					}
+					figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 				}
 
-				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
+				postTemplateParts(templateNode)
 			})
 		})
 		plugin.on('upgrade-to-template', async () => {

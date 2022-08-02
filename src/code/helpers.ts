@@ -355,7 +355,7 @@ export function getTemplateParts(templateNode) {
 	let elements = ['tr', 'td', 'th', 'table']
 	let results = {}
 
-	// Loop though element definitions and find them in the template
+	// Loop though element definitions and find them in the template or table
 	for (let i = 0; i < elements.length; i++) {
 		let elementName = elements[i]
 		let part = templateNode.findOne((node) => {
@@ -374,6 +374,8 @@ export function getTemplateParts(templateNode) {
 			results['table'] = templateNode
 		}
 	}
+
+	results['container'] = templateNode
 
 	// // For instances assign the mainComponent as the part
 	// for (let [key, value] of Object.entries(results)) {

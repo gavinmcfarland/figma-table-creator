@@ -11,6 +11,8 @@ import {
 	setDocumentData,
 	genUID,
 	updateClientStorageAsync,
+	getNodeLocation,
+	replace,
 } from '@fignite/helpers'
 import {
 	removeChildren,
@@ -66,7 +68,7 @@ export async function applyTableSettings(target, source) {
 }
 
 export function isTemplateNode(node) {
-	if (node.type === 'COMPONENT' && getPluginData('template')) {
+	if (node.type === 'COMPONENT' && getPluginData(node, 'template')) {
 		return node
 	}
 }
@@ -87,12 +89,12 @@ export async function updatePluginVersion(semver) {
 
 function extractValues(objectArray) {
 	return Object.entries(objectArray).reduce(function (acc, obj) {
-		let [key, value]: any = obj
-		let newObj
+		let [key, value] = obj
+		let thing
 		// if (value.type !== 'VARIANT') {
-		newObj = { [key]: value.value }
+		thing = { [key]: value.value }
 		// }
-		return { ...acc, ...newObj }
+		return { ...acc, ...thing }
 	}, {})
 }
 
@@ -105,60 +107,64 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 			index = templateSettings.matrix[0] - 1
 		}
 	}
-
 	let templateCell = partParent.children[index]
 
-	// Copy across width
 	if (tableSettings) {
-		let cellWidth
-		if (tableSettings.cell[0] === '$') {
-			cellWidth = templateCell.width
-		} else {
-			cellWidth = tableSettings.cell[0]
-		}
+		if (templateCell) {
+			// Copy across width
+			if (tableSettings) {
+				let cellWidth
+				if (tableSettings.cell[0] === '$') {
+					cellWidth = templateCell.width
+				} else {
+					cellWidth = tableSettings.cell[0]
+				}
 
-		if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
-			node.resizeWithoutConstraints(cellWidth, node.height)
-		}
+				if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
+					node.resizeWithoutConstraints(cellWidth, node.height)
+				}
 
-		// If templateCell === FILL
-		if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
-			node.layoutGrow = 1
-		}
+				// If templateCell === FILL
+				if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
+					node.layoutGrow = 1
+				}
 
-		// If templateCell === HUG
-		if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
-			node.layoutGrow = 0
-			node.counterAxisSizingMode = 'AUTO'
-		}
+				// If templateCell === HUG
+				if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
+					node.layoutGrow = 0
+					node.counterAxisSizingMode = 'AUTO'
+				}
 
-		// Change size of cells
-		if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
-			node.layoutGrow = 1
+				// If specific table width specified
+				if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
+					node.layoutGrow = 1
+					node.counterAxisSizingMode = 'AUTO'
+				}
+			}
+
+			// // Set component properties on instances
+			// if (templateCell.componentProperties) {
+			// 	node.setProperties(extractValues(templateCell.componentProperties))
+			// }
+
+			// // Add table numbering
+			// if (rowIndex || rowIndex === 0) {
+			// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
+
+			// 	if (templateText) {
+			// 		let number = convertToNumber(templateText.characters)
+
+			// 		if (Number(number)) {
+			// 			let tableText = node.findOne((node) => node.name === 'Text')
+			// 			await figma.loadFontAsync(templateText.fontName)
+			// 			if (tableText) {
+			// 				tableText.characters = (number + rowIndex).toString()
+			// 			}
+			// 		}
+			// 	}
+			// }
 		}
 	}
-
-	// // Set component properties on instances
-	// if (templateCell.componentProperties) {
-	// 	node.setProperties(extractValues(templateCell.componentProperties))
-	// }
-
-	// // Add table numbering
-	// if (rowIndex || rowIndex === 0) {
-	// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
-
-	// 	if (templateText) {
-	// 		let number = convertToNumber(templateText.characters)
-
-	// 		if (Number(number)) {
-	// 			let tableText = node.findOne((node) => node.name === 'Text')
-	// 			await figma.loadFontAsync(templateText.fontName)
-	// 			if (tableText) {
-	// 				tableText.characters = (number + rowIndex).toString()
-	// 			}
-	// 		}
-	// 	}
-	// }
 }
 
 export async function createTable(templateComponent, settings: TableSettings, type?) {
@@ -226,11 +232,14 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			tableSettings.cell[1] = templateSettings.cell[0][1]
 		}
 
+		// Create a copy and convert the table container to a frame
 		tableInstance = convertToFrame(templateComponent.clone())
 
 		var table
+		var tableIsContainer = part.table.id === templateComponent.id
 
-		if (part.table.id === templateComponent.id) {
+		// If the table is the container
+		if (tableIsContainer) {
 			if (type === 'COMPONENT') {
 				table = convertToComponent(tableInstance)
 				tableInstance = table
@@ -238,21 +247,34 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				table = tableInstance
 			}
 		} else {
-			// Remove table from template
-			tableInstance.findAll((node) => {
-				if (getPluginData(node, 'elementSemantics')?.is === 'table') {
-					node.remove()
+			table = part.table.clone()
+
+			// Because table could be inside several children we need to find its location in the template, then loop through the table instance and replace it
+			let nodeLocation = getNodeLocation(part.table, part.container)
+			nodeLocation.shift()
+
+			let nodeToReplace = tableInstance
+			for (let i = 0; i < nodeLocation.length; i++) {
+				let l = nodeLocation[i]
+
+				if (nodeToReplace.children) {
+					nodeToReplace = nodeToReplace.children[l]
 				}
-			})
+			}
 
-			var tableIndex = getNodeIndex(part.table)
+			// // If not, remove the table from the container
+			// tableInstance.findAll((node) => {
+			// 	if (getPluginData(node, 'elementSemantics')?.is === 'table') {
+			// 		node.remove()
+			// 	}
+			// })
 
-			// Add table back to template
-			tableInstance.insertChild(tableIndex, table)
+			replace(nodeToReplace, table)
 		}
 
+		table.layoutMode = 'VERTICAL'
+
 		var firstRow
-		var rowIndex = getNodeIndex(part.tr)
 		function getRowParent() {
 			var row = table.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
@@ -261,12 +283,15 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		var rowParent = getRowParent()
 
-		// Remove children which are trs
-		table.findAll((node) => {
-			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-				node.remove()
-			}
-		})
+		// Remove all children of table
+		removeChildren(table)
+
+		// // Remove children which are trs
+		// table.findAll((node) => {
+		// 	if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
+		// 		node.remove()
+		// 	}
+		// })
 
 		if (settings.resizing && type !== 'COMPONENT') {
 			// First row should be a component
@@ -286,7 +311,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 		}
 
-		rowParent.insertChild(rowIndex, firstRow)
+		rowParent.appendChild(firstRow)
 
 		removeChildren(firstRow)
 
@@ -356,7 +381,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			}
 
 			// If using columnResizing and header swap non headers to default cells
-			if (settings.resizing && type !== 'COMPONENT' && settings.header) {
+			if (settings.resizing && settings.header) {
 				for (let i = 0; i < duplicateRow.children.length; i++) {
 					var cell = duplicateRow.children[i]
 					// cell.swapComponent(part.th)
@@ -367,16 +392,15 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 					// Set component properties on instances
 					// cell.setProperties(extractValues(part.td.componentProperties))
-
-					copyTemplatePart(part.table.children[1], cell, i, templateSettings, null, r)
+					copyTemplatePart(part.table.children[1], cell, i, templateSettings, tableSettings, r)
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
+
 					cell.primaryAxisAlignItems = settings.alignment[0]
 				}
 			}
-
-			rowParent.insertChild(rowIndex + 1, duplicateRow)
+			rowParent.appendChild(duplicateRow)
 		}
 
 		// Swap first row to use header cell
@@ -394,10 +418,9 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				// }
 
 				// Need first row which is the header
-				copyTemplatePart(part.table.children[0], child, i, templateSettings, null, 0)
+				copyTemplatePart(part.table.children[0], child, i, templateSettings, tableSettings, 0)
 
 				// child.mainComponent = part.th.mainComponent
-
 				child.primaryAxisAlignItems = settings.alignment[0]
 			}
 		}
@@ -419,6 +442,24 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		if (tableSettings.size[1] === 'HUG') {
 			tableInstance.primaryAxisSizingMode = 'AUTO'
+		}
+
+		if (!tableIsContainer) {
+			if (tableSettings.size[0] === 'HUG') {
+				// table.layoutAlign = 'INHERIT'
+				table.counterAxisSizingMode = 'AUTO'
+			} else {
+				table.layoutAlign = 'STRETCH'
+				table.primaryAxisSizingMode = 'FIXED'
+			}
+
+			if (tableSettings.size[1] === 'HUG') {
+				table.layoutGrow = 0
+				table.primaryAxisSizingMode = 'AUTO'
+			} else {
+				table.layoutGrow = 1
+				table.counterAxisSizingMode = 'FIXED'
+			}
 		}
 
 		return tableInstance
@@ -667,8 +708,6 @@ export async function updateTables(template) {
 
 				// Don't apply if an instance
 				if (table.type !== 'INSTANCE') {
-					console.log(`Updating table ${b + 1} of ${tables.length} on page ${p + 1}`)
-
 					copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] })
 
 					table.findAll((node) => {
@@ -697,14 +736,18 @@ export function getTableSettings(tableNode): TableSettings {
 		axis: 'COLUMNS',
 	}
 
-	for (let i = 0; i < tableNode.children.length; i++) {
-		var node = tableNode.children[i]
+	let templateParts = getTemplateParts(tableNode)
+
+	let tablePart = templateParts.table
+
+	for (let i = 0; i < tablePart.children.length; i++) {
+		var node = tablePart.children[i]
 		if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
 			rowCount++
 		}
 	}
 
-	let firstRow = tableNode.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
+	let firstRow = tablePart.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
 	let firstCell = firstRow.findOne(
 		(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
@@ -726,21 +769,25 @@ export function getTableSettings(tableNode): TableSettings {
 		}
 	}
 
+	// This option avoids relying on counting nodes inside row which have semantic data because difficult to guarentee that all elements will be marked
+
+	// columnCount = firstRow.children.length - 1
+
 	table.matrix = [columnCount, rowCount]
 	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]
 	table.size = [
 		(() => {
-			if (tableNode.counterAxisSizingMode === 'AUTO') {
+			if (tablePart.counterAxisSizingMode === 'AUTO') {
 				return 'HUG'
 			} else {
-				return tableNode.width
+				return tablePart.width
 			}
 		})(),
 		(() => {
-			if (tableNode.primaryAxisSizingMode === 'AUTO') {
+			if (tablePart.primaryAxisSizingMode === 'AUTO') {
 				return 'HUG'
 			} else {
-				return tableNode.height
+				return tablePart.height
 			}
 		})(),
 	]
