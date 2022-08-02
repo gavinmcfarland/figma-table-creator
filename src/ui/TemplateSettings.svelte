@@ -63,7 +63,6 @@
 			artworkTarget.classList.remove('not-taken')
 			// artworkTarget.classList.remove('add')
 			parent.postMessage({ pluginMessage: { type: "add-element", element } }, "*")
-			console.log("add element")
 		}
 		else {
 			parts[i].name = undefined

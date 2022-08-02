@@ -261,7 +261,6 @@ function postCurrentSelection(templateNodeId) {
 		} else {
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
-		console.log('send selection', selectionToSend)
 	}
 
 	postSelection(figma.currentPage.selection)
