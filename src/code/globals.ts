@@ -630,8 +630,6 @@ export async function getDefaultTemplate(): Promise<Template> {
 		}
 	}
 
-	console.log(defaultTemplate)
-
 	return defaultTemplate
 }
 

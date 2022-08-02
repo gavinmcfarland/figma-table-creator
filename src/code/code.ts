@@ -69,7 +69,7 @@ console.clear()
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
 // figma.root.setPluginData('defaultTemplate', '')
-figma.clientStorage.deleteAsync('userPreferences')
+// figma.clientStorage.deleteAsync('userPreferences')
 // figma.clientStorage.deleteAsync('recentTables')
 
 function addUniqueToArray(object, array) {
@@ -1276,8 +1276,6 @@ async function main() {
 						id: parts?.th?.id,
 					},
 				}
-
-				console.log(msg)
 
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})
