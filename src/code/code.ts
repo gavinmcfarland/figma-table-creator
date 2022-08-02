@@ -21,6 +21,7 @@ import {
 	incrementName,
 	removeRemoteFile,
 	setClientStoragAsync,
+	getNodeDepth,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -106,8 +107,7 @@ function addElement(element) {
 
 	if (node.type === 'INSTANCE') {
 		// Set node itself because difficult setting main component when using component set and component props
-		setPluginData(node, 'elementSemantics', { is: element })
-		// setPluginData(node.mainComponent, 'elementSemantics', { is: element })
+		setPluginData(node.mainComponent, 'elementSemantics', { is: element })
 		// TODO: Add relaunch data for selecting row or column if td
 	} else {
 		setPluginData(node, 'elementSemantics', { is: element })
@@ -121,7 +121,6 @@ function removeElement(nodeId, element) {
 	templateContainer.findAll((node) => {
 		if (getPluginData(node, 'elementSemantics')?.is === element) {
 			if (node.type === 'INSTANCE') {
-				setPluginData(node, 'elementSemantics', '')
 				setPluginData(node.mainComponent, 'elementSemantics', '')
 			} else {
 				setPluginData(node, 'elementSemantics', '')
@@ -226,6 +225,11 @@ function postCurrentSelection(templateNodeId) {
 
 				if (!isTemplateNode(selection[0])) {
 					allow.push('tr')
+				}
+
+				let parentComponent = getParentComponent(selection[0])
+
+				if (getNodeDepth(selection[0], parentComponent) >= 2) {
 					allow.push('td')
 					allow.push('th')
 				}

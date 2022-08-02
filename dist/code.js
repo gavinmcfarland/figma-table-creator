@@ -701,6 +701,23 @@ function getNodeLocation(node, container = figma.currentPage, location = []) {
     return false;
 }
 
+/**
+ * Returns the depth of a node relative to its container
+ * @param {SceneNode} node A node
+ * @returns An integer which represents the depth
+ */
+function getNodeDepth(node, container = figma.currentPage, depth = 0) {
+    if (node) {
+        if (node.id === container.id) {
+            return depth;
+        }
+        else {
+            depth += 1;
+            return getNodeDepth(node.parent, container, depth);
+        }
+    }
+}
+
 const nodeToObject = (node, withoutRelations, removeConflicts) => {
     const props = Object.entries(Object.getOwnPropertyDescriptors(node.__proto__));
     const blacklist = ['parent', 'children', 'removed', 'masterComponent', 'horizontalPadding', 'verticalPadding'];
@@ -1109,6 +1126,7 @@ var copyPaste_1 = copyPaste;
 var genUID_1 = genUID;
 var getClientStorageAsync_1 = getClientStorageAsync;
 var getDocumentData_1 = getDocumentData;
+var getNodeDepth_1 = getNodeDepth;
 var getNodeIndex_1 = getNodeIndex;
 var getNodeLocation_1 = getNodeLocation;
 var getPageNode_1 = getPageNode;
@@ -5045,26 +5063,14 @@ async function updatePluginVersion(semver) {
         return semver || pluginVersion;
     });
 }
-function extractValues(objectArray) {
-    return Object.entries(objectArray).reduce(function (acc, obj) {
-        let [key, value] = obj;
-        let thing;
-        // if (value.type !== 'VARIANT') {
-        thing = { [key]: value.value };
-        // }
-        return Object.assign(Object.assign({}, acc), thing);
-    }, {});
-}
 async function copyTemplatePart(partParent, node, index, templateSettings, tableSettings, rowIndex) {
     // TODO: Copy across overrides like text, and instance swaps
-    console.log('b ', index, templateSettings.matrix[0]);
     // Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
     if (templateSettings.matrix[0] !== '$') {
         if (index > templateSettings.matrix[0] - 1) {
             index = templateSettings.matrix[0] - 1;
         }
     }
-    console.log('a ', index);
     let templateCell = partParent.children[index];
     if (tableSettings) {
         if (templateCell) {
@@ -5095,10 +5101,10 @@ async function copyTemplatePart(partParent, node, index, templateSettings, table
                     node.counterAxisSizingMode = 'AUTO';
                 }
             }
-            // Set component properties on instances
-            if (templateCell.componentProperties) {
-                node.setProperties(extractValues(templateCell.componentProperties));
-            }
+            // // Set component properties on instances
+            // if (templateCell.componentProperties) {
+            // 	node.setProperties(extractValues(templateCell.componentProperties))
+            // }
             // // Add table numbering
             // if (rowIndex || rowIndex === 0) {
             // 	let templateText = templateCell.findOne((node) => node.name === 'Text')
@@ -5151,7 +5157,6 @@ async function createTable(templateComponent, settings, type) {
     }
     else {
         let templateSettings = getTableSettings(part.table);
-        console.log(templateSettings);
         // Get settings from template
         if (settings.matrix[0] === '$') {
             tableSettings.matrix[0] = templateSettings.matrix[0];
@@ -5238,7 +5243,6 @@ async function createTable(templateComponent, settings, type) {
             firstRow = convertToFrame_1(part.tr.clone());
             setPluginData_1(firstRow, 'elementSemantics', { is: 'tr' });
         }
-        console.log(part.tr);
         rowParent.appendChild(firstRow);
         removeChildren(firstRow);
         // If height specified then make rows grow to height
@@ -5485,7 +5489,9 @@ async function getDefaultTemplate() {
     let defaultTemplate;
     if (defaultTemplates.length > 0) {
         let lastTemplateUsedWithFile = defaultTemplates.find((item) => item.file.id === fileId);
-        defaultTemplate = lastTemplateUsedWithFile.template;
+        if (lastTemplateUsedWithFile) {
+            defaultTemplate = lastTemplateUsedWithFile.template;
+        }
     }
     let localTemplates = getLocalTemplatesWithoutUpdating();
     let remoteFiles = getDocumentData_1('remoteFiles');
@@ -5558,7 +5564,7 @@ async function updateTables(template) {
     }
 }
 function getTableSettings(tableNode) {
-    var _a, _b;
+    var _a, _b, _c;
     let rowCount = 0;
     let columnCount = 0;
     let usingColumnsOrRows = null;
@@ -5587,15 +5593,15 @@ function getTableSettings(tableNode) {
     if (firstRow.parent.layoutMode === 'HORIZONTAL') {
         usingColumnsOrRows = 'COLUMNS';
     }
-    // for (let i = 0; i < firstRow.children.length; i++) {
-    // 	var node = firstRow.children[i]
-    // 	var cellType = getPluginData(node, 'elementSemantics')?.is
-    // 	if (cellType === 'td' || cellType === 'th') {
-    // 		columnCount++
-    // 	}
-    // }
+    for (let i = 0; i < firstRow.children.length; i++) {
+        var node = firstRow.children[i];
+        var cellType = (_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
+        if (cellType === 'td' || cellType === 'th') {
+            columnCount++;
+        }
+    }
     // This option avoids relying on counting nodes inside row which have semantic data because difficult to guarentee that all elements will be marked
-    columnCount = firstRow.children.length - 1;
+    // columnCount = firstRow.children.length - 1
     table.matrix = [columnCount, rowCount];
     table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems];
     table.size = [
@@ -5617,7 +5623,7 @@ function getTableSettings(tableNode) {
         })(),
     ];
     table.axis = usingColumnsOrRows;
-    table.header = ((_b = getPluginData_1(firstCell, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th' ? true : false;
+    table.header = ((_c = getPluginData_1(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false;
     table.resizing = firstRow.type === 'COMPONENT' ? true : false;
     return Object.assign({}, table);
 }
@@ -5888,8 +5894,7 @@ function addElement(element) {
     let node = figma.currentPage.selection[0];
     if (node.type === 'INSTANCE') {
         // Set node itself because difficult setting main component when using component set and component props
-        setPluginData_1(node, 'elementSemantics', { is: element });
-        // setPluginData(node.mainComponent, 'elementSemantics', { is: element })
+        setPluginData_1(node.mainComponent, 'elementSemantics', { is: element });
         // TODO: Add relaunch data for selecting row or column if td
     }
     else {
@@ -5903,7 +5908,6 @@ function removeElement(nodeId, element) {
         var _a;
         if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === element) {
             if (node.type === 'INSTANCE') {
-                setPluginData_1(node, 'elementSemantics', '');
                 setPluginData_1(node.mainComponent, 'elementSemantics', '');
             }
             else {
@@ -5997,6 +6001,9 @@ function postCurrentSelection(templateNodeId) {
                 }
                 if (!isTemplateNode(selection[0])) {
                     allow.push('tr');
+                }
+                let parentComponent = getParentComponent(selection[0]);
+                if (getNodeDepth_1(selection[0], parentComponent) >= 2) {
                     allow.push('td');
                     allow.push('th');
                 }

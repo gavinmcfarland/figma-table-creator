@@ -100,14 +100,13 @@ function extractValues(objectArray) {
 
 async function copyTemplatePart(partParent, node, index, templateSettings: TableSettings, tableSettings?: TableSettings, rowIndex?) {
 	// TODO: Copy across overrides like text, and instance swaps
-	console.log('b ', index, templateSettings.matrix[0])
+
 	// Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
 	if (templateSettings.matrix[0] !== '$') {
 		if (index > templateSettings.matrix[0] - 1) {
 			index = templateSettings.matrix[0] - 1
 		}
 	}
-	console.log('a ', index)
 	let templateCell = partParent.children[index]
 
 	if (tableSettings) {
@@ -143,10 +142,10 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 				}
 			}
 
-			// Set component properties on instances
-			if (templateCell.componentProperties) {
-				node.setProperties(extractValues(templateCell.componentProperties))
-			}
+			// // Set component properties on instances
+			// if (templateCell.componentProperties) {
+			// 	node.setProperties(extractValues(templateCell.componentProperties))
+			// }
 
 			// // Add table numbering
 			// if (rowIndex || rowIndex === 0) {
@@ -206,8 +205,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 		tableInstance = false
 	} else {
 		let templateSettings: TableSettings = getTableSettings(part.table)
-
-		console.log(templateSettings)
 
 		// Get settings from template
 		if (settings.matrix[0] === '$') {
@@ -313,8 +310,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			firstRow = convertToFrame(part.tr.clone())
 			setPluginData(firstRow, 'elementSemantics', { is: 'tr' })
 		}
-
-		console.log(part.tr)
 
 		rowParent.appendChild(firstRow)
 
@@ -766,17 +761,17 @@ export function getTableSettings(tableNode): TableSettings {
 		usingColumnsOrRows = 'COLUMNS'
 	}
 
-	// for (let i = 0; i < firstRow.children.length; i++) {
-	// 	var node = firstRow.children[i]
-	// 	var cellType = getPluginData(node, 'elementSemantics')?.is
-	// 	if (cellType === 'td' || cellType === 'th') {
-	// 		columnCount++
-	// 	}
-	// }
+	for (let i = 0; i < firstRow.children.length; i++) {
+		var node = firstRow.children[i]
+		var cellType = getPluginData(node, 'elementSemantics')?.is
+		if (cellType === 'td' || cellType === 'th') {
+			columnCount++
+		}
+	}
 
 	// This option avoids relying on counting nodes inside row which have semantic data because difficult to guarentee that all elements will be marked
 
-	columnCount = firstRow.children.length - 1
+	// columnCount = firstRow.children.length - 1
 
 	table.matrix = [columnCount, rowCount]
 	table.alignment = [firstCell.primaryAxisAlignItems, firstCell.counterAxisAlignItems]

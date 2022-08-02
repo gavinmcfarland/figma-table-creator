@@ -240,6 +240,7 @@
 					{:else}
 					<span class="currentSelectionName">{currentSelection && currentSelection?.allow?.includes(part.element) ? currentSelection.name : ""}</span>
 					{/if}
+
 					<span class="templateButtons" style={part.name || currentSelection && currentSelection?.allow?.includes(part.element) ? "" : "display: none;"}>
 						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i, template)}></span>
 					</span>
