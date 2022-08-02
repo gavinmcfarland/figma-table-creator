@@ -24,6 +24,7 @@ import {
 	isEmpty,
 	upsert,
 	convertToNumber,
+	sleep,
 } from './helpers'
 
 export let defaultRelaunchData = {
@@ -270,6 +271,10 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			// })
 
 			replace(nodeToReplace, table)
+		}
+
+		if (table.type === 'INSTANCE') {
+			// table = table.detachInstance()
 		}
 
 		table.layoutMode = 'VERTICAL'
@@ -571,6 +576,16 @@ export function getLocalTemplates(): Template[] {
 
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
+
+			// Remove any template data that exists on nodes inside this template
+
+			node.findAll((node) => {
+				if (getPluginData(node, 'template')) {
+					node.setPluginData('template', '')
+					console.log('reseting data')
+					return true
+				}
+			})
 		}
 	}
 	// figma.root.findAll((node) => {
@@ -676,6 +691,7 @@ export async function getDefaultTemplate(): Promise<Template> {
 
 export async function updateTables(template) {
 	var templateComponent = await lookForComponent(template)
+	let templateParts = getTemplateParts(templateComponent)
 
 	// FIXME: Template file name not up to date for some reason
 
@@ -698,17 +714,26 @@ export async function updateTables(template) {
 
 		await sleep()
 
-		var tables = page.findAll((node) => getPluginData(node, 'template')?.id === template.id && node.type === 'FRAME')
+		var tableInstances = page.findAll((node) => getPluginData(node, 'template')?.id === template.id && node.type === 'FRAME')
 
-		if (templateComponent && tables) {
+		if (templateComponent && tableInstances) {
 			var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
-			for (let b = 0; b < tables.length; b++) {
-				var table = tables[b]
+			for (let b = 0; b < tableInstances.length; b++) {
+				let tableParts = getTemplateParts(tableInstances[b])
+
+				let container = tableParts.container
+				var table = tableParts.table
 
 				// Don't apply if an instance
 				if (table.type !== 'INSTANCE') {
-					copyPasteStyle(templateComponent, table, { exclude: ['name', 'layoutMode'] })
+					if (templateParts.table) {
+						copyPasteStyle(templateParts.table, table, { exclude: ['name', 'layoutMode'] })
+					}
+
+					if (templateParts.container) {
+						copyPasteStyle(templateParts.container, container, { exclude: ['name', 'layoutMode'] })
+					}
 
 					table.findAll((node) => {
 						if ((getPluginData(node, 'elementSemantics')?.is === 'tr') === true && node.type !== 'INSTANCE') {
