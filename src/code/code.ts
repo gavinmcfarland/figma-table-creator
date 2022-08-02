@@ -722,7 +722,7 @@ async function createTableUI() {
 	const localTemplates = getLocalTemplates()
 
 	// Sync recent files when plugin is run (checks if current file is new, and if not updates data)
-	var recentFiles = await getRecentFilesAsync(localTemplates, { limit: 6 })
+	var recentFiles = await getRecentFilesAsync(localTemplates, { limit: 8 })
 	var remoteFiles = await getRemoteFilesAsync()
 
 	// Show create table UI

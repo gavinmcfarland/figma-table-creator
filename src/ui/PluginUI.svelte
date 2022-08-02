@@ -515,7 +515,7 @@
 		</div>
 		{:else}
 		<div class="content">
-			<p>Files recently visited by the plugin will appear hear. To use a template from a team library, run the plugin in the file where the templates exist and make sure the template has been published.</p>
+			<p>Files recently visited by the plugin will appear here. To use a template from a library, run the plugin in the file where the template exist and make sure the template has been published.</p>
 		</div>
 		{/if}
 
