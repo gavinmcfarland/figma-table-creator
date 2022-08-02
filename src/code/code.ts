@@ -53,6 +53,7 @@ import {
 	getDefaultTemplate,
 	applyTableSettings,
 	isTemplateNode,
+	selectTableCellsRelaunchData,
 } from './globals'
 import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
@@ -106,11 +107,13 @@ function addElement(element) {
 	let node = figma.currentPage.selection[0]
 
 	if (node.type === 'INSTANCE') {
-		// Set node itself because difficult setting main component when using component set and component props
 		setPluginData(node.mainComponent, 'elementSemantics', { is: element })
-		// TODO: Add relaunch data for selecting row or column if td
+
+		node.mainComponent.setRelaunchData(selectTableCellsRelaunchData)
 	} else {
 		setPluginData(node, 'elementSemantics', { is: element })
+
+		node.setRelaunchData(selectTableCellsRelaunchData)
 	}
 }
 
@@ -128,7 +131,13 @@ function removeElement(nodeId, element) {
 		}
 	})
 
-	// TODO: Remove relaunch data for selecting row or column if td
+	if (element === 'td' || element === 'th') {
+		if (node.type === 'INSTANCE') {
+			node.mainComponent.setRelaunchData({})
+		} else {
+			node.setRelaunchData({})
+		}
+	}
 
 	if (element === 'table') {
 		setPluginData(templateContainer, 'elementSemantics', '')
@@ -735,6 +744,8 @@ async function createTableUI() {
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await getDefaultTemplate()
+
+	console.log('dt', defaultTemplate)
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240,

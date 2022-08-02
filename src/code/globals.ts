@@ -34,6 +34,11 @@ export let defaultRelaunchData = {
 	updateTables: 'Refresh tables already created',
 }
 
+export let selectTableCellsRelaunchData = {
+	selectColumn: 'Select all cells in column',
+	selectRow: 'Select all cells in row',
+}
+
 export async function applyTableSettings(target, source) {
 	if (source.template) {
 		await setDefaultTemplate(source.template)
@@ -497,7 +502,6 @@ export class File {
 	name: string
 	data?: [] | {}
 	constructor(data?) {
-		// TODO: if fileId doesn't exist then create random ID and set fileId
 		this.id = getDocumentData('fileId') || setDocumentData('fileId', genRandomId())
 		// this.name = `{figma.getNodeById("0:1").name}`
 		this.name = figma.root.name
@@ -526,6 +530,21 @@ export class Template {
 	}
 }
 
+export function updateTemplateData(node, data) {
+	data.id = node.id
+	data.name = node.name
+	data.name = node.name
+	data.component.id = node.id
+	// KEY needs updating if template duplicated
+	data.component.key = node.key
+	// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
+	// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
+	let fileId = getDocumentData('fileId') || genUID()
+	data.file.id = fileId
+
+	return data
+}
+
 export function getLocalTemplatesWithoutUpdating(): Template[] {
 	figma.skipInvisibleInstanceChildren = true
 	var templates = []
@@ -536,16 +555,7 @@ export function getLocalTemplatesWithoutUpdating(): Template[] {
 		let node = components[i]
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
-			templateData.id = node.id
-			templateData.name = node.name
-			templateData.name = node.name
-			templateData.component.id = node.id
-			// KEY needs updating if template duplicated
-			templateData.component.key = node.key
-			// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
-			// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
-			let fileId = getDocumentData('fileId') || genUID()
-			templateData.file.id = fileId
+			updateTemplateData(node, templateData)
 			templates.push(templateData)
 		}
 	}
@@ -577,12 +587,12 @@ export function getLocalTemplates(): Template[] {
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 
-			// Remove any template data that exists on nodes inside this template
+			// Remove any template data and relaunch data that exists on nodes inside this template
 
 			node.findAll((node) => {
 				if (getPluginData(node, 'template')) {
 					node.setPluginData('template', '')
-					console.log('reseting data')
+					node.setRelaunchData({})
 					return true
 				}
 			})
@@ -666,6 +676,8 @@ export async function getDefaultTemplate(): Promise<Template> {
 				} else if (remoteFiles.length > 0) {
 					defaultTemplate = remoteFiles[0].data[0]
 				}
+			} else {
+				defaultTemplate = updateTemplateData(templateComponent, defaultTemplate)
 			}
 		} else {
 			let templateComponent = await lookForComponent(defaultTemplate)
