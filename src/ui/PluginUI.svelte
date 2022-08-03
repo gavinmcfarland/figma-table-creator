@@ -35,6 +35,7 @@
 	let prevCellWidth
 	let prevCellHeight = 40
 	let prevTableWidth
+	let menuSelectedFile = null
 
 	let table
 
@@ -506,15 +507,15 @@
 		{#if showToggles}
 		<div class="TopBar">
 			<span style="display: flex; align-items: center;">
-			<span class="prev" on:click={() => setActivePage("createTablePageActive")}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
-			<span style="font-weight: bold; margin-left: -8px;">Libraries found</span>
+			<a title="Back" class="refresh icon" icon="chevron-left" on:click={() => setActivePage("createTablePageActive")}></a>
+			<span style="font-weight: bold; margin-left: 4px; margin-top: 2px">Libraries</span>
 			</span>
 		</div>
 		{:else}
 		<div class="TopBar">
 			<span style="display: flex; align-items: center;">
-			<span class="prev" on:click={() => setActivePage("welcomePageActive", 4)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
-			<span style="font-weight: bold; margin-left: -8px;">Libraries found</span>
+				<a title="Back" class="refresh icon" icon="chevron-left" on:click={() => setActivePage("welcomePageActive", 4)}></a>
+				<span style="font-weight: bold; margin-left: 4px; margin-top: 2px">Libraries</span>
 			</span>
 		</div>
 		{/if}
@@ -526,7 +527,8 @@
 					{#if showToggles}
 					<div class="ListItem" on:click={(event) => {
 						chooseTemplate()
-						updateSelectedFile(data, file)
+						// updateSelectedFile(data, file)
+						menuSelectedFile = file
 						// usingRemoteTemplate(true)
 						// setDefaultTemplate(file.data[0], data)
 						// addRemoteFile(file)
@@ -535,7 +537,8 @@
 					{:else}
 						<div class="ListItem" on:click={(event) => {
 							chooseTemplate()
-							updateSelectedFile(data, file)
+							// updateSelectedFile(data, file)
+							menuSelectedFile = file
 							// usingRemoteTemplate(true)
 							// setDefaultTemplate(file.data[0], data)
 							// addRemoteFile(file)
@@ -545,12 +548,12 @@
 
 				{/each}
 			</div>
-			<p class="description">If you don't see your library in this list, add an instance of the template to the canvas.</p>
+			<p class="description">If you don't see your libary in this list. Open the assets panel and drag an instance of the template to the canvas.</p>
 			<!-- <p class="description">Once the library is linked to this file, others will be able to use the templates from that library with this file. The templates in the library must be published.</p> -->
 		</div>
 		{:else}
 		<div class="content">
-			<p class="description">If you don't see your libary in this list, add an instance of the template to the canvas by dragging it from the assets panel.</p>
+			<p class="description">If you don't see your libary in this list. Open the assets panel and drag an instance of the template to the canvas.</p>
 			<!-- <p>Files recently visited by the plugin will appear here. To use a template from a library, run the plugin in the file where the template exist and make sure the template has been published.</p> -->
 		</div>
 		{/if}
@@ -563,8 +566,8 @@
 
 		<div class="TopBar">
 			<span style="display: flex; align-items: center;">
-			<span class="prev" on:click={() => setActivePage("chooseRemoteTemplate")}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
-			<span style="font-weight: bold; margin-left: -8px;">Templates</span>
+				<a title="Back" class="refresh icon" icon="chevron-left" on:click={() => setActivePage("chooseRemoteTemplate")}></a>
+			<span style="font-weight: bold; margin-left: 4px;  margin-top: 2px">Templates</span>
 			</span>
 		</div>
 
@@ -574,7 +577,7 @@
 
 			{#each data.recentFiles as file}
 
-				{#if selectedFile?.id === file.id}
+				{#if menuSelectedFile?.id === file.id}
 				<div class="main-content">
 					<div class="List">
 						{#each file.data as template}
@@ -590,7 +593,7 @@
 						setDefaultTemplate(file.data[0], data)
 						addRemoteFile(file)
 						setActivePage("createTablePageActive")
-						}}><Button id="create-table">Link Library</Button></span>
+						}}><Button id="create-table">Import</Button></span>
 				</div>
 			{/each}
 		{/if}
@@ -741,7 +744,7 @@
 				<p>Begin by creating a new template to create tables from.</p>
 			{/if} -->
 
-			<p>Create a new template or use a template from a library by linking it to this file.</p>
+			<p>Create a new template or import a template from a library.</p>
 
 
 			<div class="buttons new-template">
@@ -749,7 +752,7 @@
 				<!-- {#if data.recentFiles.length > 0} -->
 					<span on:click={() => {
 						chooseRemoteTemplate()
-						}}><Button classes="secondary">Link Library</Button></span>
+						}}><Button classes="secondary">Import Template</Button></span>
 				<!-- {/if} -->
 			</div>
 		</div>
@@ -815,7 +818,7 @@
 														getDropdown('tooltip').close()
 														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 														chooseRemoteTemplate({entry: "MANAGE_LIBRARIES"})
-														}} for="linkLibrary">Link Library</label>
+														}} for="linkLibrary">Import Template</label>
 												</div>
 
 
@@ -1152,7 +1155,7 @@
 	.TopBar {
 		display: flex;
 		place-content: flex-end;
-		margin: -8px -16px 8px -16px;
+		margin: -8px -16px 0 -16px;
 		border-bottom: 1px solid var(--figma-color-border, var(--color-black-10));
 		padding: var(--size-100);
 		background-color: var(--figma-color-bg);
@@ -1291,6 +1294,14 @@
 	}
 	.figma-dark [icon="arrow-left"]::before {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M2.29297 8.00004L2.64652 7.64648L5.64652 4.64648L6.35363 5.35359L4.20718 7.50004L12.5001 7.50004V8.50004L4.20718 8.50004L6.35363 10.6465L5.64652 11.3536L2.64652 8.35359L2.29297 8.00004Z' fill='white' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	.figma-light [icon="chevron-left"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.75736 3.25736L5.5 7.5L9.75736 11.7426' stroke='black' stroke-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	.figma-dark [icon="chevron-left"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.75736 3.25736L5.5 7.5L9.75736 11.7426' stroke='white' stroke-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
 	/* .Select:hover > .label :last-child {
@@ -1518,8 +1529,6 @@
 		border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.iconB {}
-
 
 	.refresh {
 		height: 32px;
@@ -1528,10 +1537,14 @@
 	}
 
 	.refresh:hover {
+		background-color: var(--figma-color-bg-hover, var(--color-black-10));
+	}
+
+	.item .refresh:hover {
 		background-color: var(--figma-color-bg-tertiary, var(--color-selection-a));
 	}
 
-	.selected .refresh:hover {
+	.item.selected .refresh:hover {
 		background-color: var(--figma-color-bg-selected-hover, var(--color-selection-a));
 	}
 
