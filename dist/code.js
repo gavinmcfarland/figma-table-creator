@@ -2039,20 +2039,23 @@ function move(array, from, to, replaceWith) {
     return array;
 }
 function upsert(array, cb, entry) {
-    array.some((item, index) => {
-        let result = false;
-        if (true === cb(array[index])) {
-            result = true;
-            // move to top
-            if (entry) {
-                move(array, index, 0, entry);
+    if (array.length > 0) {
+        console.log(array);
+        array.some((item, index) => {
+            let result = false;
+            if (true === cb(array[index])) {
+                result = true;
+                // move to top
+                if (entry) {
+                    move(array, index, 0, entry);
+                }
+                else {
+                    move(array, index, 0);
+                }
             }
-            else {
-                move(array, index, 0);
-            }
-        }
-        return result;
-    });
+            return result;
+        });
+    }
     let matchFound = false;
     array.map((item, index) => {
         if (true === cb(array[index])) {
@@ -5538,26 +5541,28 @@ async function setDefaultTemplate(templateData) {
     await getRemoteFilesAsync_1();
     await getRecentFilesAsync_1(getLocalTemplates());
     let currentFileId = getDocumentData_1('fileId');
-    await updateClientStorageAsync_1('recentTables', (recentTables) => {
-        recentTables = recentTables || [];
-        recentTables = upsert(recentTables, (item) => item.template.component.key === templateData.component.key && item.file.id === currentFileId, {
-            template: templateData,
-            file: { id: currentFileId },
-        });
-        recentTables = recentTables.slice(0, 10);
-        let defaultTemplate = recentTables[0].template;
-        try {
-            figma.ui.postMessage({
-                type: 'post-default-template',
-                defaultTemplate,
-                localTemplates: getLocalTemplates(),
+    if (templateData) {
+        await updateClientStorageAsync_1('recentTables', (recentTables) => {
+            recentTables = recentTables || [];
+            recentTables = upsert(recentTables, (item) => { var _a; return ((_a = item.template) === null || _a === void 0 ? void 0 : _a.component.key) === templateData.component.key && item.file.id === currentFileId; }, {
+                template: templateData,
+                file: { id: currentFileId },
             });
-        }
-        catch (e) {
-            console.log(e);
-        }
-        return recentTables;
-    });
+            recentTables = recentTables.slice(0, 10);
+            let defaultTemplate = recentTables[0].template;
+            try {
+                figma.ui.postMessage({
+                    type: 'post-default-template',
+                    defaultTemplate,
+                    localTemplates: getLocalTemplates(),
+                });
+            }
+            catch (e) {
+                console.log(e);
+            }
+            return recentTables;
+        });
+    }
 }
 async function getDefaultTemplate() {
     // let { table } = await getClientStorageAsync('userPreferences')
@@ -5951,7 +5956,7 @@ async function upgradeOldComponentsToTemplate() {
 // TODO: When template renamed, default data no updated
 // TODO: Should default template be stored in usersPreferences? different for each file
 console.clear();
-figma.clientStorage.deleteAsync('recentFiles');
+// figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
@@ -7066,9 +7071,11 @@ async function main() {
                 });
             }
             await checkForTemplateInstance();
-            setInterval(async () => {
+            figma.on('selectionchange', async () => {
                 await checkForTemplateInstance();
-            }, 600);
+            });
+            // setInterval(async () => {
+            // }, 600)
         });
     });
 }

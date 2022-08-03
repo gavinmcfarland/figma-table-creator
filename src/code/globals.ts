@@ -624,28 +624,34 @@ export async function setDefaultTemplate(templateData: Template): Promise<void> 
 
 	let currentFileId = getDocumentData('fileId')
 
-	await updateClientStorageAsync('recentTables', (recentTables: TableSettings[]) => {
-		recentTables = recentTables || []
-		recentTables = upsert(recentTables, (item) => item.template.component.key === templateData.component.key && item.file.id === currentFileId, {
-			template: templateData,
-			file: { id: currentFileId },
+	if (templateData) {
+		await updateClientStorageAsync('recentTables', (recentTables: TableSettings[]) => {
+			recentTables = recentTables || []
+			recentTables = upsert(
+				recentTables,
+				(item) => item.template?.component.key === templateData.component.key && item.file.id === currentFileId,
+				{
+					template: templateData,
+					file: { id: currentFileId },
+				}
+			)
+			recentTables = recentTables.slice(0, 10)
+
+			let defaultTemplate = recentTables[0].template
+
+			try {
+				figma.ui.postMessage({
+					type: 'post-default-template',
+					defaultTemplate,
+					localTemplates: getLocalTemplates(),
+				})
+			} catch (e) {
+				console.log(e)
+			}
+
+			return recentTables
 		})
-		recentTables = recentTables.slice(0, 10)
-
-		let defaultTemplate = recentTables[0].template
-
-		try {
-			figma.ui.postMessage({
-				type: 'post-default-template',
-				defaultTemplate,
-				localTemplates: getLocalTemplates(),
-			})
-		} catch (e) {
-			console.log(e)
-		}
-
-		return recentTables
-	})
+	}
 }
 
 export async function getDefaultTemplate(): Promise<Template> {

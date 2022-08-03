@@ -242,6 +242,10 @@
 		}, "*")
 	}
 
+	function chooseTemplate() {
+		setActivePage("chooseTemplate")
+	}
+
 	function setDefaultTemplate(template, data) {
 
 
@@ -499,71 +503,95 @@
 {#if pageState.chooseRemoteTemplate}
 	<div class="container choose-library" style="padding: var(--size-100) var(--size-200)">
 
+		{#if showToggles}
+		<div class="TopBar">
+			<span style="display: flex; align-items: center;">
+			<span class="prev" on:click={() => setActivePage("createTablePageActive")}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
+			<span style="font-weight: bold; margin-left: -8px;">Libraries found</span>
+			</span>
+		</div>
+		{:else}
+		<div class="TopBar">
+			<span style="display: flex; align-items: center;">
+			<span class="prev" on:click={() => setActivePage("welcomePageActive", 4)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
+			<span style="font-weight: bold; margin-left: -8px;">Libraries found</span>
+			</span>
+		</div>
+		{/if}
+
 		{#if data.recentFiles.length > 0}
 		<div class="main-content">
-			<p class="title2">Recent files</p>
 			<div class="List">
 				{#each data.recentFiles as file}
 					{#if showToggles}
 					<div class="ListItem" on:click={(event) => {
+						chooseTemplate()
 						updateSelectedFile(data, file)
-						usingRemoteTemplate(true)
-						setDefaultTemplate(file.data[0], data)
-						addRemoteFile(file)
-						setActivePage("createTablePageActive")
+						// usingRemoteTemplate(true)
+						// setDefaultTemplate(file.data[0], data)
+						// addRemoteFile(file)
+						// setActivePage("createTablePageActive")
 					}}><span>{file.name}</span></div>
 					{:else}
 						<div class="ListItem" on:click={(event) => {
+							chooseTemplate()
 							updateSelectedFile(data, file)
-							usingRemoteTemplate(true)
-							setDefaultTemplate(file.data[0], data)
-							addRemoteFile(file)
-							setActivePage("createTablePageActive")
+							// usingRemoteTemplate(true)
+							// setDefaultTemplate(file.data[0], data)
+							// addRemoteFile(file)
+							// setActivePage("createTablePageActive")
 						}}><span>{file.name}</span></div>
 					{/if}
 
 				{/each}
 			</div>
-			<p class="description">Once the library is linked to this file, others will be able to use the templates from that library with this file. The templates in the library must be published.</p>
+			<p class="description">If you don't see your library in this list, add an instance of the template to the canvas.</p>
+			<!-- <p class="description">Once the library is linked to this file, others will be able to use the templates from that library with this file. The templates in the library must be published.</p> -->
 		</div>
 		{:else}
 		<div class="content">
-			<p>To use a template from a library add an instance of the template to this file.<p>
+			<p class="description">If you don't see your libary in this list, add an instance of the template to the canvas by dragging it from the assets panel.</p>
 			<!-- <p>Files recently visited by the plugin will appear here. To use a template from a library, run the plugin in the file where the template exist and make sure the template has been published.</p> -->
 		</div>
 		{/if}
 
-
-		{#if showToggles}
-		<div class="BottomBar">
-			<span on:click={() => setActivePage("createTablePageActive")}><Button id="create-table">Done</Button></span>
-		</div>
-		{/if}
 	</div>
 {/if}
 
 {#if pageState.chooseTemplate}
 	<div class="container" style="padding: var(--size-100) var(--size-200)">
-		<p>Choose a template</p>
+
+		<div class="TopBar">
+			<span style="display: flex; align-items: center;">
+			<span class="prev" on:click={() => setActivePage("chooseRemoteTemplate")}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
+			<span style="font-weight: bold; margin-left: -8px;">Templates</span>
+			</span>
+		</div>
 
 		{#if data.recentFiles.length > 0}
+
+
 
 			{#each data.recentFiles as file}
 
 				{#if selectedFile?.id === file.id}
+				<div class="main-content">
 					<div class="List">
 						{#each file.data as template}
-						<div class="ListItem" on:click={(event) => {
-							// Only trigger if clicking on the element itself
-							if(event.target !== event.currentTarget) return;
-							usingRemoteTemplate(true)
-							setDefaultTemplate(template, data)
-							addRemoteFile(file)
-							setActivePage("createTablePageActive")
-							}}>{template.name}</div>
+						<div class="ListItemNonHover">{template.name}</div>
 						{/each}
 					</div>
+					<p class="description">For multiple templates, make sure to add an instance of each template to the canvas.</p>
+				</div>
 				{/if}
+
+				<div class="BottomBar">
+					<span on:click={() => {
+						setDefaultTemplate(file.data[0], data)
+						addRemoteFile(file)
+						setActivePage("createTablePageActive")
+						}}><Button id="create-table">Link Library</Button></span>
+				</div>
 			{/each}
 		{/if}
 	</div>
@@ -952,6 +980,9 @@
 		margin-left: -2px;
 	}
 
+	.TopBar .prev {
+		margin-left: -12px;
+	}
 	.buttons > .prev .button {
 		width: 30px;
 		padding: 0;
@@ -1115,6 +1146,17 @@
 		border-top: 1px solid var(--figma-color-border, var(--color-black-10));
 		padding: var(--size-100);
 		background-color: var(--figma-color-bg);
+		/* justify-content: space-between; */
+	}
+
+	.TopBar {
+		display: flex;
+		place-content: flex-end;
+		margin: -8px -16px 8px -16px;
+		border-bottom: 1px solid var(--figma-color-border, var(--color-black-10));
+		padding: var(--size-100);
+		background-color: var(--figma-color-bg);
+		justify-content: space-between;
 	}
 
 	.SelectWrapper {
@@ -1519,6 +1561,14 @@
 		padding: 0 16px;
 	}
 
+	.ListItemNonHover {
+		display: flex;
+		place-items: center;
+		min-height: 34px;
+		margin: 0 -16px;
+		padding: 0 16px;
+	}
+
 	.ListItem p {
 		margin: 0;
 	}
@@ -1536,6 +1586,7 @@
 
 	.ListItem:hover {
 		background-color: var(--figma-color-bg-hover, var(--color-selection-a));
+		cursor: default;
 	}
 
 	.ListItem:hover > .buttons {

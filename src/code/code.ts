@@ -73,7 +73,7 @@ import {
 
 console.clear()
 
-figma.clientStorage.deleteAsync('recentFiles')
+// figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
@@ -1401,9 +1401,12 @@ async function main() {
 
 			await checkForTemplateInstance()
 
-			setInterval(async () => {
+			figma.on('selectionchange', async () => {
 				await checkForTemplateInstance()
-			}, 600)
+			})
+			// setInterval(async () => {
+
+			// }, 600)
 		})
 	})
 }

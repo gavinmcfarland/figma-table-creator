@@ -204,20 +204,23 @@ export function onlySpaces(str) {
 }
 
 export function upsert(array, cb, entry?) {
-	array.some((item, index) => {
-		let result = false
-		if (true === cb(array[index])) {
-			result = true
-			// move to top
-			if (entry) {
-				move(array, index, 0, entry)
-			} else {
-				move(array, index, 0)
+	if (array.length > 0) {
+		console.log(array)
+		array.some((item, index) => {
+			let result = false
+			if (true === cb(array[index])) {
+				result = true
+				// move to top
+				if (entry) {
+					move(array, index, 0, entry)
+				} else {
+					move(array, index, 0)
+				}
 			}
-		}
 
-		return result
-	})
+			return result
+		})
+	}
 
 	let matchFound = false
 	array.map((item, index) => {

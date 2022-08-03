@@ -344,7 +344,7 @@
 		color: var(--figma-color-text-tertiary, var(--color-black-30));
 	}
 
-	.ListItem:hover .currentSelectionName {
+	.ListItem.hover:hover .currentSelectionName {
 		display: block;
 	}
 
@@ -439,11 +439,11 @@
 		margin-right: -8px;
 	}
 
-	.ListItem:hover {
+	.ListItem.hover:hover {
 		background-color: var(--figma-color-bg-hover, var(--color-hover-fill));
 	}
 
-	.ListItem:hover > .templateButtons {
+	.ListItem.hover:hover > .templateButtons {
 		display: block;
 	}
 
