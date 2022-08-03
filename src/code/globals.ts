@@ -583,6 +583,7 @@ export function getLocalTemplates(): Template[] {
 			// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
 			let fileId = getDocumentData('fileId') || genUID()
 			templateData.file.id = fileId
+			templateData.file.name = figma.root.name
 
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)

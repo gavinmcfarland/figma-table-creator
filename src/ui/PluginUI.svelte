@@ -234,6 +234,12 @@
 			showToggles = true
 		}
 		setActivePage("chooseRemoteTemplate")
+
+		parent.postMessage({
+			pluginMessage: {
+				type: "listen-for-template"
+			}
+		}, "*")
 	}
 
 	function setDefaultTemplate(template, data) {
@@ -466,6 +472,10 @@
 			// }
 		}
 
+		if (message.type === "recent-files") {
+			data = Object.assign(data, message)
+		}
+
 		if (message.type === "local-templates") {
 			data = Object.assign(data, message)
 
@@ -518,7 +528,8 @@
 		</div>
 		{:else}
 		<div class="content">
-			<p>Files recently visited by the plugin will appear here. To use a template from a library, run the plugin in the file where the template exist and make sure the template has been published.</p>
+			<p>To use a template from a library add an instance of the template to this file.<p>
+			<!-- <p>Files recently visited by the plugin will appear here. To use a template from a library, run the plugin in the file where the template exist and make sure the template has been published.</p> -->
 		</div>
 		{/if}
 
@@ -696,20 +707,22 @@
 			<div class="content">
 			<h6>Get started</h6>
 
-			{#if data.recentFiles.length > 0}
+			<!-- {#if data.recentFiles.length > 0}
 				<p>Create a new template or use a template from a library by linking it to this file.</p>
 			{:else}
 				<p>Begin by creating a new template to create tables from.</p>
-			{/if}
+			{/if} -->
+
+			<p>Create a new template or use a template from a library by linking it to this file.</p>
 
 
 			<div class="buttons new-template">
 				<span on:click={() => newTemplate({ newPage: true })}><Button classes="secondary">New Template</Button></span>
-				{#if data.recentFiles.length > 0}
+				<!-- {#if data.recentFiles.length > 0} -->
 					<span on:click={() => {
 						chooseRemoteTemplate()
 						}}><Button classes="secondary">Link Library</Button></span>
-				{/if}
+				<!-- {/if} -->
 			</div>
 		</div>
 		{/if}

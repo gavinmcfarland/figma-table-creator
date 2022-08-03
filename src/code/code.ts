@@ -22,6 +22,7 @@ import {
 	removeRemoteFile,
 	setClientStoragAsync,
 	getNodeDepth,
+	addRecentFileAsync,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -36,6 +37,12 @@ import {
 	swapAxises,
 	clone,
 	upsert,
+	groupBy,
+	swapInstance,
+	convertToNumber,
+	isEmpty,
+	move,
+	daysToMilliseconds,
 } from './helpers'
 import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
@@ -55,7 +62,6 @@ import {
 	isTemplateNode,
 	selectTableCellsRelaunchData,
 } from './globals'
-import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from './helpers'
 
 // FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
@@ -67,7 +73,7 @@ import { swapInstance, convertToNumber, isEmpty, move, daysToMilliseconds } from
 
 console.clear()
 
-// figma.clientStorage.deleteAsync('recentFiles')
+figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
@@ -1351,6 +1357,53 @@ async function main() {
 			const remoteFiles = await getRemoteFilesAsync()
 			setDocumentData('usingRemoteTemplate', msg.usingRemoteTemplate)
 			figma.ui.postMessage({ type: 'remote-files', remoteFiles })
+		})
+
+		plugin.on('listen-for-template', async (msg) => {
+			function lookForTemplateInstances() {
+				let instances = figma.currentPage.findAllWithCriteria({ types: ['INSTANCE'] })
+
+				let templateInstances = []
+
+				for (let i = 0; i < instances.length; i++) {
+					let instance = instances[i]
+
+					if (getPluginData(instance, 'template')) {
+						templateInstances.push(getPluginData(instance, 'template'))
+					}
+				}
+
+				return templateInstances
+			}
+
+			async function checkForTemplateInstance() {
+				let templateInstances = lookForTemplateInstances()
+
+				let files = groupBy(templateInstances, (item) => item.file.id)
+
+				for (let i = 0; i < files.length; i++) {
+					let entry = files[i]
+					let fileData = entry[1]
+					let fileId = entry[1][0]?.file.id
+					let fileName = entry[1][0]?.file.name
+					let file = { id: fileId, name: fileName, data: fileData }
+
+					await addRecentFileAsync(file)
+				}
+
+				let recentFiles = await getRecentFilesAsync()
+
+				figma.ui.postMessage({
+					type: 'recent-files',
+					recentFiles: recentFiles,
+				})
+			}
+
+			await checkForTemplateInstance()
+
+			setInterval(async () => {
+				await checkForTemplateInstance()
+			}, 600)
 		})
 	})
 }

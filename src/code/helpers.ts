@@ -335,6 +335,20 @@ export function swapAxises(node) {
 	return node
 }
 
+export function groupBy(list, keyGetter) {
+	const map = new Map()
+	list.forEach((item) => {
+		const key = keyGetter(item)
+		const collection = map.get(key)
+		if (!collection) {
+			map.set(key, [item])
+		} else {
+			collection.push(item)
+		}
+	})
+	return Array.from(map)
+}
+
 export function genRandomId() {
 	var randPassword = Array(10)
 		.fill('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz')
