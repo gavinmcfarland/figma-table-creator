@@ -3179,9 +3179,10 @@ var ui = (function () {
     // (529:5) {#if showToggles}
     function create_if_block_20(ctx) {
     	let div;
-    	let span;
+    	let span0;
     	let t_value = /*file*/ ctx[70].name + "";
     	let t;
+    	let span1;
     	let mounted;
     	let dispose;
 
@@ -3192,14 +3193,19 @@ var ui = (function () {
     	return {
     		c() {
     			div = element("div");
-    			span = element("span");
+    			span0 = element("span");
     			t = text(t_value);
+    			span1 = element("span");
+    			set_style(span1, "margin-right", "-8px");
+    			attr(span1, "class", "icon");
+    			attr(span1, "icon", "chevron-right");
     			attr(div, "class", "ListItem");
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
-    			append(div, span);
-    			append(span, t);
+    			append(div, span0);
+    			append(span0, t);
+    			append(div, span1);
 
     			if (!mounted) {
     				dispose = listen(div, "click", click_handler_2);

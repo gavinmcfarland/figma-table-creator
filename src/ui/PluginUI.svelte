@@ -535,7 +535,7 @@
 						// setDefaultTemplate(file.data[0], data)
 						// addRemoteFile(file)
 						// setActivePage("createTablePageActive")
-					}}><span>{file.name}</span></div>
+					}}><span>{file.name}</span><span style="margin-right: -8px" class="icon" icon="chevron-right"></span></div>
 					{:else}
 						<div class="ListItem" on:click={(event) => {
 							chooseTemplate()
