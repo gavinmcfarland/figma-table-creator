@@ -9,6 +9,7 @@
 	import Matrix from "./Matrix.svelte"
 	import TemplateSettings from "./TemplateSettings.svelte"
 	import "./reset.css"
+	import throttle from 'lodash/throttle'
 
 	// TODO: Reset value to original if input left empty
 	// FIXME: Find out selected file is undefined when component copied from another file
@@ -128,7 +129,7 @@
 	// 	}
 	// }
 
-	function createTable(data) {
+	const createTable = throttle(e => {
 		parent.postMessage(
 			{
 				pluginMessage: {
@@ -146,7 +147,7 @@
 			},
 			"*"
 		)
-	}
+	}, 900)
 
 	function saveUserPreferences(preferences) {
 		parent.postMessage(
@@ -225,6 +226,8 @@
 			"*"
 		)
 	}
+
+
 
 	function chooseRemoteTemplate(opts) {
 
@@ -940,9 +943,7 @@
 			</div>
 
 			<div class="BottomBar">
-				<span on:click={() => {
-					createTable(data)
-				}}><Button id="create-table">Create Table</Button></span>
+				<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
 			</div>
 		<!-- </form> -->
 	</div>
@@ -1220,6 +1221,10 @@
 
 	.figma-light [icon="chevron-right"]::before {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.24264 3.25736L10.5 7.5L6.24264 11.7426' stroke='black' stroke-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	.figma-dark [icon="chevron-right"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.24264 3.25736L10.5 7.5L6.24264 11.7426' stroke='white' stroke-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
 	.figma-light [icon="text-align-top"] label::before {
