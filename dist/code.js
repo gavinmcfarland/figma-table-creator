@@ -5956,13 +5956,6 @@ async function upgradeOldComponentsToTemplate() {
 // TODO: When template renamed, default data no updated
 // TODO: Should default template be stored in usersPreferences? different for each file
 console.clear();
-// figma.clientStorage.deleteAsync('recentFiles')
-// figma.clientStorage.deleteAsync('pluginVersion')
-// figma.root.setPluginData('remoteFiles', '')
-// figma.root.setPluginData('fileId', '')
-// figma.root.setPluginData('defaultTemplate', '')
-// figma.clientStorage.deleteAsync('userPreferences')
-// figma.clientStorage.deleteAsync('recentTables')
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
     var index = array.findIndex((x) => x.id === object.id);
@@ -7046,8 +7039,9 @@ async function main() {
                 let templateInstances = [];
                 for (let i = 0; i < instances.length; i++) {
                     let instance = instances[i];
-                    if (getPluginData_1(instance, 'template')) {
-                        templateInstances.push(getPluginData_1(instance, 'template'));
+                    let templateData = getPluginData_1(instance, 'template');
+                    if (templateData) {
+                        templateInstances = upsert(templateInstances, (item) => item.id === templateData.id, templateData);
                     }
                 }
                 return templateInstances;
@@ -7074,10 +7068,14 @@ async function main() {
             figma.on('selectionchange', async () => {
                 await checkForTemplateInstance();
             });
-            // setInterval(async () => {
-            // }, 600)
         });
     });
 }
 main();
+// figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
+// figma.root.setPluginData('remoteFiles', '')
+// figma.root.setPluginData('fileId', '')
+// figma.root.setPluginData('defaultTemplate', '')
+// figma.clientStorage.deleteAsync('userPreferences')
+// figma.clientStorage.deleteAsync('recentTables')

@@ -520,8 +520,10 @@
 		</div>
 		{/if}
 
-		{#if data.recentFiles.length > 0}
 		<div class="main-content">
+
+		{#if data.recentFiles.length > 0}
+
 			<div class="List">
 				{#each data.recentFiles as file}
 					{#if showToggles}
@@ -543,20 +545,21 @@
 							// setDefaultTemplate(file.data[0], data)
 							// addRemoteFile(file)
 							// setActivePage("createTablePageActive")
-						}}><span>{file.name}</span></div>
+						}}><span>{file.name}</span><span style="margin-right: -8px" class="icon" icon="chevron-right"></span></div>
 					{/if}
 
 				{/each}
 			</div>
-			<p class="description">If you don't see your libary in this list. Open the assets panel and drag an instance of the template to the canvas.</p>
-			<!-- <p class="description">Once the library is linked to this file, others will be able to use the templates from that library with this file. The templates in the library must be published.</p> -->
-		</div>
-		{:else}
-		<div class="content">
-			<p class="description">If you don't see your libary in this list. Open the assets panel and drag an instance of the template to the canvas.</p>
-			<!-- <p>Files recently visited by the plugin will appear here. To use a template from a library, run the plugin in the file where the template exist and make sure the template has been published.</p> -->
-		</div>
 		{/if}
+		<p class="description">If you can't see your library listed, open the Assets panel and drag an instance of each template onto the canvas.</p>
+		<!-- <div class="help">
+			<div class="artwork2">
+				<div class="svg8"></div>
+			</div>
+
+
+		</div> -->
+		</div>
 
 	</div>
 {/if}
@@ -579,12 +582,16 @@
 
 				{#if menuSelectedFile?.id === file.id}
 				<div class="main-content">
+					<!-- <div class="artwork2">
+						<div class="svg8"></div>
+					</div> -->
+
 					<div class="List">
 						{#each file.data as template}
 						<div class="ListItemNonHover">{template.name}</div>
 						{/each}
 					</div>
-					<p class="description">For multiple templates, make sure to add an instance of each template to the canvas.</p>
+					<p class="description">If there are multiple templates, add each instance to the canvas so they appear here.</p>
 				</div>
 				{/if}
 
@@ -652,7 +659,7 @@
 		<div class="content">
 		<h6>Templates</h6>
 		<p>
-			Tables are now created from a single component called a template. They offer more flexibility. Easily update already created tables from the plugin or template.
+			Tables are now created from a single component called a template. Easily update already created tables directly from the template.
 		</p>
 		<div class="buttons">
 			<span class="prev" on:click={() => setActiveSlide(0)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
@@ -697,8 +704,11 @@
 		</div>
 		<div class="content">
 		<h6>Libraries</h6>
-		<p>
+		<!-- <p>
 			To use templates with libraries, first publish the template and then run the plugin in another file.
+		</p> -->
+		<p>
+			Templates can be used with libraries. Simply publish the template and then import it from any of your files.
 		</p>
 		<div class="buttons">
 			<span class="prev" on:click={() => setActiveSlide(2)}><Button classes="tertiary" iconRight="arrow-left"></Button></span>
@@ -744,7 +754,7 @@
 				<p>Begin by creating a new template to create tables from.</p>
 			{/if} -->
 
-			<p>Create a new template or import a template from a library.</p>
+			<p>Create a new template or import an existing template from a library.</p>
 
 
 			<div class="buttons new-template">
@@ -1035,6 +1045,15 @@
 		height: 284px;
 		max-height: 284px;
 	}
+	.artwork2 {
+		display: flex;
+    	flex-grow: 1;
+    	justify-content: center;
+		align-items: center;
+		margin: 0 -16px;
+		height: 152px;
+		margin-bottom: -16px;
+	}
 	.content {
 		flex-grow: 1;
 		position: relative;
@@ -1155,11 +1174,20 @@
 	.TopBar {
 		display: flex;
 		place-content: flex-end;
-		margin: -8px -16px 0 -16px;
+		margin: -8px -16px 8px -16px;
 		border-bottom: 1px solid var(--figma-color-border, var(--color-black-10));
 		padding: var(--size-100);
 		background-color: var(--figma-color-bg);
 		justify-content: space-between;
+	}
+
+	.help {
+		border-top: 1px solid var(--figma-color-border, var(--color-black-10));
+		padding: var(--size-100) var(--size-200);
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
 	}
 
 	.SelectWrapper {
@@ -1188,6 +1216,10 @@
 		width: 100%;
 		background-repeat: no-repeat;
 		background-position: center;
+	}
+
+	.figma-light [icon="chevron-right"]::before {
+		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6.24264 3.25736L10.5 7.5L6.24264 11.7426' stroke='black' stroke-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
 	.figma-light [icon="text-align-top"] label::before {
@@ -1302,6 +1334,21 @@
 
 	.figma-dark [icon="chevron-left"]::before {
 		background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.75736 3.25736L5.5 7.5L9.75736 11.7426' stroke='white' stroke-opacity='0.8'/%3E%3C/svg%3E%0A");
+	}
+
+	.description {
+		display: flex;
+	}
+
+	.figma-light .icon-info {
+		margin-left: -8px;
+		margin-top: -8px;
+		display: block;
+		min-width: 32px;
+		margin-right: 8px;
+		width: 32px;
+		height: 32px;
+		background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' viewBox='0 0 32 32' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M9 16C9 12.134 12.134 9 16 9C19.866 9 23 12.134 23 16C23 19.866 19.866 23 16 23C12.134 23 9 19.866 9 16ZM16 24C11.5817 24 8 20.4183 8 16C8 11.5817 11.5817 8 16 8C20.4183 8 24 11.5817 24 16C24 20.4183 20.4183 24 16 24ZM15.5 19.5V19V16V15.5H16.5V16V19V19.5H15.5ZM16.75 13.0001C16.75 13.4143 16.4142 13.7501 16 13.7501C15.5858 13.7501 15.25 13.4143 15.25 13.0001V12.9315C15.25 12.5173 15.5858 12.1815 16 12.1815C16.4142 12.1815 16.75 12.5173 16.75 12.9315V13.0001Z' fill='black' fill-opacity='0.8'/%3E%3C/svg%3E%0A");
 	}
 
 	/* .Select:hover > .label :last-child {
@@ -1562,7 +1609,7 @@
 	}
 
 	.List {
-		margin-top: 8px;
+		/* margin-top: 8px; */
 		margin-bottom: 8px;
 	}
 
@@ -1572,6 +1619,7 @@
 		min-height: 34px;
 		margin: 0 -16px;
 		padding: 0 16px;
+		justify-content: space-between;
 	}
 
 	.ListItemNonHover {
@@ -1684,6 +1732,18 @@
     height: 190px;
 	margin-bottom: -9px;
 	background-image: url("data:image/svg+xml,%3Csvg width='188' height='190' viewBox='0 0 188 190' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='4' y='24.8333' width='180' height='129' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='181' y='21.8333' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='181' y='150.833' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='1' y='150.833' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Crect x='1' y='21.8333' width='6' height='6' fill='%232D2D2C' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6 3.83325L3.375 6.45825L6 9.08325L8.625 6.45825L6 3.83325ZM6 10.5833L3.375 13.2083L6 15.8333L8.625 13.2083L6 10.5833ZM0 9.83325L2.625 7.20825L5.25 9.83325L2.625 12.4583L0 9.83325ZM9.375 7.20825L6.75 9.83325L9.375 12.4583L12 9.83325L9.375 7.20825Z' fill='%23A54EEA'/%3E%3Cpath d='M15.4773 6.43126V5.10598H22.4403V6.43126H19.7429V13.8333H18.1747V6.43126H15.4773ZM24.7674 13.9654C24.3526 13.9654 23.979 13.8915 23.6466 13.7438C23.3171 13.5932 23.0557 13.3716 22.8626 13.079C22.6722 12.7864 22.577 12.4256 22.577 11.9966C22.577 11.6273 22.6452 11.3219 22.7816 11.0804C22.918 10.8389 23.104 10.6458 23.3398 10.5009C23.5756 10.356 23.8413 10.2466 24.1367 10.1727C24.435 10.096 24.7432 10.0406 25.0614 10.0065C25.4449 9.96677 25.756 9.93126 25.9947 9.90001C26.2333 9.86592 26.4066 9.81479 26.5145 9.7466C26.6253 9.67558 26.6807 9.56621 26.6807 9.41848V9.39291C26.6807 9.07189 26.5856 8.82331 26.3952 8.64717C26.2049 8.47104 25.9307 8.38297 25.5728 8.38297C25.1949 8.38297 24.8952 8.46535 24.6736 8.63013C24.4549 8.7949 24.3072 8.9895 24.2305 9.21393L22.7901 9.00939C22.9037 8.61166 23.0913 8.27927 23.3526 8.01223C23.614 7.74234 23.9336 7.54064 24.3114 7.40712C24.6893 7.27075 25.1069 7.20257 25.5643 7.20257C25.8796 7.20257 26.1935 7.2395 26.506 7.31337C26.8185 7.38723 27.104 7.50939 27.3626 7.67984C27.6211 7.84746 27.8285 8.07615 27.9847 8.36592C28.1438 8.65569 28.2234 9.01791 28.2234 9.45257V13.8333H26.7404V12.9341H26.6893C26.5955 13.1159 26.4634 13.2864 26.293 13.4455C26.1253 13.6017 25.9137 13.7281 25.658 13.8247C25.4052 13.9185 25.1083 13.9654 24.7674 13.9654ZM25.168 12.8318C25.4776 12.8318 25.7461 12.7708 25.9734 12.6486C26.2006 12.5236 26.3753 12.3588 26.4975 12.1543C26.6225 11.9497 26.685 11.7267 26.685 11.4852V10.7139C26.6367 10.7537 26.5543 10.7906 26.4378 10.8247C26.3242 10.8588 26.1964 10.8886 26.0543 10.9142C25.9123 10.9398 25.7716 10.9625 25.6324 10.9824C25.4932 11.0023 25.3725 11.0193 25.2702 11.0335C25.0401 11.0648 24.8341 11.1159 24.6523 11.1869C24.4705 11.258 24.327 11.3574 24.2219 11.4852C24.1168 11.6102 24.0643 11.7722 24.0643 11.971C24.0643 12.2551 24.168 12.4696 24.3753 12.6145C24.5827 12.7594 24.8469 12.8318 25.168 12.8318ZM29.9027 13.8333V5.10598H31.4453V8.37018H31.5092C31.5887 8.21109 31.701 8.04206 31.8459 7.86308C31.9907 7.68126 32.1868 7.52643 32.4339 7.39859C32.6811 7.26791 32.9964 7.20257 33.3799 7.20257C33.8856 7.20257 34.3416 7.33183 34.7478 7.59035C35.1569 7.84604 35.4808 8.2253 35.7194 8.72814C35.9609 9.22814 36.0816 9.84177 36.0816 10.569C36.0816 11.2878 35.9638 11.8986 35.728 12.4014C35.4922 12.9043 35.1711 13.2878 34.7649 13.552C34.3586 13.8162 33.8984 13.9483 33.3842 13.9483C33.0092 13.9483 32.6981 13.8858 32.451 13.7608C32.2038 13.6358 32.0049 13.4852 31.8544 13.3091C31.7066 13.1301 31.5916 12.9611 31.5092 12.802H31.4197V13.8333H29.9027ZM31.4155 10.5605C31.4155 10.9838 31.4751 11.3546 31.5944 11.6727C31.7166 11.9909 31.8913 12.2395 32.1186 12.4185C32.3487 12.5946 32.6271 12.6827 32.9538 12.6827C33.2947 12.6827 33.5802 12.5918 33.8103 12.41C34.0405 12.2253 34.2138 11.9739 34.3302 11.6557C34.4495 11.3347 34.5092 10.9696 34.5092 10.5605C34.5092 10.1543 34.451 9.79348 34.3345 9.47814C34.218 9.1628 34.0447 8.91564 33.8146 8.73666C33.5845 8.55768 33.2976 8.46819 32.9538 8.46819C32.6243 8.46819 32.3444 8.55484 32.1143 8.72814C31.8842 8.90143 31.7095 9.14433 31.5902 9.45683C31.4737 9.76933 31.4155 10.1372 31.4155 10.5605ZM38.9957 5.10598V13.8333H37.4531V5.10598H38.9957ZM43.5397 13.9611C42.8835 13.9611 42.3167 13.8247 41.8394 13.552C41.365 13.2764 40.9999 12.8872 40.7443 12.3844C40.4886 11.8787 40.3607 11.2835 40.3607 10.5989C40.3607 9.92558 40.4886 9.33467 40.7443 8.82615C41.0028 8.31479 41.3636 7.91706 41.8266 7.63297C42.2897 7.34604 42.8337 7.20257 43.4587 7.20257C43.8622 7.20257 44.2428 7.26791 44.6008 7.39859C44.9616 7.52643 45.2798 7.7253 45.5553 7.99518C45.8338 8.26507 46.0525 8.60882 46.2116 9.02643C46.3707 9.44121 46.4502 9.93552 46.4502 10.5094V10.9824H41.0852V9.94263H44.9715C44.9687 9.64717 44.9048 9.38439 44.7798 9.15427C44.6548 8.92132 44.4801 8.73808 44.2556 8.60456C44.034 8.47104 43.7755 8.40427 43.4801 8.40427C43.1647 8.40427 42.8877 8.48098 42.6491 8.63439C42.4105 8.78496 42.2244 8.98382 42.0909 9.23098C41.9602 9.4753 41.8934 9.74376 41.8906 10.0364V10.944C41.8906 11.3247 41.9602 11.6514 42.0994 11.9242C42.2386 12.194 42.4332 12.4014 42.6832 12.5463C42.9332 12.6884 43.2258 12.7594 43.561 12.7594C43.7855 12.7594 43.9886 12.7281 44.1704 12.6656C44.3522 12.6003 44.5099 12.5051 44.6434 12.3801C44.7769 12.2551 44.8778 12.1003 44.946 11.9156L46.3863 12.0776C46.2954 12.4583 46.1221 12.7906 45.8664 13.0747C45.6136 13.356 45.2897 13.5747 44.8948 13.731C44.4999 13.8844 44.0482 13.9611 43.5397 13.9611ZM54.3845 5.10598V13.8333H52.8035V6.64433H52.7524L50.7112 7.94831V6.49945L52.8802 5.10598H54.3845Z' fill='%23A54EEA'/%3E%3Cg filter='url(%23filter0_d_113_3542)'%3E%3Cg clip-path='url(%23clip0_113_3542)'%3E%3Crect x='14' y='35' width='160' height='109' rx='2' fill='%232D2D2C'/%3E%3Crect width='80' height='36.3333' transform='translate(14 35)' fill='white' fill-opacity='0.01'/%3E%3Crect x='14' y='35' width='80' height='36.3333' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='80' height='36.3333' transform='translate(94 35)' fill='white' fill-opacity='0.01'/%3E%3Crect x='94' y='35' width='80' height='36.3333' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='80' height='36.3333' transform='translate(14 71.3334)' fill='white' fill-opacity='0.01'/%3E%3Crect x='14' y='71.3334' width='80' height='36.3333' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='80' height='36.3333' transform='translate(94 71.3334)' fill='white' fill-opacity='0.01'/%3E%3Crect x='94' y='71.3334' width='80' height='36.3333' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='80' height='36.3333' transform='translate(14 107.667)' fill='white' fill-opacity='0.01'/%3E%3Crect x='14' y='107.667' width='80' height='36.3333' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='80' height='36.3333' transform='translate(94 107.667)' fill='white' fill-opacity='0.01'/%3E%3Crect x='94' y='107.667' width='80' height='36.3333' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='14' y='35' width='160' height='109' rx='2' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Cpath d='M119.62 4.76062C119.3 4.36794 118.7 4.36794 118.38 4.76062L114.584 9.41656C113.981 10.1572 114.949 11.1418 115.699 10.5505L116.563 9.87014C117.065 9.47457 117.806 9.79863 117.856 10.4359L118.203 14.8496C118.28 15.8327 119.72 15.8327 119.798 14.8496L120.144 10.4361C120.194 9.79878 120.935 9.47472 121.437 9.87028L122.301 10.5506C123.051 11.1418 124.019 10.1572 123.416 9.41664L119.62 4.76062Z' fill='%23FF678C'/%3E%3Cpath d='M154.269 118.924C153.869 118.443 153.131 118.443 152.731 118.924L148.804 123.642C148.04 124.56 149.238 125.803 150.184 125.074L150.568 124.777C151.197 124.292 152.112 124.698 152.176 125.489L152.503 129.572C152.602 130.799 154.398 130.799 154.497 129.572L154.824 125.489C154.888 124.698 155.804 124.293 156.432 124.778L156.816 125.074C157.762 125.803 158.96 124.561 158.196 123.642L154.269 118.924Z' fill='%23FF678C'/%3E%3Cpath d='M39.4316 67.1475C38.9514 66.5559 38.0486 66.556 37.5684 67.1475L27.8593 79.106C26.9559 80.2187 28.4112 81.6927 29.5353 80.8036L34.282 77.0492C35.035 76.4536 36.1478 76.9396 36.2227 77.8968L37.3038 91.7118C37.4192 93.187 39.5811 93.187 39.6965 91.7118L40.7775 77.8971C40.8524 76.9399 41.9653 76.4539 42.7183 77.0495L47.4648 80.8037C48.5889 81.6928 50.0442 80.2188 49.1408 79.1061L39.4316 67.1475Z' fill='%23FF678C'/%3E%3Cpath d='M81.2679 164.92C80.8681 164.441 80.1319 164.441 79.7321 164.92L73.8136 172.015C73.0484 172.932 74.2449 174.176 75.1914 173.448L77.2888 171.833C77.9174 171.349 78.832 171.755 78.8956 172.545L79.5033 180.104C79.6019 181.33 81.3983 181.33 81.4969 180.104L82.1046 172.546C82.1682 171.755 83.0828 171.35 83.7114 171.833L85.8086 173.448C86.7552 174.176 87.9516 172.932 87.1864 172.015L81.2679 164.92Z' fill='%23FF678C'/%3E%3Cdefs%3E%3Cfilter id='filter0_d_113_3542' x='1' y='34' width='186' height='139' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='16'/%3E%3CfeGaussianBlur stdDeviation='6'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_113_3542'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_113_3542' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_113_3542'%3E%3Crect x='14' y='35' width='160' height='109' rx='2' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
+}
+
+.figma-light .svg8 {
+	width: 141px;
+    height: 104px;
+	background-image: url("data:image/svg+xml,%3Csvg width='141' height='104' viewBox='0 0 141 104' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_205_4242)'%3E%3Cg clip-path='url(%23clip0_205_4242)'%3E%3Crect x='8' width='125' height='88' rx='5' fill='white'/%3E%3Crect x='84' y='35' width='26' height='20' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath d='M86 30L84 28L82 30L84 32L86 30Z' fill='%23A54EEA'/%3E%3Crect x='88' y='29' width='8' height='2' fill='%23A54EEA'/%3E%3Crect x='88' y='39' width='18' height='12' rx='1' fill='white' stroke='%23CFCFCF' stroke-width='2'/%3E%3Cline x1='97' y1='40' x2='97' y2='50' stroke='%23CFCFCF'/%3E%3Cline x1='105' y1='43.25' x2='89' y2='43.25' stroke='%23CFCFCF'/%3E%3Cline x1='105' y1='46.75' x2='89' y2='46.75' stroke='%23CFCFCF'/%3E%3Cline x1='61' y1='2' x2='61' y2='106' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect x='20' y='18' width='28' height='22' rx='2' fill='%23F2F2F2'/%3E%3Crect x='25' y='23' width='18' height='12' rx='1' fill='white' stroke='%23CFCFCF' stroke-width='2'/%3E%3Cline x1='34' y1='24' x2='34' y2='34' stroke='%23CFCFCF'/%3E%3Cline x1='42' y1='27.25' x2='26' y2='27.25' stroke='%23CFCFCF'/%3E%3Cline x1='42' y1='30.75' x2='26' y2='30.75' stroke='%23CFCFCF'/%3E%3Crect x='20' y='48' width='28' height='22' rx='2' fill='%23F2F2F2'/%3E%3Cg opacity='0.6'%3E%3Cpath d='M76.0925 43.8491C69.2383 36.9949 58.1255 36.9949 51.2713 43.8491' stroke='%23CFCFCF' stroke-width='3'/%3E%3Cpath d='M73.4409 34.5879L76.0926 43.8489L66.8315 46.5006' stroke='%23CFCFCF' stroke-width='3'/%3E%3C/g%3E%3Cg filter='url(%23filter1_d_205_4242)'%3E%3Cpath d='M116.709 73.0833L114 59L125.92 66.0417L119.96 67.6667L116.709 73.0833Z' fill='%23010101'/%3E%3Cpath d='M114.276 58.5336L113.241 57.9226L113.468 59.1023L116.177 73.1857L116.445 74.5764L117.174 73.3621L120.313 68.132L126.063 66.5643L127.299 66.2271L126.196 65.5753L114.276 58.5336Z' stroke='white' stroke-width='1.08333' stroke-linecap='square'/%3E%3C/g%3E%3C/g%3E%3Crect x='9' y='1' width='123' height='86' rx='4' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_d_205_4242' x='0' y='0' width='141' height='104' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='8'/%3E%3CfeGaussianBlur stdDeviation='4'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_205_4242'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_205_4242' result='shape'/%3E%3C/filter%3E%3Cfilter id='filter1_d_205_4242' x='109.232' y='54.6785' width='22.6958' height='25.7241' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='1.08333'/%3E%3CfeGaussianBlur stdDeviation='1.625'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_205_4242'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_205_4242' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_205_4242'%3E%3Crect x='8' width='125' height='88' rx='5' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
+}
+
+.figma-dark .svg8 {
+	width: 141px;
+    height: 104px;
+	background-image: url("data:image/svg+xml,%3Csvg width='141' height='104' viewBox='0 0 141 104' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_205_4272)'%3E%3Cg clip-path='url(%23clip0_205_4272)'%3E%3Crect x='8' width='125' height='88' rx='5' fill='%232D2D2C'/%3E%3Crect x='84' y='35' width='26' height='20' stroke='%23A54EEA' stroke-width='2'/%3E%3Cpath d='M86 30L84 28L82 30L84 32L86 30Z' fill='%23A54EEA'/%3E%3Crect x='88' y='29' width='8' height='2' fill='%23A54EEA'/%3E%3Crect x='88' y='39' width='18' height='12' rx='1' fill='%232D2D2C' stroke='%235C5C5C' stroke-width='2'/%3E%3Cline x1='97' y1='40' x2='97' y2='50' stroke='%235C5C5C'/%3E%3Cline x1='105' y1='43.25' x2='89' y2='43.25' stroke='%235C5C5C'/%3E%3Cline x1='105' y1='46.75' x2='89' y2='46.75' stroke='%235C5C5C'/%3E%3Cline x1='61' y1='2' x2='61' y2='106' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect x='20' y='18' width='28' height='22' rx='2' fill='%233A3A3A'/%3E%3Crect x='25' y='23' width='18' height='12' rx='1' fill='%232D2D2C' stroke='%235C5C5C' stroke-width='2'/%3E%3Cline x1='34' y1='24' x2='34' y2='34' stroke='%235C5C5C'/%3E%3Cline x1='42' y1='27.25' x2='26' y2='27.25' stroke='%235C5C5C'/%3E%3Cline x1='42' y1='30.75' x2='26' y2='30.75' stroke='%235C5C5C'/%3E%3Crect x='20' y='48' width='28' height='22' rx='2' fill='%233A3A3A'/%3E%3Cg opacity='0.6'%3E%3Cpath d='M76.0925 43.8491C69.2383 36.9949 58.1255 36.9949 51.2713 43.8491' stroke='%235C5C5C' stroke-width='3'/%3E%3Cpath d='M73.4407 34.5879L76.0923 43.8489L66.8313 46.5006' stroke='%235C5C5C' stroke-width='3'/%3E%3C/g%3E%3Cg filter='url(%23filter1_d_205_4272)'%3E%3Cpath d='M116.709 73.0833L114 59L125.92 66.0417L119.96 67.6667L116.709 73.0833Z' fill='%23010101'/%3E%3Cpath d='M114.276 58.5336L113.241 57.9226L113.468 59.1023L116.177 73.1857L116.445 74.5764L117.174 73.3621L120.313 68.132L126.063 66.5643L127.299 66.2271L126.196 65.5753L114.276 58.5336Z' stroke='white' stroke-width='1.08333' stroke-linecap='square'/%3E%3C/g%3E%3C/g%3E%3Crect x='9' y='1' width='123' height='86' rx='4' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_d_205_4272' x='0' y='0' width='141' height='104' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='8'/%3E%3CfeGaussianBlur stdDeviation='4'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_205_4272'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_205_4272' result='shape'/%3E%3C/filter%3E%3Cfilter id='filter1_d_205_4272' x='109.232' y='54.6785' width='22.6958' height='25.7244' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='1.08333'/%3E%3CfeGaussianBlur stdDeviation='1.625'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_205_4272'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_205_4272' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_205_4272'%3E%3Crect x='8' width='125' height='88' rx='5' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
 }
 
 

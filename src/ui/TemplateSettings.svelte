@@ -200,14 +200,20 @@
 <svelte:window on:message={onMessage} />
 
 <div class="EditTemplate">
-	<div class="SectionTitle">
+	<div class="TopBar">
+		<span style="display: flex; align-items: center;">
+		<a title="Back" class="refresh icon" icon="chevron-left" on:click={() => doneEditing()}></a>
+		<span style="font-weight: bold; margin-left: 4px; margin-top: 2px">{template.name}</span>
+		</span>
+	</div>
+	<!-- <div class="SectionTitle">
 		<span class="Label">
 			<span class="icon" icon="component" />
 			<span class="text text-bold">
 				{template.name}
 			</span>
 		</span>
-	</div>
+	</div> -->
 
 	<!-- <p class="type m-xxsmall description" style="letter-spacing: -0.15px">
 		Configure part of a template by selecting a layer and adding or removing it below.
@@ -251,10 +257,6 @@
 
 		<p class="type m-xxsmall description" style="margin-top: 16px">* optional</p>
 	<!-- {/if} -->
-
-	<div class="BottomBar">
-		<span on:click={() => doneEditing()}><Button id="create-table">Done</Button></span>
-	</div>
 
 </div>
 
@@ -313,7 +315,7 @@
 
 	.EditTemplate .templateArtwork {
 		position: relative;
-		margin-top: 16px;
+		margin-top: 24px;
 		margin-bottom: 8px;
 	}
 
@@ -413,7 +415,7 @@
 	}
 
 	.List {
-		margin-top: 8px;
+		/* margin-top: 8px; */
 	}
 
 	.ListItem {

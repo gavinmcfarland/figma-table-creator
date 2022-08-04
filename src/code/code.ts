@@ -73,14 +73,6 @@ import {
 
 console.clear()
 
-// figma.clientStorage.deleteAsync('recentFiles')
-// figma.clientStorage.deleteAsync('pluginVersion')
-// figma.root.setPluginData('remoteFiles', '')
-// figma.root.setPluginData('fileId', '')
-// figma.root.setPluginData('defaultTemplate', '')
-// figma.clientStorage.deleteAsync('userPreferences')
-// figma.clientStorage.deleteAsync('recentTables')
-
 function addUniqueToArray(object, array) {
 	// // Only add new template if unique
 	var index = array.findIndex((x) => x.id === object.id)
@@ -1367,9 +1359,10 @@ async function main() {
 
 				for (let i = 0; i < instances.length; i++) {
 					let instance = instances[i]
+					let templateData = getPluginData(instance, 'template')
 
-					if (getPluginData(instance, 'template')) {
-						templateInstances.push(getPluginData(instance, 'template'))
+					if (templateData) {
+						templateInstances = upsert(templateInstances, (item) => item.id === templateData.id, templateData)
 					}
 				}
 
@@ -1404,13 +1397,16 @@ async function main() {
 			figma.on('selectionchange', async () => {
 				await checkForTemplateInstance()
 			})
-			// setInterval(async () => {
-
-			// }, 600)
 		})
 	})
 }
 
 main()
 
+// figma.clientStorage.deleteAsync('recentFiles')
 // figma.clientStorage.deleteAsync('pluginVersion')
+// figma.root.setPluginData('remoteFiles', '')
+// figma.root.setPluginData('fileId', '')
+// figma.root.setPluginData('defaultTemplate', '')
+// figma.clientStorage.deleteAsync('userPreferences')
+// figma.clientStorage.deleteAsync('recentTables')
