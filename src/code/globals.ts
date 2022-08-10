@@ -25,6 +25,7 @@ import {
 	upsert,
 	convertToNumber,
 	sleep,
+	daysToMilliseconds,
 } from './helpers'
 
 export let defaultRelaunchData = {
@@ -446,6 +447,14 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			tableInstance.resize(tableInstance.width, convertToNumber(tableSettings.size[1]))
 		}
 
+		if (tableSettings.size[0] === '$') {
+			tableInstance.resize(convertToNumber(templateSettings.size[0]), tableInstance.height)
+		}
+
+		if (tableSettings.size[1] === '$') {
+			tableInstance.resize(tableInstance.width, convertToNumber(templateSettings.size[1]))
+		}
+
 		if (tableSettings.size[0] === 'HUG') {
 			tableInstance.counterAxisSizingMode = 'AUTO'
 		}
@@ -516,6 +525,7 @@ export class Template {
 		key: number
 	}
 	file: File
+	created: string
 
 	constructor(node) {
 		this.name = node.name
@@ -527,12 +537,12 @@ export class Template {
 			id: getDocumentData('fileId') || setDocumentData('fileId', genRandomId()),
 			name: figma.root.name,
 		}
+		this.created = new Date().toISOString()
 	}
 }
 
 export function updateTemplateData(node, data) {
 	data.id = node.id
-	data.name = node.name
 	data.name = node.name
 	data.component.id = node.id
 	// KEY needs updating if template duplicated
@@ -573,23 +583,19 @@ export function getLocalTemplates(): Template[] {
 		let node = components[i]
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
-			// ID could update if copied to another file
-			templateData.id = node.id
-			templateData.name = node.name
-			templateData.component.id = node.id
-			// KEY needs updating if template duplicated
-			templateData.component.key = node.key
-			// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
-			// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
-			let fileId = getDocumentData('fileId') || genUID()
-			templateData.file.id = fileId
-			templateData.file.name = figma.root.name
+			// if the component id has changed then save previous data so that it can be references if component is moved
+			if (templateData.id !== node.id) {
+				setPluginData(node, 'prevTemplate', templateData)
 
+				// If new file, then set new creation date
+				templateData.created = new Date().toISOString()
+			}
+
+			templateData = updateTemplateData(node, templateData)
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 
 			// Remove any template data and relaunch data that exists on nodes inside this template
-
 			node.findAll((node) => {
 				if (getPluginData(node, 'template')) {
 					node.setPluginData('template', '')
@@ -597,6 +603,14 @@ export function getLocalTemplates(): Template[] {
 					return true
 				}
 			})
+
+			// Check age of template and if over 35 days then remove prevTemplate data
+
+			let componentTimestamp = new Date(templateData.created).valueOf()
+			let currentTimestamp = new Date().valueOf()
+			if (componentTimestamp < currentTimestamp - daysToMilliseconds(35)) {
+				setPluginData(node, 'prevTemplate', '')
+			}
 		}
 	}
 	// figma.root.findAll((node) => {
@@ -663,7 +677,7 @@ export async function getDefaultTemplate(): Promise<Template> {
 
 	let defaultTemplate
 
-	if (defaultTemplates.length > 0) {
+	if (defaultTemplates?.length > 0) {
 		let lastTemplateUsedWithFile = defaultTemplates.find((item) => item.file.id === fileId)
 		if (lastTemplateUsedWithFile) {
 			defaultTemplate = lastTemplateUsedWithFile.template
@@ -689,10 +703,13 @@ export async function getDefaultTemplate(): Promise<Template> {
 		} else {
 			let templateComponent = await lookForComponent(defaultTemplate)
 			if (!templateComponent) {
-				if (remoteFiles.length > 0) {
+				// Component is remote and can't be found
+				if (remoteFiles?.length > 0) {
 					defaultTemplate = remoteFiles[0].data[0]
-				} else if (localTemplates.length > 0) {
+				} else if (localTemplates?.length > 0) {
 					defaultTemplate = localTemplates[0]
+				} else {
+					defaultTemplate = null
 				}
 			}
 		}
@@ -710,7 +727,10 @@ export async function getDefaultTemplate(): Promise<Template> {
 
 export async function updateTables(template) {
 	var templateComponent = await lookForComponent(template)
+	let prevTemplate = getPluginData(templateComponent, 'prevTemplate')
 	let templateParts = getTemplateParts(templateComponent)
+	let tablesUpdated
+	let tablesRelinked
 
 	// FIXME: Template file name not up to date for some reason
 
@@ -733,13 +753,35 @@ export async function updateTables(template) {
 
 		await sleep()
 
-		var tableInstances = page.findAll((node) => getPluginData(node, 'template')?.id === template.id && node.type === 'FRAME')
+		var allTableInstances = []
 
-		if (templateComponent && tableInstances) {
+		var tableInstances = page.findAll((node) => getPluginData(node, 'template')?.component.id === template.component.id && node.type === 'FRAME')
+
+		if (tableInstances?.length > 0) {
+			tablesUpdated = true
+		}
+
+		allTableInstances = tableInstances
+
+		if (prevTemplate) {
+			var oldTableInstances = page.findAll(
+				(node) => getPluginData(node, 'template')?.component.id === prevTemplate.component.id && node.type === 'FRAME'
+			)
+			if (oldTableInstances?.length > 0) {
+				tablesRelinked = true
+			}
+			allTableInstances = [...tableInstances, ...oldTableInstances]
+		}
+
+		if (templateComponent && allTableInstances) {
 			var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
 
-			for (let b = 0; b < tableInstances.length; b++) {
-				let tableParts = getTemplateParts(tableInstances[b])
+			for (let b = 0; b < allTableInstances.length; b++) {
+				let tableInstance = allTableInstances[b]
+				let tableParts = getTemplateParts(tableInstance)
+
+				// Update template incase it has changed
+				setPluginData(tableInstance, 'template', template)
 
 				let container = tableParts.container
 				var table = tableParts.table
@@ -762,6 +804,11 @@ export async function updateTables(template) {
 				}
 			}
 		}
+	}
+
+	return {
+		tablesUpdated,
+		tablesRelinked,
 	}
 }
 

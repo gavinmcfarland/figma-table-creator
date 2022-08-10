@@ -91,32 +91,37 @@
 
 	function updateSelectedTemplate(data, template) {
 
-		// Look for selected table in local templates
-		// If template not provided use defaultTemplate
-		template = template || data.defaultTemplate
+		// if (template) {
 
 
 
-		for (var i in data.localTemplates) {
-			// We have to check both id and key, because two nodes in different files can have the same id
-			if (template.component.id === data.localTemplates[i].component.id && template.component.key === data.localTemplates[i].component.key) {
-				data.localTemplates[i].selected = true
-			}
-		}
+			// Look for selected table in local templates
+			// If template not provided use defaultTemplate
+			template = template || data.defaultTemplate
 
-		// for (let i = 0; i < data.remoteFiles.length; i++) {
 
-		// }
-		for (let i in data.remoteFiles) {
-			let file = data.remoteFiles[i]
-			for (let b in data.remoteFiles[i].data) {
-				if (template.component.key === file.data[b].component.key) {
-					file.data[b].selected = true
+
+			for (var i in data.localTemplates) {
+				// We have to check both id and key, because two nodes in different files can have the same id
+				if (template.component.id === data.localTemplates[i].component.id && template.component.key === data.localTemplates[i].component.key) {
+					data.localTemplates[i].selected = true
 				}
 			}
-		}
 
-		// TODO: Look for selected table in remote files
+			// for (let i = 0; i < data.remoteFiles.length; i++) {
+
+			// }
+			for (let i in data.remoteFiles) {
+				let file = data.remoteFiles[i]
+				for (let b in data.remoteFiles[i].data) {
+					if (template.component.key === file.data[b].component.key) {
+						file.data[b].selected = true
+					}
+				}
+			}
+
+			// TODO: Look for selected table in remote files
+		// }
 
 		return data
 	}
@@ -298,6 +303,8 @@
 
 	function updateSelectedFile(data, file) {
 
+
+
 		// file = file || data.defaultTemplate.file
 
 		if (!data && !file) {
@@ -305,42 +312,42 @@
 		}
 		else {
 			if (file) {
-			selectedFile = file
-		}
-		else {
-
-			// We have to check both id and key because two nodes in different files can have same id
-			let index = data.localTemplates.findIndex((template) => template.component.id === data?.defaultTemplate?.component.id && template.component.key === data?.defaultTemplate?.component.key)
-
-
-			if (index !== -1) {
-			// if (data.defaultTemplate?.file.id === data.fileId) {
-				selectedFile = {}
-				selectedFile.id = data.fileId
-				selectedFile.name = "Local templates"
-
-				valueStore.update((data) => {
-					data.selectedFile = selectedFile
-					return data
-				})
+				selectedFile = file
 			}
 			else {
-				for (var i in data.remoteFiles) {
-					if (data.remoteFiles[i].id === data?.defaultTemplate?.file.id) {
-						// data.remoteFiles[i].selected = true
-						selectedFile = data.remoteFiles[i]
+
+				// if (file) {
+					// We have to check both id and key because two nodes in different files can have same id
+					let index = data.localTemplates.findIndex((template) => template.component.id === data?.defaultTemplate?.component.id && template.component.key === data?.defaultTemplate?.component.key)
+
+
+					if (index !== -1) {
+					// if (data.defaultTemplate?.file.id === data.fileId) {
+						selectedFile = {}
+						selectedFile.id = data.fileId
+						selectedFile.name = "Local templates"
 
 						valueStore.update((data) => {
 							data.selectedFile = selectedFile
 							return data
 						})
 					}
-				}
+					else {
+						for (var i in data.remoteFiles) {
+							if (data.remoteFiles[i].id === data?.defaultTemplate?.file.id) {
+								// data.remoteFiles[i].selected = true
+								selectedFile = data.remoteFiles[i]
+
+								valueStore.update((data) => {
+									data.selectedFile = selectedFile
+									return data
+								})
+							}
+						}
+					}
+				// }
 			}
 		}
-		}
-
-
 
 		return data
 	}
@@ -600,8 +607,8 @@
 
 				<div class="BottomBar">
 					<span on:click={() => {
-						setDefaultTemplate(file.data[0], data)
-						addRemoteFile(file)
+						setDefaultTemplate( menuSelectedFile.data[0], data)
+						addRemoteFile(menuSelectedFile)
 						setActivePage("createTablePageActive")
 						}}><Button id="create-table">Import</Button></span>
 				</div>
@@ -1590,6 +1597,10 @@
 
 	.refresh:hover {
 		background-color: var(--figma-color-bg-hover, var(--color-black-10));
+	}
+
+	.ListItem .refresh:hover {
+		background-color: var(--figma-color-bg-tertiary, var(--color-black-10));
 	}
 
 	.item .refresh:hover {

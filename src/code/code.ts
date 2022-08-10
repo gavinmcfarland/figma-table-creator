@@ -353,7 +353,7 @@ function detachTable(selection) {
 		// Remove dot from nodes used as column resizing
 		table.findAll((node) => {
 			if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-				node.name = node.name.replace(/^./, '')
+				node.name = node.name.replace(/^\./, '')
 			}
 		})
 	}
@@ -742,8 +742,6 @@ async function createTableUI() {
 	const fileId = getDocumentData('fileId')
 
 	let defaultTemplate = await getDefaultTemplate()
-
-	console.log('dt', defaultTemplate)
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240,
@@ -1279,15 +1277,24 @@ async function main() {
 
 		plugin.command('updateTables', () => {
 			let templateData = getPluginData(figma.currentPage.selection[0], 'template')
-			updateTables(templateData).then(() => {
-				figma.notify('Tables updated', { timeout: 1500 })
-				figma.closePlugin()
+			updateTables(templateData).then((result) => {
+				if (result.tablesRelinked) {
+					figma.closePlugin('Tables updated and relinked')
+				} else if (result.tablesUpdated) {
+					figma.closePlugin('Tables updated')
+				} else {
+					figma.closePlugin()
+				}
 			})
 		})
 
 		plugin.on('update-tables', (msg) => {
-			updateTables(msg.template).then(() => {
-				figma.notify('Tables updated', { timeout: 1500 })
+			updateTables(msg.template).then((result) => {
+				if (result.tablesRelinked) {
+					figma.notify('Tables updated and relinked')
+				} else if (result.tablesUpdated) {
+					figma.notify('Tables updated')
+				}
 			})
 		})
 

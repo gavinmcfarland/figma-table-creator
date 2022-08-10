@@ -239,13 +239,14 @@
 			{#each parts as part, i}
 
 				<div class={currentSelection?.element === part.element && part.id ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
+					<span style="display: flex">
 					<p title="{part.longName}" class="element">&lt;{part.element}&gt;<spa class={part.element === "th" ? "astrix" : "astrix-hide"}>*</spa></p>
 					{#if part.name}
 					<span>{part.name}</span>
 					{:else}
 					<span class="currentSelectionName">{currentSelection && currentSelection?.allow?.includes(part.element) ? currentSelection.name : ""}</span>
 					{/if}
-
+					</span>
 					<span class="templateButtons" style={part.name || currentSelection && currentSelection?.allow?.includes(part.element) ? "" : "display: none;"}>
 						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i, template)}></span>
 					</span>
@@ -441,11 +442,11 @@
 		margin-right: -8px;
 	}
 
-	.ListItem.hover:hover {
+	.ListItem:hover {
 		background-color: var(--figma-color-bg-hover, var(--color-hover-fill));
 	}
 
-	.ListItem.hover:hover > .templateButtons {
+	.ListItem:hover > .templateButtons {
 		display: block;
 	}
 

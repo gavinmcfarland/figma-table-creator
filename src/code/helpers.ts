@@ -205,7 +205,6 @@ export function onlySpaces(str) {
 
 export function upsert(array, cb, entry?) {
 	if (array.length > 0) {
-		console.log(array)
 		array.some((item, index) => {
 			let result = false
 			if (true === cb(array[index])) {
@@ -471,12 +470,12 @@ export async function changeText(node, text, weight?) {
 		})
 	}
 
-	if (weight) {
-		node.fontName = {
-			family: node.fontName.family,
-			style: weight,
-		}
-	}
+	// if (weight) {
+	// 	node.fontName = {
+	// 		family: node.fontName.family,
+	// 		style: weight,
+	// 	}
+	// }
 
 	if (text) {
 		node.characters = text
