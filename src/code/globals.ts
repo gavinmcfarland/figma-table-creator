@@ -154,6 +154,11 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 			// 	node.setProperties(extractValues(templateCell.componentProperties))
 			// }
 
+			// Swap main component
+			if (templateCell.mainComponent) {
+				node.swapComponent(templateCell.mainComponent)
+			}
+
 			// // Add table numbering
 			// if (rowIndex || rowIndex === 0) {
 			// 	let templateText = templateCell.findOne((node) => node.name === 'Text')
