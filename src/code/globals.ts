@@ -732,7 +732,7 @@ export async function getDefaultTemplate(): Promise<Template> {
 
 export async function updateTables(template) {
 	var templateComponent = await lookForComponent(template)
-	let prevTemplate = getPluginData(templateComponent, 'prevTemplate')
+	// let prevTemplate = getPluginData(templateComponent, 'prevTemplate')
 	let templateParts = getTemplateParts(templateComponent)
 	let tablesUpdated
 	let tablesRelinked
@@ -768,15 +768,15 @@ export async function updateTables(template) {
 
 		allTableInstances = tableInstances
 
-		if (prevTemplate) {
-			var oldTableInstances = page.findAll(
-				(node) => getPluginData(node, 'template')?.component.id === prevTemplate.component.id && node.type === 'FRAME'
-			)
-			if (oldTableInstances?.length > 0) {
-				tablesRelinked = true
-			}
-			allTableInstances = [...tableInstances, ...oldTableInstances]
-		}
+		// if (prevTemplate) {
+		// 	var oldTableInstances = page.findAll(
+		// 		(node) => getPluginData(node, 'template')?.component.id === prevTemplate.component.id && node.type === 'FRAME'
+		// 	)
+		// 	if (oldTableInstances?.length > 0) {
+		// 		tablesRelinked = true
+		// 	}
+		// 	allTableInstances = [...tableInstances, ...oldTableInstances]
+		// }
 
 		if (templateComponent && allTableInstances) {
 			var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
