@@ -580,6 +580,7 @@ export function getLocalTemplatesWithoutUpdating(): Template[] {
 
 export function getLocalTemplates(): Template[] {
 	figma.skipInvisibleInstanceChildren = true
+	var fileId = getDocumentData('fileId')
 	var templates = []
 	var components = figma.root.findAllWithCriteria({
 		types: ['COMPONENT'],
@@ -589,7 +590,7 @@ export function getLocalTemplates(): Template[] {
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
 			// if the component id has changed then save previous data so that it can be references if component is moved
-			if (templateData.id !== node.id) {
+			if (templateData.id !== node.id && templateData.file.id !== fileId) {
 				setPluginData(node, 'prevTemplate', templateData)
 
 				// If new file, then set new creation date
@@ -732,7 +733,7 @@ export async function getDefaultTemplate(): Promise<Template> {
 
 export async function updateTables(template) {
 	var templateComponent = await lookForComponent(template)
-	// let prevTemplate = getPluginData(templateComponent, 'prevTemplate')
+	let prevTemplate = getPluginData(templateComponent, 'prevTemplate')
 	let templateParts = getTemplateParts(templateComponent)
 	let tablesUpdated
 	let tablesRelinked
@@ -768,15 +769,15 @@ export async function updateTables(template) {
 
 		allTableInstances = tableInstances
 
-		// if (prevTemplate) {
-		// 	var oldTableInstances = page.findAll(
-		// 		(node) => getPluginData(node, 'template')?.component.id === prevTemplate.component.id && node.type === 'FRAME'
-		// 	)
-		// 	if (oldTableInstances?.length > 0) {
-		// 		tablesRelinked = true
-		// 	}
-		// 	allTableInstances = [...tableInstances, ...oldTableInstances]
-		// }
+		if (prevTemplate) {
+			var oldTableInstances = page.findAll(
+				(node) => getPluginData(node, 'template')?.component.id === prevTemplate.component.id && node.type === 'FRAME'
+			)
+			if (oldTableInstances?.length > 0) {
+				tablesRelinked = true
+			}
+			allTableInstances = [...tableInstances, ...oldTableInstances]
+		}
 
 		if (templateComponent && allTableInstances) {
 			var rowTemplate = templateComponent.findOne((node) => getPluginData(node, 'elementSemantics')?.is === 'tr')
