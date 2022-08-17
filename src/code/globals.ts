@@ -589,7 +589,7 @@ export function getLocalTemplates(): Template[] {
 		let node = components[i]
 		var templateData = getPluginData(node, 'template')
 		if (templateData && node.type === 'COMPONENT') {
-			// if the component id has changed then save previous data so that it can be references if component is moved
+			// if the component id has changed then save previous data so that it can be relinked
 			if (templateData.id !== node.id && templateData.file.id !== fileId) {
 				setPluginData(node, 'prevTemplate', templateData)
 
