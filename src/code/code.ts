@@ -255,7 +255,7 @@ function postCurrentSelection(templateNodeId) {
 							return 'Cell'
 						}
 						if (semanticName === 'th') {
-							return 'Header Cell'
+							return 'H. Cell'
 						}
 					})(),
 					allow,
@@ -266,6 +266,7 @@ function postCurrentSelection(templateNodeId) {
 
 			figma.ui.postMessage({ type: 'current-selection', selection: selectionToSend })
 		} else {
+			console.log(selectionToSend)
 			figma.ui.postMessage({ type: 'current-selection', selection: undefined })
 		}
 	}
@@ -921,7 +922,7 @@ async function main() {
 						name: getSelectionName(parts?.th),
 						element: 'th',
 						id: parts?.th?.id,
-						longName: 'Cell Header',
+						longName: 'H. Cell',
 					},
 				}
 
@@ -1317,23 +1318,28 @@ async function main() {
 							name: getSelectionName(parts?.table),
 							element: 'table',
 							id: parts?.table?.id,
+							longName: 'Table',
 						},
 						tr: {
 							name: getSelectionName(parts?.tr),
 							element: 'tr',
 							id: parts?.tr?.id,
+							longName: 'Row',
 						},
 						td: {
 							name: getSelectionName(parts?.td),
 							element: 'td',
 							id: parts?.td?.id,
+							longName: 'Cell',
 						},
 						th: {
 							name: getSelectionName(parts?.th),
 							element: 'th',
 							id: parts?.th?.id,
+							longName: 'H. Cell',
 						},
 					}
+					console.log('postFromCode', partsAsObject)
 					figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 				}
 

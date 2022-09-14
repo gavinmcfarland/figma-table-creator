@@ -2984,8 +2984,42 @@ async function createTemplateComponents() {
     ];
     component_305_187.x = 11689;
     component_305_187.y = 7174;
+    // component_305_187.cornerRadius = 4
+    // component_305_187.strokeTopWeight = 1
+    // component_305_187.strokeBottomWeight = 1
+    // component_305_187.strokeLeftWeight = 1
+    // component_305_187.strokeRightWeight = 1
+    // component_305_187.clipsContent = true
+    component_305_187.expanded = false;
+    component_305_187.layoutMode = 'VERTICAL';
+    component_305_187.counterAxisSizingMode = 'AUTO';
+    // Create FRAME
+    var frame_table = figma.createFrame();
+    component_305_187.appendChild(frame_table);
+    frame_table.resize(240.0, 105.0);
+    frame_table.primaryAxisSizingMode = 'AUTO';
+    frame_table.counterAxisSizingMode = 'AUTO';
+    frame_table.name = 'Table';
+    // frame_table.effects = [
+    // 	{
+    // 		type: 'DROP_SHADOW',
+    // 		color: { r: 0, g: 0, b: 0, a: 0.10000000149011612 },
+    // 		offset: { x: 0, y: 2 },
+    // 		radius: 6,
+    // 		spread: 0,
+    // 		visible: true,
+    // 		blendMode: 'NORMAL',
+    // 		showShadowBehindNode: false,
+    // 	},
+    // ]
+    // frame_table.relativeTransform = [
+    // 	[1, 0, 11689],
+    // 	[0, 1, 7174],
+    // ]
+    // frame_table.x = 11689
+    // frame_table.y = 7174
     if (theme === 'dark') {
-        component_305_187.fills = [
+        frame_table.fills = [
             {
                 type: 'SOLID',
                 visible: true,
@@ -2994,7 +3028,7 @@ async function createTemplateComponents() {
                 color: { r: 0.21250000596046448, g: 0.21250000596046448, b: 0.21250000596046448 },
             },
         ];
-        component_305_187.strokes = [
+        frame_table.strokes = [
             {
                 type: 'SOLID',
                 visible: true,
@@ -3005,8 +3039,8 @@ async function createTemplateComponents() {
         ];
     }
     else {
-        component_305_187.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
-        component_305_187.strokes = [
+        frame_table.fills = [{ type: 'SOLID', visible: true, opacity: 1, blendMode: 'NORMAL', color: { r: 1, g: 1, b: 1 } }];
+        frame_table.strokes = [
             {
                 type: 'SOLID',
                 visible: true,
@@ -3016,18 +3050,18 @@ async function createTemplateComponents() {
             },
         ];
     }
-    component_305_187.cornerRadius = 4;
-    component_305_187.strokeTopWeight = 1;
-    component_305_187.strokeBottomWeight = 1;
-    component_305_187.strokeLeftWeight = 1;
-    component_305_187.strokeRightWeight = 1;
-    component_305_187.clipsContent = true;
-    component_305_187.expanded = false;
-    component_305_187.layoutMode = 'VERTICAL';
-    component_305_187.counterAxisSizingMode = 'AUTO';
+    frame_table.cornerRadius = 4;
+    frame_table.strokeTopWeight = 1;
+    frame_table.strokeBottomWeight = 1;
+    frame_table.strokeLeftWeight = 1;
+    frame_table.strokeRightWeight = 1;
+    frame_table.clipsContent = true;
+    frame_table.expanded = false;
+    frame_table.layoutMode = 'VERTICAL';
+    frame_table.counterAxisSizingMode = 'AUTO';
     // Create INSTANCE
     var instance_305_188 = component_305_184.createInstance();
-    component_305_187.appendChild(instance_305_188);
+    frame_table.appendChild(instance_305_188);
     instance_305_188.relativeTransform = [
         [1, 0, 0],
         [0, 1, 0],
@@ -3066,7 +3100,7 @@ async function createTemplateComponents() {
     figma.getNodeById(instance_I305_188_305_186.id + ';' + text_305_183.id);
     // Create INSTANCE
     var instance_305_189 = component_305_184.createInstance();
-    component_305_187.appendChild(instance_305_189);
+    frame_table.appendChild(instance_305_189);
     instance_305_189.relativeTransform = [
         [1, 0, 0],
         [0, 1, 35],
@@ -3094,7 +3128,7 @@ async function createTemplateComponents() {
     figma.getNodeById(instance_I305_189_305_186.id + ';' + text_305_180.id);
     // Create INSTANCE
     var instance_305_190 = component_305_184.createInstance();
-    component_305_187.appendChild(instance_305_190);
+    frame_table.appendChild(instance_305_190);
     instance_305_190.relativeTransform = [
         [1, 0, 0],
         [0, 1, 70],
@@ -3120,7 +3154,7 @@ async function createTemplateComponents() {
     figma.getNodeById(instance_I305_190_305_186.id + ';' + frame_305_179.id);
     // Ref to SUB NODE
     figma.getNodeById(instance_I305_190_305_186.id + ';' + text_305_180.id);
-    setPluginData_1(component_305_187, 'elementSemantics', { is: 'table' });
+    setPluginData_1(frame_table, 'elementSemantics', { is: 'table' });
     setPluginData_1(component_305_184, 'elementSemantics', { is: 'tr' });
     setPluginData_1(component_305_178, 'elementSemantics', { is: 'td' });
     setPluginData_1(component_305_181, 'elementSemantics', { is: 'th' });
@@ -6229,7 +6263,7 @@ function postCurrentSelection(templateNodeId) {
                             return 'Cell';
                         }
                         if (semanticName === 'th') {
-                            return 'Header Cell';
+                            return 'H. Cell';
                         }
                     })(),
                     allow,
@@ -6241,6 +6275,7 @@ function postCurrentSelection(templateNodeId) {
             figma.ui.postMessage({ type: 'current-selection', selection: selectionToSend });
         }
         else {
+            console.log(selectionToSend);
             figma.ui.postMessage({ type: 'current-selection', selection: undefined });
         }
     }
@@ -6770,7 +6805,7 @@ async function main() {
                         name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
                         element: 'th',
                         id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
-                        longName: 'Cell Header',
+                        longName: 'H. Cell',
                     },
                 };
                 postCurrentSelection(templateNode.id);
@@ -7122,23 +7157,28 @@ async function main() {
                             name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.table),
                             element: 'table',
                             id: (_a = parts === null || parts === void 0 ? void 0 : parts.table) === null || _a === void 0 ? void 0 : _a.id,
+                            longName: 'Table',
                         },
                         tr: {
                             name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.tr),
                             element: 'tr',
                             id: (_b = parts === null || parts === void 0 ? void 0 : parts.tr) === null || _b === void 0 ? void 0 : _b.id,
+                            longName: 'Row',
                         },
                         td: {
                             name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.td),
                             element: 'td',
                             id: (_c = parts === null || parts === void 0 ? void 0 : parts.td) === null || _c === void 0 ? void 0 : _c.id,
+                            longName: 'Cell',
                         },
                         th: {
                             name: getSelectionName(parts === null || parts === void 0 ? void 0 : parts.th),
                             element: 'th',
                             id: (_d = parts === null || parts === void 0 ? void 0 : parts.th) === null || _d === void 0 ? void 0 : _d.id,
+                            longName: 'H. Cell',
                         },
                     };
+                    console.log('postFromCode', partsAsObject);
                     figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
                 }
                 postTemplateParts(templateNode);

@@ -866,7 +866,7 @@
 												getDropdown('menu').close()
 
 
-												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Edit template"  class="refresh icon" icon="pencil" on:click={() => {
+												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Configure template"  class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
 													}}></a> <a title="Refresh tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
 										{/each}

@@ -221,14 +221,22 @@
 
 
 
-	<div class="templateArtwork">
+	<div class="templateArtwork {currentSelection ? "template-selected" : ""}">
 		<div class="target" bind:this={artworkTarget} ></div>
 		<div class="image"></div>
 	</div>
 
+	<!-- <p class="type m-xxsmall description" style="margin-bottom: 16px; letter-spacing: -0.15px">
+		Select a layer on the canvas and then add or remove it below to configure each part of the template.
+		</p> -->
+	<!-- <p class="type m-xxsmall description" style="margin-bottom: 16px; letter-spacing: -0.15px">
+			Select a layer inside the template and then add or remove it below to configure each part of the template.
+			</p> -->
 	<p class="type m-xxsmall description" style="margin-bottom: 16px; letter-spacing: -0.15px">
-		Select a layer on the canvas and assign or remove it below to configure template.
+		Configure each part of the template by selecting the layer on the canvas and then adding or removing it below.
 		</p>
+
+
 
 	<!-- <p class="currentlySelected">&nbsp;{#if currentSelection}{currentSelection.name}{/if}</p> -->
 
@@ -240,7 +248,7 @@
 
 				<div class={currentSelection?.element === part.element && part.id ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
 					<span style="display: flex">
-					<p title="{part.longName}" class="element">&lt;{part.element}&gt;<spa class={part.element === "th" ? "astrix" : "astrix-hide"}>*</spa></p>
+					<p title="{part.longName}" class="element">{part.longName}<spa class={part.element === "th" ? "astrix" : "astrix-hide"}>*</spa></p>
 					{#if part.name}
 					<span>{part.name}</span>
 					{:else}
@@ -318,6 +326,11 @@
 		position: relative;
 		margin-top: 24px;
 		margin-bottom: 8px;
+		opacity: 0.4;
+	}
+
+	.EditTemplate .templateArtwork.template-selected {
+		opacity: 1;
 	}
 
 	.EditTemplate .target.currentlySelected {
