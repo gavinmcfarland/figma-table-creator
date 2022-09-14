@@ -7186,7 +7186,6 @@ async function main() {
                     await addRecentFileAsync_1(file);
                 }
                 let recentFiles = await getRecentFilesAsync_1();
-                console.log('recentFiles', recentFiles);
                 figma.ui.postMessage({
                     type: 'recent-files',
                     recentFiles: recentFiles,

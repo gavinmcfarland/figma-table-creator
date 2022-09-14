@@ -1394,8 +1394,6 @@ async function main() {
 
 				let recentFiles = await getRecentFilesAsync()
 
-				console.log('recentFiles', recentFiles)
-
 				figma.ui.postMessage({
 					type: 'recent-files',
 					recentFiles: recentFiles,
