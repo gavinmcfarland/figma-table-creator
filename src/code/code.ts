@@ -1379,6 +1379,7 @@ async function main() {
 			async function checkForTemplateInstance() {
 				let templateInstances = lookForTemplateInstances()
 
+				// We do this to find all the files used by templates in the current file
 				let files = groupBy(templateInstances, (item) => item.file.id)
 
 				for (let i = 0; i < files.length; i++) {
@@ -1387,11 +1388,13 @@ async function main() {
 					let fileId = entry[1][0]?.file.id
 					let fileName = entry[1][0]?.file.name
 					let file = { id: fileId, name: fileName, data: fileData }
-
+					// Then we add each file to Recent files
 					await addRecentFileAsync(file)
 				}
 
 				let recentFiles = await getRecentFilesAsync()
+
+				console.log('recentFiles', recentFiles)
 
 				figma.ui.postMessage({
 					type: 'recent-files',

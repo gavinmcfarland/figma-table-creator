@@ -1003,6 +1003,7 @@ function upsert$1(array, cb, entry) {
                 move$1(array, index, 0);
             }
         }
+        // console.log(array);
         return result;
     });
     let matchFound = false;
@@ -1082,6 +1083,10 @@ async function getRecentFilesAsync(fileData, opts) {
                 // Sort by lastVisisted
                 recentFiles.sort((a, b) => {
                     if (a.lastVisited === b.lastVisited)
+                        return 0;
+                    // If files don't have a lastVisited date then keep them at the top of the list.
+                    if (typeof a.lastVisited === "undefined" ||
+                        typeof b.lastVisited === "undefined")
                         return 0;
                     return a.lastVisited > b.lastVisited ? -1 : 1;
                 });
@@ -7169,6 +7174,7 @@ async function main() {
             async function checkForTemplateInstance() {
                 var _a, _b;
                 let templateInstances = lookForTemplateInstances();
+                // We do this to find all the files used by templates in the current file
                 let files = groupBy$1(templateInstances, (item) => item.file.id);
                 for (let i = 0; i < files.length; i++) {
                     let entry = files[i];
@@ -7176,9 +7182,11 @@ async function main() {
                     let fileId = (_a = entry[1][0]) === null || _a === void 0 ? void 0 : _a.file.id;
                     let fileName = (_b = entry[1][0]) === null || _b === void 0 ? void 0 : _b.file.name;
                     let file = { id: fileId, name: fileName, data: fileData };
+                    // Then we add each file to Recent files
                     await addRecentFileAsync_1(file);
                 }
                 let recentFiles = await getRecentFilesAsync_1();
+                console.log('recentFiles', recentFiles);
                 figma.ui.postMessage({
                     type: 'recent-files',
                     recentFiles: recentFiles,
