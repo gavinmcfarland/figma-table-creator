@@ -920,14 +920,18 @@
 							<div>
 								<input bind:checked={columnResizing} type="checkbox" id="columnResizing" name="columnResizing">
 								<label on:click={(event) => {
-									detachedCells = !detachedCells
 									saveUserPreferences({columnResizing: !columnResizing})
+									if (!columnResizing) {
+										detachedCells = false
+									}
 									}} for="columnResizing">Column Resizing</label>
 							</div>
 							<div>
 								<input bind:checked={detachedCells} type="checkbox" id="detachedCells" name="detachedCells">
 								<label on:click={(event) => {
-									columnResizing = !columnResizing
+									if (!detachedCells) {
+										columnResizing = false
+									}
 									saveUserPreferences({detachedCells: !detachedCells})
 									}} for="detachedCells">Detached Cells</label>
 							</div>

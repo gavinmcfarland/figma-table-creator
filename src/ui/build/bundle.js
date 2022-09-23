@@ -5628,7 +5628,7 @@ var ui = (function () {
     			dropdown0.$set(dropdown0_changes);
     			const dropdown1_changes = {};
 
-    			if (dirty[0] & /*columnResizing, detachedCells*/ 6 | dirty[1] & /*$$scope*/ 268435456) {
+    			if (dirty[0] & /*detachedCells, columnResizing*/ 6 | dirty[1] & /*$$scope*/ 268435456) {
     				dropdown1_changes.$$scope = { dirty, ctx };
     			}
 
@@ -6904,7 +6904,7 @@ var ui = (function () {
     					update_slot(default_slot, default_slot_template, ctx, /*$$scope*/ ctx[59], dirty, get_default_slot_changes_5, get_default_slot_context_5);
     				}
     			} else {
-    				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*columnResizing, detachedCells*/ 6) {
+    				if (default_slot_or_fallback && default_slot_or_fallback.p && dirty[0] & /*detachedCells, columnResizing*/ 6) {
     					default_slot_or_fallback.p(ctx, dirty);
     				}
     			}
@@ -7025,7 +7025,7 @@ var ui = (function () {
     	};
     }
 
-    // (965:33) <Button id="create-table">
+    // (969:33) <Button id="create-table">
     function create_default_slot(ctx) {
     	let t;
 
@@ -7042,7 +7042,7 @@ var ui = (function () {
     	};
     }
 
-    // (971:0) {#if pageState.templateSettingsPageActive}
+    // (975:0) {#if pageState.templateSettingsPageActive}
     function create_if_block(ctx) {
     	let div;
     	let templatesettings;
@@ -7755,8 +7755,11 @@ var ui = (function () {
     	}
 
     	const click_handler_26 = event => {
-    		$$invalidate(2, detachedCells = !detachedCells);
     		saveUserPreferences({ columnResizing: !columnResizing });
+
+    		if (!columnResizing) {
+    			$$invalidate(2, detachedCells = false);
+    		}
     	};
 
     	function input1_change_handler() {
@@ -7765,7 +7768,10 @@ var ui = (function () {
     	}
 
     	const click_handler_27 = event => {
-    		$$invalidate(1, columnResizing = !columnResizing);
+    		if (!detachedCells) {
+    			$$invalidate(1, columnResizing = false);
+    		}
+
     		saveUserPreferences({ detachedCells: !detachedCells });
     	};
 
