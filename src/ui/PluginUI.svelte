@@ -16,6 +16,7 @@
 
 	let data
 	let columnResizing = true
+	let detachedCells
 	let rememberSettings = true
 	let columnCount
 	let rowCount
@@ -147,6 +148,7 @@
 						alignment: [cellAlignment, 'MIN'],
 						header: includeHeader,
 						resizing: columnResizing,
+						detachedCells: detachedCells
 					}
 				},
 			},
@@ -417,6 +419,7 @@
 				includeHeader: data.header,
 				cellAlignment: data.alignment[0],
 				columnResizing: data.resizing,
+				detachedCells: data.detachedCells,
 				tableWidth: data.size[0][0],
 				tableHeight: data.size[0][1],
 				prevCellWidth: data.cell[1] ? data.cell[1][0] : data.cell[0][0],
@@ -435,6 +438,7 @@
 				includeHeader = value.includeHeader
 				cellAlignment = value.cellAlignment
 				columnResizing = value.columnResizing
+				detachedCells = value.detachedCells
 				tableWidth = value.tableWidth
 				tableHeight = value.tableHeight
 				prevCellWidth = value.prevCellWidth
@@ -916,8 +920,16 @@
 							<div>
 								<input bind:checked={columnResizing} type="checkbox" id="columnResizing" name="columnResizing">
 								<label on:click={(event) => {
+									detachedCells = !detachedCells
 									saveUserPreferences({columnResizing: !columnResizing})
 									}} for="columnResizing">Column Resizing</label>
+							</div>
+							<div>
+								<input bind:checked={detachedCells} type="checkbox" id="detachedCells" name="detachedCells">
+								<label on:click={(event) => {
+									columnResizing = !columnResizing
+									saveUserPreferences({detachedCells: !detachedCells})
+									}} for="detachedCells">Detached Cells</label>
 							</div>
 						</div>
 					</slot>

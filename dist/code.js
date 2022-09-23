@@ -5222,6 +5222,7 @@ async function applyTableSettings(target, source) {
         target.alignment = source.alignment;
     }
     target.resizing = source.resizing;
+    target.detachedCells = source.detachedCells;
     if (source.header === false || source.header === true) {
         target.header = source.header;
     }
@@ -5493,6 +5494,9 @@ async function createTable(templateComponent, settings, type) {
                     // Needs to be applied here too
                     cell.primaryAxisSizingMode = 'FIXED';
                     cell.primaryAxisAlignItems = settings.alignment[0];
+                    // if (settings.detachedCells) {
+                    // 	cell = cell.detachInstance()
+                    // }
                 }
             }
             rowParent.appendChild(duplicateRow);
@@ -5512,6 +5516,9 @@ async function createTable(templateComponent, settings, type) {
                 copyTemplatePart(part.table.children[0], child, i, templateSettings, tableSettings);
                 // child.mainComponent = part.th.mainComponent
                 child.primaryAxisAlignItems = settings.alignment[0];
+                // if (settings.detachedCells) {
+                // 	child = child.detachInstance()
+                // }
             }
         }
         tableInstance.setRelaunchData(defaultRelaunchData);
@@ -5550,6 +5557,13 @@ async function createTable(templateComponent, settings, type) {
             else {
                 table.layoutGrow = 1;
                 table.counterAxisSizingMode = 'FIXED';
+            }
+        }
+        if (settings.detachedCells && !settings.resizing) {
+            let cells = tableInstance.findAll((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
+            for (let i = 0; i < cells.length; i++) {
+                let cell = cells[i];
+                cell.detachInstance();
             }
         }
         return tableInstance;
@@ -6103,6 +6117,7 @@ async function upgradeOldComponentsToTemplate() {
 // TODO: Consider removing number when creating table
 // TODO: When template renamed, default data no updated
 // TODO: Should default template be stored in usersPreferences? different for each file
+// TODO: New feature. When creating table allow option to detach cells
 console.clear();
 function addUniqueToArray(object, array) {
     // // Only add new template if unique
@@ -6126,6 +6141,7 @@ function addTemplateToRemoteFiles(node) {
     figma.notify(`Imported ${node.name}`);
 }
 function addElement(element) {
+    // TODO: When marking row and is a frame (or instance?), should I mark all children in the frame?
     let node = figma.currentPage.selection[0];
     if (node.type === 'INSTANCE') {
         setPluginData_1(node.mainComponent, 'elementSemantics', { is: element });
@@ -6709,6 +6725,7 @@ async function main() {
             alignment: [(data === null || data === void 0 ? void 0 : data.cellAlignment) || 'MIN', 'MIN'],
             header: (data === null || data === void 0 ? void 0 : data.includeHeader) || true,
             resizing: (data === null || data === void 0 ? void 0 : data.columnResizing) || true,
+            detachedCells: (data === null || data === void 0 ? void 0 : data.detachedCells) || false,
         };
         let defaultData = {
             table,

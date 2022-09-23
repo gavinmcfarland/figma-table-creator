@@ -23,6 +23,7 @@ type TableSettings = {
 	axis?: 'ROWS' | 'COLUMNS'
 	resizing?: Boolean
 	header?: Boolean
+	detachedCells?: Boolean
 }
 
 type TableParts = {

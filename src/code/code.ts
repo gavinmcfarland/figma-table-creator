@@ -71,6 +71,8 @@ import {
 // TODO: When template renamed, default data no updated
 // TODO: Should default template be stored in usersPreferences? different for each file
 
+// TODO: New feature. When creating table allow option to detach cells
+
 console.clear()
 
 function addUniqueToArray(object, array) {
@@ -102,6 +104,7 @@ function addTemplateToRemoteFiles(node) {
 }
 
 function addElement(element) {
+	// TODO: When marking row and is a frame (or instance?), should I mark all children in the frame?
 	let node = figma.currentPage.selection[0]
 
 	if (node.type === 'INSTANCE') {
@@ -799,6 +802,7 @@ async function main() {
 			alignment: [data?.cellAlignment || 'MIN', 'MIN'],
 			header: data?.includeHeader || true,
 			resizing: data?.columnResizing || true,
+			detachedCells: data?.detachedCells || false,
 		}
 
 		let defaultData = {

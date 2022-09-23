@@ -67,6 +67,8 @@ export async function applyTableSettings(target, source) {
 
 	target.resizing = source.resizing
 
+	target.detachedCells = source.detachedCells
+
 	if (source.header === false || source.header === true) {
 		target.header = source.header
 	}
@@ -414,6 +416,10 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 					cell.primaryAxisSizingMode = 'FIXED'
 
 					cell.primaryAxisAlignItems = settings.alignment[0]
+
+					// if (settings.detachedCells) {
+					// 	cell = cell.detachInstance()
+					// }
 				}
 			}
 			rowParent.appendChild(duplicateRow)
@@ -438,6 +444,10 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 				// child.mainComponent = part.th.mainComponent
 				child.primaryAxisAlignItems = settings.alignment[0]
+
+				// if (settings.detachedCells) {
+				// 	child = child.detachInstance()
+				// }
 			}
 		}
 
@@ -483,6 +493,17 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			} else {
 				table.layoutGrow = 1
 				table.counterAxisSizingMode = 'FIXED'
+			}
+		}
+
+		if (settings.detachedCells && !settings.resizing) {
+			let cells = tableInstance.findAll(
+				(node) => getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
+			)
+
+			for (let i = 0; i < cells.length; i++) {
+				let cell = cells[i]
+				cell.detachInstance()
 			}
 		}
 
