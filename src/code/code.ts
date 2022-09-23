@@ -1425,6 +1425,6 @@ main()
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
 // figma.root.setPluginData('defaultTemplate', '')
-figma.clientStorage.deleteAsync('userPreferences')
+// figma.clientStorage.deleteAsync('userPreferences')
 
 // figma.clientStorage.deleteAsync('recentTables')
