@@ -6291,7 +6291,6 @@ function postCurrentSelection(templateNodeId) {
             figma.ui.postMessage({ type: 'current-selection', selection: selectionToSend });
         }
         else {
-            console.log(selectionToSend);
             figma.ui.postMessage({ type: 'current-selection', selection: undefined });
         }
     }
@@ -7195,7 +7194,6 @@ async function main() {
                             longName: 'H. Cell',
                         },
                     };
-                    console.log('postFromCode', partsAsObject);
                     figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject });
                 }
                 postTemplateParts(templateNode);
@@ -7261,5 +7259,5 @@ main();
 // figma.root.setPluginData('remoteFiles', '')
 // figma.root.setPluginData('fileId', '')
 // figma.root.setPluginData('defaultTemplate', '')
-// figma.clientStorage.deleteAsync('userPreferences')
+figma.clientStorage.deleteAsync('userPreferences');
 // figma.clientStorage.deleteAsync('recentTables')
