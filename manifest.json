@@ -72,6 +72,24 @@
     {
       "name": "Select Row",
       "command": "selectRow"
+    },
+    {
+        "name": "Insert Column",
+        "command": "insertColumn",
+        "parameters": [
+            {
+                "name": "Position",
+                "key": "position"
+            },
+            {
+                "name": "Number",
+                "key": "number"
+            }
+        ]
+    },
+    {
+        "name": "Add Row",
+        "command": "addRow"
     }
   ],
   "relaunchButtons": [

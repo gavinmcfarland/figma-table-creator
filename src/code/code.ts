@@ -63,15 +63,10 @@ import {
 	selectTableCellsRelaunchData,
 } from './globals'
 
-// FIXME: Recent files not adding unique files only DONE
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 // FIXME: Column resizing doesn't work on table without headers
 // FIXME: When turning column resizing off component does not resize with table DONE
-// TODO: Consider removing number when creating table
 // TODO: When template renamed, default data no updated
-// TODO: Should default template be stored in usersPreferences? different for each file
-
-// TODO: New feature. When creating table allow option to detach cells
 
 console.clear()
 
@@ -934,6 +929,64 @@ async function main() {
 				figma.ui.postMessage({ type: 'template-parts', parts: partsAsObject })
 			})
 		}
+		plugin.command('insertColumn', async ({ ui }) => {
+			figma.parameters.on('input', ({ query, result, key }) => {
+				if (key === 'position') {
+					result.setSuggestions(['After', 'Before'])
+				}
+				if (key === 'number') {
+					let number = convertToNumber(query.toUpperCase().toString().trim())
+					console.log(Number(number))
+					if (Number(number) < 1 || !Number(number)) {
+						number = false
+					}
+
+					if (number) {
+						result.setSuggestions([number.toString()])
+					} else {
+						result.setSuggestions(['1', '2', '3', '4'])
+					}
+				}
+			})
+
+			figma.on('run', async ({ parameters }) => {
+				console.log(parameters)
+				// Check if selection and if it's a td/th or table.
+				let sel = figma.currentPage.selection
+
+				let activeCell = sel[0]
+				if (sel.length === 1) {
+					if (getPluginData(sel[0], 'elementSemantics').is === 'th' || getPluginData(sel[0], 'elementSemantics').is === 'td') {
+						function duplicateTemplateCell(parameters, activeCell) {
+							// Duplicate cell
+
+							let duplicateCells = []
+
+							for (let i = 0; i < convertToNumber(parameters.number); i++) {
+								// FIXME: Clone template cell instead
+								duplicateCells.push(activeCell.clone())
+							}
+
+							let position
+
+							if (parameters.position === 'After') {
+								position = 1
+							}
+							if (parameters.position === 'Before') {
+								position = 0
+							}
+
+							for (let i = 0; i < duplicateCells.length; i++) {
+								let duplicateCell = duplicateCells[i]
+								activeCell.parent.insertChild(getNodeIndex(activeCell) + position, duplicateCell)
+							}
+						}
+
+						duplicateTemplateCell(parameters, activeCell)
+					}
+				}
+			})
+		})
 
 		plugin.command('createTable', async ({ ui }) => {
 			let userPreferences = await getClientStorageAsync('userPreferences')

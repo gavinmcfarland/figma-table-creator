@@ -40,6 +40,14 @@ export let selectTableCellsRelaunchData = {
 	selectRow: 'Select all cells in row',
 }
 
+export function getTable(node) {
+	if (getPluginData(node, 'template')) {
+		return node
+	} else {
+		return getTable(node.parent)
+	}
+}
+
 export async function applyTableSettings(target, source) {
 	if (source.template) {
 		await setDefaultTemplate(source.template)
