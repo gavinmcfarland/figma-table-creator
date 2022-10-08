@@ -40,11 +40,13 @@ export let selectTableCellsRelaunchData = {
 	selectRow: 'Select all cells in row',
 }
 
-export function getTable(node) {
+export function getTemplate(node) {
+	if (node.type === 'PAGE') return false
+
 	if (getPluginData(node, 'template')) {
 		return node
 	} else {
-		return getTable(node.parent)
+		return getTemplate(node.parent)
 	}
 }
 

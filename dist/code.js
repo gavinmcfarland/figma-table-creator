@@ -485,7 +485,11 @@ function copyPaste(source, target, ...args) {
             }
         }
     }
-    console.log(obj);
+    if (target.type !== "FRAME" ||
+        target.type !== "COMPONENT" ||
+        target.type !== "COMPONENT_SET") {
+        delete obj.backgrounds;
+    }
     Object.assign(target, obj);
     return target;
 }
@@ -5201,6 +5205,16 @@ let selectTableCellsRelaunchData = {
     selectColumn: 'Select all cells in column',
     selectRow: 'Select all cells in row',
 };
+function getTemplate(node) {
+    if (node.type === 'PAGE')
+        return false;
+    if (getPluginData_1(node, 'template')) {
+        return node;
+    }
+    else {
+        return getTemplate(node.parent);
+    }
+}
 async function applyTableSettings(target, source) {
     if (source.template) {
         await setDefaultTemplate(source.template);
@@ -6844,18 +6858,66 @@ async function main() {
                 }
             });
             figma.on('run', async ({ parameters }) => {
-                console.log(parameters);
-                // Check if selection and if it's a td/th or table.
-                let sel = figma.currentPage.selection;
-                let activeCell = sel[0];
-                if (sel.length === 1) {
-                    if (getPluginData_1(sel[0], 'elementSemantics').is === 'th' || getPluginData_1(sel[0], 'elementSemantics').is === 'td') {
-                        function duplicateTemplateCell(parameters, activeCell) {
-                            // Duplicate cell
+                if (figma.currentPage.selection.length === 1) {
+                    // Check if selection and if it's a td/th or table.
+                    let sel = figma.currentPage.selection;
+                    let activeCell = sel[0];
+                    let activeCellIndex = getNodeIndex_1(activeCell);
+                    let tableInstance = getTemplate(activeCell);
+                    let cellsDetached = activeCell.type === 'FRAME';
+                    // Find template
+                    let templateData = getPluginData_1(tableInstance, 'template');
+                    let templateComponent = await lookForComponent(templateData);
+                    if (templateComponent) {
+                        let { td, th } = getTemplateParts(templateComponent);
+                        let { table } = getTemplateParts(tableInstance);
+                        function duplicateTemplateCell(parameters, cell) {
+                            // TODO: Needs to work with cells which aren't instances too
                             let duplicateCells = [];
+                            // Duplicated cells for number of columns
                             for (let i = 0; i < convertToNumber(parameters.number); i++) {
-                                // FIXME: Clone template cell instead
-                                duplicateCells.push(activeCell.clone());
+                                {
+                                    if (getPluginData_1(cell, 'elementSemantics').is === 'th') {
+                                        // Get component set of variant
+                                        // Find default variant
+                                        let componentSet = th.mainComponent.parent;
+                                        let defaultVariant = componentSet.defaultVariant;
+                                        let duplicateCell = defaultVariant.createInstance();
+                                        // Resize width to match target cell
+                                        duplicateCell.resize(cell.width, cell.height);
+                                        duplicateCell.layoutGrow = cell.layoutGrow;
+                                        duplicateCell.layoutAlign = cell.layoutAlign;
+                                        duplicateCell.primaryAxisSizingMode = cell.primaryAxisSizingMode;
+                                        duplicateCell.counterAxisSizingMode = cell.counterAxisSizingMode;
+                                        duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems;
+                                        duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems;
+                                        if (cellsDetached) {
+                                            duplicateCells.push(duplicateCell.detachInstance());
+                                        }
+                                        else {
+                                            duplicateCells.push(duplicateCell);
+                                        }
+                                    }
+                                    if (getPluginData_1(cell, 'elementSemantics').is === 'td') {
+                                        let componentSet = td.mainComponent.parent;
+                                        let defaultVariant = componentSet.defaultVariant;
+                                        let duplicateCell = defaultVariant.createInstance();
+                                        // Resize width to match target cell
+                                        duplicateCell.resize(cell.width, cell.height);
+                                        duplicateCell.layoutGrow = cell.layoutGrow;
+                                        duplicateCell.layoutAlign = cell.layoutAlign;
+                                        duplicateCell.primaryAxisSizingMode = cell.primaryAxisSizingMode;
+                                        duplicateCell.counterAxisSizingMode = cell.counterAxisSizingMode;
+                                        duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems;
+                                        duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems;
+                                        if (cellsDetached) {
+                                            duplicateCells.push(duplicateCell.detachInstance());
+                                        }
+                                        else {
+                                            duplicateCells.push(duplicateCell);
+                                        }
+                                    }
+                                }
                             }
                             let position;
                             if (parameters.position === 'After') {
@@ -6864,13 +6926,62 @@ async function main() {
                             if (parameters.position === 'Before') {
                                 position = 0;
                             }
-                            for (let i = 0; i < duplicateCells.length; i++) {
-                                let duplicateCell = duplicateCells[i];
-                                activeCell.parent.insertChild(getNodeIndex_1(activeCell) + position, duplicateCell);
+                            if (duplicateCells.length > 0) {
+                                for (let i = 0; i < duplicateCells.length; i++) {
+                                    let duplicateCell = duplicateCells[i];
+                                    cell.parent.insertChild(getNodeIndex_1(cell) + position, duplicateCell);
+                                }
                             }
                         }
-                        duplicateTemplateCell(parameters, activeCell);
+                        // if () {
+                        // 	if (getPluginData(sel[0], 'elementSemantics').is === 'th' || getPluginData(sel[0], 'elementSemantics').is === 'td') {
+                        // 		duplicateTemplateCell(parameters, activeCell)
+                        // 	}
+                        // }
+                        // Current cell
+                        // Find rows that cell duplicating
+                        // If using local component, swap component
+                        // Loop table
+                        if (table && sel.length === 1) {
+                            for (let i = 0; i < table.children.length; i++) {
+                                let block = table.children[i];
+                                // // If row is component
+                                if (block.type === 'COMPONENT') {
+                                    duplicateTemplateCell(parameters, block.children[activeCellIndex]);
+                                }
+                                if (block.type === 'FRAME') {
+                                    duplicateTemplateCell(parameters, block.children[activeCellIndex]);
+                                }
+                                // if (copyExistingCell) {
+                                // 	// We only need to swap them for tables with a local component
+                                // 	if (block.type === 'INSTANCE' && tableHasLocalComponent) {
+                                // 		for (let i = 0; i < parameters.number; i++) {
+                                // 			let targetCell = block.children[activeCellIndex]
+                                // 			block.children[activeCellIndex + i + 1].swapComponent(targetCell.mainComponent)
+                                // 		}
+                                // 	}
+                                // }
+                                // if (block.type === 'INSTANCE' && tableHasLocalComponent) {
+                                // 	for (let i = 0; i < parameters.number; i++) {
+                                // 		let targetCell = block.children[activeCellIndex]
+                                // 		if (getPluginData(targetCell, 'elementSemantics').is === 'th') {
+                                // 			block.children[activeCellIndex + i + 1].swapComponent(th.mainComponent)
+                                // 		}
+                                // 		if (getPluginData(targetCell, 'elementSemantics').is === 'td') {
+                                // 			block.children[activeCellIndex + i + 1].swapComponent(td.mainComponent)
+                                // 		}
+                                // 	}
+                                // }
+                            }
+                        }
+                        figma.closePlugin();
                     }
+                    else {
+                        figma.closePlugin("Can't find template associated with this table");
+                    }
+                }
+                else {
+                    figma.closePlugin('Please select a cell');
                 }
             });
         });

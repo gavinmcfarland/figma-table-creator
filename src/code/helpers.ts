@@ -366,6 +366,43 @@ export function clone(val) {
 	return JSON.parse(JSON.stringify(val))
 }
 
+export function getTableParts(templateNode) {
+	// find nodes with certain pluginData
+	let elements = ['tr', 'td', 'th', 'table']
+	let results = {}
+
+	// Loop though element definitions and find them in the template or table
+	for (let i = 0; i < elements.length; i++) {
+		let elementName = elements[i]
+		let part = templateNode.findOne((node) => {
+			let elementSemantics = getPluginData(node, 'elementSemantics')
+
+			if (elementSemantics?.is === elementName) {
+				return true
+			}
+		})
+
+		results[elementName] = part
+	}
+
+	if (!results['table']) {
+		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
+			results['table'] = templateNode
+		}
+	}
+
+	results['container'] = templateNode
+
+	// // For instances assign the mainComponent as the part
+	// for (let [key, value] of Object.entries(results)) {
+	// 	if (value.type === "INSTANCE") {
+	// 		results[key] = value.mainComponent
+	// 	}
+	// }
+
+	return results
+}
+
 export function getTemplateParts(templateNode) {
 	// find nodes with certain pluginData
 	let elements = ['tr', 'td', 'th', 'table']

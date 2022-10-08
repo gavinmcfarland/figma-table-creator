@@ -86,10 +86,6 @@
                 "key": "number"
             }
         ]
-    },
-    {
-        "name": "Add Row",
-        "command": "addRow"
     }
   ],
   "relaunchButtons": [
