@@ -964,7 +964,8 @@ async function main() {
 
 			figma.on('run', async ({ parameters }) => {
 				// TODO: If table is using columns for layout then need to duplicate or create block instead
-				// FIXME: Issue with inserting columns when template selected that has UI
+				// TODO: Enable support for selecting more than one cell?
+				// TODO: Enable support for selecting more than one column?
 
 				// Currently only works when one node selected
 				// Currently only works for row based tables
