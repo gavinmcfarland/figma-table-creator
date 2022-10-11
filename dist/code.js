@@ -6839,13 +6839,20 @@ async function main() {
             });
         }
         plugin.command('insertColumn', async ({ ui }) => {
+            // FIXME: Check there is a selection first, then check it is either a table, column or a cell
+            // TODO: Add support for when column is selected or table
+            function isValidSelection(node) {
+                var _a, _b, _c;
+                return (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table' ||
+                    getPluginData_1(node, 'template') ||
+                    ((_c = getPluginData_1((_b = node.parent) === null || _b === void 0 ? void 0 : _b.parent, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'table');
+            }
             figma.parameters.on('input', ({ query, result, key }) => {
                 if (key === 'position') {
                     result.setSuggestions(['After', 'Before']);
                 }
                 if (key === 'number') {
                     let number = convertToNumber(query.toUpperCase().toString().trim());
-                    console.log(Number(number));
                     if (Number(number) < 1 || !Number(number)) {
                         number = false;
                     }
@@ -6859,9 +6866,11 @@ async function main() {
             });
             figma.on('run', async ({ parameters }) => {
                 // TODO: If table is using columns for layout then need to duplicate or create block instead
+                // FIXME: Issue with inserting columns when template selected that has UI
                 // Currently only works when one node selected
                 // Currently only works for row based tables
-                if (figma.currentPage.selection.length === 1) {
+                if (figma.currentPage.selection.length === 1 && isValidSelection(figma.currentPage.selection[0])) {
+                    let copyExistingCell = false;
                     let sel = figma.currentPage.selection;
                     let newSel = [];
                     let targetCell;
@@ -6870,13 +6879,14 @@ async function main() {
                     let cellsDetached;
                     // Here we're checking to see if the template or table is selected and then changing the target cell to the first or last cell
                     if (getPluginData_1(sel[0], 'elementSemantics').is === 'table' || getPluginData_1(sel[0], 'template')) {
+                        let { table } = getTemplateParts(sel[0]);
                         if (parameters.position === 'Before') {
                             // Find first cell in first row
-                            targetCell = sel[0].children[0].children[0];
+                            targetCell = table.children[0].children[0];
                         }
                         if (parameters.position === 'After') {
                             // Find last cell in first row
-                            targetCell = sel[0].children[0].children[sel[0].children[0].children.length - 1];
+                            targetCell = table.children[0].children[table.children[0].children.length - 1];
                         }
                         targetCellIndex = getNodeIndex_1(targetCell);
                     }
@@ -6917,6 +6927,10 @@ async function main() {
                                     duplicateCell.counterAxisSizingMode = cell.counterAxisSizingMode;
                                     duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems;
                                     duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems;
+                                    // Swap only the header to match the component of the target cell
+                                    if (getPluginData_1(cell, 'elementSemantics').is === 'th') {
+                                        duplicateCell.swapComponent(targetCell.mainComponent);
+                                    }
                                     if (cellsDetached) {
                                         duplicateCells.push(duplicateCell.detachInstance());
                                     }
@@ -6945,10 +6959,12 @@ async function main() {
                         // If using local component, swap component
                         // Loop table
                         if (table && sel.length === 1 && table.layoutMode === 'VERTICAL') {
+                            let tableHasLocalComponent;
                             for (let i = 0; i < table.children.length; i++) {
                                 let block = table.children[i];
                                 // // If row is component
                                 if (block.type === 'COMPONENT') {
+                                    tableHasLocalComponent = true;
                                     duplicateTemplateCell(parameters, block.children[targetCellIndex]);
                                 }
                                 if (block.type === 'FRAME') {
@@ -6963,32 +6979,34 @@ async function main() {
                                 // 		}
                                 // 	}
                                 // }
-                                // if (block.type === 'INSTANCE' && tableHasLocalComponent) {
-                                // 	for (let i = 0; i < parameters.number; i++) {
-                                // 		let targetCell = block.children[targetCellIndex]
-                                // 		if (getPluginData(targetCell, 'elementSemantics').is === 'th') {
-                                // 			block.children[targetCellIndex + i + 1].swapComponent(th.mainComponent)
-                                // 		}
-                                // 		if (getPluginData(targetCell, 'elementSemantics').is === 'td') {
-                                // 			block.children[targetCellIndex + i + 1].swapComponent(td.mainComponent)
-                                // 		}
-                                // 	}
-                                // }
+                                if (block.type === 'INSTANCE' && tableHasLocalComponent && !copyExistingCell) {
+                                    for (let i = 0; i < parameters.number; i++) {
+                                        let targetCell = block.children[targetCellIndex];
+                                        // if (getPluginData(targetCell, 'elementSemantics').is === 'th') {
+                                        // 	block.children[targetCellIndex + i + 1].swapComponent(th.mainComponent)
+                                        // }
+                                        if (getPluginData_1(targetCell, 'elementSemantics').is === 'td') {
+                                            let componentSet = td.mainComponent.parent;
+                                            let defaultVariant = componentSet.defaultVariant;
+                                            block.children[targetCellIndex + i + 1].swapComponent(defaultVariant);
+                                        }
+                                    }
+                                }
                             }
                             // Change selection to newly created cells
                             figma.currentPage.selection = newSel;
                         }
-                        if (table.layoutMode === 'HORIZONTAL') {
-                            figma.closePlugin('Does not work on column based tables yet');
+                        else if (table.layoutMode === 'HORIZONTAL') {
+                            figma.closePlugin('Table must be row based');
                         }
-                        figma.closePlugin();
+                        figma.closePlugin('Table must not be a duplicate');
                     }
                     else {
                         figma.closePlugin("Can't find template associated with this table");
                     }
                 }
                 else {
-                    figma.closePlugin('Please select a cell');
+                    figma.closePlugin('Please select a cell or table');
                 }
             });
         });
