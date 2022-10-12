@@ -325,7 +325,9 @@ function selectTableCells(direction) {
 function detachTable(selection) {
 	let newSelection = []
 	for (let i = 0; i < selection.length; i++) {
-		let table = selection[i]
+		let item = selection[i]
+
+		let { table } = getTemplateParts(item)
 
 		if (table.type === 'INSTANCE') {
 			table = table.detachInstance()
@@ -372,24 +374,32 @@ async function toggleColumnResizing(selection) {
 	let firstTableColumnResizing
 	let result: any = false
 	for (let i = 0; i < selection.length; i++) {
-		var oldTable = selection[i]
+		var item = selection[i]
+
+		let { table } = getTemplateParts(item)
+
+		let oldTable = table
 
 		if (oldTable.type !== 'COMPONENT') {
 			let settings = getTableSettings(oldTable)
+			console.log(settings)
 
 			if (i === 0) {
 				firstTableColumnResizing = settings.resizing
 			}
 
-			if (firstTableColumnResizing) {
-				let [newTable] = detachTable([oldTable])
+			// If first block not a component then detach the oldTable
+			if (firstTableColumnResizing || (oldTable.children[0].type !== 'COMPONENT' && oldTable.children[0].type === 'INSTANCE')) {
+				console.log('detach oldTable')
+				detachTable([oldTable])
 				result = 'removed'
-				newSelection.push(newTable)
+
+				newSelection.push(item)
 			} else {
 				result = 'applied'
 				settings.resizing = !firstTableColumnResizing
 
-				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
+				// BUG: Apply fixed width to get around a bug in Figma API that causes oldTable to go wild
 				let oldTablePrimaryAxisSizingMode = oldTable.primaryAxisSizingMode
 				oldTable.primaryAxisSizingMode = 'FIXED'
 
@@ -397,7 +407,7 @@ async function toggleColumnResizing(selection) {
 
 				// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
 
-				// Loop new table and replace with cells from old table
+				// Loop new oldTable and replace with cells from old oldTable
 
 				let rowLength = oldTable.children.length
 
@@ -428,10 +438,30 @@ async function toggleColumnResizing(selection) {
 					}
 				}
 
-				// BUG: Apply fixed width to get around a bug in Figma API that causes table to go wild
+				// Selection is oldTable
+				// if (getPluginData(oldTable, 'elementSemantics')?.is === 'table' && getPluginData(oldTable, 'template')) {
+				// 	oldTable = newTable
+				// }
+
+				// BUG: Apply fixed width to get around a bug in Figma API that causes oldTable to go wild
 				newTable.primaryAxisSizingMode = oldTablePrimaryAxisSizingMode
 
-				newSelection.push(newTable)
+				// oldTable is nested inside template
+				if (getPluginData(oldTable.parent, 'template')) {
+					oldTable.parent.appendChild(newTable)
+				}
+
+				// Reselect table if selected item was the actual table because a new table has been created in its place
+
+				if (getPluginData(item, 'elementSemantics')?.is === 'table') {
+					item = newTable
+				}
+
+				newSelection.push(item)
+
+				// if (getPluginData(item, 'template')) {
+
+				// }
 
 				discardBucket.push(oldTable)
 			}
