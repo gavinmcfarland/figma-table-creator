@@ -1097,6 +1097,10 @@ async function main() {
 							for (let i = 0; i < table.children.length; i++) {
 								let block = table.children[i]
 
+								if (i === 0 && block.type === 'INSTANCE') {
+									figma.closePlugin('Table must not be a duplicate')
+								}
+
 								// // If row is component
 								if (block.type === 'COMPONENT') {
 									tableHasLocalComponent = true
@@ -1135,11 +1139,10 @@ async function main() {
 
 							// Change selection to newly created cells
 							figma.currentPage.selection = newSel
+							figma.closePlugin('Column inserted')
 						} else if (table.layoutMode === 'HORIZONTAL') {
 							figma.closePlugin('Table must be row based')
 						}
-
-						figma.closePlugin('Table must not be a duplicate')
 					} else {
 						figma.closePlugin("Can't find template associated with this table")
 					}
