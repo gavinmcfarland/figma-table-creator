@@ -69,6 +69,8 @@ import {
 // FIXME: Column resizing doesn't work on table without headers
 // FIXME: When turning column resizing off component does not resize with table DONE
 // TODO: When template renamed, default data no updated
+// FIXME: Bug when importing coponents by dragging. Check that the component is being updated with the correct file name when the plugin is run in the other file
+// FIXME: Bug with table cells when created where fill to parent on cell height not set properly
 
 console.clear()
 
@@ -1012,8 +1014,7 @@ async function main() {
 					let cellsDetached
 
 					// Here we're checking to see if the template or table is selected and then changing the target cell to the first or last cell
-
-					if (getPluginData(sel[0], 'elementSemantics').is === 'table' || getPluginData(sel[0], 'template')) {
+					if (getPluginData(sel[0], 'elementSemantics')?.is === 'table' || getPluginData(sel[0], 'template')) {
 						let { table } = getTemplateParts(sel[0])
 
 						if (parameters.position === 'Before') {
