@@ -161,10 +161,10 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 				}
 			}
 
-			// // Set component properties on instances
-			// if (templateCell.componentProperties) {
-			// 	node.setProperties(extractValues(templateCell.componentProperties))
-			// }
+			// Set component properties on instances
+			if (templateCell.componentProperties) {
+				node.setProperties(extractValues(templateCell.componentProperties))
+			}
 
 			// Swap main component
 			if (templateCell.mainComponent) {
