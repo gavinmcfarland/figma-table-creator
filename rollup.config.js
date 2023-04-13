@@ -49,10 +49,10 @@ export default [{
 					// stylup,
 					globalStyle()]
 		}),
-		strip({
-			labels: ['unittest'],
-			functions: ['console.*']
-		}),
+		// strip({
+		// 	labels: ['unittest'],
+		// 	functions: ['console.*']
+		// }),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -102,7 +102,7 @@ export default [{
 		typescript(),
 		nodePolyfills(),
 		nodeResolve(),
-		strip(),
+		// strip(),
 		replace({
 			'process.env.PKG_PATH': JSON.stringify(process.cwd() + '/package.json'),
 			'process.env.VERSIONS_PATH': JSON.stringify(process.cwd() + '/.plugma/versions.json')

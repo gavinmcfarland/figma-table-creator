@@ -162,6 +162,7 @@ function plugma(plugin) {
 				value(pluginState);
 				// Show UI?
 				if (pluginState.ui.open) {
+					console.log("open?");
 					figma.showUI(pluginState.ui.html);
 				}
 			}
@@ -2330,6 +2331,16 @@ function copyPasteStyle(source, target, options = {}) {
         options.include = styleProps;
     }
     return copyPaste_1(source, target, options);
+}
+function extractValues$1(objectArray) {
+    return Object.entries(objectArray).reduce(function (acc, obj) {
+        let [key, value] = obj;
+        let thing;
+        // if (value.type !== 'VARIANT') {
+        thing = { [key]: value.value };
+        // }
+        return Object.assign(Object.assign({}, acc), thing);
+    }, {});
 }
 async function changeText(node, text, weight) {
     // if (node.characters) {
@@ -6979,9 +6990,13 @@ async function main() {
                                     duplicateCell.counterAxisSizingMode = cell.counterAxisSizingMode;
                                     duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems;
                                     duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems;
+                                    // Set component properties on instances
+                                    if (cell.componentProperties) {
+                                        duplicateCell.setProperties(extractValues$1(cell.componentProperties));
+                                    }
                                     // Swap only the header to match the component of the target cell
                                     if (getPluginData_1(cell, 'elementSemantics').is === 'th') {
-                                        duplicateCell.swapComponent(targetCell.mainComponent);
+                                        duplicateCell.swapComponent(cell.mainComponent);
                                     }
                                     if (cellsDetached) {
                                         duplicateCells.push(duplicateCell.detachInstance());
@@ -7034,19 +7049,42 @@ async function main() {
                                 // 		}
                                 // 	}
                                 // }
+                                let position;
+                                if (parameters.position === 'After') {
+                                    position = 1;
+                                }
+                                if (parameters.position === 'Before') {
+                                    position = 0;
+                                }
                                 if (block.type === 'INSTANCE' && tableHasLocalComponent && !copyExistingCell) {
                                     for (let i = 0; i < parameters.number; i++) {
-                                        let targetCell = block.children[targetCellIndex];
-                                        // if (getPluginData(targetCell, 'elementSemantics').is === 'th') {
-                                        // 	block.children[targetCellIndex + i + 1].swapComponent(th.mainComponent)
-                                        // }
-                                        if (getPluginData_1(targetCell, 'elementSemantics').is === 'td') {
-                                            let componentSet = td.mainComponent.parent;
-                                            let defaultVariant = componentSet.defaultVariant;
-                                            block.children[targetCellIndex + i + 1].swapComponent(defaultVariant);
+                                        // let targetCell = block.children[targetCellIndex]
+                                        // if (getPluginData(targetCell, 'elementSemantics').is === 'td') {
+                                        let componentSet = td.mainComponent.parent;
+                                        let defaultVariant = componentSet.defaultVariant;
+                                        let defaultCell = block.children[targetCellIndex + i + position];
+                                        defaultCell.swapComponent(defaultVariant);
+                                        // If positining after index is just the target
+                                        if (parameters.position === 'After') {
+                                            if (block.children[targetCellIndex].componentProperties && defaultCell.componentProperties) {
+                                                // Set component properties on instances
+                                                defaultCell.setProperties(extractValues$1(block.children[targetCellIndex].componentProperties));
+                                            }
                                         }
+                                        // If positining before index is infront of the target, not sure why tagetCellIndex is changing, is it because new column is added?
+                                        // We have to parse the number because it's a string, and needs converting to a number
+                                        if (parameters.position === 'Before') {
+                                            if (block.children[targetCellIndex + JSON.parse(parameters.number)].componentProperties &&
+                                                defaultCell.componentProperties) {
+                                                // Set component properties on instances
+                                                defaultCell.setProperties(extractValues$1(block.children[targetCellIndex + JSON.parse(parameters.number)].componentProperties));
+                                            }
+                                        }
+                                        // }
                                     }
                                 }
+                                // for (let i = 0; i < block.chilren ) {
+                                // }
                             }
                             // Change selection to newly created cells
                             figma.currentPage.selection = newSel;

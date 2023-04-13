@@ -496,6 +496,17 @@ export function copyPasteStyle(source, target, options: any = {}) {
 	return copyPaste(source, target, options)
 }
 
+export function extractValues(objectArray) {
+	return Object.entries(objectArray).reduce(function (acc, obj) {
+		let [key, value] = obj
+		let thing
+		// if (value.type !== 'VARIANT') {
+		thing = { [key]: value.value }
+		// }
+		return { ...acc, ...thing }
+	}, {})
+}
+
 export async function changeText(node, text, weight?) {
 	// if (node.characters) {
 	if (node.fontName === figma.mixed) {

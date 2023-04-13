@@ -43,6 +43,7 @@ import {
 	isEmpty,
 	move,
 	daysToMilliseconds,
+	extractValues,
 } from './helpers'
 import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
@@ -1080,9 +1081,14 @@ async function main() {
 									duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems
 									duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems
 
+									// Set component properties on instances
+									if (cell.componentProperties) {
+										duplicateCell.setProperties(extractValues(cell.componentProperties))
+									}
+
 									// Swap only the header to match the component of the target cell
 									if (getPluginData(cell, 'elementSemantics').is === 'th') {
-										duplicateCell.swapComponent(targetCell.mainComponent)
+										duplicateCell.swapComponent(cell.mainComponent)
 									}
 
 									if (cellsDetached) {
@@ -1159,19 +1165,54 @@ async function main() {
 								// 	}
 								// }
 
+								let position
+
+								if (parameters.position === 'After') {
+									position = 1
+								}
+								if (parameters.position === 'Before') {
+									position = 0
+								}
+
 								if (block.type === 'INSTANCE' && tableHasLocalComponent && !copyExistingCell) {
 									for (let i = 0; i < parameters.number; i++) {
-										let targetCell = block.children[targetCellIndex]
-										// if (getPluginData(targetCell, 'elementSemantics').is === 'th') {
-										// 	block.children[targetCellIndex + i + 1].swapComponent(th.mainComponent)
-										// }
-										if (getPluginData(targetCell, 'elementSemantics').is === 'td') {
-											let componentSet = td.mainComponent.parent
-											let defaultVariant = componentSet.defaultVariant
-											block.children[targetCellIndex + i + 1].swapComponent(defaultVariant)
+										// let targetCell = block.children[targetCellIndex]
+
+										// if (getPluginData(targetCell, 'elementSemantics').is === 'td') {
+										let componentSet = td.mainComponent.parent
+										let defaultVariant = componentSet.defaultVariant
+
+										let defaultCell = block.children[targetCellIndex + i + position]
+										defaultCell.swapComponent(defaultVariant)
+
+										// If positining after index is just the target
+										if (parameters.position === 'After') {
+											if (block.children[targetCellIndex].componentProperties && defaultCell.componentProperties) {
+												// Set component properties on instances
+												defaultCell.setProperties(extractValues(block.children[targetCellIndex].componentProperties))
+											}
 										}
+
+										// If positining before index is infront of the target, not sure why tagetCellIndex is changing, is it because new column is added?
+										// We have to parse the number because it's a string, and needs converting to a number
+										if (parameters.position === 'Before') {
+											if (
+												block.children[targetCellIndex + JSON.parse(parameters.number)].componentProperties &&
+												defaultCell.componentProperties
+											) {
+												// Set component properties on instances
+												defaultCell.setProperties(
+													extractValues(block.children[targetCellIndex + JSON.parse(parameters.number)].componentProperties)
+												)
+											}
+										}
+										// }
 									}
 								}
+
+								// for (let i = 0; i < block.chilren ) {
+
+								// }
 							}
 
 							// Change selection to newly created cells
