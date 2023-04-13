@@ -564,6 +564,18 @@ export async function changeText(node, text, weight?) {
 // 	}
 // }
 
+export function getNodeName(node) {
+	if (node.parent.type === 'COMPONENT_SET') {
+		let variableString = node.name
+			.split(',')
+			.map((e) => e.split('=')[1])
+			.join(', ')
+		return `${node.parent.name}/${variableString}`
+	} else {
+		return node.name
+	}
+}
+
 async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren?, targetComponentChildren?) {
 	for (let a = 0; a < sourceChildren.length; a++) {
 		if (sourceComponentChildren[a] && targetComponentChildren[a]) {

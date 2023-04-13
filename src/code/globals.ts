@@ -26,6 +26,7 @@ import {
 	convertToNumber,
 	sleep,
 	daysToMilliseconds,
+	getNodeName,
 } from './helpers'
 
 export let defaultRelaunchData = {
@@ -517,6 +518,10 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			}
 		}
 
+		if (part.container) {
+			tableInstance.name = getNodeName(part.container)
+		}
+
 		return tableInstance
 	}
 }
@@ -579,7 +584,7 @@ export class Template {
 
 export function updateTemplateData(node, data) {
 	data.id = node.id
-	data.name = node.name
+	data.name = getNodeName(node)
 	data.component.id = node.id
 	// KEY needs updating if template duplicated
 	data.component.key = node.key
@@ -600,8 +605,10 @@ export function getLocalTemplatesWithoutUpdating(): Template[] {
 	for (let i = 0; i < components.length; i++) {
 		let node = components[i]
 		var templateData = getPluginData(node, 'template')
+
 		if (templateData && node.type === 'COMPONENT') {
 			updateTemplateData(node, templateData)
+
 			templates.push(templateData)
 		}
 	}
@@ -629,6 +636,7 @@ export function getLocalTemplates(): Template[] {
 			}
 
 			templateData = updateTemplateData(node, templateData)
+
 			setPluginData(node, 'template', templateData)
 			templates.push(templateData)
 

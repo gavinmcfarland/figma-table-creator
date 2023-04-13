@@ -2388,6 +2388,18 @@ async function changeText(node, text, weight) {
 // 		}
 // 	}
 // }
+function getNodeName(node) {
+    if (node.parent.type === 'COMPONENT_SET') {
+        let variableString = node.name
+            .split(',')
+            .map((e) => e.split('=')[1])
+            .join(', ');
+        return `${node.parent.name}/${variableString}`;
+    }
+    else {
+        return node.name;
+    }
+}
 async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
     for (let a = 0; a < sourceChildren.length; a++) {
         if (sourceComponentChildren[a] && targetComponentChildren[a]) {
@@ -5590,6 +5602,9 @@ async function createTable(templateComponent, settings, type) {
                 cell.detachInstance();
             }
         }
+        if (part.container) {
+            tableInstance.name = getNodeName(part.container);
+        }
         return tableInstance;
     }
 }
@@ -5618,7 +5633,7 @@ class Template {
 }
 function updateTemplateData(node, data) {
     data.id = node.id;
-    data.name = node.name;
+    data.name = getNodeName(node);
     data.component.id = node.id;
     // KEY needs updating if template duplicated
     data.component.key = node.key;
@@ -6951,6 +6966,9 @@ async function main() {
                                     // Get component set of variant
                                     // Find default variant
                                     let componentSet = cellTemplate.mainComponent.parent;
+                                    if (!componentSet) {
+                                        console.log('Cannot find component set, check variant was deleted');
+                                    }
                                     let defaultVariant = componentSet.defaultVariant;
                                     let duplicateCell = defaultVariant.createInstance();
                                     // Resize width to match target cell (and copy layout properties)

@@ -1061,7 +1061,13 @@ async function main() {
 
 									// Get component set of variant
 									// Find default variant
+
 									let componentSet = cellTemplate.mainComponent.parent
+
+									if (!componentSet) {
+										console.log('Cannot find component set, check variant was deleted')
+									}
+
 									let defaultVariant = componentSet.defaultVariant
 									let duplicateCell = defaultVariant.createInstance()
 
