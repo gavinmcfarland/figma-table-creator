@@ -325,7 +325,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			// First row should be a component
 			firstRow = convertToComponent(part.tr.clone())
 			firstRow.layoutAlign = part.tr.layoutAlign
-			firstRow.primaryAxisSizingMode = part.tr.primaryAxisSizingMode
 
 			// Don't apply if layer already ignored
 			if (!firstRow.name.startsWith('.') && !firstRow.name.startsWith('_')) {
@@ -365,6 +364,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		// MANDATORY PROP as can't guarentee user will or figma will honour this
 		firstRow.layoutAlign = 'STRETCH'
+		firstRow.primaryAxisSizingMode = 'FIXED'
 
 		// Create columns in first row
 
