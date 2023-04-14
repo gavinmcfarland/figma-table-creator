@@ -5351,10 +5351,11 @@ async function copyTemplatePart(partParent, node, index, templateSettings, table
         }
     }
 }
-async function createTable(templateComponent, settings, type) {
+async function createTable(templateComponent, settings, type, templateData) {
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
+    var _a;
     let part = getTemplateParts(templateComponent);
     let tableInstance;
     // Santitize data
@@ -5613,8 +5614,9 @@ async function createTable(templateComponent, settings, type) {
                 cell.detachInstance();
             }
         }
-        if (part.container) {
-            tableInstance.name = getNodeName(part.container);
+        // When the table is created we use the sanitized name (which is worked out when the template is added to the list of templates) because the name on the component/frame includes stuff that only makes sense for variants
+        if ((_a = settings.template) === null || _a === void 0 ? void 0 : _a.name) {
+            tableInstance.name = settings.template.name;
         }
         return tableInstance;
     }

@@ -857,7 +857,7 @@
 									{#if data.localTemplates.length > 0}
 										<ul class="local-templates">
 										{#each data.localTemplates as template}
-											<li class="item {template.selected ? 'selected' : ''}" on:click={(event) => {
+											<li title="{template.name}" class="item {template.selected ? 'selected' : ''}" on:click={(event) => {
 
 												// Only trigger if clicking on the element itself
 												if(event.target !== event.currentTarget) return;
@@ -870,7 +870,14 @@
 												getDropdown('menu').close()
 
 
-												}}>{template.name} <div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Configure template"  class="refresh icon" icon="pencil" on:click={() => {
+												}}>
+												{#if template.name.length > 12}
+												<span class="text-first-part">{template.name.slice(0, -12)}</span><span class="text-second-part">{template.name.slice(template.name.length - 12)}</span>
+												{:else}
+												{template.name}
+												{/if}
+
+												<div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Configure template"  class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
 													}}></a> <a title="Refresh tables" class="refresh icon" icon="swap" on:click={() => updateTables(template)}></a></div></li>
 										{/each}
@@ -979,6 +986,25 @@
 {/if}
 
 <style global>
+
+	.item {
+		display: flex;
+	}
+
+	.text-second-part {
+		direction: rtl;
+		min-width: 12ch;
+	}
+
+	.text-first-part, .text-second-part {
+		white-space: nowrap;
+		overflow: hidden;
+		display: inline-block;
+	}
+
+	.text-first-part {
+		text-overflow: ellipsis;
+	}
 
 	.main-content {
 		margin-bottom: 48px;

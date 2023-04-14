@@ -182,7 +182,7 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 	}
 }
 
-export async function createTable(templateComponent, settings: TableSettings, type?) {
+export async function createTable(templateComponent, settings: TableSettings, type?, templateData?) {
 	// FIXME: Get it to work with parts which are not components as well
 	// FIXME: Check for imported components
 	// FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
@@ -508,8 +508,9 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			}
 		}
 
-		if (part.container) {
-			tableInstance.name = getNodeName(part.container)
+		// When the table is created we use the sanitized name (which is worked out when the template is added to the list of templates) because the name on the component/frame includes stuff that only makes sense for variants
+		if (settings.template?.name) {
+			tableInstance.name = settings.template.name
 		}
 
 		return tableInstance
