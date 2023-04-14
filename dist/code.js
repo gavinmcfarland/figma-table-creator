@@ -2397,15 +2397,28 @@ async function changeText(node, text, weight) {
 // 	}
 // }
 function getNodeName(node) {
-    if (node.parent.type === 'COMPONENT_SET') {
+    var _a, _b;
+    // To be sure that the name uses props we check to see if the component is a variant by checking if it belongs to a component set. However this isn't foolproof because
+    // Important components won't have a parent
+    if (((_a = node.parent) === null || _a === void 0 ? void 0 : _a.type) === 'COMPONENT_SET') {
         let variableString = node.name
             .split(',')
             .map((e) => e.split('=')[1])
             .join(', ');
-        return `${node.parent.name}/${variableString}`;
+        return `${(_b = node.parent) === null || _b === void 0 ? void 0 : _b.name}/${variableString}`;
     }
     else {
-        return node.name;
+        // Checking without knowing if part of a component set. Does it contain commas?
+        if (node.name.indexOf(',') > -1) {
+            let variableString = node.name
+                .split(',')
+                .map((e) => e.split('=')[1])
+                .join(', ');
+            return `${variableString}`;
+        }
+        else {
+            return node.name;
+        }
     }
 }
 async function overrideChildrenChars2(sourceChildren, targetChildren, sourceComponentChildren, targetComponentChildren) {
