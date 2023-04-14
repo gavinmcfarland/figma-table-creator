@@ -857,25 +857,27 @@
 									{#if data.localTemplates.length > 0}
 										<ul class="local-templates">
 										{#each data.localTemplates as template}
-											<li title="{template.name}" class="item {template.selected ? 'selected' : ''}" on:click={(event) => {
+											<li title="{template.name}" class="item {template.selected ? 'selected' : ''}">
+												<span class="item-text" on:click={(event) => {
 
-												// Only trigger if clicking on the element itself
-												if(event.target !== event.currentTarget) return;
+													// Only trigger if clicking on the element itself
+													// if(event.target !== event.currentTarget) return;
 
-												usingRemoteTemplate(false)
-												setDefaultTemplate(template, data)
-												// Hide menu when template set
-												// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+													usingRemoteTemplate(false)
+													setDefaultTemplate(template, data)
+													// Hide menu when template set
+													// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
 
-												getDropdown('menu').close()
+													getDropdown('menu').close()
 
 
-												}}>
+													}}>
 												{#if template.name.length > 12}
 												<span class="text-first-part">{template.name.slice(0, -12)}</span><span class="text-second-part">{template.name.slice(template.name.length - 12)}</span>
 												{:else}
 												{template.name}
 												{/if}
+												</span>
 
 												<div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))"> <a title="Configure template"  class="refresh icon" icon="pencil" on:click={() => {
 													editTemplate(template)
@@ -991,19 +993,32 @@
 		display: flex;
 	}
 
+	.item-text {
+		flex-grow: 1;
+		overflow: hidden;
+		display: flex;
+		/* background-color: red; */
+		margin: -8px 0 -8px -16px;
+		line-height: 32px;
+		padding-left: 16px;
+	}
+
+	.text-first-part {
+		text-overflow: ellipsis;
+		flex-grow: 0;
+	}
+
 	.text-second-part {
 		direction: rtl;
 		min-width: 12ch;
+		flex-grow: 0;
 	}
 
 	.text-first-part, .text-second-part {
 		white-space: nowrap;
 		overflow: hidden;
 		display: inline-block;
-	}
-
-	.text-first-part {
-		text-overflow: ellipsis;
+		user-select: none;
 	}
 
 	.main-content {
