@@ -27,6 +27,7 @@ import {
 	sleep,
 	daysToMilliseconds,
 	getNodeName,
+	extractValues,
 } from './helpers'
 
 export let defaultRelaunchData = {
@@ -105,17 +106,6 @@ export async function updatePluginVersion(semver) {
 		if (figma.root.getPluginData('pluginVersion')) figma.root.setPluginData('pluginVersion', '')
 		return semver || pluginVersion
 	})
-}
-
-function extractValues(objectArray) {
-	return Object.entries(objectArray).reduce(function (acc, obj) {
-		let [key, value] = obj
-		let thing
-		// if (value.type !== 'VARIANT') {
-		thing = { [key]: value.value }
-		// }
-		return { ...acc, ...thing }
-	}, {})
 }
 
 async function copyTemplatePart(partParent, node, index, templateSettings: TableSettings, tableSettings?: TableSettings, rowIndex?) {

@@ -2251,7 +2251,7 @@ function genRandomId() {
 function clone$1(val) {
     return JSON.parse(JSON.stringify(val));
 }
-function getTemplateParts$1(templateNode) {
+function getTemplateParts(templateNode) {
     // find nodes with certain pluginData
     let elements = ['tr', 'td', 'th', 'table'];
     let results = {};
@@ -2272,12 +2272,9 @@ function getTemplateParts$1(templateNode) {
         }
     }
     results['container'] = templateNode;
-    // // For instances assign the mainComponent as the part
-    // for (let [key, value] of Object.entries(results)) {
-    // 	if (value.type === "INSTANCE") {
-    // 		results[key] = value.mainComponent
-    // 	}
-    // }
+    // TODO: Need to decide if there is a way to move away from asking user to configure header cell. If so, could we base it off the first cell in the first row in the template?
+    // // We assume the first cell in the first row of the table inside the template is the header cell
+    // results['th'] = results.table.children[0].children[0]
     return results;
 }
 function removeChildren(node) {
@@ -2332,7 +2329,7 @@ function copyPasteStyle(source, target, options = {}) {
     }
     return copyPaste_1(source, target, options);
 }
-function extractValues$1(objectArray) {
+function extractValues(objectArray) {
     return Object.entries(objectArray).reduce(function (acc, obj) {
         let [key, value] = obj;
         let thing;
@@ -5278,16 +5275,6 @@ async function updatePluginVersion(semver) {
         return semver || pluginVersion;
     });
 }
-function extractValues(objectArray) {
-    return Object.entries(objectArray).reduce(function (acc, obj) {
-        let [key, value] = obj;
-        let thing;
-        // if (value.type !== 'VARIANT') {
-        thing = { [key]: value.value };
-        // }
-        return Object.assign(Object.assign({}, acc), thing);
-    }, {});
-}
 async function copyTemplatePart(partParent, node, index, templateSettings, tableSettings, rowIndex) {
     // TODO: Copy across overrides like text, and instance swaps
     // Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
@@ -5355,7 +5342,7 @@ async function createTable(templateComponent, settings, type) {
     // FIXME: Get it to work with parts which are not components as well
     // FIXME: Check for imported components
     // FIXME: Check all conditions are met. Is table, is row, is cell, is instance etc.
-    let part = getTemplateParts$1(templateComponent);
+    let part = getTemplateParts(templateComponent);
     let tableInstance;
     // Santitize data
     settings.matrix[0] = convertToNumber(settings.matrix[0]);
@@ -5809,7 +5796,7 @@ async function getDefaultTemplate() {
 async function updateTables(template) {
     var templateComponent = await lookForComponent(template);
     let prevTemplate = getPluginData_1(templateComponent, 'prevTemplate');
-    let templateParts = getTemplateParts$1(templateComponent);
+    let templateParts = getTemplateParts(templateComponent);
     let tablesUpdated;
     let tablesRelinked;
     // FIXME: Template file name not up to date for some reason
@@ -5841,7 +5828,7 @@ async function updateTables(template) {
             var rowTemplate = templateComponent.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
             for (let b = 0; b < allTableInstances.length; b++) {
                 let tableInstance = allTableInstances[b];
-                let tableParts = getTemplateParts$1(tableInstance);
+                let tableParts = getTemplateParts(tableInstance);
                 // Update template incase it has changed
                 setPluginData_1(tableInstance, 'template', template);
                 let container = tableParts.container;
@@ -5883,7 +5870,7 @@ function getTableSettings(tableNode) {
         header: true,
         axis: 'COLUMNS',
     };
-    let templateParts = getTemplateParts$1(tableNode);
+    let templateParts = getTemplateParts(tableNode);
     let tablePart = templateParts.table;
     for (let i = 0; i < tablePart.children.length; i++) {
         var node = tablePart.children[i];
@@ -6254,35 +6241,35 @@ function importTemplate(node) {
         figma.notify('No template found');
     }
 }
-function getTemplateParts(templateNode) {
-    // find nodes with certain pluginData
-    let elements = ['tr', 'td', 'th', 'table'];
-    let results = {};
-    // Loop though element definitions and find them in the template
-    for (let i = 0; i < elements.length; i++) {
-        let elementName = elements[i];
-        let parts = templateNode.findOne((node) => {
-            let elementSemantics = getPluginData_1(node, 'elementSemantics');
-            if ((elementSemantics === null || elementSemantics === void 0 ? void 0 : elementSemantics.is) === elementName) {
-                return true;
-            }
-        });
-        results[elementName] = parts;
-    }
-    // If can't find table part, then check node itself is table
-    if (!results['table']) {
-        if (getPluginData_1(templateNode, 'elementSemantics').is === 'table') {
-            results['table'] = templateNode;
-        }
-    }
-    // // For instances assign the mainComponent as the parts
-    // for (let [key, value] of Object.entries(results)) {
-    // 	if (value.type === "INSTANCE") {
-    // 		results[key] = value.mainComponent
-    // 	}
-    // }
-    return results;
-}
+// function getTemplateParts(templateNode) {
+// 	// find nodes with certain pluginData
+// 	let elements = ['tr', 'td', 'th', 'table']
+// 	let results = {}
+// 	// Loop though element definitions and find them in the template
+// 	for (let i = 0; i < elements.length; i++) {
+// 		let elementName = elements[i]
+// 		let parts = templateNode.findOne((node) => {
+// 			let elementSemantics = getPluginData(node, 'elementSemantics')
+// 			if (elementSemantics?.is === elementName) {
+// 				return true
+// 			}
+// 		})
+// 		results[elementName] = parts
+// 	}
+// 	// If can't find table part, then check node itself is table
+// 	if (!results['table']) {
+// 		if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
+// 			results['table'] = templateNode
+// 		}
+// 	}
+// 	// // For instances assign the mainComponent as the parts
+// 	// for (let [key, value] of Object.entries(results)) {
+// 	// 	if (value.type === "INSTANCE") {
+// 	// 		results[key] = value.mainComponent
+// 	// 	}
+// 	// }
+// 	return results
+// }
 function postCurrentSelection(templateNodeId) {
     let selectionToSend;
     function isFrameORInstance(selection) {
@@ -6937,6 +6924,16 @@ async function main() {
                     let targetCellIndex;
                     let tableInstance;
                     let cellsDetached;
+                    function isHeaderCell(node, th) {
+                        if (node.children[0].name === 'th-bg') {
+                            if (node.children[0].visible) {
+                                return true;
+                            }
+                        }
+                        else if (getPluginData_1(node, 'elementSemantics').is === 'th') {
+                            return true;
+                        }
+                    }
                     // Here we're checking to see if the template or table is selected and then changing the target cell to the first or last cell
                     if (((_a = getPluginData_1(sel[0], 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'table' || getPluginData_1(sel[0], 'template')) {
                         let { table } = getTemplateParts(sel[0]);
@@ -6960,9 +6957,8 @@ async function main() {
                     let templateData = getPluginData_1(tableInstance, 'template');
                     let templateComponent = await lookForComponent(templateData);
                     if (templateComponent) {
-                        let { td, th } = getTemplateParts(templateComponent);
-                        let { table } = getTemplateParts(tableInstance);
-                        function duplicateTemplateCell(parameters, cell) {
+                        let { table, td, th } = getTemplateParts(tableInstance);
+                        function duplicateTemplateCell(parameters, cell, block) {
                             let duplicateCells = [];
                             // Duplicated cells for number of columns
                             for (let i = 0; i < convertToNumber(parameters.number); i++) {
@@ -6990,13 +6986,13 @@ async function main() {
                                     duplicateCell.counterAxisSizingMode = cell.counterAxisSizingMode;
                                     duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems;
                                     duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems;
-                                    // Set component properties on instances
-                                    if (cell.componentProperties) {
-                                        duplicateCell.setProperties(extractValues$1(cell.componentProperties));
-                                    }
                                     // Swap only the header to match the component of the target cell
-                                    if (getPluginData_1(cell, 'elementSemantics').is === 'th') {
+                                    if (isHeaderCell(cell)) {
+                                        // if (getNodeIndex(block) === 0) {
                                         duplicateCell.swapComponent(cell.mainComponent);
+                                        if (cell.componentProperties) {
+                                            duplicateCell.setProperties(extractValues(cell.componentProperties));
+                                        }
                                     }
                                     if (cellsDetached) {
                                         duplicateCells.push(duplicateCell.detachInstance());
@@ -7058,29 +7054,25 @@ async function main() {
                                 }
                                 if (block.type === 'INSTANCE' && tableHasLocalComponent && !copyExistingCell) {
                                     for (let i = 0; i < parameters.number; i++) {
-                                        // let targetCell = block.children[targetCellIndex]
-                                        // if (getPluginData(targetCell, 'elementSemantics').is === 'td') {
+                                        let cellToApplyTo = block.children[targetCellIndex];
+                                        // We have to parse the paramters.number because it's a string, and needs converting to a number
+                                        if (parameters.position === 'After') {
+                                            cellToApplyTo = block.children[targetCellIndex];
+                                        }
+                                        if (parameters.position === 'Before') {
+                                            cellToApplyTo = block.children[targetCellIndex + JSON.parse(parameters.number)];
+                                        }
                                         let componentSet = td.mainComponent.parent;
                                         let defaultVariant = componentSet.defaultVariant;
                                         let defaultCell = block.children[targetCellIndex + i + position];
-                                        defaultCell.swapComponent(defaultVariant);
-                                        // If positining after index is just the target
-                                        if (parameters.position === 'After') {
-                                            if (block.children[targetCellIndex].componentProperties && defaultCell.componentProperties) {
-                                                // Set component properties on instances
-                                                defaultCell.setProperties(extractValues$1(block.children[targetCellIndex].componentProperties));
-                                            }
+                                        // Create a temp instance so we can copy the properties from it
+                                        let defaultVariantInstanceTmp = defaultVariant.createInstance();
+                                        if (cellToApplyTo.componentProperties) {
+                                            // Set component properties on instances
+                                            defaultCell.swapComponent(defaultVariant);
+                                            defaultCell.setProperties(extractValues(defaultVariantInstanceTmp.componentProperties));
                                         }
-                                        // If positining before index is infront of the target, not sure why tagetCellIndex is changing, is it because new column is added?
-                                        // We have to parse the number because it's a string, and needs converting to a number
-                                        if (parameters.position === 'Before') {
-                                            if (block.children[targetCellIndex + JSON.parse(parameters.number)].componentProperties &&
-                                                defaultCell.componentProperties) {
-                                                // Set component properties on instances
-                                                defaultCell.setProperties(extractValues$1(block.children[targetCellIndex + JSON.parse(parameters.number)].componentProperties));
-                                            }
-                                        }
-                                        // }
+                                        defaultVariantInstanceTmp.remove();
                                     }
                                 }
                                 // for (let i = 0; i < block.chilren ) {

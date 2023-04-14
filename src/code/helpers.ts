@@ -405,6 +405,7 @@ export function getTableParts(templateNode) {
 
 export function getTemplateParts(templateNode) {
 	// find nodes with certain pluginData
+
 	let elements = ['tr', 'td', 'th', 'table']
 	let results = {}
 
@@ -430,12 +431,9 @@ export function getTemplateParts(templateNode) {
 
 	results['container'] = templateNode
 
-	// // For instances assign the mainComponent as the part
-	// for (let [key, value] of Object.entries(results)) {
-	// 	if (value.type === "INSTANCE") {
-	// 		results[key] = value.mainComponent
-	// 	}
-	// }
+	// TODO: Need to decide if there is a way to move away from asking user to configure header cell. If so, could we base it off the first cell in the first row in the template?
+	// // We assume the first cell in the first row of the table inside the template is the header cell
+	// results['th'] = results.table.children[0].children[0]
 
 	return results
 }
