@@ -84,7 +84,7 @@
 				close()
 			});
 	}}>
-			{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label"> </slot></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
+			<span class="group">{#if icon}<span class="icon" icon={icon} />{/if}<span><slot name="label"> </slot></span></span><span class="icon" icon="chevron-down" style="margin-left: var(--margin-75)" />
 
 		</div>
 	{/if}
@@ -94,6 +94,10 @@
 </div>
 
 <style global>
+
+	.Select {
+		/* display: flex; */
+	}
 
 	.Select > .label {
 		line-height: 1;
@@ -110,6 +114,7 @@
 		display: flex; place-items: center;
 		min-height: 30px;
 		cursor: default;
+		flex-grow: 1;
 	}
 
 	.Select:hover > .label {
@@ -153,14 +158,20 @@
 	}
 
 	.Select.fill:hover > .label > [icon="chevron-down"] {
-		margin-left: auto !important;
+		/* margin-left: auto !important; */
+		/* padding-left: 8px; */
 	}
 
-	.Select.fill.show > .label > [icon="chevron-down"] {
-		margin-left: auto !important;
+	.Select.fill:hover > .label > .group {
+		flex-grow: 1;
 	}
 
 	.show > .tooltip {
 		display: block;
+	}
+
+	.group {
+		display: flex;
+		align-items: center;
 	}
 </style>
