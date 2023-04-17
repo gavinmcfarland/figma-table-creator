@@ -4,6 +4,8 @@
 </script>
 
 <span style="display: grid;">
+	<!-- Quick fix for when string not passed intime from server -->
+	{#if string}
 	<span class="item-text">
 		{#if string.length > chars}
 		<span class="text-first-part">{string.slice(0, -1 * chars)}</span><span class="text-second-part">{string.slice(string.length - chars)}</span>
@@ -11,6 +13,7 @@
 		{string}
 		{/if}
 	</span>
+	{/if}
 </span>
 
 <style>
