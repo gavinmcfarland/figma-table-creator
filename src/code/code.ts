@@ -23,6 +23,7 @@ import {
 	setClientStoragAsync,
 	getNodeDepth,
 	addRecentFileAsync,
+	makeComponent,
 } from '@fignite/helpers'
 import {
 	getComponentById,
