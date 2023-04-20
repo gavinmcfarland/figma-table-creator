@@ -424,11 +424,15 @@ async function toggleColumnResizing(selection) {
 						for (let b = 0; b < columnLength; b++) {
 							let nodeB = nodeA.children[b]
 
+							let oldTableCell = nodeB
+							let newTableCell = newTable.children[a].children[b]
+
+							if (getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
+								console.log(oldTableCell.layoutGrow)
+							}
+
+							// Copy across values from old cell to new cell, like auto layout properties
 							if (getPluginData(nodeB, 'elementSemantics')?.is === 'td' || getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
-								let newTableCell = newTable.children[a].children[b]
-
-								let oldTableCell = nodeB
-
 								newTableCell.swapComponent(oldTableCell.mainComponent)
 
 								await swapInstance(oldTableCell, newTableCell)
@@ -438,6 +442,10 @@ async function toggleColumnResizing(selection) {
 								resize(newTableCell, oldTableCell.width, oldTableCell.height)
 								// Old layoutAlign not being preserved
 								newTableCell.layoutAlign = oldTableCell.layoutAlign
+								newTableCell.layoutGrow = oldTableCell.layoutGrow
+
+								newTableCell.primaryAxisSizingMode = oldTableCell.primaryAxisSizingMode
+								newTableCell.counterAxisSizingMode = oldTableCell.counterAxisSizingMode
 							}
 						}
 					}

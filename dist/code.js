@@ -347,9 +347,9 @@ function copyPaste(source, target, ...args) {
     }
     var options;
     if (typeof args[0] === "function")
-        ;
+        args[0];
     if (typeof args[1] === "function")
-        ;
+        args[1];
     if (typeof args[0] === "object" && typeof args[0] !== "function")
         options = args[0];
     if (typeof args[0] === "object" && typeof args[0] !== "function")
@@ -495,38 +495,71 @@ function copyPaste(source, target, ...args) {
     return target;
 }
 
+function groupToFrame(group) {
+    let groupRotation = group.rotation;
+    // Create frame to replace group
+    let frame = figma.createFrame();
+    frame.fills = [];
+    frame.x = group.x;
+    frame.y = group.y;
+    frame.name = group.name;
+    frame.resize(group.width, group.height);
+    // Add group to frame so that we can reset their x, y cordinates
+    frame.appendChild(group);
+    // Reset x, y, and rotation coordinates
+    group.x = 0;
+    group.y = 0;
+    group.rotation = 0;
+    // Ungrouping will automatically make contents children of the frame
+    figma.ungroup(group);
+    // Re-apply rotation
+    frame.rotation = groupRotation;
+    return frame;
+}
 /**
  * Converts an instance, component, or rectangle to a frame
  * @param {SceneNode} node The node you want to convert to a frame
  * @returns Returns the new node as a frame
  */
 function convertToFrame(node) {
+    // Save index, parent and rotation of group before removed
+    let nodeIndex = node.parent.children.indexOf(node);
+    let nodeParent = node.parent;
+    let newFrame;
     if (node.type === "INSTANCE") {
-        return node.detachInstance();
+        newFrame = node.detachInstance();
     }
     if (node.type === "COMPONENT") {
-        let parent = node.parent;
         // This method preserves plugin data and relaunch data
         let frame = node.createInstance().detachInstance();
-        parent.appendChild(frame);
+        // Beacuse `createInstance` doesn't inherit rotation, apparently
+        frame.rotation = node.rotation;
+        nodeParent.appendChild(frame);
         copyPaste(node, frame, { include: ["x", "y"] });
         // Treat like native method
         figma.currentPage.appendChild(frame);
         node.remove();
-        return frame;
+        newFrame = frame;
     }
-    if (node.type === "RECTANGLE" || node.type === "GROUP") {
+    if (node.type === "GROUP") {
+        let frame = groupToFrame(node);
+        newFrame = frame;
+    }
+    if (node.type === "RECTANGLE") {
         let frame = figma.createFrame();
         // FIXME: Add this into copyPaste helper
         frame.resizeWithoutConstraints(node.width, node.height);
         copyPaste(node, frame);
         node.remove();
-        return frame;
+        newFrame = frame;
     }
     if (node.type === "FRAME") {
         // Don't do anything to it if it's a frame
-        return node;
+        newFrame = node;
     }
+    // Re-insert frame into its original position
+    nodeParent.insertChild(nodeIndex, newFrame);
+    return newFrame;
 }
 
 /**
@@ -6425,7 +6458,7 @@ function detachTable(selection) {
 async function toggleColumnResizing(selection) {
     // FIXME: Something weird happening with resizing of cell/text
     // FIXME: check width fill, fixed, fill when applied
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     let newSelection = [];
     let discardBucket = [];
     let firstTableColumnResizing;
@@ -6463,9 +6496,13 @@ async function toggleColumnResizing(selection) {
                         let columnLength = nodeA.children.length;
                         for (let b = 0; b < columnLength; b++) {
                             let nodeB = nodeA.children[b];
-                            if (((_b = getPluginData_1(nodeB, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'td' || ((_c = getPluginData_1(nodeB, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th') {
-                                let newTableCell = newTable.children[a].children[b];
-                                let oldTableCell = nodeB;
+                            let oldTableCell = nodeB;
+                            let newTableCell = newTable.children[a].children[b];
+                            if (((_b = getPluginData_1(nodeB, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th') {
+                                console.log(oldTableCell.layoutGrow);
+                            }
+                            // Copy across values from old cell to new cell, like auto layout properties
+                            if (((_c = getPluginData_1(nodeB, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'td' || ((_d = getPluginData_1(nodeB, 'elementSemantics')) === null || _d === void 0 ? void 0 : _d.is) === 'th') {
                                 newTableCell.swapComponent(oldTableCell.mainComponent);
                                 await swapInstance(oldTableCell, newTableCell);
                                 // replace(newTableCell, oldTableCell)
@@ -6473,6 +6510,9 @@ async function toggleColumnResizing(selection) {
                                 resize_1(newTableCell, oldTableCell.width, oldTableCell.height);
                                 // Old layoutAlign not being preserved
                                 newTableCell.layoutAlign = oldTableCell.layoutAlign;
+                                newTableCell.layoutGrow = oldTableCell.layoutGrow;
+                                newTableCell.primaryAxisSizingMode = oldTableCell.primaryAxisSizingMode;
+                                newTableCell.counterAxisSizingMode = oldTableCell.counterAxisSizingMode;
                             }
                         }
                     }
@@ -6488,7 +6528,7 @@ async function toggleColumnResizing(selection) {
                     oldTable.parent.appendChild(newTable);
                 }
                 // Reselect table if selected item was the actual table because a new table has been created in its place
-                if (((_d = getPluginData_1(item, 'elementSemantics')) === null || _d === void 0 ? void 0 : _d.is) === 'table') {
+                if (((_e = getPluginData_1(item, 'elementSemantics')) === null || _e === void 0 ? void 0 : _e.is) === 'table') {
                     item = newTable;
                 }
                 newSelection.push(item);
