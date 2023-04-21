@@ -381,7 +381,7 @@ async function toggleColumnResizing(selection) {
 
 	let newSelection = []
 	let discardBucket = []
-	let firstTableColumnResizing
+	let firstTableHasColumnResizing
 	let result: any = false
 	for (let i = 0; i < selection.length; i++) {
 		var item = selection[i]
@@ -395,19 +395,30 @@ async function toggleColumnResizing(selection) {
 			console.log(settings)
 
 			if (i === 0) {
-				firstTableColumnResizing = settings.resizing
+				if (oldTable.children[0].type === 'COMPONENT') {
+					firstTableHasColumnResizing = true
+				} else {
+					firstTableHasColumnResizing = false
+				}
 			}
 
-			// If first block not a component then detach the oldTable
-			if (firstTableColumnResizing || (oldTable.children[0].type !== 'COMPONENT' && oldTable.children[0].type === 'INSTANCE')) {
+			console.log(firstTableHasColumnResizing)
+
+			// If first table has columnResizing then detach them all
+			// Else if not apply columnResizing
+			if (firstTableHasColumnResizing) {
 				console.log('detach oldTable')
 				detachTable([oldTable])
 				result = 'removed'
 
 				newSelection.push(item)
 			} else {
+				// If controller an instance, detach table first
+				if (oldTable.children[0].type === 'INSTANCE') {
+					detachTable([oldTable])
+				}
 				result = 'applied'
-				settings.resizing = !firstTableColumnResizing
+				settings.resizing = !firstTableHasColumnResizing
 
 				// BUG: Apply fixed width to get around a bug in Figma API that causes oldTable to go wild
 				let oldTablePrimaryAxisSizingMode = oldTable.primaryAxisSizingMode
