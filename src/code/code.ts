@@ -392,7 +392,6 @@ async function toggleColumnResizing(selection) {
 
 		if (oldTable.type !== 'COMPONENT') {
 			let settings = getTableSettings(oldTable)
-			console.log(settings)
 
 			if (i === 0) {
 				if (oldTable.children[0].type === 'COMPONENT') {
@@ -401,8 +400,6 @@ async function toggleColumnResizing(selection) {
 					firstTableHasColumnResizing = false
 				}
 			}
-
-			console.log(firstTableHasColumnResizing)
 
 			// If first table has columnResizing then detach them all
 			// Else if not apply columnResizing
