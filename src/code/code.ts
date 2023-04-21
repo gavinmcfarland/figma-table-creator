@@ -24,6 +24,7 @@ import {
 	getNodeDepth,
 	addRecentFileAsync,
 	makeComponent,
+	copyPaste,
 } from '@fignite/helpers'
 import {
 	getComponentById,
@@ -46,6 +47,9 @@ import {
 	daysToMilliseconds,
 	extractValues,
 	getTemplateParts,
+	getOverriddenProps,
+	getOverriddenKeys,
+	copyPasteStyle,
 } from './helpers'
 import { createTemplateComponents, createTooltip } from './newDefaultTemplate'
 import { upgradeOldComponentsToTemplate } from './upgradeFrom6to7'
@@ -67,6 +71,7 @@ import {
 	isTableNode,
 	getTemplate,
 } from './globals'
+import { children } from 'svelte/internal'
 
 // FIXME: Duplicated file default template not selected by default in UI (undefined, instead of local components)
 // FIXME: Column resizing doesn't work on table without headers
@@ -412,24 +417,40 @@ async function toggleColumnResizing(selection) {
 
 				// copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
 
+				function itterateChildren(sourceNode, targetNode, opts?) {
+					if (opts?.onlyOverrides) {
+						copyPaste(sourceNode, targetNode, { include: getOverriddenKeys(sourceNode) })
+					} else {
+						copyPasteStyle(sourceNode, targetNode)
+					}
+
+					if (sourceNode.children) {
+						for (let i = 0; i < sourceNode.children.length; i++) {
+							let sourceChildNode = sourceNode.children[i]
+							let targetChildNode = targetNode.children[i]
+							itterateChildren(sourceChildNode, targetChildNode)
+						}
+					}
+				}
+
 				// Loop new oldTable and replace with cells from old oldTable
 
 				let rowLength = oldTable.children.length
 
 				for (let a = 0; a < rowLength; a++) {
 					let nodeA = oldTable.children[a]
+					let newTableRow = newTable.children[a]
 					if (getPluginData(nodeA, 'elementSemantics')?.is === 'tr') {
+						copyPasteStyle(nodeA, newTableRow)
+
 						let columnLength = nodeA.children.length
 
+						// For each table cell
 						for (let b = 0; b < columnLength; b++) {
 							let nodeB = nodeA.children[b]
 
 							let oldTableCell = nodeB
 							let newTableCell = newTable.children[a].children[b]
-
-							if (getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
-								console.log(oldTableCell.layoutGrow)
-							}
 
 							// Copy across values from old cell to new cell, like auto layout properties
 							if (getPluginData(nodeB, 'elementSemantics')?.is === 'td' || getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
@@ -440,12 +461,15 @@ async function toggleColumnResizing(selection) {
 								// replace(newTableCell, oldTableCell)
 								// newTableCell.swapComponent(oldTableCell.mainComponent)
 								resize(newTableCell, oldTableCell.width, oldTableCell.height)
-								// Old layoutAlign not being preserved
+
 								newTableCell.layoutAlign = oldTableCell.layoutAlign
 								newTableCell.layoutGrow = oldTableCell.layoutGrow
 
 								newTableCell.primaryAxisSizingMode = oldTableCell.primaryAxisSizingMode
 								newTableCell.counterAxisSizingMode = oldTableCell.counterAxisSizingMode
+
+								// The following will copy across overrides from oldTableCell to newTableCell. Currently doesn't include font styles or images. CopyPaste helper needs updating with these.
+								itterateChildren(oldTableCell, newTableCell, { onlyOverrides: true })
 							}
 						}
 					}

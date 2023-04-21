@@ -1,6 +1,45 @@
 import { getPageNode, getPluginData, copyPaste } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
+// export function getOverriddenProps(node) {
+// 	let overriddenProps = {}
+// 	let overrides = node.overrides
+// 	for (let i = 0; i < overrides.length; i++) {
+// 		let nodeEntry = overrides[i]
+
+// 		if (nodeEntry.id === node.id) {
+// 			for (let i = 0; nodeEntry.overriddenFields.length; i++) {
+// 				let field = nodeEntry.overriddenFields[i]
+
+// 				if (node[field]) {
+// 					overriddenProps[field] = node[field]
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return overriddenProps
+// }
+
+export function getOverriddenKeys(node) {
+	let overriddenKeys = []
+	let overrides = node.overrides
+
+	if (overrides) {
+		for (let i = 0; i < overrides.length; i++) {
+			let nodeEntry = overrides[i]
+
+			if (nodeEntry.id === node.id) {
+				for (let a = 0; a < nodeEntry.overriddenFields.length; a++) {
+					let field = nodeEntry.overriddenFields[a]
+					overriddenKeys.push(field)
+				}
+			}
+		}
+	}
+
+	return overriddenKeys
+}
+
 export function convertToNumber(data) {
 	if (Number(data)) {
 		return Number(data)

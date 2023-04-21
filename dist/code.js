@@ -216,6 +216,9 @@ figma.ui.onmessage = message => {
     }
 };
 
+// Refactor this function so that it:
+// Has an option for overridesOnly
+// Has an option to copyPaste recursively (via children)
 function isObjLiteral(_obj) {
     var _test = _obj;
     return typeof _obj !== "object" || _obj === null
@@ -229,6 +232,13 @@ function isObjLiteral(_obj) {
             }
             return Object.getPrototypeOf(_obj) === _test;
         })();
+}
+function isObjEmpty(value) {
+    if (value &&
+        Object.keys(value).length === 0 &&
+        value.constructor === Object) {
+        return true;
+    }
 }
 const nodeProps = [
     "id",
@@ -400,8 +410,13 @@ function copyPaste(source, target, ...args) {
     for (const [key, value] of props) {
         if (allowlist.includes(key)) {
             try {
-                if (typeof obj[key] === "symbol") {
-                    obj[key] = "Mixed";
+                // if (key === "strokeWeight") {
+                //   console.log("strokeWeight", value.get.call(source));
+                // }
+                // Add check to see if value is  symbol
+                if (typeof source[key] === "symbol" // Don't think this is working as obj is empty
+                ) {
+                    // obj[key] = "Mixed"; // Don't provide because cannot apply to nodes
                 }
                 else {
                     if (!isObjLiteral(source)) {
@@ -423,6 +438,7 @@ function copyPaste(source, target, ...args) {
         // else {
         // }
     }
+    // These are properties that have no setters and would break plugin when trying to set on a node
     if (!removeConflicts) {
         !obj.fillStyleId && obj.fills ? delete obj.fillStyleId : delete obj.fills;
         !obj.strokeStyleId && obj.strokes
@@ -459,6 +475,13 @@ function copyPaste(source, target, ...args) {
         else {
             delete obj.cornerRadius;
         }
+        // Can't be applied to an instance, remove for now
+        if (obj.overflowDirection) {
+            delete obj.overflowDirection;
+        }
+        if (obj.isMask) {
+            delete obj.isMask;
+        }
     }
     // Only applicable to objects because these properties cannot be set on nodes
     if (targetIsEmpty) {
@@ -486,12 +509,15 @@ function copyPaste(source, target, ...args) {
             }
         }
     }
-    if (target.type !== "FRAME" ||
-        target.type !== "COMPONENT" ||
-        target.type !== "COMPONENT_SET") {
+    if ((target === null || target === void 0 ? void 0 : target.type) !== "FRAME" ||
+        (target === null || target === void 0 ? void 0 : target.type) !== "COMPONENT" ||
+        (target === null || target === void 0 ? void 0 : target.type) !== "COMPONENT_SET") {
         delete obj.backgrounds;
     }
-    Object.assign(target, obj);
+    // console.log(obj);
+    if (!isObjEmpty(obj)) {
+        Object.assign(target, obj);
+    }
     return target;
 }
 
@@ -1986,6 +2012,38 @@ var tweeno = {
     Easing: easing
 };
 
+// export function getOverriddenProps(node) {
+// 	let overriddenProps = {}
+// 	let overrides = node.overrides
+// 	for (let i = 0; i < overrides.length; i++) {
+// 		let nodeEntry = overrides[i]
+// 		if (nodeEntry.id === node.id) {
+// 			for (let i = 0; nodeEntry.overriddenFields.length; i++) {
+// 				let field = nodeEntry.overriddenFields[i]
+// 				if (node[field]) {
+// 					overriddenProps[field] = node[field]
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return overriddenProps
+// }
+function getOverriddenKeys(node) {
+    let overriddenKeys = [];
+    let overrides = node.overrides;
+    if (overrides) {
+        for (let i = 0; i < overrides.length; i++) {
+            let nodeEntry = overrides[i];
+            if (nodeEntry.id === node.id) {
+                for (let a = 0; a < nodeEntry.overriddenFields.length; a++) {
+                    let field = nodeEntry.overriddenFields[a];
+                    overriddenKeys.push(field);
+                }
+            }
+        }
+    }
+    return overriddenKeys;
+}
 function convertToNumber(data) {
     if (Number(data)) {
         return Number(data);
@@ -5484,12 +5542,6 @@ async function createTable(templateComponent, settings, type, templateData) {
         var rowParent = getRowParent();
         // Remove all children of table
         removeChildren(table);
-        // // Remove children which are trs
-        // table.findAll((node) => {
-        // 	if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-        // 		node.remove()
-        // 	}
-        // })
         if (settings.resizing && type !== 'COMPONENT') {
             // First row should be a component
             firstRow = convertToComponent_1(part.tr.clone());
@@ -6458,7 +6510,7 @@ function detachTable(selection) {
 async function toggleColumnResizing(selection) {
     // FIXME: Something weird happening with resizing of cell/text
     // FIXME: check width fill, fixed, fill when applied
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     let newSelection = [];
     let discardBucket = [];
     let firstTableColumnResizing;
@@ -6488,31 +6540,47 @@ async function toggleColumnResizing(selection) {
                 oldTable.primaryAxisSizingMode = 'FIXED';
                 let newTable = await createTable(oldTable, settings);
                 // copyPaste(oldTable, newTable, { include: ['x', 'y', 'name'] })
+                function itterateChildren(sourceNode, targetNode, opts) {
+                    if (opts === null || opts === void 0 ? void 0 : opts.onlyOverrides) {
+                        copyPaste_1(sourceNode, targetNode, { include: getOverriddenKeys(sourceNode) });
+                    }
+                    else {
+                        copyPasteStyle(sourceNode, targetNode);
+                    }
+                    if (sourceNode.children) {
+                        for (let i = 0; i < sourceNode.children.length; i++) {
+                            let sourceChildNode = sourceNode.children[i];
+                            let targetChildNode = targetNode.children[i];
+                            itterateChildren(sourceChildNode, targetChildNode);
+                        }
+                    }
+                }
                 // Loop new oldTable and replace with cells from old oldTable
                 let rowLength = oldTable.children.length;
                 for (let a = 0; a < rowLength; a++) {
                     let nodeA = oldTable.children[a];
+                    let newTableRow = newTable.children[a];
                     if (((_a = getPluginData_1(nodeA, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
+                        copyPasteStyle(nodeA, newTableRow);
                         let columnLength = nodeA.children.length;
+                        // For each table cell
                         for (let b = 0; b < columnLength; b++) {
                             let nodeB = nodeA.children[b];
                             let oldTableCell = nodeB;
                             let newTableCell = newTable.children[a].children[b];
-                            if (((_b = getPluginData_1(nodeB, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th') {
-                                console.log(oldTableCell.layoutGrow);
-                            }
                             // Copy across values from old cell to new cell, like auto layout properties
-                            if (((_c = getPluginData_1(nodeB, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'td' || ((_d = getPluginData_1(nodeB, 'elementSemantics')) === null || _d === void 0 ? void 0 : _d.is) === 'th') {
+                            if (((_b = getPluginData_1(nodeB, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'td' || ((_c = getPluginData_1(nodeB, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th') {
                                 newTableCell.swapComponent(oldTableCell.mainComponent);
                                 await swapInstance(oldTableCell, newTableCell);
                                 // replace(newTableCell, oldTableCell)
                                 // newTableCell.swapComponent(oldTableCell.mainComponent)
                                 resize_1(newTableCell, oldTableCell.width, oldTableCell.height);
-                                // Old layoutAlign not being preserved
                                 newTableCell.layoutAlign = oldTableCell.layoutAlign;
                                 newTableCell.layoutGrow = oldTableCell.layoutGrow;
                                 newTableCell.primaryAxisSizingMode = oldTableCell.primaryAxisSizingMode;
                                 newTableCell.counterAxisSizingMode = oldTableCell.counterAxisSizingMode;
+                                // The following will copy across overrides from oldTableCell to newTableCell. Currently doesn't include font styles or images. CopyPaste helper needs updating with these.
+                                itterateChildren(oldTableCell, newTableCell, { onlyOverrides: true });
                             }
                         }
                     }
@@ -6528,7 +6596,7 @@ async function toggleColumnResizing(selection) {
                     oldTable.parent.appendChild(newTable);
                 }
                 // Reselect table if selected item was the actual table because a new table has been created in its place
-                if (((_e = getPluginData_1(item, 'elementSemantics')) === null || _e === void 0 ? void 0 : _e.is) === 'table') {
+                if (((_d = getPluginData_1(item, 'elementSemantics')) === null || _d === void 0 ? void 0 : _d.is) === 'table') {
                     item = newTable;
                 }
                 newSelection.push(item);

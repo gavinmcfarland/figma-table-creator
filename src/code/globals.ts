@@ -305,13 +305,6 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 		// Remove all children of table
 		removeChildren(table)
 
-		// // Remove children which are trs
-		// table.findAll((node) => {
-		// 	if (getPluginData(node, 'elementSemantics')?.is === 'tr') {
-		// 		node.remove()
-		// 	}
-		// })
-
 		if (settings.resizing && type !== 'COMPONENT') {
 			// First row should be a component
 			firstRow = convertToComponent(part.tr.clone())
@@ -423,6 +416,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 					// }
 				}
 			}
+
 			rowParent.appendChild(duplicateRow)
 		}
 
