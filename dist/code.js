@@ -6532,7 +6532,6 @@ async function toggleColumnResizing(selection) {
             // If first table has columnResizing then detach them all
             // Else if not apply columnResizing
             if (firstTableHasColumnResizing) {
-                console.log('detach oldTable');
                 detachTable([oldTable]);
                 result = 'removed';
                 newSelection.push(item);
