@@ -32,7 +32,7 @@ import {
 
 export let defaultRelaunchData = {
 	detachTable: 'Detaches table and rows',
-	toggleColumnResizing: 'Apply or remove component to first row or column',
+	toggleColumnResizing: 'Apply or remove column resizing',
 	switchColumnsOrRows: 'Switch between using columns or rows',
 	updateTables: 'Refresh tables already created',
 }
@@ -917,4 +917,44 @@ export function getTableSettings(tableNode): TableSettings {
 	table.resizing = firstRow.type === 'COMPONENT' ? true : false
 
 	return { ...table }
+}
+
+export function alignCell(selection, alignment) {
+	if (selection.length > 0) {
+		// 1. Get all the cells in the selection
+		// Find nodes which have sharedPLuginData element = th or td
+		function isCell(node) {
+			return getPluginData(node, 'elementSemantics')?.is === 'td' || getPluginData(node, 'elementSemantics')?.is === 'th'
+		}
+		let arrayOfCells = []
+		selection.forEach((node) => {
+			// Need to check the selected nodes as well, as findAll does not include the node it's run on
+			if (isCell(node)) {
+				arrayOfCells.push(node)
+			}
+			let foundCells = node.findAll((n) => isCell(n))
+			arrayOfCells.push(foundCells)
+		})
+
+		arrayOfCells = arrayOfCells.flat()
+
+		// Loop through each cell and change alignment
+		arrayOfCells.forEach((node) => {
+			if (alignment.toUpperCase() === 'TOP') {
+				node.primaryAxisAlignItems = 'MIN'
+			}
+
+			if (alignment.toUpperCase() === 'CENTER') {
+				node.primaryAxisAlignItems = 'CENTER'
+			}
+
+			if (alignment.toUpperCase() === 'BOTTOM') {
+				node.primaryAxisAlignItems = 'MAX'
+			}
+		})
+	} else {
+		figma.notify('Select an object first')
+	}
+
+	return alignment
 }

@@ -74,16 +74,29 @@
       "command": "selectRow"
     },
     {
-        "name": "Insert Column",
+        "name": "Insert Columns",
         "command": "insertColumn",
         "parameters": [
             {
                 "name": "Position",
-                "key": "position"
+                "key": "position",
+                "description": "Insert after or before selected cell or table"
             },
             {
                 "name": "Number",
-                "key": "number"
+                "key": "number",
+                "description": "The number of columns to insert"
+            }
+        ]
+    },
+    {
+        "name": "Align Cells",
+        "command": "alignCell",
+        "parameters": [
+            {
+                "name": "Alignment",
+                "key": "alignment",
+                "description": "Currently only supports vertical alignment"
             }
         ]
     }

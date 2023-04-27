@@ -70,6 +70,7 @@ import {
 	selectTableCellsRelaunchData,
 	isTableNode,
 	getTemplate,
+	alignCell,
 } from './globals'
 import { children } from 'svelte/internal'
 
@@ -1043,7 +1044,6 @@ async function main() {
 
 				// Currently only works when one node selected
 				// Currently only works for row based tables
-
 				if (figma.currentPage.selection.length === 1 && isValidSelection(figma.currentPage.selection[0])) {
 					let copyExistingCell = false
 
@@ -1112,14 +1112,31 @@ async function main() {
 									// Get component set of variant
 									// Find default variant
 
-									let componentSet = cellTemplate.mainComponent.parent
+									let componentSet = cellTemplate?.mainComponent?.parent
 
 									if (!componentSet) {
 										console.log('Cannot find component set, check variant was deleted')
 									}
 
-									let defaultVariant = componentSet.defaultVariant
-									let duplicateCell = defaultVariant.createInstance()
+									let defaultVariant, duplicateCell
+
+									if (cellsDetached) {
+										// If cell is detached then clone it instead of creating an instance
+										defaultVariant = cellTemplate
+										duplicateCell = cellTemplate.clone()
+									} else {
+										defaultVariant = componentSet.defaultVariant
+
+										// When not using component set / variants
+										if (!defaultVariant) {
+											defaultVariant = cellTemplate.mainComponent
+											duplicateCell = defaultVariant.createInstance()
+										} else {
+											duplicateCell = defaultVariant.createInstance()
+										}
+
+										console.log('hello')
+									}
 
 									// Resize width to match target cell (and copy layout properties)
 									duplicateCell.resize(cell.width, cell.height)
@@ -1130,21 +1147,15 @@ async function main() {
 									duplicateCell.primaryAxisAlignItems = cell.primaryAxisAlignItems
 									duplicateCell.counterAxisAlignItems = cell.counterAxisAlignItems
 
-									// Swap only the header to match the component of the target cell
-
-									if (isHeaderCell(cell, th)) {
-										// if (getNodeIndex(block) === 0) {
+									// When a new column is inserted, the header is swapped to match the target. Not sure if this is how it should be, but it works when using component props. If wanted to disable it but allow it to still work for component props, might be able to exclude variants when setting the component props
+									if (isHeaderCell(cell, th) && !cellsDetached) {
 										duplicateCell.swapComponent(cell.mainComponent)
 										if (cell.componentProperties) {
 											duplicateCell.setProperties(extractValues(cell.componentProperties))
 										}
 									}
 
-									if (cellsDetached) {
-										duplicateCells.push(duplicateCell.detachInstance())
-									} else {
-										duplicateCells.push(duplicateCell)
-									}
+									duplicateCells.push(duplicateCell)
 								} else {
 									let duplicateCell = cell.clone()
 
@@ -1239,6 +1250,11 @@ async function main() {
 										let componentSet = td.mainComponent.parent
 										let defaultVariant = componentSet.defaultVariant
 
+										// When not using component set / variants
+										if (!defaultVariant) {
+											defaultVariant = td.mainComponent
+										}
+
 										let defaultCell = block.children[targetCellIndex + i + position]
 
 										// Create a temp instance so we can copy the properties from it
@@ -1271,6 +1287,27 @@ async function main() {
 				} else {
 					figma.closePlugin('Please select a cell or table')
 				}
+			})
+		})
+
+		plugin.command('alignCell', async () => {
+			figma.parameters.on('input', ({ query, result, key, parameters }) => {
+				// if (key === 'direction') {
+				// 	let suggestions = ['vertical', 'horizontal']
+
+				// 	result.setSuggestions(suggestions.filter((s) => s.includes(query)))
+				// }
+
+				if (key === 'alignment') {
+					let suggestions = ['Top', 'Center', 'Bottom']
+
+					result.setSuggestions(suggestions.filter((s) => s.includes(query)))
+				}
+			})
+
+			figma.on('run', ({ parameters }) => {
+				let alignment = alignCell(figma.currentPage.selection, parameters.alignment)
+				figma.closePlugin(`Aligned to ${alignment.toLowerCase()}`)
 			})
 		})
 
