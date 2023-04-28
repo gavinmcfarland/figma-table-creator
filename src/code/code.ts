@@ -446,25 +446,32 @@ async function toggleColumnResizing(selection) {
 				let rowLength = oldTable.children.length
 
 				for (let a = 0; a < rowLength; a++) {
-					let nodeA = oldTable.children[a]
+					let oldTableRow = oldTable.children[a]
 					let newTableRow = newTable.children[a]
-					if (getPluginData(nodeA, 'elementSemantics')?.is === 'tr') {
-						copyPasteStyle(nodeA, newTableRow)
+					if (getPluginData(oldTableRow, 'elementSemantics')?.is === 'tr') {
+						copyPasteStyle(oldTableRow, newTableRow)
 
-						let columnLength = nodeA.children.length
+						// layoutGrow must be applied before counterAxisSizingMode otherwise does not set row to hug
+						newTableRow.layoutGrow = oldTableRow.layoutGrow
+						newTableRow.counterAxisSizingMode = oldTableRow.counterAxisSizingMode
+
+						let columnLength = oldTableRow.children.length
 
 						// For each table cell
 						for (let b = 0; b < columnLength; b++) {
-							let nodeB = nodeA.children[b]
-
-							let oldTableCell = nodeB
-							let newTableCell = newTable.children[a].children[b]
+							let oldTableCell = oldTableRow.children[b]
+							let newTableCell = newTableRow.children[b]
 
 							// Copy across values from old cell to new cell, like auto layout properties
-							if (getPluginData(nodeB, 'elementSemantics')?.is === 'td' || getPluginData(nodeB, 'elementSemantics')?.is === 'th') {
+							if (
+								getPluginData(oldTableCell, 'elementSemantics')?.is === 'td' ||
+								getPluginData(oldTableCell, 'elementSemantics')?.is === 'th'
+							) {
 								newTableCell.swapComponent(oldTableCell.mainComponent)
 
 								await swapInstance(oldTableCell, newTableCell)
+
+								newTableCell.visible = oldTableCell.visible
 
 								// replace(newTableCell, oldTableCell)
 								// newTableCell.swapComponent(oldTableCell.mainComponent)
@@ -482,6 +489,15 @@ async function toggleColumnResizing(selection) {
 						}
 					}
 				}
+
+				// for (let a = 0; a < rowLength; a++) {
+				// 	let newTableRow = newTable.children[a]
+				// 	let oldTableRow = oldTable.children[a]
+				// 	newTableRow.layoutGrow = oldTableRow.layoutGrow
+				// 	newTableRow.counterAxisSizingMode = oldTableRow.counterAxisSizingMode
+
+				// 	console.log(oldTableRow.counterAxisSizingMode, oldTableRow.layoutGrow, newTableRow.counterAxisSizingMode, newTableRow.layoutGrow)
+				// }
 
 				// Selection is oldTable
 				// if (getPluginData(oldTable, 'elementSemantics')?.is === 'table' && getPluginData(oldTable, 'template')) {
@@ -1134,8 +1150,6 @@ async function main() {
 										} else {
 											duplicateCell = defaultVariant.createInstance()
 										}
-
-										console.log('hello')
 									}
 
 									// Resize width to match target cell (and copy layout properties)
