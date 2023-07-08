@@ -3,7 +3,6 @@ import _ from 'underscore'
 import {
 	convertToFrame,
 	convertToComponent,
-	getPluginData,
 	getNodeIndex,
 	setPluginData,
 	getClientStorageAsync,
@@ -28,6 +27,7 @@ import {
 	daysToMilliseconds,
 	getNodeName,
 	extractValues,
+	getPluginData,
 } from './helpers'
 
 export let defaultRelaunchData = {
@@ -571,8 +571,10 @@ export function updateTemplateData(node, data) {
 	data.id = node.id
 	data.name = getNodeName(node)
 	data.component.id = node.id
+
 	// KEY needs updating if template duplicated
 	data.component.key = node.key
+
 	// Update file id incase component moved to another file. Is this needed? Maybe when passed around as an instance
 	// We need to generate the fileId here because it's needed for the UI to check if template is local or not and we can't rely on the recentFiles to do it, because it's too late at that point.
 	let fileId = getDocumentData('fileId') || genUID()

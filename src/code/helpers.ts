@@ -1,4 +1,4 @@
-import { getPageNode, getPluginData, copyPaste } from '@fignite/helpers'
+import { getPageNode, copyPaste } from '@fignite/helpers'
 import { Tween, Queue, Easing } from 'tweeno'
 
 // export function getOverriddenProps(node) {
@@ -19,6 +19,16 @@ import { Tween, Queue, Easing } from 'tweeno'
 // 	}
 // 	return overriddenProps
 // }
+
+// FIXME: Tempory fix
+export function getPluginData(node, key) {
+	let result = node.getPluginData(key)
+	if (result) {
+		return JSON.parse(result)
+	} else {
+		return ''
+	}
+}
 
 export function getOverriddenKeys(node) {
 	let overriddenKeys = []

@@ -73,7 +73,7 @@ var require$$0 = {
 var pkg;
 
 {
-	pkg = require$$0;
+    pkg = require$$0;
 }
 // try {
 // 	versionHistory = require("./package.json");
@@ -100,91 +100,85 @@ var pkg;
 // 	}
 // }
 function plugma(plugin) {
-	var pluginState = {
-		updateAvailable: false,
-		ui: {}
-	};
-	// console.log(pkg)
-	if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
-		pluginState.version = pkg.version;
-	}
-	// pluginState.updateAvailable = updateAvailable()
-	var eventListeners = [];
-	var menuCommands = [];
-	pluginState.on = (type, callback) => {
-		eventListeners.push({ type, callback });
-	};
-	pluginState.command = (type, callback) => {
-		menuCommands.push({ type, callback });
-	};
-
-
-	// Override default page name if set
-	var pageMannuallySet = false;
-	pluginState.setStartPage = (name) => {
-		pluginState.ui.page = name;
-		pageMannuallySet = true;
-	};
-	// pluginState.update = (callback) => {
-	// 	for (let [version, changes] of Object.entries(versionHistory)) {
-	// 		if (version === pkg.version) {
-	// 			// for (let i = 0; i < changes.length; i++) {
-	// 			// 	var change = changes[i]
-	// 			// }
-	// 			callback({ version, changes })
-	// 		}
-	// 	}
-	// }
-
-
-	var pluginCommands = plugin(pluginState);
-
-	// // Override default page name if set
-	// if (pageName[0]) {
-	// 	pluginState.ui.page = pageName[0]
-	// }
-	// console.log("pageName", pluginState.ui.page)
-	Object.assign({}, pluginState, { commands: pluginCommands });
-
-	if (pluginCommands) {
-		for (let [key, value] of Object.entries(pluginCommands)) {
-			// If command exists in manifest
-			if (figma.command === key) {
-				// Pass default page for ui
-				if (!pageMannuallySet) {
-					pluginState.ui.page = key;
-				}
-				// Override default page name if set
-				// if (pageName[0]) {
-				// 	pluginState.ui.page = pageName[0]
-				// }
-				// Call function for that command
-				value(pluginState);
-				// Show UI?
-				if (pluginState.ui.open) {
-					console.log("open?");
-					figma.showUI(pluginState.ui.html);
-				}
-			}
-		}
-	}
-	figma.ui.onmessage = message => {
-		for (let eventListener of eventListeners) {
-			// console.log(message)
-			if (message.type === eventListener.type)
-				eventListener.callback(message);
-		}
-	};
-	pluginState.ui.show = (data) => {
-		figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
-		figma.ui.postMessage(data);
-	};
-	for (let command of menuCommands) {
-		if (figma.command === command.type) {
-			command.callback(pluginState);
-		}
-	}
-	// console.log(pluginObject)
+    var pluginState = {
+        updateAvailable: false,
+        ui: {}
+    };
+    // console.log(pkg)
+    if (pkg === null || pkg === void 0 ? void 0 : pkg.version) {
+        pluginState.version = pkg.version;
+    }
+    // pluginState.updateAvailable = updateAvailable()
+    var eventListeners = [];
+    var menuCommands = [];
+    pluginState.on = (type, callback) => {
+        eventListeners.push({ type, callback });
+    };
+    pluginState.command = (type, callback) => {
+        menuCommands.push({ type, callback });
+    };
+    // Override default page name if set
+    var pageMannuallySet = false;
+    pluginState.setStartPage = (name) => {
+        pluginState.ui.page = name;
+        pageMannuallySet = true;
+    };
+    // pluginState.update = (callback) => {
+    // 	for (let [version, changes] of Object.entries(versionHistory)) {
+    // 		if (version === pkg.version) {
+    // 			// for (let i = 0; i < changes.length; i++) {
+    // 			// 	var change = changes[i]
+    // 			// }
+    // 			callback({ version, changes })
+    // 		}
+    // 	}
+    // }
+    var pluginCommands = plugin(pluginState);
+    // // Override default page name if set
+    // if (pageName[0]) {
+    // 	pluginState.ui.page = pageName[0]
+    // }
+    // console.log("pageName", pluginState.ui.page)
+    Object.assign({}, pluginState, { commands: pluginCommands });
+    if (pluginCommands) {
+        for (let [key, value] of Object.entries(pluginCommands)) {
+            // If command exists in manifest
+            if (figma.command === key) {
+                // Pass default page for ui
+                if (!pageMannuallySet) {
+                    pluginState.ui.page = key;
+                }
+                // Override default page name if set
+                // if (pageName[0]) {
+                // 	pluginState.ui.page = pageName[0]
+                // }
+                // Call function for that command
+                value(pluginState);
+                // Show UI?
+                if (pluginState.ui.open) {
+                    console.log("open?");
+                    figma.showUI(pluginState.ui.html);
+                }
+            }
+        }
+    }
+    figma.ui.onmessage = message => {
+        for (let eventListener of eventListeners) {
+            // console.log(message)
+            if (message.type === eventListener.type)
+                eventListener.callback(message);
+        }
+    };
+    pluginState.ui.show = (data) => {
+        figma.showUI(pluginState.ui.html, { width: pluginState.ui.width, height: pluginState.ui.height });
+        figma.ui.postMessage(data);
+    };
+    for (let command of menuCommands) {
+        if (figma.command === command.type) {
+            command.callback(pluginState);
+        }
+    }
+    // console.log(pluginObject)
 }
 
 var dist = plugma;
@@ -609,12 +603,15 @@ function moveChildren(source, target) {
  * @param {SceneNode} node The node you want to convert to a component
  * @returns Returns the new node as a component
  */
-// FIXME: Typescript says detachInstance() doesn't exist on SceneNode & ChildrenMixin 
+// FIXME: Typescript says detachInstance() doesn't exist on SceneNode & ChildrenMixin
 function convertToComponent(node) {
     const component = figma.createComponent();
     node = convertToFrame(node);
     // FIXME: Add this into copyPaste helper
-    component.resizeWithoutConstraints(node.width, node.height);
+    // FIXME: How to resize 0 height/width nodes
+    if (node.width >= 0.01 && node.height >= 0.01) {
+        component.resizeWithoutConstraints(node.width, node.height);
+    }
     copyPaste(node, component);
     moveChildren(node, component);
     node.remove();
@@ -630,7 +627,7 @@ function convertToComponent(node) {
  * @param {string} key  The key under which data is stored
  * @returns Plugin Data
  */
-function getPluginData(node, key, opts) {
+function getPluginData$1(node, key, opts) {
     var data;
     data = node.getPluginData(key);
     if (data) {
@@ -974,7 +971,10 @@ function replace(target, source) {
     }
     if (result) {
         // FIXME: Add this into copyPaste helper
-        result.resizeWithoutConstraints(targetWidth, targetHeight);
+        // FIXME: How to resize 0 height/width nodes
+        if (targetWidth >= 0.01 && targetHeight >= 0.01) {
+            result.resizeWithoutConstraints(targetWidth, targetHeight);
+        }
         copyPaste(targetCopy, result, { include: ["x", "y", "constraints"] });
         // copyPaste not working properly so have to manually copy x and y
         result.x = targetCopy.x;
@@ -1004,7 +1004,7 @@ function setDocumentData(key, data) {
  * @param {String} key A key to store data under
  */
 function getDocumentData(key) {
-    return getPluginData(figma.root, key);
+    return getPluginData$1(figma.root, key);
 }
 
 /**
@@ -1178,7 +1178,7 @@ async function getRecentFilesAsync(fileData, opts) {
     if (recentFiles.length > 0) {
         // Exclude current file
         recentFiles = recentFiles.filter((file) => {
-            return !(file.id === getPluginData(figma.root, "fileId"));
+            return !(file.id === getPluginData$1(figma.root, "fileId"));
         });
     }
     return recentFiles;
@@ -1231,7 +1231,7 @@ async function getRemoteFilesAsync(fileId) {
             // });
             // Exclude current file (because we want remote files to this file only)
             remoteFiles = remoteFiles.filter((file) => {
-                return !(file.id === getPluginData(figma.root, "fileId"));
+                return !(file.id === getPluginData$1(figma.root, "fileId"));
             });
         }
         // }
@@ -1244,7 +1244,7 @@ async function getRemoteFilesAsync(fileId) {
                     figma
                         .importComponentByKeyAsync(file.data[0].component.key)
                         .then((component) => {
-                        var remoteTemplate = getPluginData(component, "template");
+                        var remoteTemplate = getPluginData$1(component, "template");
                         updatePluginData(figma.root, "remoteFiles", (remoteFiles) => {
                             remoteFiles.map((file) => {
                                 if (file.id === remoteTemplate.file.id) {
@@ -1314,7 +1314,7 @@ var getNodeDepth_1 = getNodeDepth;
 var getNodeIndex_1 = getNodeIndex;
 var getNodeLocation_1 = getNodeLocation;
 var getPageNode_1 = getPageNode;
-var getPluginData_1 = getPluginData;
+var getPluginData_1 = getPluginData$1;
 var getRecentFilesAsync_1 = getRecentFilesAsync;
 var getRemoteFilesAsync_1 = getRemoteFilesAsync;
 var incrementName_1 = incrementName;
@@ -2028,6 +2028,16 @@ var tweeno = {
 // 	}
 // 	return overriddenProps
 // }
+// FIXME: Tempory fix
+function getPluginData(node, key) {
+    let result = node.getPluginData(key);
+    if (result) {
+        return JSON.parse(result);
+    }
+    else {
+        return '';
+    }
+}
 function getOverriddenKeys(node) {
     let overriddenKeys = [];
     let overrides = node.overrides;
@@ -2350,7 +2360,7 @@ function getTemplateParts(templateNode) {
     for (let i = 0; i < elements.length; i++) {
         let elementName = elements[i];
         let part = templateNode.findOne((node) => {
-            let elementSemantics = getPluginData_1(node, 'elementSemantics');
+            let elementSemantics = getPluginData(node, 'elementSemantics');
             if ((elementSemantics === null || elementSemantics === void 0 ? void 0 : elementSemantics.is) === elementName) {
                 return true;
             }
@@ -2358,7 +2368,7 @@ function getTemplateParts(templateNode) {
         results[elementName] = part;
     }
     if (!results['table']) {
-        if (getPluginData_1(templateNode, 'elementSemantics').is === 'table') {
+        if (getPluginData(templateNode, 'elementSemantics').is === 'table') {
             results['table'] = templateNode;
         }
     }
@@ -5332,7 +5342,7 @@ let selectTableCellsRelaunchData = {
 function getTemplate(node) {
     if (node.type === 'PAGE')
         return false;
-    if (getPluginData_1(node, 'template')) {
+    if (getPluginData(node, 'template')) {
         return node;
     }
     else {
@@ -5367,7 +5377,7 @@ async function applyTableSettings(target, source) {
     return target;
 }
 function isTemplateNode(node) {
-    if (node.type === 'COMPONENT' && getPluginData_1(node, 'template')) {
+    if (node.type === 'COMPONENT' && getPluginData(node, 'template')) {
         return node;
     }
 }
@@ -5536,7 +5546,7 @@ async function createTable(templateComponent, settings, type, templateData) {
         table.layoutMode = 'VERTICAL';
         var firstRow;
         function getRowParent() {
-            var row = table.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+            var row = table.findOne((node) => { var _a; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
             return row.parent;
         }
         var rowParent = getRowParent();
@@ -5693,7 +5703,7 @@ async function createTable(templateComponent, settings, type, templateData) {
             }
         }
         if (settings.detachedCells && !settings.resizing) {
-            let cells = tableInstance.findAll((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
+            let cells = tableInstance.findAll((node) => { var _a, _b; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
             for (let i = 0; i < cells.length; i++) {
                 let cell = cells[i];
                 cell.detachInstance();
@@ -5749,7 +5759,7 @@ function getLocalTemplatesWithoutUpdating() {
     });
     for (let i = 0; i < components.length; i++) {
         let node = components[i];
-        var templateData = getPluginData_1(node, 'template');
+        var templateData = getPluginData(node, 'template');
         if (templateData && node.type === 'COMPONENT') {
             updateTemplateData(node, templateData);
             templates.push(templateData);
@@ -5766,7 +5776,7 @@ function getLocalTemplates() {
     });
     for (let i = 0; i < components.length; i++) {
         let node = components[i];
-        var templateData = getPluginData_1(node, 'template');
+        var templateData = getPluginData(node, 'template');
         if (templateData && node.type === 'COMPONENT') {
             // if the component id has changed then save previous data so that it can be relinked
             if (templateData.id !== node.id && templateData.file.id !== fileId) {
@@ -5779,7 +5789,7 @@ function getLocalTemplates() {
             templates.push(templateData);
             // Remove any template data and relaunch data that exists on nodes inside this template
             node.findAll((node) => {
-                if (getPluginData_1(node, 'template')) {
+                if (getPluginData(node, 'template')) {
                     node.setPluginData('template', '');
                     node.setRelaunchData({});
                     return true;
@@ -5895,7 +5905,7 @@ async function getDefaultTemplate() {
 }
 async function updateTables(template) {
     var templateComponent = await lookForComponent(template);
-    let prevTemplate = getPluginData_1(templateComponent, 'prevTemplate');
+    let prevTemplate = getPluginData(templateComponent, 'prevTemplate');
     let templateParts = getTemplateParts(templateComponent);
     let tablesUpdated;
     let tablesRelinked;
@@ -5912,20 +5922,20 @@ async function updateTables(template) {
         handler = figma.notify(`Updating tables on page ${p + 1} of ${pages.length}...`, { timeout: 1 });
         await sleep$1();
         var allTableInstances = [];
-        var tableInstances = page.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.component.id) === template.component.id && node.type === 'FRAME'; });
+        var tableInstances = page.findAll((node) => { var _a; return ((_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.component.id) === template.component.id && node.type === 'FRAME'; });
         if ((tableInstances === null || tableInstances === void 0 ? void 0 : tableInstances.length) > 0) {
             tablesUpdated = true;
         }
         allTableInstances = tableInstances;
         if (prevTemplate) {
-            var oldTableInstances = page.findAll((node) => { var _a; return ((_a = getPluginData_1(node, 'template')) === null || _a === void 0 ? void 0 : _a.component.id) === prevTemplate.component.id && node.type === 'FRAME'; });
+            var oldTableInstances = page.findAll((node) => { var _a; return ((_a = getPluginData(node, 'template')) === null || _a === void 0 ? void 0 : _a.component.id) === prevTemplate.component.id && node.type === 'FRAME'; });
             if ((oldTableInstances === null || oldTableInstances === void 0 ? void 0 : oldTableInstances.length) > 0) {
                 tablesRelinked = true;
             }
             allTableInstances = [...tableInstances, ...oldTableInstances];
         }
         if (templateComponent && allTableInstances) {
-            var rowTemplate = templateComponent.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+            var rowTemplate = templateComponent.findOne((node) => { var _a; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
             for (let b = 0; b < allTableInstances.length; b++) {
                 let tableInstance = allTableInstances[b];
                 let tableParts = getTemplateParts(tableInstance);
@@ -5943,7 +5953,7 @@ async function updateTables(template) {
                     }
                     table.findAll((node) => {
                         var _a;
-                        if ((((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
+                        if ((((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') === true && node.type !== 'INSTANCE') {
                             copyPasteStyle(rowTemplate, node, { exclude: ['name', 'layoutMode'] });
                         }
                     });
@@ -5974,12 +5984,12 @@ function getTableSettings(tableNode) {
     let tablePart = templateParts.table;
     for (let i = 0; i < tablePart.children.length; i++) {
         var node = tablePart.children[i];
-        if (((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
+        if (((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr') {
             rowCount++;
         }
     }
-    let firstRow = tablePart.findOne((node) => { var _a; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
-    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
+    let firstRow = tablePart.findOne((node) => { var _a; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'tr'; });
+    let firstCell = firstRow.findOne((node) => { var _a, _b; return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th'; });
     if (firstRow.parent.layoutMode === 'VERTICAL') {
         usingColumnsOrRows = 'ROWS';
     }
@@ -5988,7 +5998,7 @@ function getTableSettings(tableNode) {
     }
     for (let i = 0; i < firstRow.children.length; i++) {
         var node = firstRow.children[i];
-        var cellType = (_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
+        var cellType = (_b = getPluginData(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is;
         if (cellType === 'td' || cellType === 'th') {
             columnCount++;
         }
@@ -6016,7 +6026,7 @@ function getTableSettings(tableNode) {
         })(),
     ];
     table.axis = usingColumnsOrRows;
-    table.header = ((_c = getPluginData_1(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false;
+    table.header = ((_c = getPluginData(firstCell, 'elementSemantics')) === null || _c === void 0 ? void 0 : _c.is) === 'th' ? true : false;
     table.resizing = firstRow.type === 'COMPONENT' ? true : false;
     return Object.assign({}, table);
 }
@@ -6026,7 +6036,7 @@ function alignCell(selection, alignment) {
         // Find nodes which have sharedPLuginData element = th or td
         function isCell(node) {
             var _a, _b;
-            return ((_a = getPluginData_1(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData_1(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th';
+            return ((_a = getPluginData(node, 'elementSemantics')) === null || _a === void 0 ? void 0 : _a.is) === 'td' || ((_b = getPluginData(node, 'elementSemantics')) === null || _b === void 0 ? void 0 : _b.is) === 'th';
         }
         let arrayOfCells = [];
         selection.forEach((node) => {
