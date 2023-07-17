@@ -1818,3 +1818,9 @@ main()
 // figma.clientStorage.deleteAsync('userPreferences')
 
 // figma.clientStorage.deleteAsync('recentTables')
+
+// figma.on('selectionchange', () => {
+// 	if (figma.currentPage.selection.length > 0) {
+// 		console.log(JSON.parse(figma.currentPage.selection[0].getPluginData('template')))
+// 	}
+// })

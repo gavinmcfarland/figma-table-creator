@@ -787,7 +787,11 @@ export async function updateTables(template) {
 
 		var allTableInstances = []
 
-		var tableInstances = page.findAll((node) => getPluginData(node, 'template')?.component.id === template.component.id && node.type === 'FRAME')
+		var tableInstances = page.findAll((node) => {
+			if (getPluginData(node, 'template')?.component?.id === template.component.id && node.type === 'FRAME') {
+				return true
+			}
+		})
 
 		if (tableInstances?.length > 0) {
 			tablesUpdated = true
