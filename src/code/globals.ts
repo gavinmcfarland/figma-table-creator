@@ -108,7 +108,7 @@ export async function updatePluginVersion(semver) {
 	})
 }
 
-async function copyTemplatePart(partParent, node, index, templateSettings: TableSettings, tableSettings?: TableSettings, rowIndex?) {
+async function copyTemplatePart(partParent, node, index, templateSettings: TableSettings, tableSettings?: TableSettings, rowIndex?, opts?) {
 	// TODO: Copy across overrides like text, and instance swaps
 
 	// Beacuse template will not be as big as table we need to cap the index to the size of the template, therefore copying the last cell
@@ -122,38 +122,42 @@ async function copyTemplatePart(partParent, node, index, templateSettings: Table
 	if (tableSettings) {
 		if (templateCell) {
 			// Copy across width
-			if (tableSettings) {
-				let cellWidth
-				if (tableSettings.cell[0] === '$') {
-					cellWidth = templateCell.width
-				} else {
-					cellWidth = tableSettings.cell[0]
-				}
+			if (!opts?.ignore.includes('width')) {
+				// ^ Don't copy width if specified
+				if (tableSettings) {
+					let cellWidth
+					if (tableSettings.cell[0] === '$') {
+						cellWidth = templateCell.width
+					} else {
+						cellWidth = tableSettings.cell[0]
+					}
 
-				if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
-					node.resizeWithoutConstraints(cellWidth, node.height)
-				}
+					if (cellWidth && cellWidth !== 'FILL' && cellWidth !== 'HUG') {
+						node.resizeWithoutConstraints(cellWidth, node.height)
+					}
 
-				// If templateCell === FILL
-				if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
-					node.layoutGrow = 1
-				}
+					// If templateCell === FILL
+					if (templateCell.layoutGrow === 1 && tableSettings.cell[0] === '$') {
+						node.layoutGrow = 1
+					}
 
-				// If templateCell === HUG
-				if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
-					node.layoutGrow = 0
-					node.counterAxisSizingMode = 'AUTO'
-				}
+					// If templateCell === HUG
+					if (templateCell.layoutGrow === 0 && templateCell.counterAxisSizingMode === 'AUTO' && tableSettings.cell[0] === '$') {
+						node.layoutGrow = 0
+						node.counterAxisSizingMode = 'AUTO'
+					}
 
-				// If specific table width specified
-				if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
-					node.layoutGrow = 1
-					node.counterAxisSizingMode = 'AUTO'
+					// If specific table width specified
+					if (tableSettings.size[0] && tableSettings.size[0] !== 'HUG' && tableSettings.cell[0] !== '$') {
+						node.layoutGrow = 1
+						node.counterAxisSizingMode = 'AUTO'
+					}
 				}
 			}
 
 			// Set component properties on instances
-			if (templateCell.componentProperties) {
+			// We need to check node.componentProperties are not empty because cannot set properties when instance has none
+			if (templateCell.componentProperties && JSON.stringify(node.componentProperties) !== '{}') {
 				node.setProperties(extractValues(templateCell.componentProperties))
 			}
 
@@ -265,6 +269,7 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			table = part.table.clone()
 
 			// Because table could be inside several children we need to find its location in the template, then loop through the table instance and replace it
+			// This use case is when the user may have other UI elements in the template
 			let nodeLocation = getNodeLocation(part.table, part.container)
 			nodeLocation.shift()
 
@@ -284,7 +289,12 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 			// 	}
 			// })
 
-			replace(nodeToReplace, table)
+			// FIXED: In some scenarios this was slowing process of creating tables. Replaced this by simplying inserting the node at the index of the original and then removing the original
+			// replace(nodeToReplace, table)
+
+			nodeToReplace.parent.insertChild(getNodeIndex(nodeToReplace), table)
+
+			nodeToReplace.remove()
 		}
 
 		if (table.type === 'INSTANCE') {
@@ -365,7 +375,10 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 			firstRow.appendChild(duplicateCell)
 
-			copyTemplatePart(part.table.children[1], duplicateCell, i, templateSettings, tableSettings)
+			if (!settings.resizing) {
+				// It's [1] because this is the second row in the template
+				copyTemplatePart(part.table.children[1], duplicateCell, i, templateSettings, tableSettings)
+			}
 
 			duplicateCell.primaryAxisAlignItems = settings.alignment[0]
 
@@ -392,11 +405,11 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 				duplicateRow.layoutGrow = 1
 			}
 
-			// If using columnResizing and header swap non headers to default cells
+			// If using columnResizing and header swap non headers to match that in the template
 			if (settings.resizing && settings.header) {
 				for (let i = 0; i < duplicateRow.children.length; i++) {
 					var cell = duplicateRow.children[i]
-					// cell.swapComponent(part.th)
+
 					// FIXME: Check if instance or main component
 
 					cell.mainComponent = part.td.mainComponent
@@ -404,7 +417,8 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 					// Set component properties on instances
 					// cell.setProperties(extractValues(part.td.componentProperties))
-					copyTemplatePart(part.table.children[1], cell, i, templateSettings, tableSettings, r)
+
+					copyTemplatePart(part.table.children[1], cell, i, templateSettings, tableSettings, r, { ignore: ['width'] })
 
 					// Needs to be applied here too
 					cell.primaryAxisSizingMode = 'FIXED'
