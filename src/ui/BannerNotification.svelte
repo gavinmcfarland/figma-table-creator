@@ -124,9 +124,10 @@
 	}
 
 	.host .content {
-		padding: 8px;
+		padding: 6px 8px;
 		display: flex;
-		gap: 8px;
+		gap: 2px;
+		flex-direction: column;
 	}
 
 	.host .content > :global(*) {

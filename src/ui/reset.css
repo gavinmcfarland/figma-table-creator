@@ -102,6 +102,12 @@ button {
 	background-color: #aad4fb;
 }
 
+a {
+	text-decoration: none;
+	color: var(--figma-color-text-brand);
+	font-weight: 500;
+}
+
 :root {
 	--color-blue: #18a0fb;
 	--color-selection-a: #daebf7;

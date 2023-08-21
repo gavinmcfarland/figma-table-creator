@@ -787,16 +787,17 @@
 		{#if shouldShowBanner(pluginFirstUsedAt, hasUserDismissedBanner1)}
 			<BannerNotification id="thingy2" type="info" on:close={closeNotification}>
 				<slot slot="message">
-					<p>Share your thoughts</p>
+					<p>Your feedback matters!</p>
+					<p><a target="_blank" href="https://forms.gle/WFYWnA4mXFLakKgPA">Complete a 2 min survey</a></p>
 				</slot>
 
-				<slot slot="action">
+				<!-- <slot slot="action">
 					<Button
 						classes="ghost"
 						on:click={() => {
 							getBannerNotification('thingy2').close()
 						}}>Go</Button>
-				</slot>
+				</slot> -->
 			</BannerNotification>
 		{/if}
 		<div class="section-title">
