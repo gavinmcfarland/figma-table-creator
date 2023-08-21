@@ -124,9 +124,9 @@
 	}
 
 	.host .content {
-		padding: 6px 8px;
+		padding: 8px 8px;
 		display: flex;
-		gap: 2px;
+		gap: 4px;
 		flex-direction: column;
 	}
 
@@ -141,6 +141,7 @@
 	.host {
 		margin: -8px -16px 8px;
 		align-items: center;
+		/* align-items: flex-start; */
 		display: flex;
 		gap: 8px;
 		/* position: absolute;
@@ -196,5 +197,9 @@
 	[data-type='success'] :global(.IconButton:hover),
 	[data-type='success'] :global(.Button:hover) {
 		background-color: var(--figma-color-bg-success-hover);
+	}
+
+	:global(button) {
+		color: inherit;
 	}
 </style>

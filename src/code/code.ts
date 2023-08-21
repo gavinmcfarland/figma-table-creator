@@ -836,7 +836,7 @@ async function createTableUI() {
 
 	figma.showUI(__uiFiles__.main, {
 		width: 240 - 5,
-		height: 457 + 8 + 8,
+		height: 460 + 8 + 8,
 		themeColors: true,
 	})
 	figma.ui.postMessage({

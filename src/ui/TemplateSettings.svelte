@@ -1,6 +1,6 @@
 <script>
-	import Button from "./Button.svelte"
-	import { valueStore } from "./data.js"
+	import Button from './Button.svelte'
+	import { valueStore } from './data.js'
 
 	export let template
 	export let pageState
@@ -13,64 +13,59 @@
 	let currentlyHovering = false
 
 	function updateTables() {
-		parent.postMessage({ pluginMessage: { type: "update-tables" } }, "*")
+		parent.postMessage({ pluginMessage: { type: 'update-tables' } }, '*')
 	}
 
 	function linkComponent(component) {
-		parent.postMessage({ pluginMessage: { type: "link-component", template: component } }, "*")
+		parent.postMessage({ pluginMessage: { type: 'link-component', template: component } }, '*')
 	}
 
 	function editTemplate(template) {
 		// Todo: Needs to be seperated into two
-		parent.postMessage({ pluginMessage: { type: "edit-template", template } }, "*")
+		parent.postMessage({ pluginMessage: { type: 'edit-template', template } }, '*')
 	}
 
 	function fetchTemplateParts(template) {
-
-		parent.postMessage({ pluginMessage: { type: "fetch-template-parts", template } }, "*")
+		parent.postMessage({ pluginMessage: { type: 'fetch-template-parts', template } }, '*')
 	}
 
 	function fetchCurrentSelection(template) {
-		parent.postMessage({ pluginMessage: { type: "fetch-current-selection", template } }, "*")
+		parent.postMessage({ pluginMessage: { type: 'fetch-current-selection', template } }, '*')
 	}
 
 	fetchTemplateParts(template)
 	editTemplate(template)
 
-
-
 	function doneEditing() {
 		pageState = {
 			welcomePageActive: false,
 			createTablePageActive: true,
-			templateSettingsPageActive: false
+			templateSettingsPageActive: false,
 		}
 
 		valueStore.update((data) => {
 			data.pageState = pageState
 			return data
 		})
-
 	}
 
 	function addRemoveElement(event, part, i) {
-		let {name, element, id} = part
+		let { name, element, id } = part
 		let button = event.target
 
-		if (typeof name === "undefined") {
+		if (typeof name === 'undefined') {
 			parts[i].name = currentSelection.name
 			artworkTarget.classList.add('taken')
 			artworkTarget.classList.remove('not-taken')
 			// artworkTarget.classList.remove('add')
-			parent.postMessage({ pluginMessage: { type: "add-element", element } }, "*")
-		}
-		else {
+			parent.postMessage({ pluginMessage: { type: 'add-element', element } }, '*')
+		} else {
 			parts[i].name = undefined
 			artworkTarget.classList.remove('remove')
 			artworkTarget.classList.remove('taken')
 			artworkTarget.classList.add('not-taken')
 
-			parent.postMessage({ pluginMessage: { type: "remove-element", element, id } }, "*")
+			parent.postMessage({ pluginMessage: { type: 'remove-element', element, id } }, '*')
 		}
 
 		fetchCurrentSelection(template)
@@ -80,18 +75,15 @@
 	async function onMessage(event) {
 		message = await event.data.pluginMessage
 
-		if (message.type === "template-parts") {
+		if (message.type === 'template-parts') {
 			parts = Object.values(message.parts)
 		}
 
-		if (message.type === "current-selection") {
+		if (message.type === 'current-selection') {
 			currentSelection = message.selection
 
-
 			if (currentSelection) {
-
 				if (currentSelection.element) {
-
 					if (previousSelection && previousSelection.element) {
 						artworkTarget.classList.remove(previousSelection.element)
 						artworkTarget.classList.remove('current-' + previousSelection.element)
@@ -100,14 +92,11 @@
 					artworkTarget.classList.add('current')
 					artworkTarget.classList.add('current-' + currentSelection.element)
 					previousSelection = message.selection
-				}
-				else {
-
-					if(!currentlyHovering) {
+				} else {
+					if (!currentlyHovering) {
 						if (previousSelection) {
 							artworkTarget.classList.remove(previousSelection.element)
 						}
-
 					}
 					artworkTarget.classList.remove('current')
 
@@ -117,9 +106,7 @@
 
 					previousSelection = undefined
 				}
-			}
-			else {
-
+			} else {
 				if (previousSelection) {
 					artworkTarget.classList.remove('current')
 					artworkTarget.classList.remove('current-' + previousSelection.element)
@@ -128,13 +115,11 @@
 				}
 				previousSelection = undefined
 			}
-
 		}
 	}
 
 	function hover(node, i) {
-
-		const addRemoveButton = node.querySelector(".addRemoveButton")
+		const addRemoveButton = node.querySelector('.addRemoveButton')
 
 		if (addRemoveButton) {
 			addRemoveButton.addEventListener('mouseenter', () => {
@@ -143,15 +128,12 @@
 				// }
 				// artworkTarget.classList.add(parts[i].element)
 				// artworkTarget.classList.add('hover')
-				if (typeof parts[i].name !== "undefined") {
+				if (typeof parts[i].name !== 'undefined') {
 					artworkTarget.classList.add('remove')
-				}
-				else {
-
+				} else {
 					artworkTarget.classList.add('add')
 				}
-
-			});
+			})
 
 			addRemoveButton.addEventListener('mouseleave', () => {
 				// artworkTarget.classList.remove(parts[i].element)
@@ -162,25 +144,23 @@
 
 				artworkTarget.classList.remove('remove')
 				artworkTarget.classList.remove('add')
-			});
+			})
 		}
 
 		node.addEventListener('mouseenter', () => {
 			currentlyHovering = true
 			if (previousSelection) {
-			artworkTarget.classList.remove(previousSelection.element)
+				artworkTarget.classList.remove(previousSelection.element)
 			}
 			artworkTarget.classList.add(parts[i].element)
 			artworkTarget.classList.add('hover')
 
 			if (parts[i].name) {
 				artworkTarget.classList.add('taken')
-			}
-			else {
+			} else {
 				artworkTarget.classList.add('not-taken')
 			}
-
-		});
+		})
 
 		node.addEventListener('mouseleave', () => {
 			currentlyHovering = false
@@ -190,10 +170,9 @@
 				artworkTarget.classList.remove('hover')
 			}
 
-
 			artworkTarget.classList.remove('taken')
 			artworkTarget.classList.remove('not-taken')
-		});
+		})
 	}
 </script>
 
@@ -202,8 +181,8 @@
 <div class="EditTemplate">
 	<div class="TopBar">
 		<span style="display: flex; align-items: center;">
-		<a title="Back" class="refresh icon" icon="chevron-left" on:click={() => doneEditing()}></a>
-		<span style="font-weight: bold; margin-left: 4px; margin-top: 2px">{template.name}</span>
+			<a title="Back" class="refresh icon" icon="chevron-left" on:click={() => doneEditing()} />
+			<span style="font-weight: bold; margin-left: 4px; margin-top: 2px">{template.name}</span>
 		</span>
 	</div>
 	<!-- <div class="SectionTitle">
@@ -219,11 +198,9 @@
 		Configure part of a template by selecting a layer and adding or removing it below.
 	</p> -->
 
-
-
-	<div class="templateArtwork {currentSelection ? "template-selected" : ""}">
-		<div class="target" bind:this={artworkTarget} ></div>
-		<div class="image"></div>
+	<div class="templateArtwork {currentSelection ? 'template-selected' : ''}">
+		<div class="target" bind:this={artworkTarget} />
+		<div class="image" />
 	</div>
 
 	<!-- <p class="type m-xxsmall description" style="margin-bottom: 16px; letter-spacing: -0.15px">
@@ -234,46 +211,47 @@
 			</p> -->
 	<p class="type m-xxsmall description" style="margin-bottom: 16px; letter-spacing: -0.15px">
 		Configure each part of the template by selecting the layer on the canvas and then adding or removing it below.
-		</p>
-
-
+	</p>
 
 	<!-- <p class="currentlySelected">&nbsp;{#if currentSelection}{currentSelection.name}{/if}</p> -->
 
 	<!-- {#if currentSelection} -->
-		{#if parts}
-
+	{#if parts}
 		<div class="List" style="margin-bottom: 8px">
 			{#each parts as part, i}
-
-				<div class={currentSelection?.element === part.element && part.id ? "ListItem currentlySelected" : "ListItem"} use:hover={i}>
+				<div class={currentSelection?.element === part.element && part.id ? 'ListItem currentlySelected' : 'ListItem'} use:hover={i}>
 					<span style="display: flex">
-					<p title="{part.longName}" class="element">{part.longName}<spa class={part.element === "th" ? "astrix" : "astrix-hide"}>*</spa></p>
-					{#if part.name}
-					<span>{part.name}</span>
-					{:else}
-					<span class="currentSelectionName">{currentSelection && currentSelection?.allow?.includes(part.element) ? currentSelection.name : ""}</span>
-					{/if}
+						<p title={part.longName} class="element">
+							{part.longName}<spa class={part.element === 'th' ? 'astrix' : 'astrix-hide'}>*</spa>
+						</p>
+						{#if part.name}
+							<span>{part.name}</span>
+						{:else}
+							<span class="currentSelectionName"
+								>{currentSelection && currentSelection?.allow?.includes(part.element) ? currentSelection.name : ''}</span>
+						{/if}
 					</span>
-					<span class="templateButtons" style={part.name || currentSelection && currentSelection?.allow?.includes(part.element) ? "" : "display: none;"}>
-						<span class="refresh icon addRemoveButton" icon={part.name ? "minus" : "plus"} on:click={(event) => addRemoveElement(event, part, i, template)}></span>
+					<span
+						class="templateButtons"
+						style={part.name || (currentSelection && currentSelection?.allow?.includes(part.element)) ? '' : 'display: none;'}>
+						<span
+							class="refresh icon addRemoveButton"
+							icon={part.name ? 'minus' : 'plus'}
+							on:click={(event) => addRemoveElement(event, part, i, template)} />
 					</span>
 				</div>
-
 			{/each}
 		</div>
-		{/if}
+	{/if}
 
-		<p class="type m-xxsmall description" style="margin-top: 16px">* optional</p>
+	<p class="type m-xxsmall description" style="margin-top: 16px">* optional</p>
 	<!-- {/if} -->
-
 </div>
 
 <style global>
-
 	.astrix {
 		position: absolute;
-		color: var(--figma-color-text-secondary)
+		color: var(--figma-color-text-secondary);
 	}
 
 	.astrix-hide {
@@ -285,7 +263,7 @@
 	}
 
 	.description {
-		color: var(--figma-color-text-secondary, var(--color-black-30))
+		color: var(--figma-color-text-secondary, var(--color-black-30));
 	}
 
 	.SectionTitle {
@@ -308,8 +286,6 @@
 	.SectionTitle .Label .text {
 		margin-top: 1px;
 	}
-
-
 
 	.text-bold {
 		font-weight: 600;
@@ -334,7 +310,8 @@
 	}
 
 	.EditTemplate .target.currentlySelected {
-		margin-bottom: 24px; text-align: center;
+		margin-bottom: 24px;
+		text-align: center;
 		margin-left: -4px;
 		color: var(--figma-color-text-tertiary, var(--color-black-30));
 	}
@@ -349,10 +326,10 @@
 	}
 
 	.figma-dark .EditTemplate .hover {
-		border: 2px solid rgba(255,255,255,0.3);
+		border: 2px solid rgba(255, 255, 255, 0.3);
 	}
 	.figma-light .EditTemplate .hover {
-		border: 2px solid rgba(0,0,0,0.3);
+		border: 2px solid rgba(0, 0, 0, 0.3);
 	}
 
 	.ListItem .currentSelectionName {
@@ -376,7 +353,10 @@
 		border: 2px dashed green;
 	} */
 
-	.EditTemplate .current-table.table, .EditTemplate .current-tr.tr, .EditTemplate .current-td.td, .EditTemplate .current-th.th {
+	.EditTemplate .current-table.table,
+	.EditTemplate .current-tr.tr,
+	.EditTemplate .current-td.td,
+	.EditTemplate .current-th.th {
 		border: 2px solid var(--color-purple);
 	}
 
@@ -385,7 +365,7 @@
 	}
 
 	.EditTemplate .remove.remove {
-		border-color: #FF4D4D !important;
+		border-color: #ff4d4d !important;
 	}
 
 	.EditTemplate .add {
@@ -398,7 +378,7 @@
 
 	.EditTemplate .target.table {
 		display: block;
-		left: 51px;
+		left: 48px;
 		top: -6px;
 		width: 106px;
 		height: 76px;
@@ -406,7 +386,7 @@
 
 	.EditTemplate .target.tr {
 		display: block;
-		left: 51px;
+		left: 48px;
 		top: 15px;
 		width: 106px;
 		height: 35px;
@@ -414,7 +394,7 @@
 
 	.EditTemplate .target.td {
 		display: block;
-		left: 51px;
+		left: 48px;
 		top: 35px;
 		width: 60px;
 		height: 35px;
@@ -422,7 +402,7 @@
 
 	.EditTemplate .target.th {
 		display: block;
-		left: 96px;
+		left: 93px;
 		top: -6px;
 		width: 61px;
 		height: 35px;
@@ -463,18 +443,18 @@
 		display: block;
 	}
 
-		.figma-light .EditTemplate .image {
+	.figma-light .EditTemplate .image {
 		margin: 0 auto;
-    width: 110px;
-    height: 81px;
-	background-size: contain;
-    background-image: url("data:image/svg+xml,%3Csvg width='110' height='81' viewBox='0 0 110 81' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_116_1790)'%3E%3Cg clip-path='url(%23clip0_116_1790)'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='white'/%3E%3Crect width='46' height='20.7' transform='translate(9 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='1' width='46' height='20.7' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='1' width='46' height='20.7' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='21.7' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='21.7' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='42.4' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='42.4' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_d_116_1790' x='0' y='0' width='110' height='80.1' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='8'/%3E%3CfeGaussianBlur stdDeviation='4'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_116_1790'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_116_1790' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_116_1790'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
-}
-.figma-dark .EditTemplate .image {
+		width: 110px;
+		height: 81px;
+		background-size: contain;
+		background-image: url("data:image/svg+xml,%3Csvg width='110' height='81' viewBox='0 0 110 81' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_116_1790)'%3E%3Cg clip-path='url(%23clip0_116_1790)'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='white'/%3E%3Crect width='46' height='20.7' transform='translate(9 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='1' width='46' height='20.7' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='1' width='46' height='20.7' fill='%23F2F2F2' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='21.7' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='21.7' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='42.4' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='42.4' width='46' height='20.7' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' stroke='%23CFCFCF' stroke-width='2'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_d_116_1790' x='0' y='0' width='110' height='80.1' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='8'/%3E%3CfeGaussianBlur stdDeviation='4'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_116_1790'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_116_1790' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_116_1790'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
+	}
+	.figma-dark .EditTemplate .image {
 		margin: 0 auto;
-    width: 110px;
-    height: 81px;
-	background-size: contain;
-    background-image: url("data:image/svg+xml,%3Csvg width='110' height='81' viewBox='0 0 110 81' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_117_1791)'%3E%3Cg clip-path='url(%23clip0_117_1791)'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='%232D2D2C'/%3E%3Crect width='46' height='20.7' transform='translate(9 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='1' width='46' height='20.7' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='1' width='46' height='20.7' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='21.7' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='21.7' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='42.4' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='42.4' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_d_117_1791' x='0' y='0' width='110' height='80.1' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='8'/%3E%3CfeGaussianBlur stdDeviation='4'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_117_1791'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_117_1791' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_117_1791'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
-}
+		width: 110px;
+		height: 81px;
+		background-size: contain;
+		background-image: url("data:image/svg+xml,%3Csvg width='110' height='81' viewBox='0 0 110 81' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg filter='url(%23filter0_d_117_1791)'%3E%3Cg clip-path='url(%23clip0_117_1791)'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='%232D2D2C'/%3E%3Crect width='46' height='20.7' transform='translate(9 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='1' width='46' height='20.7' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 1)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='1' width='46' height='20.7' fill='%233A3A3A' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='21.7' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 21.7)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='21.7' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(9 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='9' y='42.4' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3Crect width='46' height='20.7' transform='translate(55 42.4)' fill='white' fill-opacity='0.01'/%3E%3Crect x='55' y='42.4' width='46' height='20.7' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' stroke='%235C5C5C' stroke-width='2'/%3E%3C/g%3E%3Cdefs%3E%3Cfilter id='filter0_d_117_1791' x='0' y='0' width='110' height='80.1' filterUnits='userSpaceOnUse' color-interpolation-filters='sRGB'%3E%3CfeFlood flood-opacity='0' result='BackgroundImageFix'/%3E%3CfeColorMatrix in='SourceAlpha' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0' result='hardAlpha'/%3E%3CfeOffset dy='8'/%3E%3CfeGaussianBlur stdDeviation='4'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0'/%3E%3CfeBlend mode='normal' in2='BackgroundImageFix' result='effect1_dropShadow_117_1791'/%3E%3CfeBlend mode='normal' in='SourceGraphic' in2='effect1_dropShadow_117_1791' result='shape'/%3E%3C/filter%3E%3CclipPath id='clip0_117_1791'%3E%3Crect x='9' y='1' width='92' height='62.1' rx='1.15' fill='white'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A");
+	}
 </style>

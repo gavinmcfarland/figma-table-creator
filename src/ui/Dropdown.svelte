@@ -132,7 +132,7 @@
 	.Select.show > .label {
 		border-color: var(--figma-color-border, var(--color-black-10));
 		border-width: 1px;
-		/* padding-inline: calc(var(--padding-100) - 1px); */
+		padding-inline: calc(var(--padding-100) - 1px);
 	}
 
 	.show > .menu {

@@ -61,7 +61,7 @@
 
 			// && differenceInDays > 7
 
-			if (!hasUserDismissedBanner1 && differenceInDays > 0.001) {
+			if (!hasUserDismissedBanner1 && differenceInDays > 14) {
 				return true
 			} else {
 				return false
@@ -411,7 +411,6 @@
 		var message = await event.data.pluginMessage
 
 		if (message.type === 'show-create-table-ui') {
-			clientStorage.removeItem('has-user-dismissed-banner-1')
 			pluginFirstUsedAt = await clientStorage.getItem('plugin-first-used-at')
 			hasUserDismissedBanner1 = await clientStorage.getItem('has-user-dismissed-banner-1')
 
@@ -609,16 +608,15 @@
 						<p class="description">If there are multiple templates, add each instance to the canvas so they appear here.</p>
 					</div>
 				{/if}
-
-				<div class="BottomBar">
-					<span
-						on:click={() => {
-							setDefaultTemplate(menuSelectedFile.data[0], data)
-							addRemoteFile(menuSelectedFile)
-							setActivePage('createTablePageActive')
-						}}><Button id="create-table">Import</Button></span>
-				</div>
 			{/each}
+			<div class="BottomBar importTemplate">
+				<span
+					on:click={() => {
+						setDefaultTemplate(menuSelectedFile.data[0], data)
+						addRemoteFile(menuSelectedFile)
+						setActivePage('createTablePageActive')
+					}}><Button id="create-table">Import</Button></span>
+			</div>
 		{/if}
 	</div>
 {/if}
@@ -783,167 +781,142 @@
 {/if}
 
 {#if pageState.createTablePageActive}
-	<div class="container" style="padding: var(--size-100) var(--size-200); overflow-y: scroll">
-		{#if shouldShowBanner(pluginFirstUsedAt, hasUserDismissedBanner1)}
-			<BannerNotification id="thingy2" type="info" on:close={closeNotification}>
-				<slot slot="message">
-					<p>Your feedback matters!</p>
-					<p><a target="_blank" href="https://forms.gle/WFYWnA4mXFLakKgPA">Complete a 2 min survey</a></p>
-				</slot>
+	<div class="container">
+		<div class="inner-content">
+			{#if shouldShowBanner(pluginFirstUsedAt, hasUserDismissedBanner1)}
+				<BannerNotification id="thingy2" type="info" on:close={closeNotification}>
+					<slot slot="message">
+						<p>Your feedback matters!</p>
+						<p>
+							<a
+								on:click={() => {
+									setTimeout(() => {
+										getBannerNotification('thingy2').close()
+										clientStorage.setItem('has-user-dismissed-banner-1', true)
+									}, 1000)
+								}}
+								target="_blank"
+								href="https://forms.gle/WFYWnA4mXFLakKgPA">Complete a short survey</a>
+						</p>
+					</slot>
 
-				<!-- <slot slot="action">
+					<!-- <slot slot="action">
 					<Button
 						classes="ghost"
 						on:click={() => {
 							getBannerNotification('thingy2').close()
 						}}>Go</Button>
 				</slot> -->
-			</BannerNotification>
-		{/if}
-		<div class="section-title">
-			<div class="SelectWrapper">
-				<Dropdown fill icon="component" id="menu">
-					<slot slot="label">
-						<!-- <span style="max-width: 140px; display: inline-block" > -->
-						<TruncateText string={data.defaultTemplate?.name} chars="16" />
-						<!-- </span> -->
-					</slot>
+				</BannerNotification>
+			{/if}
+			<div class="section-title">
+				<div class="SelectWrapper">
+					<Dropdown fill icon="component" id="menu">
+						<slot slot="label">
+							<!-- <span style="max-width: 140px; display: inline-block" > -->
+							<TruncateText string={data.defaultTemplate?.name} chars="16" />
+							<!-- </span> -->
+						</slot>
 
-					<slot slot="content">
-						<div class="menu">
-							<div class="Title">
-								<p style="font-weight: 600">Templates</p>
+						<slot slot="content">
+							<div class="menu">
+								<div class="Title">
+									<p style="font-weight: 600">Templates</p>
 
-								<Dropdown id="tooltip">
-									<slot slot="label">
-										{selectedFile?.name}
-										<!-- {#if data.defaultTemplate?.file?.id === data.fileId}
+									<Dropdown id="tooltip">
+										<slot slot="label">
+											{selectedFile?.name}
+											<!-- {#if data.defaultTemplate?.file?.id === data.fileId}
 											Local templates
 										{:else}
 											{data.defaultTemplate?.file?.name}
 										{/if} -->
-									</slot>
-									<slot slot="content">
-										<div class="tooltip">
-											<!-- {#if data.localTemplates.length > 0} -->
-											<div>
-												<input
-													checked={selectedFile?.id === data.fileId ? true : false}
-													type="radio"
-													id="localTemplates"
-													name="files" />
-												<label
-													on:click={(event) => {
-														updateSelectedFile(data, { name: 'Local templates', id: data.fileId })
-														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
-														getDropdown('tooltip').close()
-													}}
-													for="localTemplates">Local templates</label>
-											</div>
-											<!-- {/if} -->
-											{#if data.remoteFiles.length > 0}
+										</slot>
+										<slot slot="content">
+											<div class="tooltip">
+												<!-- {#if data.localTemplates.length > 0} -->
+												<div>
+													<input
+														checked={selectedFile?.id === data.fileId ? true : false}
+														type="radio"
+														id="localTemplates"
+														name="files" />
+													<label
+														on:click={(event) => {
+															updateSelectedFile(data, { name: 'Local templates', id: data.fileId })
+															// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+															getDropdown('tooltip').close()
+														}}
+														for="localTemplates">Local templates</label>
+												</div>
+												<!-- {/if} -->
+												{#if data.remoteFiles.length > 0}
+													<span class="tooltip-divider" />
+												{/if}
+												{#if data.remoteFiles.length > 0}
+													{#each data.remoteFiles as file}
+														<div>
+															<input
+																checked={selectedFile?.id === file.id ? true : false}
+																type="radio"
+																id={file.id}
+																name="files" />
+															<label
+																on:click={(event) => {
+																	updateSelectedFile(data, file)
+																	getDropdown('tooltip').close()
+																	// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+																}}
+																for={file.id}>{file.name}</label>
+														</div>
+													{/each}
+												{/if}
 												<span class="tooltip-divider" />
-											{/if}
-											{#if data.remoteFiles.length > 0}
-												{#each data.remoteFiles as file}
-													<div>
-														<input
-															checked={selectedFile?.id === file.id ? true : false}
-															type="radio"
-															id={file.id}
-															name="files" />
-														<label
-															on:click={(event) => {
-																updateSelectedFile(data, file)
-																getDropdown('tooltip').close()
-																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
-															}}
-															for={file.id}>{file.name}</label>
-													</div>
-												{/each}
-											{/if}
-											<span class="tooltip-divider" />
-											<div>
-												<input checked={false} type="radio" id="linkLibrary" name="linkLibrary" />
-												<label
-													on:click={(event) => {
-														getDropdown('tooltip').close()
-														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
-														chooseRemoteTemplate({ entry: 'MANAGE_LIBRARIES' })
-													}}
-													for="linkLibrary">Import Template</label>
+												<div>
+													<input checked={false} type="radio" id="linkLibrary" name="linkLibrary" />
+													<label
+														on:click={(event) => {
+															getDropdown('tooltip').close()
+															// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+															chooseRemoteTemplate({ entry: 'MANAGE_LIBRARIES' })
+														}}
+														for="linkLibrary">Import Template</label>
+												</div>
 											</div>
-										</div>
-									</slot>
-								</Dropdown>
-							</div>
-							<div class="menu__content">
-								{#if selectedFile?.id === data.fileId}
-									{#if data.localTemplates.length > 0}
-										<ul class="local-templates">
-											{#each data.localTemplates as template}
-												<li
-													title={template.name}
-													class="item {template.selected ? 'selected' : ''}"
-													on:click={(event) => {
-														// Only trigger if clicking on the element itself
-														if (event.target.classList.contains('icon')) {
-															return
-														}
-
-														usingRemoteTemplate(false)
-														setDefaultTemplate(template, data)
-														// Hide menu when template set
-														// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
-
-														getDropdown('menu').close()
-													}}>
-													<TruncateText string={template.name} chars="12" />
-
-													<div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))">
-														<a
-															title="Configure template"
-															class="refresh icon"
-															icon="pencil"
-															on:click={() => {
-																editTemplate(template)
-															}} />
-														<a
-															title="Refresh tables"
-															class="refresh icon"
-															icon="swap"
-															on:click={() => updateTables(template)} />
-													</div>
-												</li>
-											{/each}
-										</ul>
-									{/if}
-									<div class="toolbar">
-										<a
-											title="New template"
-											class="refresh icon"
-											icon="plus"
-											on:click={() => newTemplate({ subComponents: false, tooltips: false })} />
-									</div>
-								{:else if data.remoteFiles.length > 0}
-									<!-- <div> -->
-									{#each data.remoteFiles as file}
-										{#if selectedFile?.id === file.id}
-											<ul class="remote-file">
-												{#each file.data as template}
+										</slot>
+									</Dropdown>
+								</div>
+								<div class="menu__content">
+									{#if selectedFile?.id === data.fileId}
+										{#if data.localTemplates.length > 0}
+											<ul class="local-templates">
+												{#each data.localTemplates as template}
 													<li
+														title={template.name}
 														class="item {template.selected ? 'selected' : ''}"
 														on:click={(event) => {
 															// Only trigger if clicking on the element itself
-															if (event.target !== event.currentTarget) return
-															usingRemoteTemplate(true)
+															if (event.target.classList.contains('icon')) {
+																return
+															}
+
+															usingRemoteTemplate(false)
 															setDefaultTemplate(template, data)
 															// Hide menu when template set
 															// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+
 															getDropdown('menu').close()
 														}}>
-														{template.name}
+														<TruncateText string={template.name} chars="12" />
+
 														<div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))">
+															<a
+																title="Configure template"
+																class="refresh icon"
+																icon="pencil"
+																on:click={() => {
+																	editTemplate(template)
+																}} />
 															<a
 																title="Refresh tables"
 																class="refresh icon"
@@ -953,94 +926,130 @@
 													</li>
 												{/each}
 											</ul>
-											<div class="toolbar">
-												<a
-													title="Remove library"
-													style="margin-left: auto"
-													class="refresh icon"
-													icon="break"
-													on:click={() => {
-														removeRemoteFile(file)
-														updateSelectedFile()
-													}} />
-											</div>
 										{/if}
-									{/each}
-									<!-- </div> -->
-								{/if}
+										<div class="toolbar">
+											<a
+												title="New template"
+												class="refresh icon"
+												icon="plus"
+												on:click={() => newTemplate({ subComponents: false, tooltips: false })} />
+										</div>
+									{:else if data.remoteFiles.length > 0}
+										<!-- <div> -->
+										{#each data.remoteFiles as file}
+											{#if selectedFile?.id === file.id}
+												<ul class="remote-file">
+													{#each file.data as template}
+														<li
+															class="item {template.selected ? 'selected' : ''}"
+															on:click={(event) => {
+																// Only trigger if clicking on the element itself
+																if (event.target !== event.currentTarget) return
+																usingRemoteTemplate(true)
+																setDefaultTemplate(template, data)
+																// Hide menu when template set
+																// event.currentTarget.parentElement.closest(".Select").classList.remove("show")
+																getDropdown('menu').close()
+															}}>
+															{template.name}
+															<div style="margin-left: auto; margin-right: calc(-1 * var(--size-100))">
+																<a
+																	title="Refresh tables"
+																	class="refresh icon"
+																	icon="swap"
+																	on:click={() => updateTables(template)} />
+															</div>
+														</li>
+													{/each}
+												</ul>
+												<div class="toolbar">
+													<a
+														title="Remove library"
+														style="margin-left: auto"
+														class="refresh icon"
+														icon="break"
+														on:click={() => {
+															removeRemoteFile(file)
+															updateSelectedFile()
+														}} />
+												</div>
+											{/if}
+										{/each}
+										<!-- </div> -->
+									{/if}
+								</div>
 							</div>
-						</div>
-					</slot>
-				</Dropdown>
-				<!-- <span style="margin-left: auto;" class="ButtonIcon icon" icon="plus" on:click={() => importTemplate()}></span> -->
-				<Dropdown>
-					<slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses" /></slot>
-					<slot slot="content">
-						<div class="tooltip wTriangle">
-							<!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing} on:click={(event) => {
+						</slot>
+					</Dropdown>
+					<!-- <span style="margin-left: auto;" class="ButtonIcon icon" icon="plus" on:click={() => importTemplate()}></span> -->
+					<Dropdown>
+						<slot slot="hitThing"><span style="margin-left: auto;" class="ButtonIcon icon" icon="ellipses" /></slot>
+						<slot slot="content">
+							<div class="tooltip wTriangle">
+								<!-- <Checkbox id="columnResizing" label="Column Resizing" checked={columnResizing} on:click={(event) => {
 									getDropdown('tooltip').close()
 									}}/> -->
-							<div>
-								<input bind:checked={columnResizing} type="checkbox" id="columnResizing" name="columnResizing" />
-								<label
-									on:click={(event) => {
-										saveUserPreferences({ columnResizing: !columnResizing })
-										if (!columnResizing) {
-											detachedCells = false
-										}
-									}}
-									for="columnResizing">Column Resizing</label>
+								<div>
+									<input bind:checked={columnResizing} type="checkbox" id="columnResizing" name="columnResizing" />
+									<label
+										on:click={(event) => {
+											saveUserPreferences({ columnResizing: !columnResizing })
+											if (!columnResizing) {
+												detachedCells = false
+											}
+										}}
+										for="columnResizing">Column Resizing</label>
+								</div>
+								<div>
+									<input bind:checked={detachedCells} type="checkbox" id="detachedCells" name="detachedCells" />
+									<label
+										on:click={(event) => {
+											if (!detachedCells) {
+												columnResizing = false
+											}
+											saveUserPreferences({ detachedCells: !detachedCells })
+										}}
+										for="detachedCells">Detached Cells</label>
+								</div>
 							</div>
-							<div>
-								<input bind:checked={detachedCells} type="checkbox" id="detachedCells" name="detachedCells" />
-								<label
-									on:click={(event) => {
-										if (!detachedCells) {
-											columnResizing = false
-										}
-										saveUserPreferences({ detachedCells: !detachedCells })
-									}}
-									for="detachedCells">Detached Cells</label>
-							</div>
-						</div>
-					</slot>
-				</Dropdown>
+						</slot>
+					</Dropdown>
+				</div>
+			</div>
+			<!-- <form autocomplete="off"> -->
+			<div class="field-group">
+				<Field id="columnCount" label="C" type="text" step="1" min="1" max="50" value={columnCount} opts={{ columnCount, cellWidth }} />
+				<Field id="rowCount" label="R" type="text" step="1" min="1" max="50" value={rowCount} />
+			</div>
+			<div class="field-group">
+				<Field id="tableWidth" label="W" type="text" step="1" min="1" max="2000" value={tableWidth} opts={{ prevCellWidth }} />
+				<Field id="tableHeight" label="H" type="text" step="1" min="1" max="2000" value={tableHeight} opts={{ prevCellHeight }} />
+			</div>
+
+			<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
+
+			<Matrix {columnCount} {rowCount} grid={[8, 8]} />
+
+			<div class="text-bold SectionTitle">Cell</div>
+			<div class="field-group">
+				<Field
+					style="width: 106px"
+					id="cellWidth"
+					label="W"
+					type="text"
+					step="1"
+					min="1"
+					max="1000"
+					value={cellWidth}
+					opts={{ columnCount, cellWidth, prevTableWidth }} />
+
+				<div class="RadioButtons" style="margin-left: 20px !important">
+					<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
+					<RadioButton id="center" icon="text-align-middle" value="CENTER" name="cellAlignment" group={cellAlignment} />
+					<RadioButton id="max" icon="text-align-bottom" value="MAX" name="cellAlignment" group={cellAlignment} />
+				</div>
 			</div>
 		</div>
-		<!-- <form autocomplete="off"> -->
-		<div class="field-group">
-			<Field id="columnCount" label="C" type="text" step="1" min="1" max="50" value={columnCount} opts={{ columnCount, cellWidth }} />
-			<Field id="rowCount" label="R" type="text" step="1" min="1" max="50" value={rowCount} />
-		</div>
-		<div class="field-group">
-			<Field id="tableWidth" label="W" type="text" step="1" min="1" max="2000" value={tableWidth} opts={{ prevCellWidth }} />
-			<Field id="tableHeight" label="H" type="text" step="1" min="1" max="2000" value={tableHeight} opts={{ prevCellHeight }} />
-		</div>
-
-		<Checkbox id="includeHeader" label="Include table header" checked={includeHeader} />
-
-		<Matrix {columnCount} {rowCount} grid={[8, 8]} />
-
-		<div class="text-bold SectionTitle">Cell</div>
-		<div class="field-group" style="margin-bottom: 56px">
-			<Field
-				style="width: 106px"
-				id="cellWidth"
-				label="W"
-				type="text"
-				step="1"
-				min="1"
-				max="1000"
-				value={cellWidth}
-				opts={{ columnCount, cellWidth, prevTableWidth }} />
-
-			<div class="RadioButtons" style="margin-left: 20px !important">
-				<RadioButton id="min" icon="text-align-top" value="MIN" name="cellAlignment" group={cellAlignment} />
-				<RadioButton id="center" icon="text-align-middle" value="CENTER" name="cellAlignment" group={cellAlignment} />
-				<RadioButton id="max" icon="text-align-bottom" value="MAX" name="cellAlignment" group={cellAlignment} />
-			</div>
-		</div>
-
 		<div class="BottomBar">
 			<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
 		</div>
@@ -1078,6 +1087,37 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.inner-content {
+		padding: 8px 16px;
+		height: 100%;
+		overflow-y: scroll;
+		overflow-y: overlay;
+		overflow-x: hidden;
+	}
+
+	/* ===== Scrollbar CSS ===== */
+	/* Firefox */
+	.inner-content:hover {
+		scrollbar-width: auto;
+		scrollbar-color: rgba(179, 179, 179, 0.5) transparent;
+	}
+
+	/* Chrome, Edge, and Safari */
+	.inner-content:hover::-webkit-scrollbar {
+		width: 10px;
+	}
+
+	.inner-content:hover::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.inner-content:hover::-webkit-scrollbar-thumb {
+		background-color: rgba(179, 179, 179, 0.5);
+		border: 2px solid transparent;
+		background-clip: padding-box;
+		border-radius: 6px;
 	}
 
 	.content .Button {
@@ -1259,14 +1299,21 @@
 	.BottomBar {
 		display: flex;
 		place-content: flex-end;
-		position: absolute;
+		/* position: absolute;
 		bottom: 0;
 		left: 0;
-		right: 0;
+		right: 0; */
 		border-top: 1px solid var(--figma-color-border, var(--color-black-10));
 		padding: var(--size-100);
 		background-color: var(--figma-color-bg);
 		/* justify-content: space-between; */
+	}
+
+	.BottomBar.importTemplate {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
 	}
 
 	.TopBar {
