@@ -835,8 +835,8 @@ async function createTableUI() {
 	let defaultTemplate = await getDefaultTemplate()
 
 	figma.showUI(__uiFiles__.main, {
-		width: 240,
-		height: 474 + 8 + 8,
+		width: 240 - 5,
+		height: 457 + 8 + 8,
 		themeColors: true,
 	})
 	figma.ui.postMessage({
@@ -905,6 +905,26 @@ async function main() {
 		data = Object.assign(defaultData, data || {})
 
 		return data
+	})
+
+	figma.ui.on('message', async (data) => {
+		if (data.type === 'set-client-storage') {
+			figma.clientStorage.setAsync(data.key, data.value).then(() => {
+				figma.ui.postMessage({ type: 'client-storage-set' })
+			})
+		}
+
+		if (data.type === 'remove-client-storage') {
+			figma.clientStorage.deleteAsync(data.key).then(() => {
+				figma.ui.postMessage({ type: 'client-storage-removed' })
+			})
+		}
+
+		if (data.type === 'get-client-storage') {
+			figma.clientStorage.getAsync(data.key).then((res) => {
+				figma.ui.postMessage({ type: 'post-client-storage', key: data.key, value: res })
+			})
+		}
 	})
 
 	plugma((plugin) => {

@@ -7,7 +7,7 @@ module.exports = {
 		// 'postcss-short': {},
 		// 'postcss-nested': {},
 		'postcss-logical': {},
-		'flex-gap-polyfill': {}
+		// 'flex-gap-polyfill': {}
 		// 'postcss-proportional-spacing': {},
 		// 'postcss-pow': {}
 		// 'autoprefixer': {}

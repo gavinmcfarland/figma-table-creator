@@ -19,7 +19,7 @@ html {
 .field-group {
 	display: flex;
 	gap: var(--size-300);
-	width: 176px;
+	width: 172px;
 }
 
 .field-group > * {
@@ -59,7 +59,7 @@ input {
 	border: none;
 	font: inherit;
 	background-color: transparent;
-	color: var(--figma-color-text, black)
+	color: var(--figma-color-text, black);
 }
 
 input:focus {
@@ -76,7 +76,7 @@ input::-webkit-inner-spin-button {
 }
 
 /* Firefox */
-input[type="number"] {
+input[type='number'] {
 	-moz-appearance: textfield;
 }
 
@@ -94,12 +94,12 @@ button {
 
 .figma-dark ::selection {
 	color: white;
-	background-color: #2F567D;
+	background-color: #2f567d;
 }
 
 .figma-light ::selection {
 	color: black;
-	background-color: #AAD4FB;
+	background-color: #aad4fb;
 }
 
 :root {
@@ -110,7 +110,7 @@ button {
 	--color-black-30: rgba(0, 0, 0, 0.3);
 	--color-black-80: rgba(0, 0, 0, 0.8);
 	--color-black-100: #000;
-	--color-purple: #7B61FF;
+	--color-purple: #7b61ff;
 
 	--size-0: 0px;
 	--size-25: 2px;
@@ -172,8 +172,7 @@ button {
 	--padding-800: var(--size-800);
 	--padding-1000: var(--size-1000);
 
-
 	/* Figma */
-	--elevation-400-menu-panel: 0px 0px .5px rgba(0, 0, 0, .12), 0px 10px 16px rgba(0, 0, 0, .12), 0px 2px 5px rgba(0, 0, 0, .15);
-	--modal-box-shadow: var(--elevation-400-menu-panel, 0px 2px 14px rgba(0, 0, 0, .15), 0px 0px 0px .5px rgba(0, 0, 0, .2));
+	--elevation-400-menu-panel: 0px 0px 0.5px rgba(0, 0, 0, 0.12), 0px 10px 16px rgba(0, 0, 0, 0.12), 0px 2px 5px rgba(0, 0, 0, 0.15);
+	--modal-box-shadow: var(--elevation-400-menu-panel, 0px 2px 14px rgba(0, 0, 0, 0.15), 0px 0px 0px 0.5px rgba(0, 0, 0, 0.2));
 }

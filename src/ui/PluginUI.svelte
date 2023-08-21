@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte'
 	import Field from './Field.svelte'
 	import Button from './Button.svelte'
+	import BannerNotification, { getBannerNotification } from './BannerNotification.svelte'
 	import Dropdown, { getDropdown } from './Dropdown.svelte'
 	import Checkbox from './Checkbox.svelte'
 	import RadioButton from './RadioButton.svelte'
@@ -11,6 +12,7 @@
 	import './reset.css'
 	import throttle from 'lodash/throttle'
 	import TruncateText from './TruncateText.svelte'
+	import { clientStorage } from './clientStorage.js'
 
 	// TODO: Reset value to original if input left empty
 	// FIXME: Find out selected file is undefined when component copied from another file
@@ -39,6 +41,35 @@
 	let prevCellHeight = 40
 	let prevTableWidth
 	let menuSelectedFile = null
+	let pluginFirstUsedAt = null
+	let hasUserDismissedBanner1 = false
+
+	function closeNotification() {
+		clientStorage.setItem('has-user-dismissed-banner-1', true)
+	}
+
+	function shouldShowBanner(pluginFirstUsedAt, hasUserDismissedBanner1) {
+		if (pluginFirstUsedAt) {
+			let datePluginFirstUsedAt = new Date(JSON.parse(pluginFirstUsedAt))
+			let dateToday = new Date()
+
+			var differenceInTime = dateToday.getTime() - datePluginFirstUsedAt.getTime()
+
+			var differenceInDays = differenceInTime / (1000 * 60 * 60 * 24)
+
+			// console.log(differenceInDays)
+
+			// && differenceInDays > 7
+
+			if (!hasUserDismissedBanner1 && differenceInDays > 0.001) {
+				return true
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
 
 	let table
 
@@ -380,6 +411,14 @@
 		var message = await event.data.pluginMessage
 
 		if (message.type === 'show-create-table-ui') {
+			clientStorage.removeItem('has-user-dismissed-banner-1')
+			pluginFirstUsedAt = await clientStorage.getItem('plugin-first-used-at')
+			hasUserDismissedBanner1 = await clientStorage.getItem('has-user-dismissed-banner-1')
+
+			if (!pluginFirstUsedAt) {
+				clientStorage.setItem('plugin-first-used-at', JSON.stringify(new Date()))
+			}
+
 			data = message
 
 			let store = {
@@ -744,7 +783,22 @@
 {/if}
 
 {#if pageState.createTablePageActive}
-	<div class="container" style="padding: var(--size-100) var(--size-200)">
+	<div class="container" style="padding: var(--size-100) var(--size-200); overflow-y: scroll">
+		{#if shouldShowBanner(pluginFirstUsedAt, hasUserDismissedBanner1)}
+			<BannerNotification id="thingy2" type="info" on:close={closeNotification}>
+				<slot slot="message">
+					<p>Share your thoughts</p>
+				</slot>
+
+				<slot slot="action">
+					<Button
+						classes="ghost"
+						on:click={() => {
+							getBannerNotification('thingy2').close()
+						}}>Go</Button>
+				</slot>
+			</BannerNotification>
+		{/if}
 		<div class="section-title">
 			<div class="SelectWrapper">
 				<Dropdown fill icon="component" id="menu">
@@ -967,7 +1021,7 @@
 		<Matrix {columnCount} {rowCount} grid={[8, 8]} />
 
 		<div class="text-bold SectionTitle">Cell</div>
-		<div class="field-group">
+		<div class="field-group" style="margin-bottom: 56px">
 			<Field
 				style="width: 106px"
 				id="cellWidth"
@@ -989,7 +1043,6 @@
 		<div class="BottomBar">
 			<span on:click={createTable}><Button id="create-table">Create Table</Button></span>
 		</div>
-		<!-- </form> -->
 	</div>
 {/if}
 
