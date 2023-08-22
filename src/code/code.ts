@@ -862,6 +862,8 @@ async function createTableInstance(tableSettings) {
 	if (templateComponent) {
 		let tableInstance = await createTable(templateComponent, tableSettings)
 
+		console.log('Hello', tableInstance.children[0].counterAxisSizingMode)
+
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]

@@ -1199,11 +1199,11 @@
 		position: relative;
 	}
 
-	.buttons {
+	/* .buttons {
 		position: absolute;
 		bottom: 0;
 		right: 0;
-	}
+	} */
 
 	/* Table Radio */
 

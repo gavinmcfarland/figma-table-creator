@@ -489,8 +489,13 @@ export async function createTable(templateComponent, settings: TableSettings, ty
 
 		if (!tableIsContainer) {
 			if (tableSettings.size[0] === 'HUG') {
-				// table.layoutAlign = 'INHERIT'
+				table.layoutAlign = 'INHERIT'
 				table.counterAxisSizingMode = 'AUTO'
+				// console.log(table.counterAxisSizingMode)
+				// console.log(tableInstance.children[0].id, table.id)
+
+				// tableInstance.children[0].counterAxisSizingMode = 'AUTO'
+				// console.log(tableInstance.children[0].counterAxisSizingMode, table.counterAxisSizingMode)
 			} else {
 				table.layoutAlign = 'STRETCH'
 				table.primaryAxisSizingMode = 'FIXED'
