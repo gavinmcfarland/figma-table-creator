@@ -1604,6 +1604,7 @@ async function main() {
 
 		plugin.on('new-template', async (msg) => {
 			let templateComponent = await newTemplateComponent(msg.options)
+			console.log('new Template', templateComponent)
 			let templateData = getPluginData(templateComponent, 'template')
 			setDefaultTemplate(templateData)
 		})
