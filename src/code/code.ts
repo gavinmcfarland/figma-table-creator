@@ -862,8 +862,6 @@ async function createTableInstance(tableSettings) {
 	if (templateComponent) {
 		let tableInstance = await createTable(templateComponent, tableSettings)
 
-		console.log('Hello', tableInstance.children[0].counterAxisSizingMode)
-
 		if (tableInstance) {
 			positionInCenterOfViewport(tableInstance)
 			figma.currentPage.selection = [tableInstance]
@@ -1604,7 +1602,7 @@ async function main() {
 
 		plugin.on('new-template', async (msg) => {
 			let templateComponent = await newTemplateComponent(msg.options)
-			console.log('new Template', templateComponent)
+
 			let templateData = getPluginData(templateComponent, 'template')
 			setDefaultTemplate(templateData)
 		})

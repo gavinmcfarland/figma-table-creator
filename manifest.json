@@ -113,7 +113,9 @@
         {"command": "selectRow", "name": "Select Row", "multipleSelection": true}
 
     ],
-    "editorType": ["figma"]
-
+    "editorType": ["figma"],
+    "networkAccess": {
+        "allowedDomains": ["none"]
+      }
 
 }

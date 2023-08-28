@@ -6965,7 +6965,6 @@ async function createTableInstance(tableSettings) {
     const templateComponent = await lookForComponent(tableSettings.template);
     if (templateComponent) {
         let tableInstance = await createTable(templateComponent, tableSettings);
-        console.log('Hello', tableInstance.children[0].counterAxisSizingMode);
         if (tableInstance) {
             positionInCenterOfViewport(tableInstance);
             figma.currentPage.selection = [tableInstance];
@@ -7579,7 +7578,6 @@ async function main() {
         plugin.command('importTemplate', importTemplate);
         plugin.on('new-template', async (msg) => {
             let templateComponent = await newTemplateComponent(msg.options);
-            console.log('new Template', templateComponent);
             let templateData = getPluginData_1(templateComponent, 'template');
             setDefaultTemplate(templateData);
         });
