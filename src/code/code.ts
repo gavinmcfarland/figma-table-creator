@@ -884,8 +884,8 @@ async function main() {
 	await updateClientStorageAsync('userPreferences', (data) => {
 		let table: TableSettings = {
 			matrix: [[data?.columnCount || 4, data?.rowCount || 4]],
-			size: [[data?.tableWidth || 'HUG', data?.tableHeight || 'HUG']],
-			cell: [[data?.cellWidth || 120, data?.cellHeight || 'FILL']],
+			size: [[data?.tableWidth || '496', data?.tableHeight || 'HUG']],
+			cell: [[data?.cellWidth || 'FILL', data?.cellHeight || 'FILL']],
 			alignment: [data?.cellAlignment || 'MIN', 'MIN'],
 			header: data?.includeHeader || true,
 			resizing: data?.columnResizing || true,
