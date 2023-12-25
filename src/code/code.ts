@@ -938,9 +938,12 @@ async function main() {
 		async function newTemplateComponent(opts?) {
 			let { newPage, tooltips, subComponents } = opts
 
+			let newPageNode = null
 			if (newPage) {
-				createPage('Table Creator')
+				newPageNode = createPage('Table Creator')
 			}
+
+			newPageNode = newPageNode ? newPageNode : figma.currentPage
 
 			let newSelection = []
 
@@ -991,12 +994,17 @@ async function main() {
 
 			newSelection.push(templateComponent)
 
-			let tempGroup = figma.group(newSelection, figma.currentPage)
-			positionInCenterOfViewport(tempGroup)
-			ungroup(tempGroup, figma.currentPage)
+			// move nodes in newSelection to newPage
+			newSelection.forEach((element, i) => {
+				newPageNode.insertChild(i, element)
+			})
 
-			// animateNodeIntoView(newSelection)
-			figma.currentPage.selection = newSelection
+			let tempGroup = figma.group(newSelection, newPageNode)
+			positionInCenterOfViewport(tempGroup)
+			ungroup(tempGroup, newPageNode)
+
+			// // animateNodeIntoView(newSelection)
+			newPageNode.selection = newSelection
 
 			figma.notify('Template created')
 
